@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Empowered Vote — Alpha</title>
+    <meta name="description" content="Empowered Vote is an alpha civic-engagement platform helping voters explore candidates, budgets, and issues. Bring your own judgment — we're still building." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --ev-coral: #ff5740;
+            --ev-blue: #00657c;
+            --ev-light-blue: #59b0c4;
+            --ev-yellow: #fed12e;
+            --ev-ink: #1c1c1c;
+            --ev-paper: #fdfcf8;
+            --ev-muted: #5a6a72;
+            --shadow-sm: 0 1px 2px rgba(15, 30, 40, 0.06);
+            --shadow-md: 0 10px 30px rgba(15, 30, 40, 0.10);
+            --shadow-lg: 0 24px 50px rgba(15, 30, 40, 0.16);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+            background: var(--ev-paper);
+            color: var(--ev-ink);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--ev-blue); }
+
+        .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            padding: 80px 0 72px;
+            background:
+                radial-gradient(1200px 480px at 80% -10%, rgba(89, 176, 196, 0.35), transparent 60%),
+                radial-gradient(900px 480px at -10% 110%, rgba(254, 209, 46, 0.18), transparent 60%),
+                linear-gradient(180deg, #ffffff 0%, var(--ev-paper) 100%);
+            border-bottom: 1px solid rgba(15, 30, 40, 0.06);
+            overflow: hidden;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ev-coral);
+            background: #fff0ee;
+            border: 1px solid rgba(255, 87, 64, 0.25);
+            padding: 6px 12px;
+            border-radius: 999px;
+        }
+
+        .hero-tag .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--ev-coral);
+            box-shadow: 0 0 0 4px rgba(255, 87, 64, 0.18);
+        }
+
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.6rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin: 22px 0 16px;
+            color: var(--ev-ink);
+        }
+
+        .hero h1 em {
+            font-style: normal;
+            background: linear-gradient(120deg, var(--ev-blue), var(--ev-light-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero p.lede {
+            font-size: 1.15rem;
+            max-width: 640px;
+            color: var(--ev-muted);
+            margin-bottom: 28px;
+        }
+
+        .hero-actions {
+            display: flex; gap: 12px; flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        .btn-primary {
+            background: var(--ev-coral);
+            color: #fff;
+            box-shadow: var(--shadow-md);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--ev-blue);
+            border: 1.5px solid rgba(0, 101, 124, 0.25);
+        }
+        .btn-ghost:hover { background: rgba(0, 101, 124, 0.06); }
+
+        /* Features */
+        .features {
+            padding: 72px 0 48px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ev-blue);
+            margin-bottom: 8px;
+        }
+        .section-h {
+            font-size: clamp(1.6rem, 3vw, 2.1rem);
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            margin-bottom: 8px;
+        }
+        .section-sub {
+            color: var(--ev-muted);
+            max-width: 640px;
+            margin-bottom: 36px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            position: relative;
+            background: #fff;
+            border: 1px solid rgba(15, 30, 40, 0.06);
+            border-radius: 18px;
+            padding: 26px 24px 24px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--ev-coral), var(--ev-yellow));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.25s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: rgba(0, 101, 124, 0.18);
+        }
+        .card:hover::before { transform: scaleX(1); }
+
+        .card-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+            background: #fef6d8;
+            color: #8a6a00;
+        }
+        .card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card h3 .arrow {
+            color: var(--ev-coral);
+            transition: transform 0.18s ease;
+        }
+        .card:hover h3 .arrow { transform: translateX(4px); }
+        .card p {
+            color: var(--ev-muted);
+            font-size: 0.95rem;
+        }
+
+        /* About / disclosures */
+        .about {
+            padding: 56px 0 88px;
+            background: linear-gradient(180deg, transparent 0%, rgba(89, 176, 196, 0.08) 100%);
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .note {
+            background: #fff;
+            border: 1px solid rgba(15, 30, 40, 0.06);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: var(--shadow-sm);
+        }
+        .note h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--ev-blue);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .note h4::before {
+            content: "";
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--ev-coral);
+        }
+        .note.note-yellow h4::before { background: var(--ev-yellow); }
+        .note.note-blue h4::before { background: var(--ev-light-blue); }
+        .note p {
+            color: var(--ev-muted);
+            font-size: 0.95rem;
+        }
+        .note p + p { margin-top: 10px; }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid rgba(15, 30, 40, 0.06);
+            padding: 28px 0;
+            color: var(--ev-muted);
+            font-size: 0.88rem;
+        }
+        footer .wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        footer a { color: var(--ev-blue); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 640px) {
+            .hero { padding: 56px 0 48px; }
+            .features { padding: 48px 0 32px; }
+            .about { padding: 40px 0 64px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <div class="wrap">
+            <span class="hero-tag"><span class="dot"></span> Alpha — work in progress</span>
+            <h1>Civic tools for voters who want to <em>actually&nbsp;know</em>.</h1>
+            <p class="lede">
+                Empowered Vote is a small, volunteer-driven project building tools that help people
+                understand their ballot — who's running, where they stand, and where the money goes.
+                These are early-stage features. Explore, kick the tires, and please don't rely on
+                them as your only source for a voting decision yet.
+            </p>
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="#features">See the tools →</a>
+                <a class="btn btn-ghost" href="#about">How we work</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="features" id="features">
+        <div class="wrap">
+            <div class="section-title">The tools</div>
+            <h2 class="section-h">Inform yourself, your way.</h2>
+            <p class="section-sub">
+                Each tool is its own alpha experiment. They don't all talk to each other yet, and
+                some are further along than others. Click through to try them.
+            </p>
+
+            <div class="grid">
+                <a class="card" href="https://compass.empowered.vote" target="_blank" rel="noopener">
+                    <span class="card-badge">Alpha</span>
+                    <h3>Compass <span class="arrow">→</span></h3>
+                    <p>Rank where you stand on key issues, then compare your compass to politicians on the same scale.</p>
+                </a>
+
+                <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener">
+                    <span class="card-badge">Alpha</span>
+                    <h3>Essentials <span class="arrow">→</span></h3>
+                    <p>Enter your address and see who actually represents you — federal, state, and local — in one list.</p>
+                </a>
+
+                <a class="card" href="https://readrank.empowered.vote" target="_blank" rel="noopener">
+                    <span class="card-badge">Alpha</span>
+                    <h3>Read &amp; Rank <span class="arrow">→</span></h3>
+                    <p>Read short, deidentified political quotes and rank what you actually agree with — judgment before identity.</p>
+                </a>
+
+                <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener">
+                    <span class="card-badge">Alpha</span>
+                    <h3>Treasury Tracker <span class="arrow">→</span></h3>
+                    <p>Explore municipal budgets line by line. See what your city actually spends and how it compares year over year.</p>
+                </a>
+
+                <a class="card" href="https://badges.empowered.vote" target="_blank" rel="noopener">
+                    <span class="card-badge">Alpha</span>
+                    <h3>Empowered Badges <span class="arrow">→</span></h3>
+                    <p>Bite-sized learning modules on how government works and the issues behind the headlines.</p>
+                </a>
+
+                <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener">
+                    <span class="card-badge">Alpha</span>
+                    <h3>Civic Trivia Championships <span class="arrow">→</span></h3>
+                    <p>Test what you know about civics in a friendly, competitive trivia format.</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="about" id="about">
+        <div class="wrap">
+            <div class="section-title">How we work</div>
+            <h2 class="section-h">Honest about where we are.</h2>
+            <p class="section-sub">
+                Empowered Vote is a tiny part-time team. We'd rather be transparent about the
+                tradeoffs than pretend we're further along than we are.
+            </p>
+
+            <div class="about-grid">
+                <div class="note">
+                    <h4>This is alpha software</h4>
+                    <p>
+                        Things will break. Data will be incomplete or wrong in places. Don't make
+                        a final voting decision based only on what you see here — cross-check with
+                        official sources, candidate sites, and your local election office.
+                    </p>
+                    <p>
+                        Found a bug or a wrong fact? Tell us. That's the most useful thing you can
+                        do during alpha.
+                    </p>
+                </div>
+
+                <div class="note note-yellow">
+                    <h4>A small team, working part time</h4>
+                    <p>
+                        A handful of people — mostly non-developers — build this in evenings and
+                        weekends. That's why progress is uneven and some features are further
+                        along than others. We're prioritizing breadth over polish on purpose right
+                        now: better to ship something useful and iterate than wait years for
+                        perfect.
+                    </p>
+                </div>
+
+                <div class="note note-blue">
+                    <h4>We use AI — and we vet what it produces</h4>
+                    <p>
+                        AI tools have made it possible for our non-developer core team to ship
+                        real software, and we're grateful for that. But AI gets things wrong, and
+                        we know not everyone is comfortable with its use in civic work.
+                    </p>
+                    <p>
+                        Our policy: a human reviews material the AI helps produce before it ships.
+                        We won't catch everything. If you spot something off, please flag it so we
+                        can correct it.
+                    </p>
+                </div>
+
+                <div class="note">
+                    <h4>Where the money goes</h4>
+                    <p>
+                        We try to keep finances open. See our current funding and spend at
+                        <a href="https://financials.empowered.vote" target="_blank" rel="noopener">financials.empowered.vote</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="wrap">
+            <div>© <span id="year"></span> Empowered Vote · Alpha</div>
+            <div>
+                <a href="https://empowered.vote" target="_blank" rel="noopener">empowered.vote</a>
+                ·
+                <a href="https://financials.empowered.vote" target="_blank" rel="noopener">Financials</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
