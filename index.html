@@ -124,9 +124,34 @@
         }
         .btn-ghost:hover { background: rgba(0, 101, 124, 0.06); }
 
+        /* Why */
+        .why {
+            padding: 72px 0 24px;
+        }
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+        .why-item {
+            position: relative;
+            padding: 4px 4px 4px 18px;
+            border-left: 3px solid var(--ev-yellow);
+        }
+        .why-item h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--ev-ink);
+        }
+        .why-item p {
+            color: var(--ev-muted);
+            font-size: 0.95rem;
+        }
+
         /* Features */
         .features {
-            padding: 72px 0 48px;
+            padding: 56px 0 48px;
         }
 
         .section-title {
@@ -296,13 +321,52 @@
         </div>
     </header>
 
+    <section class="why" id="why">
+        <div class="wrap">
+            <div class="section-title">Why we're building this</div>
+            <h2 class="section-h">Putting people before parties.</h2>
+            <p class="section-sub">
+                Democracy works when ordinary people can actually participate — not just vote,
+                but understand what they're voting on. Right now that's harder than it should be.
+            </p>
+
+            <div class="why-grid">
+                <div class="why-item">
+                    <h4>Lower the cost of being informed</h4>
+                    <p>
+                        Tracking your representatives, your local budget, and where candidates
+                        stand shouldn't take a research degree. We're building the tools we wish
+                        existed when we tried to figure it out ourselves.
+                    </p>
+                </div>
+                <div class="why-item">
+                    <h4>Recognize problems before solving them</h4>
+                    <p>
+                        It's hard to fix anything together when we can't agree on what's broken.
+                        Our tools are built to surface where people actually agree — not amplify
+                        the loudest disagreement.
+                    </p>
+                </div>
+                <div class="why-item">
+                    <h4>Modernize how civic info reaches people</h4>
+                    <p>
+                        Government data exists. It's just scattered, slow, and unfriendly. We
+                        pull it together and present it in ways that respect your time and your
+                        intelligence.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="features" id="features">
         <div class="wrap">
             <div class="section-title">The tools</div>
             <h2 class="section-h">Inform yourself, your way.</h2>
             <p class="section-sub">
-                Each tool is its own alpha experiment. They don't all talk to each other yet, and
-                some are further along than others. Click through to try them.
+                Most of these features talk to each other so moving between them feels
+                seamless — though those connections still break sometimes. Some tools are
+                further along than others. Click through to try them.
             </p>
 
             <div class="grid">
@@ -363,8 +427,9 @@
                         official sources, candidate sites, and your local election office.
                     </p>
                     <p>
-                        Found a bug or a wrong fact? Tell us. That's the most useful thing you can
-                        do during alpha.
+                        Found a bug or a wrong fact?
+                        <a href="mailto:feedback@empowered.vote?subject=ev-landing%20feedback">Flag it for us</a>
+                        — that's the most useful thing you can do during alpha.
                     </p>
                 </div>
 
@@ -387,9 +452,10 @@
                         we know not everyone is comfortable with its use in civic work.
                     </p>
                     <p>
-                        Our policy: a human reviews material the AI helps produce before it ships.
-                        We won't catch everything. If you spot something off, please flag it so we
-                        can correct it.
+                        We do our best to vet what AI helps produce, but a small team working
+                        late nights doesn't catch everything. If you spot something off,
+                        <a href="mailto:feedback@empowered.vote?subject=Something%20looks%20off">flag it</a>
+                        and we'll fix it.
                     </p>
                 </div>
 
