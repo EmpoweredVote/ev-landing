@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feedback — Empowered Vote</title>
+  <meta name="description" content="Report a bug, data error, or share an idea with the Empowered Vote team." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <style>
+    :root {
+      --bg: #F7F7F8;
+      --card: #FFFFFF;
+      --heading: #1C1C1C;
+      --body: #535964;
+      --muted: #6B7280;
+      --border: #E5E7EB;
+      --teal: #00657C;
+      --coral: #FF5740;
+      --yellow: #FED12E;
+      --radius-card: 14px;
+      --shadow-md: 0 8px 24px rgba(15,30,40,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--body);
+      font-weight: 400;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 48px 16px 64px;
+    }
+
+    .back-link {
+      align-self: flex-start;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto 24px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s ease;
+    }
+    .back-link:hover { color: var(--heading); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-md);
+      padding: 40px 36px 36px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    @media (max-width: 560px) {
+      .card { padding: 28px 20px 24px; }
+      body { padding-top: 28px; }
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .logo-dot {
+      width: 12px; height: 12px;
+      background: var(--yellow);
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .logo-text {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--heading);
+      letter-spacing: -0.01em;
+    }
+
+    h1 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--heading);
+      letter-spacing: -0.025em;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: 6px;
+    }
+    label .opt {
+      font-weight: 500;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    select,
+    textarea,
+    input[type="url"],
+    input[type="email"] {
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--heading);
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 130px;
+    }
+    select:focus,
+    textarea:focus,
+    input[type="url"]:focus,
+    input[type="email"]:focus {
+      border-color: var(--teal);
+    }
+
+    /* Honeypot — visually hidden but not display:none so bots encounter it */
+    .hp-field {
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .turnstile-row {
+      margin: 18px 0 4px;
+    }
+
+    .error-msg {
+      display: none;
+      background: #fff0ee;
+      border: 1px solid #ffd0c8;
+      border-radius: 8px;
+      color: var(--coral);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.97rem;
+      font-weight: 700;
+      color: #fff;
+      background: var(--teal);
+      border: none;
+      border-radius: 8px;
+      padding: 13px 20px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+      margin-top: 20px;
+    }
+    .submit-btn:hover:not(:disabled) {
+      background: #005469;
+      transform: translateY(-1px);
+    }
+    .submit-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    /* Success state */
+    .success-msg {
+      display: none;
+      text-align: center;
+      padding: 20px 0 8px;
+    }
+    .success-msg .check {
+      font-size: 2.4rem;
+      margin-bottom: 14px;
+    }
+    .success-msg h2 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--teal);
+      margin-bottom: 8px;
+    }
+    .success-msg p {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .success-msg a {
+      color: var(--teal);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <a class="back-link" href="/">← Back to Empowered Vote</a>
+
+  <div class="card">
+    <div class="logo-row">
+      <span class="logo-dot"></span>
+      <span class="logo-text">Empowered Vote</span>
+    </div>
+
+    <h1>Send Feedback</h1>
+    <p class="subtitle">Found a bug, a data error, or have an idea? We read everything.</p>
+
+    <!-- Success state (shown after submit) -->
+    <div id="success-msg" class="success-msg">
+      <div class="check">✓</div>
+      <h2>Thanks — we got it.</h2>
+      <p>Your feedback goes straight to our team. We'll follow up if we have questions.<br><br>
+        <a href="/">Back to Empowered Vote</a>
+      </p>
+    </div>
+
+    <form id="feedback-form">
+      <div class="field">
+        <label for="feature">Which tool is this about?</label>
+        <select id="feature" name="feature">
+          <option value="compass">Compass</option>
+          <option value="essentials">Essentials (Find Representatives)</option>
+          <option value="readrank">Read &amp; Rank</option>
+          <option value="treasury">Treasury Tracker</option>
+          <option value="badges">Empowered Badges</option>
+          <option value="trivia">Civic Trivia</option>
+          <option value="landing">Landing page</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="body">What's going on? <span class="opt">(required)</span></label>
+        <textarea id="body" name="body" required maxlength="5000"
+          placeholder="What's going wrong? Or what could be better?"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="url">URL where you saw this <span class="opt">(optional)</span></label>
+        <input type="url" id="url" name="url" placeholder="https://..." />
+      </div>
+
+      <div class="field">
+        <label for="email">Your email <span class="opt">(optional — for follow-up)</span></label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" />
+      </div>
+
+      <!-- Honeypot: hidden from real users, visible to bots -->
+      <input class="hp-field" type="text" name="website" tabindex="-1" autocomplete="off" />
+
+      <!-- Cloudflare Turnstile — replace REPLACE_WITH_SITE_KEY after Turnstile setup -->
+      <div class="turnstile-row">
+        <div class="cf-turnstile" data-sitekey="REPLACE_WITH_SITE_KEY" data-theme="light"></div>
+      </div>
+
+      <div id="error-msg" class="error-msg"></div>
+
+      <button type="submit" class="submit-btn">Send Feedback</button>
+    </form>
+  </div>
+
+  <script>
+    // Pre-fill from query params
+    const params = new URLSearchParams(location.search);
+    const featureParam = params.get('feature');
+    if (featureParam) {
+      const sel = document.querySelector('select[name=feature]');
+      if (sel) sel.value = featureParam;
+    }
+    const urlParam = params.get('url');
+    if (urlParam) {
+      const urlInput = document.querySelector('input[name=url]');
+      if (urlInput) urlInput.value = urlParam;
+    }
+
+    // Form submit
+    document.getElementById('feedback-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector('button[type=submit]');
+      const errorEl = document.getElementById('error-msg');
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      errorEl.style.display = 'none';
+
+      // Gather Turnstile token
+      const turnstileInput = document.querySelector('[name=cf-turnstile-response]');
+      const turnstileToken = turnstileInput ? turnstileInput.value : '';
+
+      const payload = {
+        feature: form.feature.value,
+        body: form.body.value,
+        url: form.url.value || undefined,
+        email: form.email.value || undefined,
+        website: form.website.value, // honeypot
+        'cf-turnstile-response': turnstileToken,
+      };
+
+      try {
+        const res = await fetch('https://api.empowered.vote/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          document.getElementById('feedback-form').style.display = 'none';
+          document.getElementById('success-msg').style.display = 'block';
+        } else {
+          const err = await res.json().catch(() => ({}));
+          errorEl.textContent = err.message ?? 'Something went wrong. Please try again.';
+          errorEl.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Send Feedback';
+        }
+      } catch {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Send Feedback';
+      }
+    });
+  </script>
+</body>
+</html>
