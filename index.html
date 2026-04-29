@@ -98,6 +98,36 @@
             display: flex; gap: 12px; flex-wrap: wrap;
         }
 
+        .hero-trust {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 18px;
+            margin-top: 28px;
+            padding: 0;
+            font-size: 0.92rem;
+            color: var(--ev-muted);
+        }
+        .hero-trust li {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .hero-trust a {
+            color: var(--ev-blue);
+            text-decoration: none;
+            border-bottom: 1px dotted rgba(0, 101, 124, 0.4);
+        }
+        .hero-trust a:hover { border-bottom-color: var(--ev-blue); }
+        .trust-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+        }
+        .trust-dot-yellow { background: var(--ev-yellow); }
+        .trust-dot-teal   { background: var(--ev-light-blue); }
+        .trust-dot-coral  { background: var(--ev-coral); }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -279,6 +309,64 @@
         }
         .note p + p { margin-top: 10px; }
 
+        /* Watch */
+        .watch {
+            padding: 56px 0 72px;
+            border-top: 1px solid rgba(15, 30, 40, 0.06);
+        }
+        .watch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .watch-card {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: transform 0.18s ease;
+        }
+        .watch-card:hover { transform: translateY(-3px); }
+        .watch-thumb {
+            position: relative;
+            aspect-ratio: 16 / 9;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 12px;
+        }
+        .watch-thumb img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+            opacity: 0.92;
+            transition: opacity 0.18s ease, transform 0.4s ease;
+        }
+        .watch-card:hover .watch-thumb img { opacity: 1; transform: scale(1.03); }
+        .watch-play {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.18);
+            text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .watch-card h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex; align-items: center; gap: 6px;
+            margin-bottom: 4px;
+        }
+        .watch-card h4 .arrow { color: var(--ev-coral); transition: transform 0.18s ease; }
+        .watch-card:hover h4 .arrow { transform: translateX(4px); }
+        .watch-card p {
+            color: var(--ev-muted);
+            font-size: 0.92rem;
+        }
+
         /* Footer */
         footer {
             border-top: 1px solid rgba(15, 30, 40, 0.06);
@@ -309,15 +397,23 @@
             <span class="hero-tag"><span class="dot"></span> Alpha — work in progress</span>
             <h1>Civic tools for voters who want to <em>actually&nbsp;know</em>.</h1>
             <p class="lede">
-                Empowered Vote is a small, volunteer-driven project building tools that help people
-                understand their ballot — who's running, where they stand, and where the money goes.
-                These are early-stage features. Explore, kick the tires, and please don't rely on
-                them as your only source for a voting decision yet.
+                Empowered Vote is a nonprofit building tools that help people understand
+                their ballot — who's running, where they stand, and where the money goes.
+                People before parties. No ads. No selling your data.
             </p>
             <div class="hero-actions">
                 <a class="btn btn-primary" href="#features">See the tools →</a>
-                <a class="btn btn-ghost" href="#about">How we work</a>
+                <a class="btn btn-ghost" href="#why">Why we built this</a>
             </div>
+            <ul class="hero-trust">
+                <li><span class="trust-dot trust-dot-yellow"></span> 501(c)(3) nonprofit</li>
+                <li><span class="trust-dot trust-dot-teal"></span> Antipartisan by design</li>
+                <li>
+                    <span class="trust-dot trust-dot-coral"></span>
+                    Open about money —
+                    <a href="https://financials.empowered.vote" target="_blank" rel="noopener">see our books</a>
+                </li>
+            </ul>
         </div>
     </header>
 
@@ -466,6 +562,43 @@
                         <a href="https://financials.empowered.vote" target="_blank" rel="noopener">financials.empowered.vote</a>.
                     </p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="watch" id="watch">
+        <div class="wrap">
+            <div class="section-title">Hear it from us</div>
+            <h2 class="section-h">Why this work, in our own words.</h2>
+            <p class="section-sub">
+                Three short talks on what we're building and why. They're a few months old —
+                some details have moved, the mission hasn't.
+            </p>
+            <div class="watch-grid">
+                <a class="watch-card" href="https://www.youtube.com/watch?v=yTXb3di5-II" target="_blank" rel="noopener">
+                    <div class="watch-thumb" aria-hidden="true">
+                        <img src="https://img.youtube.com/vi/yTXb3di5-II/hqdefault.jpg" alt="" loading="lazy" />
+                        <span class="watch-play">▶</span>
+                    </div>
+                    <h4>Talk 1 <span class="arrow">→</span></h4>
+                    <p>The case for nonpartisan civic tools.</p>
+                </a>
+                <a class="watch-card" href="https://www.youtube.com/watch?v=xTud12rLWIo" target="_blank" rel="noopener">
+                    <div class="watch-thumb" aria-hidden="true">
+                        <img src="https://img.youtube.com/vi/xTud12rLWIo/hqdefault.jpg" alt="" loading="lazy" />
+                        <span class="watch-play">▶</span>
+                    </div>
+                    <h4>Talk 2 <span class="arrow">→</span></h4>
+                    <p>Lowering the cost of being informed.</p>
+                </a>
+                <a class="watch-card" href="https://www.youtube.com/watch?v=El68xH5sd2Y" target="_blank" rel="noopener">
+                    <div class="watch-thumb" aria-hidden="true">
+                        <img src="https://img.youtube.com/vi/El68xH5sd2Y/hqdefault.jpg" alt="" loading="lazy" />
+                        <span class="watch-play">▶</span>
+                    </div>
+                    <h4>Talk 3 <span class="arrow">→</span></h4>
+                    <p>Putting people before parties.</p>
+                </a>
             </div>
         </div>
     </section>
