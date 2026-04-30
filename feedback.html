@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <style>
     :root {
       --bg: #F7F7F8;
@@ -165,10 +164,6 @@
       pointer-events: none;
     }
 
-    .turnstile-row {
-      margin: 18px 0 4px;
-    }
-
     .error-msg {
       display: none;
       background: #fff0ee;
@@ -286,11 +281,6 @@
       <!-- Honeypot: hidden from real users, visible to bots -->
       <input class="hp-field" type="text" name="website" tabindex="-1" autocomplete="off" />
 
-      <!-- Cloudflare Turnstile — replace REPLACE_WITH_SITE_KEY after Turnstile setup -->
-      <div class="turnstile-row">
-        <div class="cf-turnstile" data-sitekey="REPLACE_WITH_SITE_KEY" data-theme="light"></div>
-      </div>
-
       <div id="error-msg" class="error-msg"></div>
 
       <button type="submit" class="submit-btn">Send Feedback</button>
@@ -322,17 +312,12 @@
       btn.textContent = 'Sending...';
       errorEl.style.display = 'none';
 
-      // Gather Turnstile token
-      const turnstileInput = document.querySelector('[name=cf-turnstile-response]');
-      const turnstileToken = turnstileInput ? turnstileInput.value : '';
-
       const payload = {
         feature: form.feature.value,
         body: form.body.value,
         url: form.url.value || undefined,
         email: form.email.value || undefined,
         website: form.website.value, // honeypot
-        'cf-turnstile-response': turnstileToken,
       };
 
       try {
