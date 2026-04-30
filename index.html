@@ -293,24 +293,29 @@
         }
         .why-item p + p { margin-top: 14px; }
         .why-item .why-attempt {
-            font-size: 0.93rem;
-            color: var(--muted);
-            padding-top: 14px;
+            margin-top: 18px;
+            padding-top: 18px;
             border-top: 1px dashed var(--border);
         }
-        .why-attempt-tag {
-            display: inline-block;
-            font-size: 0.66rem;
+        .why-item .why-attempt-label {
+            font-size: 0.7rem;
             font-weight: 700;
             letter-spacing: 0.16em;
             text-transform: uppercase;
+            color: var(--coral);
+            display: block;
+            margin-bottom: 8px;
+        }
+        .why-item .why-attempt-h {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
             color: var(--heading);
-            background: var(--bg);
-            border: 1px solid var(--border);
-            padding: 3px 8px;
-            border-radius: 4px;
-            margin-right: 8px;
-            vertical-align: 2px;
+            margin-bottom: 8px;
+        }
+        .why-item .why-attempt-body {
+            font-size: 0.97rem;
+            color: var(--body);
         }
 
         /* ---------------- TOOLS ---------------- */
@@ -699,11 +704,15 @@
                         budget actually does shouldn't take a weekend of research. Most people
                         don't have that time, so they don't bother — and we don't blame them.
                     </p>
-                    <p class="why-attempt">
-                        <span class="why-attempt-tag">What we're trying</span>
-                        Pull the scattered pieces — representatives, votes, budgets, meetings —
-                        into one place that respects your time. We're not there yet.
-                    </p>
+                    <div class="why-attempt">
+                        <span class="why-attempt-label">What we're trying</span>
+                        <h4 class="why-attempt-h">One place that respects your time.</h4>
+                        <p class="why-attempt-body">
+                            Pull the scattered pieces — representatives, votes, budgets,
+                            meetings — into one place a voter can actually use. We're not
+                            there yet.
+                        </p>
+                    </div>
                 </div>
                 <div class="why-item">
                     <span class="idx">Problem 02</span>
@@ -713,11 +722,15 @@
                         actually said. That's human, but it makes it almost impossible to
                         evaluate ideas on their merits.
                     </p>
-                    <p class="why-attempt">
-                        <span class="why-attempt-tag">What we're trying</span>
-                        Build tools (like Read &amp; Rank and Compass) that show you the idea
-                        before the identity, so you can make up your own mind first.
-                    </p>
+                    <div class="why-attempt">
+                        <span class="why-attempt-label">What we're trying</span>
+                        <h4 class="why-attempt-h">Idea before identity.</h4>
+                        <p class="why-attempt-body">
+                            Build tools (like Read &amp; Rank and Compass) that show you the
+                            idea before the name attached to it, so you can make up your own
+                            mind first.
+                        </p>
+                    </div>
                 </div>
                 <div class="why-item">
                     <span class="idx">Problem 03</span>
@@ -727,11 +740,14 @@
                         meeting minutes nobody reads. The institutions that produce it aren't
                         set up to make it usable.
                     </p>
-                    <p class="why-attempt">
-                        <span class="why-attempt-tag">What we're trying</span>
-                        Translate it — not the meaning, just the access. Present what's
-                        already public in formats a voter can actually use.
-                    </p>
+                    <div class="why-attempt">
+                        <span class="why-attempt-label">What we're trying</span>
+                        <h4 class="why-attempt-h">Translate the access, not the meaning.</h4>
+                        <p class="why-attempt-body">
+                            Present what's already public in formats a voter can read in a
+                            few minutes — without dumbing down what it actually says.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -744,9 +760,10 @@
                 <h2 class="section-h">Inform yourself, your way.</h2>
             </div>
             <p class="section-sub">
-                Most of these features talk to each other so moving between them feels
-                seamless — though those connections still break sometimes. Some tools are
-                further along than others. Click through to try them.
+                A few of these tools share data with each other where it makes sense — for
+                example, calibrating your Compass carries over to Essentials. Most of them
+                still stand on their own, and connections between them are a work in progress.
+                Some are further along than others. Click through to try them.
             </p>
 
             <div class="grid">
