@@ -156,6 +156,67 @@
       border-color: var(--teal);
     }
 
+    input[type="file"] {
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--body);
+      padding: 8px 0;
+    }
+    input[type="file"]::file-selector-button {
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--heading);
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin-right: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    input[type="file"]::file-selector-button:hover {
+      border-color: var(--teal);
+    }
+
+    .screenshot-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .screenshot-preview img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .screenshot-remove {
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--coral);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      margin-left: auto;
+      text-decoration: underline;
+    }
+    .screenshot-error {
+      margin-top: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--coral);
+    }
+
     /* Honeypot — visually hidden but not display:none so bots encounter it */
     .hp-field {
       position: absolute;
@@ -278,6 +339,16 @@
         <input type="email" id="email" name="email" placeholder="you@example.com" />
       </div>
 
+      <div class="field">
+        <label for="screenshot">Screenshot <span class="opt">(optional — PNG/JPEG/WebP/GIF, up to 5 MB)</span></label>
+        <input type="file" id="screenshot" name="screenshot" accept="image/png,image/jpeg,image/webp,image/gif" />
+        <div id="screenshot-preview" class="screenshot-preview" hidden>
+          <img id="screenshot-thumb" alt="Selected screenshot preview" />
+          <button type="button" id="screenshot-remove" class="screenshot-remove" aria-label="Remove screenshot">Remove</button>
+        </div>
+        <div id="screenshot-error" class="screenshot-error" hidden></div>
+      </div>
+
       <!-- Honeypot: hidden from real users, visible to bots -->
       <input class="hp-field" type="text" name="website" tabindex="-1" autocomplete="off" />
 
@@ -301,6 +372,66 @@
       if (urlInput) urlInput.value = urlParam;
     }
 
+    // Screenshot handling
+    const ALLOWED_MIME = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+    const MAX_BYTES = 5 * 1024 * 1024;
+    let screenshotDataUrl = null;
+    const screenshotInput = document.getElementById('screenshot');
+    const screenshotPreview = document.getElementById('screenshot-preview');
+    const screenshotThumb = document.getElementById('screenshot-thumb');
+    const screenshotError = document.getElementById('screenshot-error');
+    const screenshotRemove = document.getElementById('screenshot-remove');
+
+    function clearScreenshot() {
+      screenshotDataUrl = null;
+      screenshotInput.value = '';
+      screenshotPreview.hidden = true;
+      screenshotThumb.removeAttribute('src');
+    }
+    function showScreenshotError(msg) {
+      screenshotError.textContent = msg;
+      screenshotError.hidden = false;
+    }
+    function clearScreenshotError() {
+      screenshotError.textContent = '';
+      screenshotError.hidden = true;
+    }
+
+    screenshotInput.addEventListener('change', () => {
+      clearScreenshotError();
+      const file = screenshotInput.files && screenshotInput.files[0];
+      if (!file) {
+        clearScreenshot();
+        return;
+      }
+      if (!ALLOWED_MIME.includes(file.type)) {
+        showScreenshotError('That file type isn’t supported. Use PNG, JPEG, WebP, or GIF.');
+        clearScreenshot();
+        return;
+      }
+      if (file.size > MAX_BYTES) {
+        showScreenshotError('That image is over 5 MB. Try a smaller one.');
+        clearScreenshot();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        screenshotDataUrl = ev.target.result;
+        screenshotThumb.src = screenshotDataUrl;
+        screenshotPreview.hidden = false;
+      };
+      reader.onerror = () => {
+        showScreenshotError('Couldn’t read that file. Try another.');
+        clearScreenshot();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    screenshotRemove.addEventListener('click', () => {
+      clearScreenshot();
+      clearScreenshotError();
+    });
+
     // Form submit
     document.getElementById('feedback-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -318,6 +449,7 @@
         url: form.url.value || undefined,
         email: form.email.value || undefined,
         website: form.website.value, // honeypot
+        screenshot: screenshotDataUrl || undefined,
       };
 
       try {
