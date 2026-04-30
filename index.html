@@ -52,6 +52,9 @@
 
         .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
+        /* Standardized text measure for prose blocks */
+        .measure { max-width: 60ch; }
+
         /* ---------------- HERO ---------------- */
         .hero {
             position: relative;
@@ -124,8 +127,8 @@
             font-size: clamp(2.4rem, 6vw, 4.2rem);
             font-weight: 800;
             letter-spacing: -0.035em;
-            margin: 26px 0 22px;
-            max-width: 14ch;
+            margin: 28px 0 24px;
+            max-width: 20ch;
         }
         .hero h1 .mark {
             position: relative;
@@ -148,7 +151,7 @@
 
         .lede {
             font-size: clamp(1.05rem, 1.5vw, 1.18rem);
-            max-width: 56ch;
+            max-width: 60ch;
             color: var(--body);
             margin-bottom: 32px;
             font-weight: 500;
@@ -222,40 +225,38 @@
         @media (max-width: 640px) { section { padding: 64px 0; } }
 
         .section-head {
-            display: flex;
-            align-items: baseline;
-            gap: 18px;
-            margin-bottom: 36px;
-            flex-wrap: wrap;
+            margin-bottom: 20px;
         }
         .section-num {
-            font-size: 0.78rem;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.75rem;
             font-weight: 700;
             letter-spacing: 0.18em;
             text-transform: uppercase;
             color: var(--muted);
             font-variant-numeric: tabular-nums;
+            margin-bottom: 14px;
         }
         .section-num .bar {
             display: inline-block;
-            width: 24px; height: 2px;
+            width: 22px; height: 2px;
             background: var(--heading);
-            vertical-align: middle;
-            margin-right: 10px;
+            margin-right: 12px;
         }
         .section-h {
             font-size: clamp(1.7rem, 3.2vw, 2.3rem);
             font-weight: 800;
             letter-spacing: -0.02em;
             color: var(--heading);
-            flex: 1 1 auto;
+            max-width: 22ch;
         }
         .section-sub {
             color: var(--body);
             max-width: 60ch;
             font-size: 1.02rem;
+            margin-top: 16px;
             margin-bottom: 44px;
-            margin-top: -16px;
         }
 
         /* ---------------- WHY ---------------- */
@@ -263,7 +264,7 @@
         .why-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 8px 36px;
+            gap: 0 40px;
         }
         .why-item {
             position: relative;
@@ -289,6 +290,27 @@
         .why-item p {
             color: var(--body);
             font-size: 0.97rem;
+        }
+        .why-item p + p { margin-top: 14px; }
+        .why-item .why-attempt {
+            font-size: 0.93rem;
+            color: var(--muted);
+            padding-top: 14px;
+            border-top: 1px dashed var(--border);
+        }
+        .why-attempt-tag {
+            display: inline-block;
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--heading);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+            vertical-align: 2px;
         }
 
         /* ---------------- TOOLS ---------------- */
@@ -602,10 +624,25 @@
         footer .links { display: inline-flex; gap: 18px; }
 
         @media (max-width: 640px) {
-            .hero { padding: 64px 0 56px; }
-            .hero h1 { margin-top: 22px; }
+            .wrap { padding: 0 20px; }
+            .hero { padding: 56px 0 48px; }
+            .hero h1 {
+                margin: 22px 0 18px;
+                max-width: 100%;
+                letter-spacing: -0.025em;
+            }
+            .lede { font-size: 1.02rem; }
+            .meta-row { gap: 10px 18px; padding-top: 18px; font-size: 0.85rem; }
+            section { padding: 56px 0; }
+            .section-h { max-width: 100%; font-size: 1.55rem; }
+            .section-sub { font-size: 0.97rem; margin-bottom: 32px; }
+            .why-item { padding: 20px 0; }
+            .card { padding: 24px 22px 22px; min-height: 0; }
             .note { padding: 24px 22px 22px; }
-            .section-head { gap: 10px; }
+            .note.n-alpha h3 { font-size: 1.3rem; }
+            .grid, .why-grid, .watch-grid { gap: 12px; }
+            .btn { padding: 12px 20px; font-size: 0.92rem; }
+            footer .wrap { flex-direction: column; align-items: flex-start; gap: 10px; }
         }
     </style>
 </head>
@@ -618,10 +655,13 @@
                 <span class="sep">/</span>
                 <span class="ver">Alpha · v0</span>
             </span>
-            <h1>Civic tools for voters who want to <span class="mark">actually&nbsp;know</span>.</h1>
+            <h1>Civic tools for <span class="mark">voters</span>.</h1>
             <p class="lede">
-                Empowered Vote is a non-partisan nonprofit building tools that help people with civic engagement. Our tools aim to help you see who's running, where they stand, where the money goes, and learn more about our governments in the process..
-                People before parties. No ads. No selling your data.
+                Empowered Vote is a non-partisan nonprofit trying to build tools that help
+                people with civic engagement. Our tools aim to help you see who's running,
+                where they stand, where the money goes, and learn more about our governments
+                in the process. We're early, and we don't have all the answers yet. People
+                before parties. No ads. No selling your data.
             </p>
             <div class="hero-actions">
                 <a class="btn btn-primary" href="#tools">See the tools <span class="arr">→</span></a>
@@ -646,36 +686,51 @@
                 <h2 class="section-h">Putting people before parties.</h2>
             </div>
             <p class="section-sub">
-                Democracy works when ordinary people can actually participate — not just vote,
-                but understand what they're voting on. Right now that's harder than it should be.
+                Three problems we keep running into as voters ourselves. We don't claim to
+                have solved any of them — we're sharing what we see and what we're trying.
             </p>
 
             <div class="why-grid">
                 <div class="why-item">
-                    <span class="idx">i.</span>
-                    <h3>Lower the cost of being informed</h3>
+                    <span class="idx">Problem 01</span>
+                    <h3>Being informed costs too much.</h3>
                     <p>
-                        Tracking your representatives, your local budget, and where candidates
-                        stand shouldn't take a research degree. We're building the tools we wish
-                        existed when we tried to figure it out ourselves.
+                        Figuring out who represents you, where they stand, and what your local
+                        budget actually does shouldn't take a weekend of research. Most people
+                        don't have that time, so they don't bother — and we don't blame them.
+                    </p>
+                    <p class="why-attempt">
+                        <span class="why-attempt-tag">What we're trying</span>
+                        Pull the scattered pieces — representatives, votes, budgets, meetings —
+                        into one place that respects your time. We're not there yet.
                     </p>
                 </div>
                 <div class="why-item">
-                    <span class="idx">ii.</span>
-                    <h3>Recognize problems before solving them</h3>
+                    <span class="idx">Problem 02</span>
+                    <h3>We judge the team before we hear the idea.</h3>
                     <p>
-                        It's hard to fix anything together when we can't agree on what's broken.
-                        Our tools are built to surface where people actually agree — not amplify
-                        the loudest disagreement.
+                        Party, name, network — we react to those before we read what was
+                        actually said. That's human, but it makes it almost impossible to
+                        evaluate ideas on their merits.
+                    </p>
+                    <p class="why-attempt">
+                        <span class="why-attempt-tag">What we're trying</span>
+                        Build tools (like Read &amp; Rank and Compass) that show you the idea
+                        before the identity, so you can make up your own mind first.
                     </p>
                 </div>
                 <div class="why-item">
-                    <span class="idx">iii.</span>
-                    <h3>Modernize how civic info reaches people</h3>
+                    <span class="idx">Problem 03</span>
+                    <h3>Civic info isn't built for the people it's for.</h3>
                     <p>
-                        Government data exists. It's just scattered, slow, and unfriendly. We
-                        pull it together and present it in ways that respect your time and your
-                        intelligence.
+                        Government data exists, but it's locked inside PDFs, slow portals, and
+                        meeting minutes nobody reads. The institutions that produce it aren't
+                        set up to make it usable.
+                    </p>
+                    <p class="why-attempt">
+                        <span class="why-attempt-tag">What we're trying</span>
+                        Translate it — not the meaning, just the access. Present what's
+                        already public in formats a voter can actually use.
                     </p>
                 </div>
             </div>
@@ -833,11 +888,11 @@
         <div class="wrap">
             <div class="section-head">
                 <span class="section-num"><span class="bar"></span>04 / Talks</span>
-                <h2 class="section-h">Why this works, in our own words.</h2>
+                <h2 class="section-h">Why we think this could work, in our own words.</h2>
             </div>
             <p class="section-sub">
-                Three short talks on what we're building and why. They're a few months old —
-                some details have moved, the mission hasn't.
+                Three short talks on what we're trying to build and why. They're a few
+                months old — some details have moved, the thinking hasn't.
             </p>
             <div class="watch-grid">
                 <a class="watch-card" href="https://www.youtube.com/watch?v=yTXb3di5-II" target="_blank" rel="noopener">
