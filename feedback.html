@@ -8,6 +8,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Anti-FOUC: apply theme before first paint -->
+  <script>
+      (function () {
+          var s = localStorage.getItem('ev:color-scheme');
+          var t = (s === 'dark' || s === 'light') ? s
+                : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.dataset.theme = t;
+      })();
+  </script>
   <style>
     :root {
       --bg: #F7F7F8;
@@ -288,9 +297,67 @@
       color: var(--teal);
       font-weight: 600;
     }
+
+    /* -------- DARK MODE TOKENS -------- */
+    :root { color-scheme: light; }
+
+    [data-theme="dark"] {
+      --bg: #111113;
+      --card: #1C1C1F;
+      --heading: #F2F2F2;
+      --body: #A8B0BC;
+      --muted: #8B949E;
+      --border: #2D2D32;
+      --teal: #1DA8C6;
+      --coral: #FF6B52;
+      --yellow: #FFD740;
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+
+    /* Select arrow is hardcoded — swap for dark backgrounds */
+    [data-theme="dark"] select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238B949E' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    }
+
+    /* Error banner has hardcoded light colors */
+    [data-theme="dark"] .error-msg {
+      background: #2b1410;
+      border-color: #5a2820;
+    }
+
+    /* Submit button hover is hardcoded */
+    [data-theme="dark"] .submit-btn:hover:not(:disabled) {
+      background: #25b8d4;
+    }
+
+    /* -------- THEME TOGGLE -------- */
+    .theme-toggle {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      z-index: 200;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      color: var(--heading);
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+    .theme-toggle:hover { border-color: var(--heading); }
+    [data-theme="light"] .theme-toggle::before { content: "☽"; }
+    [data-theme="dark"]  .theme-toggle::before { content: "☀"; }
   </style>
 </head>
 <body>
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color scheme"></button>
 
   <a class="back-link" href="/">← Back to Empowered Vote</a>
 
@@ -363,6 +430,24 @@
   </div>
 
   <script>
+    // Theme management
+    (function () {
+      var KEY = 'ev:color-scheme';
+
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem(KEY, next);
+        document.documentElement.dataset.theme = next;
+      });
+
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        var stored = localStorage.getItem(KEY);
+        if (stored !== 'dark' && stored !== 'light') {
+          document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
+        }
+      });
+    })();
+
     // Pre-fill from query params
     const params = new URLSearchParams(location.search);
     const featureParam = params.get('feature');
