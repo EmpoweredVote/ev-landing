@@ -71,7 +71,18 @@
             background: var(--bg);
             border-bottom: 1px solid var(--border);
         }
-        .hero::before { content: none; }
+        /* Yellow corner — woven into background */
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: -80px;
+            right: -100px;
+            width: 520px;
+            height: 520px;
+            background: radial-gradient(circle, var(--yellow) 0%, transparent 58%);
+            opacity: 0.09;
+            pointer-events: none;
+        }
         .hero::after {
             content: "";
             position: absolute;
