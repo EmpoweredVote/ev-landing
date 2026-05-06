@@ -71,10 +71,7 @@
             background: var(--bg);
             border-bottom: 1px solid var(--border);
         }
-        /* Subtle yellow editorial wash behind heading */
-        .hero::before {
-            display: none;
-        }
+        .hero::before { content: none; }
         .hero::after {
             content: "";
             position: absolute;
@@ -122,6 +119,20 @@
         }
         .eyebrow .sep { color: var(--faint); font-weight: 500; }
         .eyebrow .ver { color: var(--muted); font-weight: 600; letter-spacing: 0.12em; }
+
+        /* ---- EV LOGO ---- */
+        .ev-logo {
+            display: block;
+            margin-bottom: 36px;
+        }
+        .ev-logo img {
+            height: 56px;
+            width: auto;
+            display: block;
+        }
+        .ev-logo .logo-dark { display: none; }
+        [data-theme="dark"] .ev-logo .logo-light { display: none; }
+        [data-theme="dark"] .ev-logo .logo-dark  { display: block; }
 
         .hero h1 {
             font-size: clamp(2.4rem, 6vw, 4.2rem);
@@ -264,11 +275,11 @@
         .why-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 0 40px;
+            gap: 0 52px;
         }
         .why-item {
             position: relative;
-            padding: 24px 0 24px 0;
+            padding: 36px 0 44px 0;
             border-top: 1px solid var(--border);
         }
         .why-item .idx {
@@ -316,6 +327,19 @@
         .why-item .why-attempt-body {
             font-size: 0.97rem;
             color: var(--body);
+        }
+
+        /* Why section figure illustrations */
+        .why-icon {
+            height: 96px;
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 32px;
+        }
+        .why-icon img {
+            height: 96px;
+            width: auto;
+            display: block;
         }
 
         /* ---------------- TOOLS ---------------- */
@@ -641,7 +665,9 @@
             section { padding: 56px 0; }
             .section-h { max-width: 100%; font-size: 1.55rem; }
             .section-sub { font-size: 0.97rem; margin-bottom: 32px; }
-            .why-item { padding: 20px 0; }
+            .why-item { padding: 28px 0 36px; }
+            .why-icon { height: 72px; margin-bottom: 22px; }
+            .why-icon img { height: 72px; }
             .card { padding: 24px 22px 22px; min-height: 0; }
             .note { padding: 24px 22px 22px; }
             .note.n-alpha h3 { font-size: 1.3rem; }
@@ -717,6 +743,10 @@
     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color scheme"></button>
     <header class="hero">
         <div class="wrap">
+            <div class="ev-logo">
+                <img class="logo-light" src="icons/logo-light.png" alt="Empowered Vote" />
+                <img class="logo-dark"  src="icons/logo-dark.png"  alt="" aria-hidden="true" />
+            </div>
             <span class="eyebrow">
                 <span class="pulse"></span>
                 <span>Empowered Vote</span>
@@ -760,6 +790,9 @@
 
             <div class="why-grid">
                 <div class="why-item">
+                    <div class="why-icon">
+                        <img src="icons/figure-yellow.svg" alt="" aria-hidden="true" />
+                    </div>
                     <span class="idx">Problem 01</span>
                     <h3>Being informed costs too much.</h3>
                     <p>
@@ -778,6 +811,9 @@
                     </div>
                 </div>
                 <div class="why-item">
+                    <div class="why-icon">
+                        <img src="icons/figure-blue.svg" alt="" aria-hidden="true" />
+                    </div>
                     <span class="idx">Problem 02</span>
                     <h3>We judge the team before we hear the idea.</h3>
                     <p>
@@ -796,6 +832,9 @@
                     </div>
                 </div>
                 <div class="why-item">
+                    <div class="why-icon">
+                        <img src="icons/figure-red.svg" alt="" aria-hidden="true" />
+                    </div>
                     <span class="idx">Problem 03</span>
                     <h3>Civic info isn't built for the people it's for.</h3>
                     <p>
