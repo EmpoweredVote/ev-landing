@@ -66,7 +66,7 @@
         /* ---------------- HERO ---------------- */
         .hero {
             position: relative;
-            padding: 88px 0 80px;
+            padding: 120px 0 88px;
             overflow: hidden;
             background: var(--bg);
             border-bottom: 1px solid var(--border);
@@ -122,11 +122,12 @@
 
         /* ---- EV LOGO ---- */
         .ev-logo {
-            display: block;
-            margin-bottom: 36px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 80px;
         }
         .ev-logo img {
-            height: 56px;
+            height: 72px;
             width: auto;
             display: block;
         }
@@ -420,14 +421,26 @@
         .card-cta {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             font-size: 0.85rem;
             font-weight: 700;
             color: var(--heading);
             letter-spacing: 0.02em;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            padding: 9px 16px;
+            border-radius: var(--radius-pill);
+            align-self: flex-start;
+            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
         }
-        .card-cta .arrow { transition: transform 0.2s ease; color: var(--coral); }
-        .card:hover .card-cta .arrow { transform: translateX(4px); }
+        .card-cta .arrow { transition: transform 0.2s ease; }
+        .card:hover .card-cta {
+            background: var(--heading);
+            border-color: var(--heading);
+            color: #fff;
+        }
+        .card:hover .card-cta .arrow { transform: translateX(3px); }
+        [data-theme="dark"] .card:hover .card-cta { color: #111113; }
 
         /* ---------------- HOW WE WORK (notes) ---------------- */
         .how { background: var(--bg); }
@@ -654,7 +667,7 @@
 
         @media (max-width: 640px) {
             .wrap { padding: 0 20px; }
-            .hero { padding: 56px 0 48px; }
+            .hero { padding: 80px 0 56px; }
             .hero h1 {
                 margin: 22px 0 18px;
                 max-width: 100%;
@@ -862,10 +875,10 @@
                 <h2 class="section-h">Inform yourself, your way.</h2>
             </div>
             <p class="section-sub">
-                A few of these tools share data with each other where it makes sense — for
-                example, calibrating your Compass carries over to Essentials. Most of them
-                still stand on their own, and connections between them are a work in progress.
-                Some are further along than others. Click through to try them.
+                Each card below is a live tool you can open and use right now. A few share
+                data with each other — calibrating your Compass carries over to Essentials,
+                for example. Some are further along than others, but all four are real and
+                ready to explore.
             </p>
 
             <div class="grid">
@@ -876,7 +889,7 @@
                     </div>
                     <h3>Compass</h3>
                     <p>Rank where you stand on key issues, then compare your compass to politicians on the same scale.</p>
-                    <span class="card-cta">Open Compass <span class="arrow">→</span></span>
+                    <span class="card-cta">Try Compass <span class="arrow">→</span></span>
                 </a>
 
                 <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener">
@@ -886,47 +899,27 @@
                     </div>
                     <h3>Essentials</h3>
                     <p>Enter your address and see who actually represents you, where their campaign contributions come from, and other information.</p>
-                    <span class="card-cta">Open Essentials <span class="arrow">→</span></span>
-                </a>
-
-                <a class="card" href="https://readrank.empowered.vote" target="_blank" rel="noopener">
-                    <div class="card-top">
-                        <span class="card-num">03</span>
-                        <span class="card-glyph" aria-hidden="true">¶</span>
-                    </div>
-                    <h3>Read &amp; Rank</h3>
-                    <p>Read short, deidentified political quotes and rank what you actually agree with — judgment before identity.</p>
-                    <span class="card-cta">Open Read &amp; Rank <span class="arrow">→</span></span>
+                    <span class="card-cta">Try Essentials <span class="arrow">→</span></span>
                 </a>
 
                 <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener">
                     <div class="card-top">
-                        <span class="card-num">04</span>
+                        <span class="card-num">03</span>
                         <span class="card-glyph" aria-hidden="true">$</span>
                     </div>
                     <h3>Treasury Tracker</h3>
                     <p>Explore municipal budgets line by line. See what your city actually spends and how it compares year over year.</p>
-                    <span class="card-cta">Open Treasury Tracker <span class="arrow">→</span></span>
-                </a>
-
-                <a class="card" href="https://badges.empowered.vote" target="_blank" rel="noopener">
-                    <div class="card-top">
-                        <span class="card-num">05</span>
-                        <span class="card-glyph" aria-hidden="true">✺</span>
-                    </div>
-                    <h3>Empowered Badges</h3>
-                    <p>Bite-sized learning modules on different areas of government and the issues behind the headlines.</p>
-                    <span class="card-cta">Open Badges <span class="arrow">→</span></span>
+                    <span class="card-cta">Try Treasury Tracker <span class="arrow">→</span></span>
                 </a>
 
                 <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener">
                     <div class="card-top">
-                        <span class="card-num">06</span>
+                        <span class="card-num">04</span>
                         <span class="card-glyph" aria-hidden="true">?</span>
                     </div>
                     <h3>Civic Trivia Championships</h3>
                     <p>Test what you know about civics in a friendly, competitive trivia format.</p>
-                    <span class="card-cta">Open Trivia <span class="arrow">→</span></span>
+                    <span class="card-cta">Try Trivia <span class="arrow">→</span></span>
                 </a>
             </div>
         </div>
