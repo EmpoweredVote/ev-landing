@@ -469,21 +469,6 @@
             border-radius: 14px;
             overflow: hidden;
             box-shadow: var(--shadow-md);
-            background: var(--card);
-        }
-        .preview-chrome {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            padding: 11px 16px;
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
-        }
-        .preview-dot {
-            width: 11px; height: 11px;
-            border-radius: 50%;
-            background: var(--border);
-            display: inline-block;
         }
         .preview-screen {
             position: relative;
@@ -962,14 +947,9 @@
                 </div>
                 <div class="tools-preview-wrap" aria-hidden="true">
                     <div class="preview-frame">
-                        <div class="preview-chrome">
-                            <span class="preview-dot"></span>
-                            <span class="preview-dot"></span>
-                            <span class="preview-dot"></span>
-                        </div>
                         <div class="preview-screen">
-                            <img class="preview-img" id="preview-img-a" src="" alt="" />
-                            <img class="preview-img" id="preview-img-b" src="" alt="" />
+                            <img class="preview-img" id="preview-img-a" alt="" />
+                            <img class="preview-img" id="preview-img-b" alt="" />
                         </div>
                     </div>
                 </div>
@@ -983,7 +963,7 @@
                     </div>
                     <h3>Compass</h3>
                     <p>Rank where you stand on key issues, then compare your compass to politicians on the same scale.</p>
-                    <span class="card-cta">Try Compass <span class="arrow">→</span></span>
+                    <span class="card-cta">Calibrate <span class="arrow">→</span></span>
                 </a>
 
                 <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener" data-tool="essentials">
@@ -993,7 +973,7 @@
                     </div>
                     <h3>Essentials</h3>
                     <p>Enter your address and see who actually represents you, where their campaign contributions come from, and other information.</p>
-                    <span class="card-cta">Try Essentials <span class="arrow">→</span></span>
+                    <span class="card-cta">Discover <span class="arrow">→</span></span>
                 </a>
 
                 <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
@@ -1003,7 +983,7 @@
                     </div>
                     <h3>Treasury Tracker</h3>
                     <p>Explore municipal budgets line by line. See what your city actually spends and how it compares year over year.</p>
-                    <span class="card-cta">Try Treasury Tracker <span class="arrow">→</span></span>
+                    <span class="card-cta">Understand <span class="arrow">→</span></span>
                 </a>
 
                 <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener" data-tool="trivia">
@@ -1013,7 +993,7 @@
                     </div>
                     <h3>Civic Trivia Championships</h3>
                     <p>Test what you know about civics in a friendly, competitive trivia format.</p>
-                    <span class="card-cta">Try Trivia <span class="arrow">→</span></span>
+                    <span class="card-cta">Play <span class="arrow">→</span></span>
                 </a>
             </div>
         </div>
@@ -1203,7 +1183,9 @@
                     front.style.opacity = '0';
                     var tmp = front; front = back; back = tmp;
                 };
-                back.onerror = function () {};
+                back.onerror = function () {
+                    back.removeAttribute('src');
+                };
                 back.src = src;
             }
 
@@ -1234,7 +1216,7 @@
                 back.style.opacity  = '0';
                 setTimeout(function () {
                     wrap.classList.remove('is-active');
-                    imgA.src = ''; imgB.src = '';
+                    imgA.removeAttribute('src'); imgB.removeAttribute('src');
                     front = imgA; back = imgB;
                 }, 350);
             }
