@@ -1172,12 +1172,11 @@
             ];
             if (!wrap || !imgs[0] || !imgs[1]) return;
 
-            var current    = 0;   // which slot is currently visible
+            var current    = 0;
             var activeTool = null;
             var activeIdx  = 0;
             var timer      = null;
 
-            // Cancel any in-flight loads so their onload can't fire after stop
             function cancelLoads() {
                 imgs[0].onload = null; imgs[0].onerror = null;
                 imgs[1].onload = null; imgs[1].onerror = null;
@@ -1201,9 +1200,14 @@
             function startPreview(tool) {
                 if (activeTool === tool) return;
                 cancelLoads();
+                clearInterval(timer);
                 activeTool = tool;
                 activeIdx  = 0;
-                clearInterval(timer);
+                // Always reset to a clean slate so stale state from a
+                // previous session doesn't affect the new one
+                imgs[0].style.opacity = '0';
+                imgs[1].style.opacity = '0';
+                current = 0;
 
                 var frames = shots[tool];
                 if (!frames || !frames.length) return;
@@ -1220,17 +1224,20 @@
             }
 
             function stopPreview() {
-                cancelLoads();        // must happen before opacity changes
+                cancelLoads();
                 clearInterval(timer);
                 activeTool = null;
-                imgs[0].style.opacity = '0';
-                imgs[1].style.opacity = '0';
+                wrap.classList.remove('is-active'); // CSS transition fades wrapper out
+                // Clean up image state after the wrapper fade completes,
+                // but only if no new preview has started in the meantime
                 setTimeout(function () {
-                    wrap.classList.remove('is-active');
+                    if (activeTool !== null) return;
                     imgs[0].removeAttribute('src');
                     imgs[1].removeAttribute('src');
+                    imgs[0].style.opacity = '0';
+                    imgs[1].style.opacity = '0';
                     current = 0;
-                }, 450);
+                }, 400);
             }
 
             document.querySelectorAll('.tools-triggers .card[data-tool]').forEach(function (card) {
