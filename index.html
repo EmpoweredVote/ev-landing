@@ -314,7 +314,7 @@
             font-weight: 700;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: var(--coral);
+            color: var(--teal);
             display: block;
             margin-bottom: 8px;
         }
@@ -441,6 +441,89 @@
         }
         .card:hover .card-cta .arrow { transform: translateX(3px); }
         [data-theme="dark"] .card:hover .card-cta { color: #111113; }
+
+        /* ---------------- TOOLS PREVIEW LAYOUT ---------------- */
+        .tools-layout {
+            display: flex;
+            gap: 48px;
+            align-items: flex-start;
+        }
+        .tools-cards {
+            flex: 0 0 380px;
+        }
+        .tools-cards .grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .tools-cards .card {
+            min-height: 0;
+        }
+        .tools-preview {
+            flex: 1;
+            position: sticky;
+            top: 32px;
+        }
+        .preview-frame {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            background: var(--card);
+        }
+        .preview-chrome {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 11px 16px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+        }
+        .preview-dot {
+            width: 11px; height: 11px;
+            border-radius: 50%;
+            background: var(--border);
+            display: inline-block;
+        }
+        .preview-screen {
+            position: relative;
+            aspect-ratio: 16 / 10;
+            background: var(--bg);
+            overflow: hidden;
+        }
+        .preview-empty {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--faint);
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+        }
+        .preview-img {
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: top left;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            display: block;
+        }
+
+        @media (max-width: 860px) {
+            .tools-layout { flex-direction: column; }
+            .tools-cards { flex: none; width: 100%; }
+            .tools-cards .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            }
+            .tools-preview { display: none; }
+        }
 
         /* ---------------- HOW WE WORK (notes) ---------------- */
         .how { background: var(--bg); }
@@ -874,53 +957,65 @@
                 <span class="section-num"><span class="bar"></span>02 / Tools</span>
                 <h2 class="section-h">Inform yourself, your way.</h2>
             </div>
-            <p class="section-sub">
-                Each card below is a live tool you can open and use right now. A few share
-                data with each other — calibrating your Compass carries over to Essentials,
-                for example. Some are further along than others, but all four are real and
-                ready to explore.
-            </p>
 
-            <div class="grid">
-                <a class="card" href="https://compass.empowered.vote" target="_blank" rel="noopener">
-                    <div class="card-top">
-                        <span class="card-num">01</span>
-                        <span class="card-glyph" aria-hidden="true">✦</span>
-                    </div>
-                    <h3>Compass</h3>
-                    <p>Rank where you stand on key issues, then compare your compass to politicians on the same scale.</p>
-                    <span class="card-cta">Try Compass <span class="arrow">→</span></span>
-                </a>
+            <div class="tools-layout">
+                <div class="tools-cards">
+                    <div class="grid">
+                        <a class="card" href="https://compass.empowered.vote" target="_blank" rel="noopener" data-tool="compass">
+                            <div class="card-top">
+                                <span class="card-num">01</span>
+                                <span class="card-glyph" aria-hidden="true">✦</span>
+                            </div>
+                            <h3>Compass</h3>
+                            <p>Rank where you stand on key issues, then compare your compass to politicians on the same scale.</p>
+                            <span class="card-cta">Try Compass <span class="arrow">→</span></span>
+                        </a>
 
-                <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener">
-                    <div class="card-top">
-                        <span class="card-num">02</span>
-                        <span class="card-glyph" aria-hidden="true">◉</span>
-                    </div>
-                    <h3>Essentials</h3>
-                    <p>Enter your address and see who actually represents you, where their campaign contributions come from, and other information.</p>
-                    <span class="card-cta">Try Essentials <span class="arrow">→</span></span>
-                </a>
+                        <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener" data-tool="essentials">
+                            <div class="card-top">
+                                <span class="card-num">02</span>
+                                <span class="card-glyph" aria-hidden="true">◉</span>
+                            </div>
+                            <h3>Essentials</h3>
+                            <p>Enter your address and see who actually represents you, where their campaign contributions come from, and other information.</p>
+                            <span class="card-cta">Try Essentials <span class="arrow">→</span></span>
+                        </a>
 
-                <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener">
-                    <div class="card-top">
-                        <span class="card-num">03</span>
-                        <span class="card-glyph" aria-hidden="true">$</span>
-                    </div>
-                    <h3>Treasury Tracker</h3>
-                    <p>Explore municipal budgets line by line. See what your city actually spends and how it compares year over year.</p>
-                    <span class="card-cta">Try Treasury Tracker <span class="arrow">→</span></span>
-                </a>
+                        <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
+                            <div class="card-top">
+                                <span class="card-num">03</span>
+                                <span class="card-glyph" aria-hidden="true">$</span>
+                            </div>
+                            <h3>Treasury Tracker</h3>
+                            <p>Explore municipal budgets line by line. See what your city actually spends and how it compares year over year.</p>
+                            <span class="card-cta">Try Treasury Tracker <span class="arrow">→</span></span>
+                        </a>
 
-                <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener">
-                    <div class="card-top">
-                        <span class="card-num">04</span>
-                        <span class="card-glyph" aria-hidden="true">?</span>
+                        <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener" data-tool="trivia">
+                            <div class="card-top">
+                                <span class="card-num">04</span>
+                                <span class="card-glyph" aria-hidden="true">?</span>
+                            </div>
+                            <h3>Civic Trivia Championships</h3>
+                            <p>Test what you know about civics in a friendly, competitive trivia format.</p>
+                            <span class="card-cta">Try Trivia <span class="arrow">→</span></span>
+                        </a>
                     </div>
-                    <h3>Civic Trivia Championships</h3>
-                    <p>Test what you know about civics in a friendly, competitive trivia format.</p>
-                    <span class="card-cta">Try Trivia <span class="arrow">→</span></span>
-                </a>
+                </div>
+
+                <div class="tools-preview" aria-hidden="true">
+                    <div class="preview-frame">
+                        <div class="preview-chrome">
+                            <span class="preview-dot"></span>
+                            <span class="preview-dot"></span>
+                            <span class="preview-dot"></span>
+                        </div>
+                        <div class="preview-screen">
+                            <div class="preview-empty" id="preview-empty">Hover a tool to preview</div>
+                            <img class="preview-img" id="preview-img" src="" alt="" />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -1079,6 +1174,72 @@
                 if (!getStoredTheme()) {
                     applyTheme(e.matches ? 'dark' : 'light');
                 }
+            });
+        })();
+
+        // Tool preview window — add screenshots to /screenshots/ and list them here
+        (function () {
+            var shots = {
+                compass:    ['screenshots/compass-1.png', 'screenshots/compass-2.png'],
+                essentials: ['screenshots/essentials-1.png', 'screenshots/essentials-2.png', 'screenshots/essentials-3.png'],
+                treasury:   ['screenshots/treasury-1.png', 'screenshots/treasury-2.png'],
+                trivia:     ['screenshots/trivia-1.png', 'screenshots/trivia-2.png']
+            };
+
+            var img   = document.getElementById('preview-img');
+            var empty = document.getElementById('preview-empty');
+            if (!img || !empty) return;
+
+            var activeTool = null;
+            var activeIdx  = 0;
+            var timer      = null;
+
+            function fadeToSrc(src) {
+                img.style.transition = 'opacity 0.2s ease';
+                img.style.opacity = '0';
+                setTimeout(function () {
+                    img.onload  = function () { img.style.opacity = '1'; };
+                    img.onerror = function () { img.style.opacity = '0'; };
+                    img.src = src;
+                }, 200);
+            }
+
+            function startPreview(tool) {
+                if (activeTool === tool) return;
+                activeTool = tool;
+                activeIdx  = 0;
+                clearInterval(timer);
+
+                var frames = shots[tool];
+                if (!frames || !frames.length) return;
+
+                empty.style.opacity = '0';
+                fadeToSrc(frames[0]);
+
+                if (frames.length > 1) {
+                    timer = setInterval(function () {
+                        activeIdx = (activeIdx + 1) % frames.length;
+                        fadeToSrc(frames[activeIdx]);
+                    }, 1000);
+                }
+            }
+
+            function stopPreview() {
+                clearInterval(timer);
+                activeTool = null;
+                img.style.transition = 'opacity 0.2s ease';
+                img.style.opacity = '0';
+                setTimeout(function () { img.src = ''; }, 220);
+                empty.style.opacity = '1';
+            }
+
+            document.querySelectorAll('.tools-cards .card[data-tool]').forEach(function (card) {
+                card.addEventListener('mouseenter', function () {
+                    startPreview(card.dataset.tool);
+                });
+                card.addEventListener('mouseleave', function () {
+                    stopPreview();
+                });
             });
         })();
     </script>
