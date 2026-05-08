@@ -1166,31 +1166,41 @@
             };
 
             var wrap = document.querySelector('.tools-preview-wrap');
-            var imgA = document.getElementById('preview-img-a');
-            var imgB = document.getElementById('preview-img-b');
-            if (!wrap || !imgA || !imgB) return;
+            var imgs = [
+                document.getElementById('preview-img-a'),
+                document.getElementById('preview-img-b')
+            ];
+            if (!wrap || !imgs[0] || !imgs[1]) return;
 
-            var front = imgA; // currently visible layer
-            var back  = imgB; // next image loads here
-
+            var current    = 0;   // which slot is currently visible
             var activeTool = null;
             var activeIdx  = 0;
             var timer      = null;
 
+            // Cancel any in-flight loads so their onload can't fire after stop
+            function cancelLoads() {
+                imgs[0].onload = null; imgs[0].onerror = null;
+                imgs[1].onload = null; imgs[1].onerror = null;
+            }
+
             function crossfadeTo(src) {
-                back.onload = function () {
-                    back.style.opacity  = '1';
-                    front.style.opacity = '0';
-                    var tmp = front; front = back; back = tmp;
+                var next     = 1 - current;
+                var incoming = imgs[next];
+                var outgoing = imgs[current];
+                incoming.onload = function () {
+                    incoming.style.opacity = '1';
+                    outgoing.style.opacity = '0';
+                    current = next;
                 };
-                back.onerror = function () {
-                    back.removeAttribute('src');
+                incoming.onerror = function () {
+                    incoming.removeAttribute('src');
                 };
-                back.src = src;
+                incoming.src = src;
             }
 
             function startPreview(tool) {
                 if (activeTool === tool) return;
+                cancelLoads();
                 activeTool = tool;
                 activeIdx  = 0;
                 clearInterval(timer);
@@ -1210,15 +1220,17 @@
             }
 
             function stopPreview() {
+                cancelLoads();        // must happen before opacity changes
                 clearInterval(timer);
                 activeTool = null;
-                front.style.opacity = '0';
-                back.style.opacity  = '0';
+                imgs[0].style.opacity = '0';
+                imgs[1].style.opacity = '0';
                 setTimeout(function () {
                     wrap.classList.remove('is-active');
-                    imgA.removeAttribute('src'); imgB.removeAttribute('src');
-                    front = imgA; back = imgB;
-                }, 350);
+                    imgs[0].removeAttribute('src');
+                    imgs[1].removeAttribute('src');
+                    current = 0;
+                }, 450);
             }
 
             document.querySelectorAll('.tools-triggers .card[data-tool]').forEach(function (card) {
