@@ -1160,10 +1160,22 @@
         // Tool preview — add screenshots to /screenshots/ and list them here
         (function () {
             var shots = {
-                compass:    ['screenshots/compass-1.jpg', 'screenshots/compass-2.jpg'],
-                essentials: ['screenshots/essentials-1.jpg', 'screenshots/essentials-2.jpg', 'screenshots/essentials-3.jpg'],
-                treasury:   ['screenshots/treasury-1.jpg', 'screenshots/treasury-2.jpg', 'screenshots/treasury-3.jpg'],
-                trivia:     ['screenshots/ctc-1.jpg', 'screenshots/ctc-2.jpg', 'screenshots/ctc-3.jpg']
+                compass: {
+                    light: ['screenshots/compass-t-l.jpg', 'screenshots/compass-1-l.jpg', 'screenshots/compass-2-l.jpg', 'screenshots/compass-3-l.jpg'],
+                    dark:  ['screenshots/compass-t-d.jpg', 'screenshots/compass-1-d.jpg', 'screenshots/compass-2-d.jpg', 'screenshots/compass-3-d.jpg']
+                },
+                essentials: {
+                    light: ['screenshots/essentials-t-l.jpg', 'screenshots/essentials-1-l.jpg', 'screenshots/essentials-2-l.jpg', 'screenshots/essentials-3-l.jpg', 'screenshots/essentials-4-l.jpg'],
+                    dark:  ['screenshots/essentials-t-d.jpg', 'screenshots/essentials-1-d.jpg', 'screenshots/essentials-2-d.jpg', 'screenshots/essentials-3-d.jpg', 'screenshots/essentials-4-d.jpg']
+                },
+                treasury: {
+                    light: ['screenshots/treasury-t-l.jpg', 'screenshots/treasury-1-l.jpg', 'screenshots/treasury-2-l.jpg', 'screenshots/treasury-3-l.jpg'],
+                    dark:  ['screenshots/treasury-t-d.jpg', 'screenshots/treasury-1-d.jpg', 'screenshots/treasury-2-d.jpg', 'screenshots/treasury-3-d.jpg']
+                },
+                trivia: {
+                    light: ['screenshots/ctc-t-d.jpg', 'screenshots/ctc-1-d.jpg', 'screenshots/ctc-2-d.jpg', 'screenshots/ctc-3-d.jpg'],
+                    dark:  ['screenshots/ctc-t-d.jpg', 'screenshots/ctc-1-d.jpg', 'screenshots/ctc-2-d.jpg', 'screenshots/ctc-3-d.jpg']
+                }
             };
 
             var wrap = document.querySelector('.tools-preview-wrap');
@@ -1204,13 +1216,13 @@
                 clearInterval(timer);
                 activeTool = tool;
                 activeIdx  = 0;
-                // Always reset to a clean slate so stale state from a
-                // previous session doesn't affect the new one
                 imgs[0].style.opacity = '0';
                 imgs[1].style.opacity = '0';
                 current = 0;
 
-                var frames = shots[tool];
+                var theme = document.documentElement.dataset.theme || 'light';
+                var toolShots = shots[tool];
+                var frames = toolShots ? (toolShots[theme] || toolShots.dark) : null;
                 if (!frames || !frames.length) return;
 
                 wrap.classList.add('is-active');
