@@ -5,15 +5,6 @@ services:
     buildCommand: ""
     staticPublishPath: ./
     pullRequestPreviewsEnabled: true
-    routes:
-      - type: redirect
-        source: /framer
-        destination: https://framer.empowered.vote
-        permanent: false
-      - type: redirect
-        source: /framer/*
-        destination: https://framer.empowered.vote/:splat
-        permanent: false
     headers:
       - path: /*
         name: X-Frame-Options
