@@ -364,6 +364,7 @@
             display: flex;
             flex-direction: column;
             min-height: 200px;
+            box-shadow: 0 0 0 2px rgba(254, 209, 46, 0.18);
             transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
             overflow: hidden;
             isolation: isolate;
@@ -372,7 +373,7 @@
         .card:hover {
             transform: translateY(-3px);
             border-color: var(--yellow);
-            box-shadow: 0 12px 32px rgba(254, 209, 46, 0.14), 0 4px 12px rgba(15, 30, 40, 0.1);
+            box-shadow: 0 0 0 2px var(--yellow), 0 12px 32px rgba(254, 209, 46, 0.14), 0 4px 12px rgba(15, 30, 40, 0.1);
         }
 
         .card-top {
@@ -436,28 +437,7 @@
         }
         .card:hover .card-cta .arrow { transform: translateX(3px); }
 
-        /* Card screenshot thumbnail — always visible, bleeds to card edges */
-        .card-thumb {
-            margin: -28px -24px 20px;
-            border-radius: calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px) 0 0;
-            overflow: hidden;
-            border-bottom: 1px solid var(--border);
-            aspect-ratio: 16 / 8;
-            background: var(--bg);
-        }
-        .card-thumb img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            object-position: top left;
-            display: block;
-            transition: transform 0.4s ease;
-        }
-        .card:hover .card-thumb img { transform: scale(1.04); }
-        .card-thumb .shot-d { display: none; }
-        [data-theme="dark"] .card-thumb .shot-d { display: block; }
-        [data-theme="dark"] .card-thumb .shot-l { display: none; }
-
-        /* ---------------- TOOLS PREVIEW LAYOUT ---------------- */
+/* ---------------- TOOLS PREVIEW LAYOUT ---------------- */
         .tools-top {
             display: flex;
             gap: 52px;
@@ -758,7 +738,6 @@
             .why-icon { height: 72px; margin-bottom: 22px; }
             .why-icon img { height: 72px; }
             .card { padding: 24px 22px 22px; min-height: 0; }
-            .card-thumb { margin: -24px -22px 18px; }
             .note { padding: 24px 22px 22px; }
             .note.n-alpha h3 { font-size: 1.3rem; }
             .grid, .why-grid, .watch-grid { gap: 12px; }
@@ -959,11 +938,6 @@
                         built and occasionally incomplete. Use what you find here as a starting
                         point, and cross-check anything important with official sources.
                     </p>
-                    <p class="section-sub">
-                        While anyone can freely explore the tools, they were designed for our
-                        three Alpha Communities — those in Monroe County, IN, Los Angeles
-                        County, CA, and Collin County, TX.
-                    </p>
                 </div>
                 <div class="tools-preview-wrap" aria-hidden="true">
                     <div class="preview-frame">
@@ -977,10 +951,6 @@
 
             <div class="tools-triggers">
                 <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener" data-tool="essentials">
-                    <div class="card-thumb" aria-hidden="true">
-                        <img class="shot-l" src="screenshots/essentials-t-l.jpg" alt="" loading="lazy" />
-                        <img class="shot-d" src="screenshots/essentials-t-d.jpg" alt="" loading="lazy" />
-                    </div>
                     <div class="card-top">
                         <span class="card-num">01</span>
                         <span class="card-glyph" aria-hidden="true">◉</span>
@@ -991,10 +961,6 @@
                 </a>
 
                 <a class="card" href="https://compass.empowered.vote" target="_blank" rel="noopener" data-tool="compass">
-                    <div class="card-thumb" aria-hidden="true">
-                        <img class="shot-l" src="screenshots/compass-t-l.jpg" alt="" loading="lazy" />
-                        <img class="shot-d" src="screenshots/compass-t-d.jpg" alt="" loading="lazy" />
-                    </div>
                     <div class="card-top">
                         <span class="card-num">02</span>
                         <span class="card-glyph" aria-hidden="true">✦</span>
@@ -1005,10 +971,6 @@
                 </a>
 
                 <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
-                    <div class="card-thumb" aria-hidden="true">
-                        <img class="shot-l" src="screenshots/treasury-t-l.jpg" alt="" loading="lazy" />
-                        <img class="shot-d" src="screenshots/treasury-t-d.jpg" alt="" loading="lazy" />
-                    </div>
                     <div class="card-top">
                         <span class="card-num">03</span>
                         <span class="card-glyph" aria-hidden="true">$</span>
@@ -1019,9 +981,6 @@
                 </a>
 
                 <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener" data-tool="trivia">
-                    <div class="card-thumb" aria-hidden="true">
-                        <img src="screenshots/ctc-t-d.jpg" alt="" loading="lazy" />
-                    </div>
                     <div class="card-top">
                         <span class="card-num">04</span>
                         <span class="card-glyph" aria-hidden="true">?</span>
@@ -1195,8 +1154,8 @@
         (function () {
             var shots = {
                 compass: {
-                    light: ['screenshots/compass-1-l.jpg', 'screenshots/compass-2-l.jpg', 'screenshots/compass-3-l.jpg'],
-                    dark:  ['screenshots/compass-1-d.jpg', 'screenshots/compass-2-d.jpg', 'screenshots/compass-3-d.jpg']
+                    light: ['screenshots/compass-2-l.jpg', 'screenshots/compass-3-l.jpg'],
+                    dark:  ['screenshots/compass-2-d.jpg', 'screenshots/compass-3-d.jpg']
                 },
                 essentials: {
                     light: ['screenshots/essentials-1-l.jpg', 'screenshots/essentials-2-l.jpg', 'screenshots/essentials-3-l.jpg', 'screenshots/essentials-4-l.jpg'],
