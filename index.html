@@ -356,6 +356,7 @@
             position: relative;
             background: var(--card);
             border: 1px solid var(--border);
+            border-top: 3px solid var(--yellow);
             border-radius: var(--radius-card);
             padding: 28px 24px 24px;
             text-decoration: none;
@@ -367,18 +368,11 @@
             overflow: hidden;
             isolation: isolate;
         }
-        /* Subtle Inform-pillar stripe */
-        .card::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 24px; width: 28px;
-            height: 2px;
-            background: var(--yellow);
-        }
+        .card::before { content: none; }
         .card:hover {
             transform: translateY(-3px);
-            border-color: var(--heading);
-            box-shadow: var(--shadow-md);
+            border-color: var(--yellow);
+            box-shadow: 0 12px 32px rgba(254, 209, 46, 0.14), 0 4px 12px rgba(15, 30, 40, 0.1);
         }
 
         .card-top {
@@ -436,12 +430,32 @@
         }
         .card-cta .arrow { transition: transform 0.2s ease; }
         .card:hover .card-cta {
-            background: var(--heading);
-            border-color: var(--heading);
-            color: #fff;
+            background: var(--yellow);
+            border-color: var(--yellow);
+            color: #1C1C1C;
         }
         .card:hover .card-cta .arrow { transform: translateX(3px); }
-        [data-theme="dark"] .card:hover .card-cta { color: #111113; }
+
+        /* Card screenshot thumbnail — always visible, bleeds to card edges */
+        .card-thumb {
+            margin: -28px -24px 20px;
+            border-radius: calc(var(--radius-card) - 1px) calc(var(--radius-card) - 1px) 0 0;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+            aspect-ratio: 16 / 8;
+            background: var(--bg);
+        }
+        .card-thumb img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            object-position: top left;
+            display: block;
+            transition: transform 0.4s ease;
+        }
+        .card:hover .card-thumb img { transform: scale(1.04); }
+        .card-thumb .shot-d { display: none; }
+        [data-theme="dark"] .card-thumb .shot-d { display: block; }
+        [data-theme="dark"] .card-thumb .shot-l { display: none; }
 
         /* ---------------- TOOLS PREVIEW LAYOUT ---------------- */
         .tools-top {
@@ -744,6 +758,7 @@
             .why-icon { height: 72px; margin-bottom: 22px; }
             .why-icon img { height: 72px; }
             .card { padding: 24px 22px 22px; min-height: 0; }
+            .card-thumb { margin: -24px -22px 18px; }
             .note { padding: 24px 22px 22px; }
             .note.n-alpha h3 { font-size: 1.3rem; }
             .grid, .why-grid, .watch-grid { gap: 12px; }
@@ -962,6 +977,10 @@
 
             <div class="tools-triggers">
                 <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener" data-tool="essentials">
+                    <div class="card-thumb" aria-hidden="true">
+                        <img class="shot-l" src="screenshots/essentials-t-l.jpg" alt="" loading="lazy" />
+                        <img class="shot-d" src="screenshots/essentials-t-d.jpg" alt="" loading="lazy" />
+                    </div>
                     <div class="card-top">
                         <span class="card-num">01</span>
                         <span class="card-glyph" aria-hidden="true">◉</span>
@@ -972,6 +991,10 @@
                 </a>
 
                 <a class="card" href="https://compass.empowered.vote" target="_blank" rel="noopener" data-tool="compass">
+                    <div class="card-thumb" aria-hidden="true">
+                        <img class="shot-l" src="screenshots/compass-t-l.jpg" alt="" loading="lazy" />
+                        <img class="shot-d" src="screenshots/compass-t-d.jpg" alt="" loading="lazy" />
+                    </div>
                     <div class="card-top">
                         <span class="card-num">02</span>
                         <span class="card-glyph" aria-hidden="true">✦</span>
@@ -982,6 +1005,10 @@
                 </a>
 
                 <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
+                    <div class="card-thumb" aria-hidden="true">
+                        <img class="shot-l" src="screenshots/treasury-t-l.jpg" alt="" loading="lazy" />
+                        <img class="shot-d" src="screenshots/treasury-t-d.jpg" alt="" loading="lazy" />
+                    </div>
                     <div class="card-top">
                         <span class="card-num">03</span>
                         <span class="card-glyph" aria-hidden="true">$</span>
@@ -992,6 +1019,9 @@
                 </a>
 
                 <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener" data-tool="trivia">
+                    <div class="card-thumb" aria-hidden="true">
+                        <img src="screenshots/ctc-t-d.jpg" alt="" loading="lazy" />
+                    </div>
                     <div class="card-top">
                         <span class="card-num">04</span>
                         <span class="card-glyph" aria-hidden="true">?</span>
@@ -1165,20 +1195,20 @@
         (function () {
             var shots = {
                 compass: {
-                    light: ['screenshots/compass-t-l.jpg', 'screenshots/compass-1-l.jpg', 'screenshots/compass-2-l.jpg', 'screenshots/compass-3-l.jpg'],
-                    dark:  ['screenshots/compass-t-d.jpg', 'screenshots/compass-1-d.jpg', 'screenshots/compass-2-d.jpg', 'screenshots/compass-3-d.jpg']
+                    light: ['screenshots/compass-1-l.jpg', 'screenshots/compass-2-l.jpg', 'screenshots/compass-3-l.jpg'],
+                    dark:  ['screenshots/compass-1-d.jpg', 'screenshots/compass-2-d.jpg', 'screenshots/compass-3-d.jpg']
                 },
                 essentials: {
-                    light: ['screenshots/essentials-t-l.jpg', 'screenshots/essentials-1-l.jpg', 'screenshots/essentials-2-l.jpg', 'screenshots/essentials-3-l.jpg', 'screenshots/essentials-4-l.jpg'],
-                    dark:  ['screenshots/essentials-t-d.jpg', 'screenshots/essentials-1-d.jpg', 'screenshots/essentials-2-d.jpg', 'screenshots/essentials-3-d.jpg', 'screenshots/essentials-4-d.jpg']
+                    light: ['screenshots/essentials-1-l.jpg', 'screenshots/essentials-2-l.jpg', 'screenshots/essentials-3-l.jpg', 'screenshots/essentials-4-l.jpg'],
+                    dark:  ['screenshots/essentials-1-d.jpg', 'screenshots/essentials-2-d.jpg', 'screenshots/essentials-3-d.jpg', 'screenshots/essentials-4-d.jpg']
                 },
                 treasury: {
-                    light: ['screenshots/treasury-t-l.jpg', 'screenshots/treasury-1-l.jpg', 'screenshots/treasury-2-l.jpg', 'screenshots/treasury-3-l.jpg'],
-                    dark:  ['screenshots/treasury-t-d.jpg', 'screenshots/treasury-1-d.jpg', 'screenshots/treasury-2-d.jpg', 'screenshots/treasury-3-d.jpg']
+                    light: ['screenshots/treasury-1-l.jpg', 'screenshots/treasury-2-l.jpg', 'screenshots/treasury-3-l.jpg'],
+                    dark:  ['screenshots/treasury-1-d.jpg', 'screenshots/treasury-2-d.jpg', 'screenshots/treasury-3-d.jpg']
                 },
                 trivia: {
-                    light: ['screenshots/ctc-t-d.jpg', 'screenshots/ctc-1-d.jpg', 'screenshots/ctc-2-d.jpg', 'screenshots/ctc-3-d.jpg'],
-                    dark:  ['screenshots/ctc-t-d.jpg', 'screenshots/ctc-1-d.jpg', 'screenshots/ctc-2-d.jpg', 'screenshots/ctc-3-d.jpg']
+                    light: ['screenshots/ctc-1-d.jpg', 'screenshots/ctc-2-d.jpg', 'screenshots/ctc-3-d.jpg'],
+                    dark:  ['screenshots/ctc-1-d.jpg', 'screenshots/ctc-2-d.jpg', 'screenshots/ctc-3-d.jpg']
                 }
             };
 
