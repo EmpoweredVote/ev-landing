@@ -1128,6 +1128,43 @@
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
 
+        // PostHog event tracking
+        (function () {
+            // 1. Tool card clicks — which of the 4 tools is most compelling
+            document.querySelectorAll('.tools-triggers .card[data-tool]').forEach(function (card) {
+                card.addEventListener('click', function () {
+                    posthog.capture('landing_tool_clicked', { tool: card.dataset.tool });
+                });
+            });
+
+            // 2. Hero CTA clicks — see_tools vs learn_why intent split
+            document.querySelectorAll('.hero-actions .btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    posthog.capture('landing_hero_cta_clicked', {
+                        button: btn.classList.contains('btn-primary') ? 'see_tools' : 'learn_why'
+                    });
+                });
+            });
+
+            // 3. Talk / video clicks — which talk resonates
+            document.querySelectorAll('.watch-card').forEach(function (card, i) {
+                card.addEventListener('click', function () {
+                    var titleEl = card.querySelector('h3');
+                    posthog.capture('landing_talk_clicked', {
+                        talk_num: i + 1,
+                        title: titleEl ? titleEl.textContent.trim() : ''
+                    });
+                });
+            });
+
+            // 4. Financials clicks — interest in the nonprofit transparency page
+            document.querySelectorAll('a[href*="financials.empowered.vote"]').forEach(function (a) {
+                a.addEventListener('click', function () {
+                    posthog.capture('landing_financials_clicked');
+                });
+            });
+        })();
+
         // Theme management
         // Priority: account preference (future) → ev:color-scheme in localStorage → prefers-color-scheme → dark
         // TODO: after load, GET /auth/me, check user.color_scheme_preference, apply + write back to
