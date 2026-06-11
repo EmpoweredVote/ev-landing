@@ -409,6 +409,14 @@
             border: none;
             border-radius: 0;
         }
+        /* Text-glyph cards (Treasury / Trivia): match the brand-mark footprint
+           so every card-top is the same height and titles align on one row. */
+        .card[data-tool="treasury"] .card-glyph,
+        .card[data-tool="trivia"] .card-glyph {
+            width: 72px; height: 72px;
+            border-radius: 16px;
+            font-size: 2.4rem;
+        }
         .card-glyph img { width: 72px; height: 72px; object-fit: contain; display: block; }
         .card-glyph .sym-dark { display: none; }
         [data-theme="dark"] .card-glyph .sym-light { display: none; }
