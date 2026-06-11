@@ -400,8 +400,16 @@
             font-size: 0.95rem;
             letter-spacing: -0.02em;
         }
-        /* Brand symbol marks (Essentials / Compass) inside the glyph box */
-        .card-glyph img { width: 26px; height: 26px; object-fit: contain; display: block; }
+        /* Brand symbol marks (Essentials / Compass): large mark in the corner,
+           no framing box — overrides the small text-glyph box above. */
+        .card[data-tool="essentials"] .card-glyph,
+        .card[data-tool="compass"] .card-glyph {
+            width: auto; height: auto;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+        }
+        .card-glyph img { width: 72px; height: 72px; object-fit: contain; display: block; }
         .card-glyph .sym-dark { display: none; }
         [data-theme="dark"] .card-glyph .sym-light { display: none; }
         [data-theme="dark"] .card-glyph .sym-dark  { display: block; }
