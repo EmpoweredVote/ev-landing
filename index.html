@@ -400,6 +400,11 @@
             font-size: 0.95rem;
             letter-spacing: -0.02em;
         }
+        /* Brand symbol marks (Essentials / Compass) inside the glyph box */
+        .card-glyph img { width: 26px; height: 26px; object-fit: contain; display: block; }
+        .card-glyph .sym-dark { display: none; }
+        [data-theme="dark"] .card-glyph .sym-light { display: none; }
+        [data-theme="dark"] .card-glyph .sym-dark  { display: block; }
 
         .card h3 {
             font-size: 1.18rem;
@@ -961,7 +966,10 @@
                 <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener" data-tool="essentials">
                     <div class="card-top">
                         <span class="card-num">01</span>
-                        <span class="card-glyph" aria-hidden="true">◉</span>
+                        <span class="card-glyph" aria-hidden="true">
+                            <img class="sym-light" src="icons/essentials-symbol-light.svg" alt="" />
+                            <img class="sym-dark"  src="icons/essentials-symbol-dark.svg"  alt="" />
+                        </span>
                     </div>
                     <h3>Essentials</h3>
                     <p>Enter your address and see who actually represents you, where their campaign contributions come from, and other information.</p>
@@ -971,7 +979,10 @@
                 <a class="card" href="https://compass.empowered.vote" target="_blank" rel="noopener" data-tool="compass">
                     <div class="card-top">
                         <span class="card-num">02</span>
-                        <span class="card-glyph" aria-hidden="true">✦</span>
+                        <span class="card-glyph" aria-hidden="true">
+                            <img class="sym-light" src="icons/compass-symbol-light.svg" alt="" />
+                            <img class="sym-dark"  src="icons/compass-symbol-dark.svg"  alt="" />
+                        </span>
                     </div>
                     <h3>Compass</h3>
                     <p>Rank where you stand on key issues, then compare your compass to politicians on the same scale.</p>
