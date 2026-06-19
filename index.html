@@ -1201,6 +1201,42 @@
                     posthog.capture('landing_financials_clicked');
                 });
             });
+
+            // 5. Direct app links — clicks that send people into a specific EV tool
+            //    (distinct from the tool *cards* tracked above).
+            var APP_HOSTS = ['readrank', 'compass', 'essentials', 'treasurytracker', 'ctc'];
+            APP_HOSTS.forEach(function (host) {
+                document.querySelectorAll('a[href*="' + host + '.empowered.vote"]').forEach(function (a) {
+                    a.addEventListener('click', function () {
+                        posthog.capture('landing_app_link_clicked', { app: host, href: a.href });
+                    });
+                });
+            });
+
+            // 6. Feedback link clicks
+            document.querySelectorAll('a[href="/feedback"]').forEach(function (a) {
+                a.addEventListener('click', function () {
+                    posthog.capture('landing_feedback_clicked');
+                });
+            });
+
+            // 7. Scroll depth — how far down the page people actually read.
+            //    Fires each 25% threshold once per page load.
+            var marks = [25, 50, 75, 100];
+            var fired = {};
+            function onScroll() {
+                var doc = document.documentElement;
+                var scrollable = doc.scrollHeight - window.innerHeight;
+                if (scrollable <= 0) return;
+                var pct = Math.round((window.scrollY / scrollable) * 100);
+                marks.forEach(function (m) {
+                    if (pct >= m && !fired[m]) {
+                        fired[m] = true;
+                        posthog.capture('landing_scroll_depth', { depth: m });
+                    }
+                });
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
         })();
 
         // Theme management
@@ -1223,6 +1259,7 @@
                 var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
                 localStorage.setItem(KEY, next);
                 applyTheme(next);
+                if (window.posthog) posthog.capture('landing_theme_toggled', { to: next });
             });
 
             // React to OS preference changes only when no EV preference is stored
