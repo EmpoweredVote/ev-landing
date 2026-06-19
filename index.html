@@ -483,7 +483,7 @@
 
         .tools-triggers {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 12px;
         }
         .tools-triggers .card { min-height: 0; }
@@ -942,7 +942,7 @@
                         <h2 class="section-h">Inform yourself, your way.</h2>
                     </div>
                     <p class="section-sub">
-                        Four tools, live now. They're alpha — real and useful, but still being
+                        Five tools, live now. They're alpha — real and useful, but still being
                         built and occasionally incomplete. Use what you find here as a starting
                         point, and cross-check anything important with official sources.
                     </p>
@@ -978,9 +978,19 @@
                     <span class="card-cta">Calibrate <span class="arrow">→</span></span>
                 </a>
 
-                <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
+                <a class="card" href="https://readrank.empowered.vote" target="_blank" rel="noopener" data-tool="readrank">
                     <div class="card-top">
                         <span class="card-num">03</span>
+                        <span class="card-glyph" aria-hidden="true">⇅</span>
+                    </div>
+                    <h3>Read &amp; Rank</h3>
+                    <p>Read real quotes from candidates blind — no names, no parties. Rank what they actually said, then see who you align with.</p>
+                    <span class="card-cta">Rank <span class="arrow">→</span></span>
+                </a>
+
+                <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
+                    <div class="card-top">
+                        <span class="card-num">04</span>
                         <span class="card-glyph" aria-hidden="true">$</span>
                     </div>
                     <h3>Treasury Tracker</h3>
@@ -990,7 +1000,7 @@
 
                 <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener" data-tool="trivia">
                     <div class="card-top">
-                        <span class="card-num">04</span>
+                        <span class="card-num">05</span>
                         <span class="card-glyph" aria-hidden="true">?</span>
                     </div>
                     <h3>Civic Trivia Championships</h3>
@@ -1198,6 +1208,10 @@
         // Tool preview — add screenshots to /screenshots/ and list them here
         (function () {
             var shots = {
+                readrank: {
+                    light: ['screenshots/readrank-1-l.jpg', 'screenshots/readrank-2-l.jpg', 'screenshots/readrank-3-l.jpg'],
+                    dark:  ['screenshots/readrank-1-d.jpg', 'screenshots/readrank-2-d.jpg', 'screenshots/readrank-3-d.jpg']
+                },
                 compass: {
                     light: ['screenshots/compass-2-l.jpg', 'screenshots/compass-3-l.jpg'],
                     dark:  ['screenshots/compass-2-d.jpg', 'screenshots/compass-3-d.jpg']
