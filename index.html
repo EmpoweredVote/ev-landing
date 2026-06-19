@@ -59,7 +59,7 @@
         h1, h2, h3, h4 { color: var(--heading); line-height: 1.15; }
         a { color: var(--teal); }
 
-        .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
 
         /* Standardized text measure for prose blocks */
         .measure { max-width: 60ch; }
@@ -164,7 +164,7 @@
 
         .lede {
             font-size: clamp(1.05rem, 1.5vw, 1.18rem);
-            max-width: 60ch;
+            max-width: 80ch;
             color: var(--body);
             margin-bottom: 32px;
             font-weight: 500;
@@ -409,8 +409,9 @@
             border: none;
             border-radius: 0;
         }
-        /* Text-glyph cards (Treasury / Trivia): match the brand-mark footprint
-           so every card-top is the same height and titles align on one row. */
+        /* Text-glyph cards (Read & Rank / Treasury / Trivia): match the brand-mark
+           footprint so every card-top is the same height and titles align on one row. */
+        .card[data-tool="readrank"] .card-glyph,
         .card[data-tool="treasury"] .card-glyph,
         .card[data-tool="trivia"] .card-glyph {
             width: 72px; height: 72px;
