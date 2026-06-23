@@ -403,16 +403,16 @@
         /* Brand symbol marks (Essentials / Compass): large mark in the corner,
            no framing box — overrides the small text-glyph box above. */
         .card[data-tool="essentials"] .card-glyph,
-        .card[data-tool="compass"] .card-glyph {
+        .card[data-tool="compass"] .card-glyph,
+        .card[data-tool="treasury"] .card-glyph {
             width: auto; height: auto;
             background: transparent;
             border: none;
             border-radius: 0;
         }
-        /* Text-glyph cards (Read & Rank / Treasury / Trivia): match the brand-mark
-           footprint so every card-top is the same height and titles align on one row. */
+        /* Text-glyph cards (Read & Rank / Trivia): match the brand-mark footprint
+           so every card-top is the same height and titles align on one row. */
         .card[data-tool="readrank"] .card-glyph,
-        .card[data-tool="treasury"] .card-glyph,
         .card[data-tool="trivia"] .card-glyph {
             width: 72px; height: 72px;
             border-radius: 16px;
@@ -1019,7 +1019,9 @@
                 <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
                     <div class="card-top">
                         <span class="card-num">04</span>
-                        <span class="card-glyph" aria-hidden="true">$</span>
+                        <span class="card-glyph" aria-hidden="true">
+                            <img src="icons/treasury-symbol.svg" alt="" />
+                        </span>
                     </div>
                     <h3>Treasury Tracker</h3>
                     <p>Explore municipal budgets line by line. See what your city actually spends and how it compares year over year.</p>
