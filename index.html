@@ -404,15 +404,15 @@
            no framing box — overrides the small text-glyph box above. */
         .card[data-tool="essentials"] .card-glyph,
         .card[data-tool="compass"] .card-glyph,
-        .card[data-tool="treasury"] .card-glyph {
+        .card[data-tool="treasury"] .card-glyph,
+        .card[data-tool="readrank"] .card-glyph {
             width: auto; height: auto;
             background: transparent;
             border: none;
             border-radius: 0;
         }
-        /* Text-glyph cards (Read & Rank / Trivia): match the brand-mark footprint
-           so every card-top is the same height and titles align on one row. */
-        .card[data-tool="readrank"] .card-glyph,
+        /* Text-glyph card (Trivia): match the brand-mark footprint so every
+           card-top is the same height and titles align on one row. */
         .card[data-tool="trivia"] .card-glyph {
             width: 72px; height: 72px;
             border-radius: 16px;
@@ -1009,7 +1009,10 @@
                 <a class="card" href="https://readrank.empowered.vote" target="_blank" rel="noopener" data-tool="readrank">
                     <div class="card-top">
                         <span class="card-num">03</span>
-                        <span class="card-glyph" aria-hidden="true">⇅</span>
+                        <span class="card-glyph" aria-hidden="true">
+                            <img class="sym-light" src="icons/readrank-symbol-light.svg" alt="" />
+                            <img class="sym-dark"  src="icons/readrank-symbol-dark.svg"  alt="" />
+                        </span>
                     </div>
                     <h3>Read &amp; Rank</h3>
                     <p>Read real quotes from candidates blind — no names, no parties. Rank what they actually said, then see who you align with.</p>
