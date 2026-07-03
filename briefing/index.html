@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.png">
+<title>Empowered Vote: State of the Platform</title>
+</head>
+<body>
+<style>
+  :root{
+    --ink:#0F1620; --panel:#18222F; --panel2:#1E2A3A; --line:#2C3A4D;
+    --text:#E9E5D9; --dim:#9BA4AE; --gold:#E3B54A; --teal:#4FA8A0;
+    --live:#72BE78; --amber:#D99E3F; --paper:#C8CFD8;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ink);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;line-height:1.55;margin:0;padding:0 20px 80px}
+  .wrap{max-width:1020px;margin:0 auto}
+  .serif{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif}
+  header{padding:56px 0 8px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
+  h1{font-size:clamp(30px,5vw,46px);margin:0 0 10px;font-weight:400;text-wrap:balance;line-height:1.15}
+  .sub{color:var(--dim);max-width:62ch;margin:0 0 28px;font-size:16px}
+  .sub b{color:var(--text);font-weight:600}
+  h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:0 0 6px}
+  .h2row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding:44px 0 10px;margin-bottom:18px;flex-wrap:wrap}
+  .h2row p{margin:0;color:var(--dim);font-size:14px}
+  .statband{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:32px 0 0}
+  .stat{background:var(--panel);padding:18px 16px}
+  .stat .n{font-size:clamp(22px,3vw,30px);font-variant-numeric:tabular-nums;color:var(--gold)}
+  .stat .l{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.35}
+  .pillar-note{color:var(--dim);font-size:14px;max-width:70ch;margin:0 0 20px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  .tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line)}
+  th{text-align:left;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .fname{font-weight:600;white-space:nowrap}
+  .fnote{color:var(--dim);font-size:13px;max-width:46ch}
+  .chip{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:2px;white-space:nowrap}
+  .c-live{background:rgba(114,190,120,.14);color:var(--live);border:1px solid rgba(114,190,120,.4)}
+  .c-dev{background:rgba(217,158,63,.13);color:var(--amber);border:1px solid rgba(217,158,63,.4)}
+  .c-design{background:rgba(155,164,174,.12);color:var(--paper);border:1px solid rgba(155,164,174,.35)}
+  .c-paused{background:rgba(79,168,160,.12);color:var(--teal);border:1px solid rgba(79,168,160,.4)}
+  .meter{display:flex;gap:3px;width:104px}
+  .meter span{height:6px;flex:1;background:var(--line);border-radius:1px}
+  .meter .f{background:var(--gold)}
+  .meter .fl{background:var(--live)}
+  .mlabel{font-size:11px;color:var(--dim);margin-top:5px;letter-spacing:.04em}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);padding:20px 22px}
+  .card h3{margin:0 0 8px;font-size:16px}
+  .card p{margin:0;font-size:14px;color:var(--dim)}
+  .card p b{color:var(--text)}
+  .card ul{margin:10px 0 0;padding-left:18px;font-size:14px;color:var(--dim)}
+  .card li{margin-bottom:7px}
+  .card li b{color:var(--text);font-weight:600}
+  .gold{color:var(--gold)}
+  .push{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--line);border-left:3px solid var(--gold);padding:24px 26px;margin-top:30px}
+  .push h3{margin:0 0 8px;font-size:19px;font-weight:400}
+  .push p{margin:0;color:var(--dim);font-size:14.5px;max-width:78ch}
+  .push p b{color:var(--text)}
+  .usmap{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;max-width:660px;margin:18px 0 14px}
+  .st{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;border-radius:2px;cursor:default}
+  .t3{background:var(--gold);color:#14202E}
+  .t2{background:rgba(227,181,74,.48);color:var(--text)}
+  .t1{background:rgba(227,181,74,.13);color:var(--dim);border:1px solid rgba(227,181,74,.22)}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12.5px;color:var(--dim)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .sw{width:13px;height:13px;border-radius:2px;display:inline-block}
+  .horizon{display:grid;grid-template-columns:110px 1fr;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .horizon:last-child{border-bottom:none}
+  .horizon .when{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding-top:3px}
+  .horizon h4{margin:0 0 5px;font-size:15.5px}
+  .horizon p{margin:0;font-size:14px;color:var(--dim);max-width:75ch}
+  .people{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+  .person{background:var(--panel);border:1px solid var(--line);padding:8px 14px;font-size:13.5px}
+  .person small{display:block;color:var(--dim);font-size:12px}
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px;max-width:80ch}
+  footer b{color:var(--paper)}
+</style>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; July 3, 2026</p>
+  <h1 class="serif">State of the Platform</h1>
+  <p class="sub">Every number on this page comes from the live database or verified git history, not from estimates.  We build tools for shared facts; our progress report should be one.  <b>Eight apps are live or in alpha, three are in active development, and the deep data work is far ahead of what most of us realized.</b></p>
+
+  <div class="statband">
+    <div class="stat"><div class="n">7,221</div><div class="l">curated officials and candidates (plus a 76,330-record discovery pool in triage)</div></div>
+    <div class="stat"><div class="n">28,749</div><div class="l">sourced stance positions, every one with cited sources</div></div>
+    <div class="stat"><div class="n">2,773</div><div class="l">politicians with researched stances (avg 10.4 topics each)</div></div>
+    <div class="stat"><div class="n">2,430</div><div class="l">governments with budget data, across all 50 states + DC</div></div>
+    <div class="stat"><div class="n">1,506</div><div class="l">2026 candidate records seeded for the midterms</div></div>
+    <div class="stat"><div class="n">~3,000</div><div class="l">commits landed in the last 26 days alone</div></div>
+  </div>
+
+  <div class="push">
+    <h3 class="serif">The current push: ready for November</h3>
+    <p>Since June 7, nearly all effort has gone into the <b>Inform pillar</b>, on purpose.  The 2026 midterms are four months out, and the work that moved is exactly what an anonymous voter touches in an election year: House candidate coverage in waves (144 districts verified, wave 3 underway), state budget pipelines, city-by-city official seeding, and a new public-meetings transcript system.  The Connect pillar apps are intentionally parked until after this push; that is sequencing, not abandonment.</p>
+  </div>
+</header>
+
+<div class="h2row"><h2>Inform Pillar: Shared Facts</h2><p>Open to everyone, no login.  Evidence-based, engaging, anti-partisan.</p></div>
+<div class="tablebox"><table>
+  <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
+  <tr>
+    <td class="fname">Empowered Essentials</td>
+    <td><span class="chip c-live">Live Alpha</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote">ZIP-to-representatives with funding, votes, stances.  180 research phases complete; Oregon deep-seed underway (Washington County, Hillsboro, Forest Grove).</td>
+    <td class="fnote">2026 House candidate waves; more served alpha communities.</td>
+  </tr>
+  <tr>
+    <td class="fname">Empowered Compass</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote">44 topics, 220 authored stances, spectrum + invert mechanic, side-by-side politician comparison.  1,741 calibration changes tracked.</td>
+    <td class="fnote">Quick-compare polish; inferred-stance overlays as research matures.</td>
+  </tr>
+  <tr>
+    <td class="fname">Treasury Tracker</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote">The sleeper giant.  See the coverage panel below; the audited state-budget pipeline now reaches back to FY1976.</td>
+    <td class="fnote">v2.14: ten more states to audited ACFR depth.</td>
+  </tr>
+  <tr>
+    <td class="fname">Read &amp; Rank</td>
+    <td><span class="chip c-dev">In Development</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote">Rebuilt this month: mobile-first evaluate/rank surfaces, motion system, race hub with relevance bands.  Now runs on real race data from the platform core.</td>
+    <td class="fnote">Candidate quote sourcing for 2026 races.</td>
+  </tr>
+  <tr>
+    <td class="fname">Fallacy Finders</td>
+    <td><span class="chip c-dev">In Development</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote">No longer a concept: the v1.0 core loop shipped June 18 (assign, watch, spot, supportive retro).  v1.1 brings real video via a new sourcing plan.</td>
+    <td class="fnote">Public-domain federal clips + On the Record transcripts feed the tagging pipeline.</td>
+  </tr>
+  <tr>
+    <td class="fname">Civic Trivia Championships</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote">34 collections (federal, 21 local, 12 state).  Fresh visual redesign and 5-question format, with volunteer-contributed features.</td>
+    <td class="fnote">Content editor roles; civic-moment event nights.</td>
+  </tr>
+</table></div>
+
+<div class="h2row"><h2>Connect Pillar: Shared Values</h2><p>Connected accounts, one human one voice.  Parked during the election push; resumes after November.</p></div>
+<div class="tablebox"><table>
+  <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
+  <tr>
+    <td class="fname">Civic Spaces</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote">Geo-scoped communities (neighborhood to federal) with friends, posts, role-gated moderation.  v3.0 redesign shipped in April.</td>
+    <td class="fnote">v4.0 planning, post-election.</td>
+  </tr>
+  <tr>
+    <td class="fname">Empowered Quests</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote">Fact-verification quests with consensus scoring; verified facts already feed Essentials.  Red gem quests unlock at VR 90+.</td>
+    <td class="fnote">v1.6 planning.</td>
+  </tr>
+  <tr>
+    <td class="fname">Issues in Focus</td>
+    <td><span class="chip c-paused">Paused</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote">v1.0 shipped April 17: per-topic forums wired to the Compass.  Waiting on the post-election Connect pivot.</td>
+    <td class="fnote">v1.1: badge ratification and argument mapping.</td>
+  </tr>
+  <tr>
+    <td class="fname">Empowered Listening</td>
+    <td><span class="chip c-paused">Paused</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote">Structured debate infrastructure; 5 of 6 phases done (timers, transcription, audience notes).  One security fix landed in June.</td>
+    <td class="fnote">Phase 6: voting and badges.  Then Common Grounds can build on it.</td>
+  </tr>
+  <tr>
+    <td class="fname">Emparks</td>
+    <td><span class="chip c-design">Design</span></td>
+    <td><div class="meter"><span class="f"></span><span></span><span></span><span></span></div><div class="mlabel">design</div></td>
+    <td class="fnote">Platform-wide annotation system (five mark types).  Full design doc; no build yet.</td>
+    <td class="fnote">Awaits Connect-pillar capacity.</td>
+  </tr>
+  <tr>
+    <td class="fname">Common Grounds</td>
+    <td><span class="chip c-design">Design</span></td>
+    <td><div class="meter"><span class="f"></span><span></span><span></span><span></span></div><div class="mlabel">design</div></td>
+    <td class="fnote">Adversarial-collaboration mediation.  Full design doc; depends on Empowered Listening and Fallacy Finders arbiters.</td>
+    <td class="fnote">Builds after its dependencies land.</td>
+  </tr>
+</table></div>
+
+<div class="h2row"><h2>Platform Core &amp; Infrastructure</h2><p>The shared spine every app plugs into.</p></div>
+<div class="cols">
+  <div class="card">
+    <h3 class="serif">ev-accounts <span class="gold">v2.22</span></h3>
+    <p>Auth, tiers, XP and gems, politician database, TIGER geofencing, elections.  Five milestones shipped since June 7, including 2026 House candidate coverage waves 1 and 2 (144 districts verified, then 100 more).  4,213 districts mapped, 121,178 legislative votes and 19,622 bills on record.</p>
+  </div>
+  <div class="card">
+    <h3 class="serif">On the Record <span class="gold">new</span></h3>
+    <p>Speaker-attributed, searchable transcripts of public meetings, synced to the original video.  Already live in the pipeline: <b>16 meetings, 6,192 transcript segments, 199 identified speakers</b>, including LA City Council with 7,200 recorded council votes.  Built by volunteer Chris Andrews; it now feeds the platform's meetings system and will feed Fallacy Finders.</p>
+  </div>
+</div>
+
+<div class="h2row"><h2>Data Coverage Deep Dive</h2><p>The invisible work.  This is what "evidence-based" costs, and we paid it.</p></div>
+<div class="cols">
+  <div class="card">
+    <h3 class="serif">Sourced stances, by where they serve</h3>
+    <p>28,749 stance positions across 2,773 politicians and 44 topics.  Every stance carries reasoning and cited sources; 2,722 sources independently verified.  672 of the 2026 candidates already have researched stances.</p>
+    <div class="tablebox" style="margin-top:14px;border:none;background:transparent"><table>
+      <tr><th>Coverage area</th><th style="text-align:right">Politicians</th><th style="text-align:right">Stances</th></tr>
+      <tr><td>US Congress + national</td><td class="num">480</td><td class="num">7,536</td></tr>
+      <tr><td>2026 candidates (no office yet)</td><td class="num">~640</td><td class="num">6,387</td></tr>
+      <tr><td>California (state + local)</td><td class="num">357</td><td class="num">4,442</td></tr>
+      <tr><td>Maryland legislature</td><td class="num">192</td><td class="num">2,245</td></tr>
+      <tr><td>Texas (state + local)</td><td class="num">250</td><td class="num">1,978</td></tr>
+      <tr><td>Massachusetts (state + local)</td><td class="num">172</td><td class="num">1,092</td></tr>
+      <tr><td>Utah (state + city + county)</td><td class="num">178</td><td class="num">1,350</td></tr>
+      <tr><td>Oregon (state + local + county)</td><td class="num">139</td><td class="num">1,024</td></tr>
+      <tr><td>Virginia (state + local)</td><td class="num">131</td><td class="num">645</td></tr>
+      <tr><td>14 more states</td><td class="num">234</td><td class="num">2,050</td></tr>
+    </table></div>
+  </div>
+  <div class="card">
+    <h3 class="serif">Budgets you can follow</h3>
+    <p>Treasury Tracker's database now holds budget data for <b>2,430 government entities across all 50 states plus DC</b>, spanning fiscal years 1976 to 2026:</p>
+    <ul>
+      <li><b>1,993 cities</b>, 333 counties, 50 states, 34 towns, and the federal budget</li>
+      <li><b>2.3 million</b> budget line items and <b>1.3 million</b> individual transactions</li>
+      <li><b>282,457</b> public salary records</li>
+      <li>State general funds upgraded to audited ACFR sources across 19+ states, each tie-verified to the penny; an independent blind re-derivation confirmed <b>49 of 49 exact matches</b></li>
+      <li>Every figure durably sourced.  The core promise: no best-guess data wearing a real-looking label</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <h3 class="serif">Stance research across the map</h3>
+  <p>Every state now has at least one researched official, and all 50 congressional delegations are fully covered at the national level.  Shading shows the depth of <b>state and local</b> research per state.  (The admin console goes a level deeper, county by county; this is the state rollup.)</p>
+  <div class="usmap">
+    <div class="st t1" style="grid-row:1;grid-column:1" title="Alaska: 2 researched officials">AK</div>
+    <div class="st t1" style="grid-row:1;grid-column:11" title="Maine: 1 researched official">ME</div>
+    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 researched officials">VT</div>
+    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 researched official">NH</div>
+    <div class="st t1" style="grid-row:3;grid-column:1" title="Washington: 5 researched officials">WA</div>
+    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 researched officials">ID</div>
+    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 researched officials">MT</div>
+    <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 5 researched officials">ND</div>
+    <div class="st t1" style="grid-row:3;grid-column:5" title="Minnesota: 4 researched officials">MN</div>
+    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 researched officials">IL</div>
+    <div class="st t1" style="grid-row:3;grid-column:7" title="Wisconsin: 5 researched officials">WI</div>
+    <div class="st t1" style="grid-row:3;grid-column:8" title="Michigan: 4 researched officials">MI</div>
+    <div class="st t1" style="grid-row:3;grid-column:9" title="New York: 4 researched officials">NY</div>
+    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 researched officials">RI</div>
+    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 172 researched officials">MA</div>
+    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 146 researched officials">OR</div>
+    <div class="st t2" style="grid-row:4;grid-column:2" title="Nevada: 33 researched officials">NV</div>
+    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 researched officials">WY</div>
+    <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 4 researched officials">SD</div>
+    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 4 researched officials">IA</div>
+    <div class="st t2" style="grid-row:4;grid-column:6" title="Indiana: 22 researched officials">IN</div>
+    <div class="st t1" style="grid-row:4;grid-column:7" title="Ohio: 3 researched officials">OH</div>
+    <div class="st t1" style="grid-row:4;grid-column:8" title="Pennsylvania: 4 researched officials">PA</div>
+    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 researched officials">NJ</div>
+    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 researched officials">CT</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 357 researched officials">CA</div>
+    <div class="st t3" style="grid-row:5;grid-column:2" title="Utah: 179 researched officials">UT</div>
+    <div class="st t1" style="grid-row:5;grid-column:3" title="Colorado: 5 researched officials">CO</div>
+    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 4 researched officials">NE</div>
+    <div class="st t2" style="grid-row:5;grid-column:5" title="Missouri: 19 researched officials">MO</div>
+    <div class="st t1" style="grid-row:5;grid-column:6" title="Kentucky: 4 researched officials">KY</div>
+    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 researched officials">WV</div>
+    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 131 researched officials">VA</div>
+    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 192 researched officials">MD</div>
+    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 4 researched officials">DE</div>
+    <div class="st t1" style="grid-row:6;grid-column:2" title="Arizona: 4 researched officials">AZ</div>
+    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 5 researched officials">NM</div>
+    <div class="st t1" style="grid-row:6;grid-column:4" title="Kansas: 5 researched officials">KS</div>
+    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 researched officials">AR</div>
+    <div class="st t1" style="grid-row:6;grid-column:6" title="Tennessee: 1 researched official">TN</div>
+    <div class="st t1" style="grid-row:6;grid-column:7" title="North Carolina: 5 researched officials">NC</div>
+    <div class="st t1" style="grid-row:6;grid-column:8" title="South Carolina: 4 researched officials">SC</div>
+    <div class="st t1" style="grid-row:6;grid-column:9" title="District of Columbia: 27 officials seeded, stance research in progress">DC</div>
+    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 3 researched officials">OK</div>
+    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 5 researched officials">LA</div>
+    <div class="st t1" style="grid-row:7;grid-column:6" title="Mississippi: 4 researched officials">MS</div>
+    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 4 researched officials">AL</div>
+    <div class="st t1" style="grid-row:7;grid-column:8" title="Georgia: 4 researched officials">GA</div>
+    <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 2 researched officials">HI</div>
+    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 250 researched officials">TX</div>
+    <div class="st t1" style="grid-row:8;grid-column:9" title="Florida: 4 researched officials">FL</div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (7 states)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (3 states)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (41)</span>
+  </div>
+  <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deep tiers add legislatures, counties, and cities.</p>
+</div>
+
+<div class="h2row"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>
+<div class="card" style="padding:6px 22px">
+  <div class="horizon">
+    <div class="when">Now to Nov</div>
+    <div><h4>Election readiness</h4><p>Finish 2026 House candidate waves (wave 3 of ~4 underway), keep seeding served communities, land Read &amp; Rank candidate quotes, get Fallacy Finders v1.1 real clips flowing through On the Record.  Success in November looks like: any voter in a served area can look up every name on their ballot and follow the money behind it.</p></div>
+  </div>
+  <div class="horizon">
+    <div class="when">Post-election</div>
+    <div><h4>The Connect pivot</h4><p>Reactivate the parked pillar: Empowered Listening phase 6, Issues in Focus v1.1, Civic Spaces v4.0.  This is where the platform stops being a reference tool and becomes a community, and where our sustaining-donor model actually lives.</p></div>
+  </div>
+  <div class="horizon">
+    <div class="when">The long game</div>
+    <div><h4>The Empower pillar</h4><p>Designed but not yet built: the Gems stipend economy, Awareness Exchange, Badges, Symposium tournaments, Emparks, Common Grounds, and tools for citizens to run for office on the strength of their solutions.  Roughly a third of the founding vision, waiting on the first two pillars to stand under it.  We are honest about this distance; it is the point of the whole journey.</p></div>
+  </div>
+</div>
+
+<div class="h2row"><h2>The People Doing This</h2><p>A volunteer-built platform, visible in the commit history.</p></div>
+<div class="people">
+  <div class="person">Chris Cantrell<small>founder, systems design, data pipelines</small></div>
+  <div class="person">Chris Andrews<small>On the Record, Read &amp; Rank redesign</small></div>
+  <div class="person">Krishna Patel<small>UX design, CTC visual redesign</small></div>
+  <div class="person">Radhika Joglekar<small>UX &amp; logo design</small></div>
+  <div class="person">Aditi Deshpande<small>UX design</small></div>
+  <div class="person">Dhivya Anandhan<small>UX design</small></div>
+  <div class="person">Peter Torres<small>treasurer</small></div>
+  <div class="person">Ryan Rinkel<small>secretary</small></div>
+  <div class="person">Debra Maniscalco<small>outreach</small></div>
+</div>
+
+<footer>
+  <b>Sources and method.</b>  App statuses from git history across all repositories, verified July 2 and 3, 2026.  Database counts queried live from the platform database on July 3, 2026.  Stance area groupings combine state and local coverage; the ~640 candidate rows are records not yet linked to an office.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
+</footer>
+
+</div>
+
+</body>
+</html>
