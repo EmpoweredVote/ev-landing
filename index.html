@@ -67,7 +67,7 @@
         /* ---------------- HERO ---------------- */
         .hero {
             position: relative;
-            padding: 120px 0 88px;
+            padding: 60px 0 68px;
             overflow: hidden;
             background: var(--bg);
             border-bottom: 1px solid var(--border);
@@ -125,10 +125,10 @@
         .ev-logo {
             display: flex;
             justify-content: center;
-            margin-bottom: 80px;
+            margin-bottom: 20px;
         }
         .ev-logo img {
-            height: 72px;
+            height: 46px;
             width: auto;
             display: block;
         }
@@ -344,143 +344,6 @@
             display: block;
         }
 
-        /* ---------------- TOOLS ---------------- */
-        .tools { background: var(--card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
-        }
-
-        .card {
-            position: relative;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-top: 3px solid var(--yellow);
-            border-radius: var(--radius-card);
-            padding: 28px 24px 24px;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            min-height: 200px;
-            box-shadow: 0 0 0 2px rgba(254, 209, 46, 0.18);
-            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-            overflow: hidden;
-            isolation: isolate;
-        }
-        .card::before { content: none; }
-        .card:hover {
-            transform: translateY(-3px);
-            border-color: var(--yellow);
-            box-shadow: 0 0 0 2px var(--yellow), 0 12px 32px rgba(254, 209, 46, 0.14), 0 4px 12px rgba(15, 30, 40, 0.1);
-        }
-
-        .card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 14px;
-        }
-        .card-num {
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-            color: var(--faint);
-            font-variant-numeric: tabular-nums;
-        }
-        .card-glyph {
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            display: grid; place-items: center;
-            color: var(--heading);
-            font-weight: 700;
-            font-size: 0.95rem;
-            letter-spacing: -0.02em;
-        }
-        /* Brand symbol marks (Essentials / Compass): large mark in the corner,
-           no framing box — overrides the small text-glyph box above. */
-        .card[data-tool="essentials"] .card-glyph,
-        .card[data-tool="compass"] .card-glyph,
-        .card[data-tool="treasury"] .card-glyph,
-        .card[data-tool="readrank"] .card-glyph {
-            width: auto; height: auto;
-            background: transparent;
-            border: none;
-            border-radius: 0;
-        }
-        /* Text-glyph card (Trivia): match the brand-mark footprint so every
-           card-top is the same height and titles align on one row. */
-        .card[data-tool="trivia"] .card-glyph {
-            width: 72px; height: 72px;
-            border-radius: 16px;
-            font-size: 2.4rem;
-        }
-        .card-glyph img { width: 72px; height: 72px; object-fit: contain; display: block; }
-        .card-glyph .sym-dark { display: none; }
-        [data-theme="dark"] .card-glyph .sym-light { display: none; }
-        [data-theme="dark"] .card-glyph .sym-dark  { display: block; }
-
-        .card h3 {
-            font-size: 1.18rem;
-            font-weight: 700;
-            letter-spacing: -0.015em;
-            margin-bottom: 6px;
-            color: var(--heading);
-        }
-        .card p {
-            color: var(--body);
-            font-size: 0.95rem;
-            margin-bottom: 18px;
-            flex: 1;
-        }
-        .card-cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--heading);
-            letter-spacing: 0.02em;
-            background: var(--bg);
-            border: 1.5px solid var(--border);
-            padding: 9px 16px;
-            border-radius: var(--radius-pill);
-            align-self: flex-start;
-            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-        }
-        .card-cta .arrow { transition: transform 0.2s ease; }
-        .card:hover .card-cta {
-            background: var(--yellow);
-            border-color: var(--yellow);
-            color: #1C1C1C;
-        }
-        .card:hover .card-cta .arrow { transform: translateX(3px); }
-
-/* ---------------- TOOLS PREVIEW LAYOUT ---------------- */
-        .tools-top {
-            display: flex;
-            gap: 52px;
-            align-items: flex-start;
-            margin-bottom: 44px;
-        }
-        .tools-copy {
-            flex: 0 0 400px;
-        }
-        .tools-copy .section-sub {
-            margin-bottom: 0;
-        }
-        .tools-preview-wrap {
-            flex: 1;
-            opacity: 0;
-            transition: opacity 0.35s ease;
-            pointer-events: none;
-        }
-        .tools-preview-wrap.is-active {
-            opacity: 1;
-        }
         .preview-frame {
             border: 1px solid var(--border);
             border-radius: 14px;
@@ -503,21 +366,140 @@
             display: block;
         }
 
-        .tools-triggers {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
+        /* ---------------- FEATURE SHOWCASE (hero) ---------------- */
+        .hero-head { text-align: center; max-width: 720px; margin: 0 auto; }
+        .hero-head h1 { margin: 16px auto 12px; max-width: 18ch; }
+        .hero-lede {
+            margin: 0 auto;
+            max-width: 56ch;
+            font-size: clamp(1rem, 1.4vw, 1.12rem);
         }
-        .tools-triggers .card { min-height: 0; }
+
+        .showcase {
+            display: grid;
+            grid-template-columns: minmax(230px, 300px) 1fr;
+            gap: 40px;
+            align-items: center;
+            max-width: 1060px;
+            margin: 40px auto 0;
+        }
+        .showcase-logos {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .logo-trigger {
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 58px;
+            padding: 12px 16px 12px 20px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            text-decoration: none;
+            color: inherit;
+            opacity: 0.5;
+            filter: grayscale(1);
+            transition: opacity 0.18s ease, filter 0.18s ease, background 0.18s ease,
+                        border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .logo-trigger:hover,
+        .logo-trigger:focus-visible,
+        .logo-trigger.is-active {
+            opacity: 1;
+            filter: none;
+            background: var(--card);
+            border-color: var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .logo-trigger:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+        .logo-trigger::before {
+            content: "";
+            position: absolute;
+            left: 0; top: 50%;
+            transform: translateY(-50%) scaleY(0);
+            width: 3px; height: 58%;
+            background: var(--yellow);
+            border-radius: 0 2px 2px 0;
+            transition: transform 0.18s ease;
+        }
+        .logo-trigger.is-active::before { transform: translateY(-50%) scaleY(1); }
+        .logo-trigger img {
+            height: 30px; width: auto; max-width: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .logo-trigger .logo-d { display: none; }
+        [data-theme="dark"] .logo-trigger .logo-l { display: none; }
+        [data-theme="dark"] .logo-trigger .logo-d { display: block; }
+        /* Trivia text wordmark (no brand logo yet) */
+        .logo-trigger .wordmark {
+            font-weight: 800;
+            font-size: 1.05rem;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--heading);
+        }
+        .logo-trigger .wordmark small {
+            display: block;
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        /* Description shown inline on mobile only; on desktop it lives in the preview panel */
+        .logo-trigger .m-desc { display: none; }
+
+        .showcase-preview { display: flex; flex-direction: column; gap: 16px; }
+        .showcase-preview .preview-frame { background: var(--card); }
+        .preview-info { min-height: 96px; }
+        .preview-info h3 {
+            font-size: 1.18rem;
+            font-weight: 800;
+            letter-spacing: -0.015em;
+            margin-bottom: 5px;
+        }
+        .preview-info p { color: var(--body); font-size: 0.98rem; max-width: 52ch; }
+        .preview-open {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--heading);
+            text-decoration: none;
+            border-bottom: 1.5px solid var(--yellow);
+            padding-bottom: 2px;
+        }
+        .preview-open .arr { transition: transform 0.2s ease; }
+        .preview-open:hover .arr { transform: translateX(3px); }
+
+        .hero .meta-row { justify-content: center; margin: 40px auto 0; }
 
         @media (max-width: 900px) {
-            .tools-top { flex-direction: column; }
-            .tools-copy { flex: none; width: 100%; }
-            .tools-preview-wrap { display: none; }
-            .tools-triggers { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 480px) {
-            .tools-triggers { grid-template-columns: 1fr; }
+            .showcase { grid-template-columns: 1fr; gap: 14px; max-width: 520px; }
+            .showcase-preview { display: none; }
+            .logo-trigger {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 20px;
+                opacity: 1;
+                filter: none;
+                background: var(--card);
+                border-color: var(--border);
+                box-shadow: var(--shadow-sm);
+            }
+            .logo-trigger::before { height: 100%; top: 0; transform: none; }
+            .logo-trigger.is-active::before { transform: none; }
+            .logo-trigger .m-desc {
+                display: block;
+                color: var(--body);
+                font-size: 0.95rem;
+                line-height: 1.5;
+            }
         }
 
         /* ---------------- HOW WE WORK (notes) ---------------- */
@@ -842,28 +824,72 @@
     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color scheme"></button>
     <header class="hero">
         <div class="wrap">
-            <div class="ev-logo">
-                <img class="logo-light" src="icons/logo-light.png" alt="Empowered Vote" />
-                <img class="logo-dark"  src="icons/logo-dark.png"  alt="" aria-hidden="true" />
+            <div class="hero-head">
+                <div class="ev-logo">
+                    <img class="logo-light" src="icons/logo-light.png" alt="Empowered Vote" />
+                    <img class="logo-dark"  src="icons/logo-dark.png"  alt="" aria-hidden="true" />
+                </div>
+                <span class="eyebrow">
+                    <span class="pulse"></span>
+                    <span>Empowered Vote</span>
+                    <span class="sep">/</span>
+                    <span class="ver">Alpha · v0</span>
+                </span>
+                <h1>Civic tools for <span class="mark">voters</span>.</h1>
+                <p class="lede hero-lede">
+                    Non-partisan, ad-free tools to see who's running, where they stand, and
+                    where the money goes. Hover a tool for a look inside — click to open it.
+                </p>
             </div>
-            <span class="eyebrow">
-                <span class="pulse"></span>
-                <span>Empowered Vote</span>
-                <span class="sep">/</span>
-                <span class="ver">Alpha · v0</span>
-            </span>
-            <h1>Civic tools for <span class="mark">voters</span>.</h1>
-            <p class="lede">
-                Empowered Vote is a non-partisan nonprofit trying to build tools that help
-                people with civic engagement. Our tools aim to help you see who's running,
-                where they stand, where the money goes, and learn more about our governments
-                in the process. We're early, and we don't have all the answers yet. People
-                before parties. No ads. No selling your data.
-            </p>
-            <div class="hero-actions">
-                <a class="btn btn-primary" href="#tools">See the tools <span class="arr">→</span></a>
-                <a class="btn btn-ghost" href="#why">Why we built this</a>
+
+            <div class="showcase">
+                <div class="showcase-logos" aria-label="Empowered Vote tools">
+                    <a class="logo-trigger is-active" data-tool="essentials" data-name="Essentials" data-cta="Discover"
+                       href="https://essentials.empowered.vote" target="_blank" rel="noopener">
+                        <img class="logo-l" src="brand/essentials/Logo/SVG/essentials-logo-light.svg" alt="Essentials" />
+                        <img class="logo-d" src="brand/essentials/Logo/SVG/essentials-logo-dark.svg" alt="" aria-hidden="true" />
+                        <span class="m-desc">Enter your address and see who actually represents you, where their campaign money comes from, and more.</span>
+                    </a>
+                    <a class="logo-trigger" data-tool="compass" data-name="Compass" data-cta="Calibrate"
+                       href="https://compass.empowered.vote" target="_blank" rel="noopener">
+                        <img class="logo-l" src="brand/compass/Logo/SVG/compass-logo-light.svg" alt="Compass" />
+                        <img class="logo-d" src="brand/compass/Logo/PNG/compass-logo-dark-800w.png" alt="" aria-hidden="true" />
+                        <span class="m-desc">Rank where you stand on key issues, then compare your compass to politicians on the same scale.</span>
+                    </a>
+                    <a class="logo-trigger" data-tool="readrank" data-name="Read &amp; Rank" data-cta="Rank"
+                       href="https://readrank.empowered.vote" target="_blank" rel="noopener">
+                        <img class="logo-l" src="brand/read-and-rank/Logo/SVG/read-and-rank-logo-light.svg" alt="Read &amp; Rank" />
+                        <img class="logo-d" src="brand/read-and-rank/Logo/SVG/read-and-rank-logo-dark.svg" alt="" aria-hidden="true" />
+                        <span class="m-desc">Read real quotes from candidates blind — no names, no parties. Rank what they said, then see who you align with.</span>
+                    </a>
+                    <a class="logo-trigger" data-tool="treasury" data-name="Treasury Tracker" data-cta="Understand"
+                       href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener">
+                        <img class="logo-l" src="brand/treasury-tracker/Logo/SVG/treasury-tracker-logo-light.svg" alt="Treasury Tracker" />
+                        <img class="logo-d" src="brand/treasury-tracker/Logo/SVG/treasury-tracker-logo-dark.svg" alt="" aria-hidden="true" />
+                        <span class="m-desc">Explore municipal budgets line by line. See what your city spends and how it compares year over year.</span>
+                    </a>
+                    <a class="logo-trigger" data-tool="trivia" data-name="Civic Trivia Championships" data-cta="Play"
+                       href="https://ctc.empowered.vote" target="_blank" rel="noopener">
+                        <span class="wordmark">Civic Trivia<small>Championships</small></span>
+                        <span class="m-desc">Test what you know about civics in a friendly, competitive trivia format.</span>
+                    </a>
+                </div>
+
+                <div class="showcase-preview" aria-hidden="true">
+                    <div class="preview-frame">
+                        <div class="preview-screen">
+                            <img class="preview-img" id="preview-img-a" alt="" />
+                            <img class="preview-img" id="preview-img-b" alt="" />
+                        </div>
+                    </div>
+                    <div class="preview-info">
+                        <h3 id="preview-name"></h3>
+                        <p id="preview-desc"></p>
+                        <a class="preview-open" id="preview-open" target="_blank" rel="noopener">Open <span class="arr">→</span></a>
+                    </div>
+                </div>
             </div>
+
             <div class="meta-row">
                 <span class="item"><span class="swatch s-yellow"></span> 501(c)(3) nonprofit</span>
                 <span class="item"><span class="swatch s-teal"></span> Antipartisan by design</span>
@@ -951,95 +977,6 @@
                         </p>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="tools" id="tools">
-        <div class="wrap">
-            <div class="tools-top">
-                <div class="tools-copy">
-                    <div class="section-head">
-                        <span class="section-num"><span class="bar"></span>02 / Tools</span>
-                        <h2 class="section-h">Inform yourself, your way.</h2>
-                    </div>
-                    <p class="section-sub">
-                        Five tools, live now. They're alpha — real and useful, but still being
-                        built and occasionally incomplete. Use what you find here as a starting
-                        point, and cross-check anything important with official sources.
-                    </p>
-                </div>
-                <div class="tools-preview-wrap" aria-hidden="true">
-                    <div class="preview-frame">
-                        <div class="preview-screen">
-                            <img class="preview-img" id="preview-img-a" alt="" />
-                            <img class="preview-img" id="preview-img-b" alt="" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tools-triggers">
-                <a class="card" href="https://essentials.empowered.vote" target="_blank" rel="noopener" data-tool="essentials">
-                    <div class="card-top">
-                        <span class="card-num">01</span>
-                        <span class="card-glyph" aria-hidden="true">
-                            <img class="sym-light" src="icons/essentials-symbol-light.svg" alt="" />
-                            <img class="sym-dark"  src="icons/essentials-symbol-dark.svg"  alt="" />
-                        </span>
-                    </div>
-                    <h3>Essentials</h3>
-                    <p>Enter your address and see who actually represents you, where their campaign contributions come from, and other information.</p>
-                    <span class="card-cta">Discover <span class="arrow">→</span></span>
-                </a>
-
-                <a class="card" href="https://compass.empowered.vote" target="_blank" rel="noopener" data-tool="compass">
-                    <div class="card-top">
-                        <span class="card-num">02</span>
-                        <span class="card-glyph" aria-hidden="true">
-                            <img class="sym-light" src="icons/compass-symbol-light.svg" alt="" />
-                            <img class="sym-dark"  src="icons/compass-symbol-dark.svg"  alt="" />
-                        </span>
-                    </div>
-                    <h3>Compass</h3>
-                    <p>Rank where you stand on key issues, then compare your compass to politicians on the same scale.</p>
-                    <span class="card-cta">Calibrate <span class="arrow">→</span></span>
-                </a>
-
-                <a class="card" href="https://readrank.empowered.vote" target="_blank" rel="noopener" data-tool="readrank">
-                    <div class="card-top">
-                        <span class="card-num">03</span>
-                        <span class="card-glyph" aria-hidden="true">
-                            <img class="sym-light" src="icons/readrank-symbol-light.svg" alt="" />
-                            <img class="sym-dark"  src="icons/readrank-symbol-dark.svg"  alt="" />
-                        </span>
-                    </div>
-                    <h3>Read &amp; Rank</h3>
-                    <p>Read real quotes from candidates blind — no names, no parties. Rank what they actually said, then see who you align with.</p>
-                    <span class="card-cta">Rank <span class="arrow">→</span></span>
-                </a>
-
-                <a class="card" href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener" data-tool="treasury">
-                    <div class="card-top">
-                        <span class="card-num">04</span>
-                        <span class="card-glyph" aria-hidden="true">
-                            <img src="icons/treasury-symbol.svg" alt="" />
-                        </span>
-                    </div>
-                    <h3>Treasury Tracker</h3>
-                    <p>Explore municipal budgets line by line. See what your city actually spends and how it compares year over year.</p>
-                    <span class="card-cta">Understand <span class="arrow">→</span></span>
-                </a>
-
-                <a class="card" href="https://ctc.empowered.vote" target="_blank" rel="noopener" data-tool="trivia">
-                    <div class="card-top">
-                        <span class="card-num">05</span>
-                        <span class="card-glyph" aria-hidden="true">?</span>
-                    </div>
-                    <h3>Civic Trivia Championships</h3>
-                    <p>Test what you know about civics in a friendly, competitive trivia format.</p>
-                    <span class="card-cta">Play <span class="arrow">→</span></span>
-                </a>
             </div>
         </div>
     </section>
@@ -1174,22 +1111,13 @@
         // PostHog event tracking
         (function () {
             // 1. Tool card clicks — which of the 4 tools is most compelling
-            document.querySelectorAll('.tools-triggers .card[data-tool]').forEach(function (card) {
+            document.querySelectorAll('.showcase-logos .logo-trigger[data-tool]').forEach(function (card) {
                 card.addEventListener('click', function () {
                     posthog.capture('landing_tool_clicked', { tool: card.dataset.tool });
                 });
             });
 
-            // 2. Hero CTA clicks — see_tools vs learn_why intent split
-            document.querySelectorAll('.hero-actions .btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    posthog.capture('landing_hero_cta_clicked', {
-                        button: btn.classList.contains('btn-primary') ? 'see_tools' : 'learn_why'
-                    });
-                });
-            });
-
-            // 3. Talk / video clicks — which talk resonates
+            // 2. Talk / video clicks — which talk resonates
             document.querySelectorAll('.watch-card').forEach(function (card, i) {
                 card.addEventListener('click', function () {
                     var titleEl = card.querySelector('h3');
@@ -1300,11 +1228,14 @@
                 }
             };
 
-            var wrap = document.querySelector('.tools-preview-wrap');
+            var wrap = document.querySelector('.showcase-preview');
             var imgs = [
                 document.getElementById('preview-img-a'),
                 document.getElementById('preview-img-b')
             ];
+            var infoName = document.getElementById('preview-name');
+            var infoDesc = document.getElementById('preview-desc');
+            var infoOpen = document.getElementById('preview-open');
             if (!wrap || !imgs[0] || !imgs[1]) return;
 
             var current    = 0;
@@ -1342,6 +1273,21 @@
                 imgs[1].style.opacity = '0';
                 current = 0;
 
+                // Highlight the active logo and populate the description panel
+                var trigger = null;
+                document.querySelectorAll('.showcase-logos .logo-trigger').forEach(function (t) {
+                    var on = t.dataset.tool === tool;
+                    t.classList.toggle('is-active', on);
+                    if (on) trigger = t;
+                });
+                if (trigger && infoName) {
+                    var descEl = trigger.querySelector('.m-desc');
+                    infoName.textContent = trigger.dataset.name || '';
+                    infoDesc.textContent = descEl ? descEl.textContent : '';
+                    infoOpen.setAttribute('href', trigger.getAttribute('href'));
+                    infoOpen.innerHTML = (trigger.dataset.cta || 'Open') + ' <span class="arr">→</span>';
+                }
+
                 var theme = document.documentElement.dataset.theme || 'light';
                 var toolShots = shots[tool];
                 var frames = toolShots ? (toolShots[theme] || toolShots.dark) : null;
@@ -1358,27 +1304,17 @@
                 }
             }
 
-            function stopPreview() {
-                cancelLoads();
-                clearInterval(timer);
-                activeTool = null;
-                wrap.classList.remove('is-active'); // CSS transition fades wrapper out
-                // Clean up image state after the wrapper fade completes,
-                // but only if no new preview has started in the meantime
-                setTimeout(function () {
-                    if (activeTool !== null) return;
-                    imgs[0].removeAttribute('src');
-                    imgs[1].removeAttribute('src');
-                    imgs[0].style.opacity = '0';
-                    imgs[1].style.opacity = '0';
-                    current = 0;
-                }, 400);
-            }
-
-            document.querySelectorAll('.tools-triggers .card[data-tool]').forEach(function (card) {
-                card.addEventListener('mouseenter', function () { startPreview(card.dataset.tool); });
-                card.addEventListener('mouseleave',  function () { stopPreview(); });
+            var logoTriggers = document.querySelectorAll('.showcase-logos .logo-trigger[data-tool]');
+            logoTriggers.forEach(function (t) {
+                t.addEventListener('mouseenter', function () { startPreview(t.dataset.tool); });
+                t.addEventListener('focus',      function () { startPreview(t.dataset.tool); });
             });
+            // Populate the panel on load with the first tool (kept sticky — we never blank it)
+            if (logoTriggers[0]) startPreview(logoTriggers[0].dataset.tool);
+            // Swap light/dark screenshots when the color theme changes
+            new MutationObserver(function () {
+                if (activeTool) { var t = activeTool; activeTool = null; startPreview(t); }
+            }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         })();
     </script>
 </body>
