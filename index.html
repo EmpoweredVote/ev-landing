@@ -67,7 +67,7 @@
         /* ---------------- HERO ---------------- */
         .hero {
             position: relative;
-            padding: 60px 0 68px;
+            padding: 44px 0 68px;
             overflow: hidden;
             background: var(--bg);
             border-bottom: 1px solid var(--border);
@@ -784,12 +784,43 @@
         [data-theme="dark"] .btn-primary { color: #111113; }
         [data-theme="dark"] .btn-primary:hover { background: #ffffff; }
 
-        /* -------- THEME TOGGLE -------- */
-        .theme-toggle {
-            position: fixed;
-            top: 14px;
-            right: 16px;
+        /* -------- TOP BANNER -------- */
+        .site-banner {
+            position: sticky;
+            top: 0;
             z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            padding: 0 24px;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+        }
+        .banner-logo { display: inline-flex; align-items: center; }
+        .banner-logo img { height: 30px; width: auto; display: block; }
+        .banner-logo .logo-dark { display: none; }
+        [data-theme="dark"] .banner-logo .logo-light { display: none; }
+        [data-theme="dark"] .banner-logo .logo-dark  { display: block; }
+        .banner-right { display: flex; align-items: center; gap: 12px; }
+        .banner-signin {
+            display: inline-flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            color: var(--heading);
+            background: transparent;
+            border: 1.5px solid var(--border);
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+        }
+        .banner-signin:hover { border-color: var(--heading); transform: translateY(-1px); }
+
+        /* -------- THEME TOGGLE (in banner) -------- */
+        .theme-toggle {
+            flex: none;
             width: 36px;
             height: 36px;
             border-radius: 50%;
@@ -807,6 +838,12 @@
         .theme-toggle:hover { border-color: var(--heading); box-shadow: var(--shadow-md); }
         [data-theme="light"] .theme-toggle::before { content: "☽"; }
         [data-theme="dark"]  .theme-toggle::before { content: "☀"; }
+
+        @media (max-width: 640px) {
+            .site-banner { height: 54px; padding: 0 16px; }
+            .banner-logo img { height: 26px; }
+            .banner-signin { padding: 7px 14px; font-size: 0.85rem; }
+        }
     </style>
     <script>
         !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Mi Ri init Vi Gi Rr Wi Ji Bi capture calculateEventProperties tn register register_once register_for_session unregister unregister_for_session an getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync un identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty nn Xi createPersonProfile setInternalOrTestUser sn Hi cn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Ki debug Lr rn getPageViewId captureTraceFeedback captureTraceMetric Di".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
@@ -818,14 +855,19 @@
     </script>
 </head>
 <body>
-    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color scheme"></button>
+    <header class="site-banner">
+        <a class="banner-logo" href="https://empowered.vote" aria-label="Empowered Vote home">
+            <img class="logo-light" src="icons/logo-light.png" alt="Empowered Vote" />
+            <img class="logo-dark"  src="icons/logo-dark.png"  alt="" aria-hidden="true" />
+        </a>
+        <div class="banner-right">
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color scheme"></button>
+            <a id="banner-signin" class="banner-signin" href="https://accounts.empowered.vote/login">Sign in</a>
+        </div>
+    </header>
     <header class="hero">
         <div class="wrap">
             <div class="hero-head">
-                <div class="ev-logo">
-                    <img class="logo-light" src="icons/logo-light.png" alt="Empowered Vote" />
-                    <img class="logo-dark"  src="icons/logo-dark.png"  alt="" aria-hidden="true" />
-                </div>
                 <span class="eyebrow">
                     <span class="pulse"></span>
                     <span>Empowered Vote</span>
@@ -1103,6 +1145,12 @@
 
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Sign in → central auth hub, returning to wherever the visitor is now
+        (function () {
+            var si = document.getElementById('banner-signin');
+            if (si) si.href = 'https://accounts.empowered.vote/login?redirect=' + encodeURIComponent(window.location.href);
+        })();
 
         // PostHog event tracking
         (function () {
