@@ -137,7 +137,7 @@
         [data-theme="dark"] .ev-logo .logo-dark  { display: block; }
 
         .hero h1 {
-            font-size: clamp(1.5rem, 3vw, 2.1rem);
+            font-size: clamp(1.7rem, 3.4vw, 2.5rem);
             font-weight: 800;
             letter-spacing: -0.025em;
             margin: 28px 0 24px;
@@ -150,16 +150,14 @@
             font-style: italic;
             font-weight: 800;
         }
-        .hero h1 .mark::before {
+        .hero h1 .mark::after {
             content: "";
             position: absolute;
             left: 0; right: 0;
-            bottom: 4px;
-            height: 6px;
+            bottom: -6px;
+            height: 5px;
             background: var(--yellow);
-            opacity: 0.85;
-            z-index: -1;
-            border-radius: 1px;
+            border-radius: 2px;
         }
 
         .lede {
@@ -385,7 +383,7 @@
             grid-template-columns: minmax(380px, 42%) 1fr;
             gap: 56px;
             align-items: center;
-            margin: 52px auto 0;
+            margin: 38px auto 0;
         }
         .showcase-logos {
             display: flex;
@@ -868,7 +866,7 @@
     <header class="hero">
         <div class="wrap">
             <div class="hero-head">
-                <h1>We empower the search for <span class="mark">shared solutions</span>.</h1>
+                <h1>Empowering the search for <span class="mark">Shared Solutions</span>.</h1>
                 <p class="lede hero-lede">
                     Non-partisan, ad-free tools to see who's running, where they stand, and
                     where the money goes. Hover a tool for a look inside — click to open it.
