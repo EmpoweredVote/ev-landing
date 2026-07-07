@@ -617,19 +617,10 @@
         /* 4: money — minimal, anchored, big link */
         .note.n-money {
             grid-column: span 12;
-            background: var(--heading);
-            border-color: var(--heading);
-            color: #fff;
+            border-left: 4px solid var(--yellow);
+            background: var(--yellow-soft);
         }
-        .note.n-money h3 { color: #fff; }
-        .note.n-money p { color: rgba(255,255,255,0.78); }
-        .note.n-money .marker { color: rgba(255,255,255,0.6); }
         .note.n-money .marker .glyph { background: var(--yellow); color: var(--heading); }
-        .note.n-money a {
-            color: var(--yellow);
-            border-bottom-color: var(--yellow);
-            font-weight: 700;
-        }
 
         @media (min-width: 880px) {
             .note.n-team   { grid-column: span 5; }
@@ -791,12 +782,6 @@
         [data-theme="dark"] .btn-primary { color: #111113; }
         [data-theme="dark"] .btn-primary:hover { background: #ffffff; }
 
-        /* Money note is an inverted dark card — keep it dark in dark mode too */
-        [data-theme="dark"] .note.n-money {
-            background: #0d1f27;
-            border-color: #1a3a4a;
-        }
-
         /* -------- THEME TOGGLE -------- */
         .theme-toggle {
             position: fixed;
@@ -868,8 +853,8 @@
                     </a>
                     <a class="logo-trigger" data-tool="readrank" data-name="Read &amp; Rank"
                        href="https://readrank.empowered.vote" target="_blank" rel="noopener">
-                        <img class="logo-l" src="brand/read-and-rank/Logo/SVG/read-and-rank-logo-light.svg" alt="Read &amp; Rank" />
-                        <img class="logo-d" src="brand/read-and-rank/Logo/SVG/read-and-rank-logo-dark.svg" alt="" aria-hidden="true" />
+                        <img class="logo-l" src="icons/readrank-logo-lg-light.svg" alt="Read &amp; Rank" />
+                        <img class="logo-d" src="icons/readrank-logo-lg-dark.svg" alt="" aria-hidden="true" />
                         <span class="m-desc">Read candidates' real positions with the names and parties stripped away. Rank what they actually said — then discover whose ideas you genuinely align with, free of the labels.</span>
                     </a>
                     <a class="logo-trigger" data-tool="treasury" data-name="Treasury Tracker"
@@ -993,7 +978,7 @@
     <section class="how" id="how">
         <div class="wrap">
             <div class="section-head">
-                <span class="section-num"><span class="bar"></span>03 / How we work</span>
+                <span class="section-num"><span class="bar"></span>02 / How we work</span>
                 <h2 class="section-h">Honest about where we are.</h2>
             </div>
             <p class="section-sub">
@@ -1064,7 +1049,7 @@
     <section class="watch" id="watch">
         <div class="wrap">
             <div class="section-head">
-                <span class="section-num"><span class="bar"></span>04 / Talks</span>
+                <span class="section-num"><span class="bar"></span>03 / Talks</span>
                 <h2 class="section-h">Why we think this could work, in our own words.</h2>
             </div>
             <p class="section-sub">
