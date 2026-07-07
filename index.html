@@ -215,6 +215,8 @@
             padding-top: 22px;
             border-top: 1px solid var(--border);
             max-width: 760px;
+            /* Prevent the font turning "(c)" into a © ligature (501(c)(3)) */
+            font-variant-ligatures: none;
         }
         .meta-row .item { display: inline-flex; align-items: center; gap: 9px; }
         .meta-row .swatch {
@@ -273,7 +275,7 @@
         }
 
         /* ---------------- WHY ---------------- */
-        .why { background: var(--bg); }
+        .why { background: var(--card); }
         .why-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -513,7 +515,7 @@
         }
 
         /* ---------------- HOW WE WORK (notes) ---------------- */
-        .how { background: var(--bg); }
+        .how { background: var(--bg); border-top: 1px solid var(--border); }
 
         .notes {
             display: grid;
