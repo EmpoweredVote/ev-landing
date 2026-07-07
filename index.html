@@ -367,6 +367,9 @@
         }
 
         /* ---------------- FEATURE SHOWCASE (hero) ---------------- */
+        /* Widen the hero container so the showcase uses the screen width
+           instead of floating in the middle with big side margins. */
+        .hero > .wrap { max-width: 1440px; }
         .hero-head { text-align: center; max-width: 720px; margin: 0 auto; }
         .hero-head h1 { margin: 16px auto 12px; max-width: 18ch; }
         .hero-lede {
@@ -377,31 +380,33 @@
 
         .showcase {
             display: grid;
-            grid-template-columns: minmax(230px, 300px) 1fr;
-            gap: 40px;
+            grid-template-columns: minmax(380px, 42%) 1fr;
+            gap: 56px;
             align-items: center;
-            max-width: 1060px;
-            margin: 40px auto 0;
+            margin: 52px auto 0;
         }
         .showcase-logos {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
         }
         .logo-trigger {
             position: relative;
             display: flex;
             align-items: center;
-            min-height: 58px;
-            padding: 12px 16px 12px 20px;
-            border-radius: 12px;
+            min-height: 96px;
+            padding: 18px 26px;
+            border-radius: 16px;
             border: 1px solid transparent;
             text-decoration: none;
             color: inherit;
-            opacity: 0.5;
-            filter: grayscale(1);
             transition: opacity 0.18s ease, filter 0.18s ease, background 0.18s ease,
                         border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        /* Dim the other tools only once one is actually highlighted */
+        .showcase-logos.has-active .logo-trigger:not(.is-active) {
+            opacity: 0.45;
+            filter: grayscale(1);
         }
         .logo-trigger:hover,
         .logo-trigger:focus-visible,
@@ -418,14 +423,14 @@
             position: absolute;
             left: 0; top: 50%;
             transform: translateY(-50%) scaleY(0);
-            width: 3px; height: 58%;
+            width: 4px; height: 62%;
             background: var(--yellow);
-            border-radius: 0 2px 2px 0;
+            border-radius: 0 3px 3px 0;
             transition: transform 0.18s ease;
         }
         .logo-trigger.is-active::before { transform: translateY(-50%) scaleY(1); }
         .logo-trigger img {
-            height: 30px; width: auto; max-width: 100%;
+            height: 64px; width: auto; max-width: 100%;
             object-fit: contain;
             display: block;
         }
@@ -435,70 +440,75 @@
         /* Trivia text wordmark (no brand logo yet) */
         .logo-trigger .wordmark {
             font-weight: 800;
-            font-size: 1.05rem;
-            line-height: 1.05;
+            font-size: 1.7rem;
+            line-height: 1.0;
             letter-spacing: -0.02em;
             color: var(--heading);
         }
         .logo-trigger .wordmark small {
             display: block;
-            font-size: 0.66rem;
+            font-size: 0.72rem;
             font-weight: 700;
-            letter-spacing: 0.16em;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
             color: var(--muted);
+            margin-top: 4px;
         }
         /* Description shown inline on mobile only; on desktop it lives in the preview panel */
         .logo-trigger .m-desc { display: none; }
 
-        .showcase-preview { display: flex; flex-direction: column; gap: 16px; }
+        /* Preview panel — right side, a touch smaller; blank until a tool is highlighted */
+        .showcase-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            width: 100%;
+            max-width: 680px;
+            margin-left: auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .showcase-preview.is-active { opacity: 1; }
         .showcase-preview .preview-frame { background: var(--card); }
-        .preview-info { min-height: 96px; }
+        .preview-info { min-height: 128px; }
         .preview-info h3 {
-            font-size: 1.18rem;
+            font-size: 1.3rem;
             font-weight: 800;
             letter-spacing: -0.015em;
-            margin-bottom: 5px;
+            margin-bottom: 7px;
         }
-        .preview-info p { color: var(--body); font-size: 0.98rem; max-width: 52ch; }
-        .preview-open {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            margin-top: 12px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--heading);
-            text-decoration: none;
-            border-bottom: 1.5px solid var(--yellow);
-            padding-bottom: 2px;
+        .preview-info p { color: var(--body); font-size: 1.02rem; line-height: 1.55; max-width: 58ch; }
+
+        .hero .meta-row { justify-content: center; margin: 48px auto 0; }
+
+        @media (max-width: 1024px) {
+            .showcase { grid-template-columns: minmax(320px, 40%) 1fr; gap: 36px; }
+            .logo-trigger { min-height: 84px; }
+            .logo-trigger img { height: 52px; }
         }
-        .preview-open .arr { transition: transform 0.2s ease; }
-        .preview-open:hover .arr { transform: translateX(3px); }
-
-        .hero .meta-row { justify-content: center; margin: 40px auto 0; }
-
         @media (max-width: 900px) {
-            .showcase { grid-template-columns: 1fr; gap: 14px; max-width: 520px; }
+            .hero > .wrap { max-width: 720px; }
+            .showcase { grid-template-columns: 1fr; gap: 14px; max-width: 560px; }
             .showcase-preview { display: none; }
             .logo-trigger {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 10px;
-                padding: 20px;
-                opacity: 1;
-                filter: none;
+                gap: 12px;
+                padding: 22px;
+                opacity: 1 !important;
+                filter: none !important;
                 background: var(--card);
                 border-color: var(--border);
                 box-shadow: var(--shadow-sm);
             }
+            .logo-trigger img { height: 48px; }
             .logo-trigger::before { height: 100%; top: 0; transform: none; }
             .logo-trigger.is-active::before { transform: none; }
             .logo-trigger .m-desc {
                 display: block;
                 color: var(--body);
-                font-size: 0.95rem;
-                line-height: 1.5;
+                font-size: 0.97rem;
+                line-height: 1.55;
             }
         }
 
@@ -844,34 +854,34 @@
 
             <div class="showcase">
                 <div class="showcase-logos" aria-label="Empowered Vote tools">
-                    <a class="logo-trigger is-active" data-tool="essentials" data-name="Essentials" data-cta="Discover"
+                    <a class="logo-trigger" data-tool="essentials" data-name="Essentials"
                        href="https://essentials.empowered.vote" target="_blank" rel="noopener">
                         <img class="logo-l" src="brand/essentials/Logo/SVG/essentials-logo-light.svg" alt="Essentials" />
                         <img class="logo-d" src="brand/essentials/Logo/SVG/essentials-logo-dark.svg" alt="" aria-hidden="true" />
-                        <span class="m-desc">Enter your address and see who actually represents you, where their campaign money comes from, and more.</span>
+                        <span class="m-desc">Enter your address and instantly see who represents you at every level — from city council to Congress — with their terms, contact details, and where their campaign money comes from.</span>
                     </a>
-                    <a class="logo-trigger" data-tool="compass" data-name="Compass" data-cta="Calibrate"
+                    <a class="logo-trigger" data-tool="compass" data-name="Compass"
                        href="https://compass.empowered.vote" target="_blank" rel="noopener">
                         <img class="logo-l" src="brand/compass/Logo/SVG/compass-logo-light.svg" alt="Compass" />
                         <img class="logo-d" src="brand/compass/Logo/PNG/compass-logo-dark-800w.png" alt="" aria-hidden="true" />
-                        <span class="m-desc">Rank where you stand on key issues, then compare your compass to politicians on the same scale.</span>
+                        <span class="m-desc">Rank where you stand on the issues you care about, then see how your compass compares to politicians and candidates — measured on the exact same scale.</span>
                     </a>
-                    <a class="logo-trigger" data-tool="readrank" data-name="Read &amp; Rank" data-cta="Rank"
+                    <a class="logo-trigger" data-tool="readrank" data-name="Read &amp; Rank"
                        href="https://readrank.empowered.vote" target="_blank" rel="noopener">
                         <img class="logo-l" src="brand/read-and-rank/Logo/SVG/read-and-rank-logo-light.svg" alt="Read &amp; Rank" />
                         <img class="logo-d" src="brand/read-and-rank/Logo/SVG/read-and-rank-logo-dark.svg" alt="" aria-hidden="true" />
-                        <span class="m-desc">Read real quotes from candidates blind — no names, no parties. Rank what they said, then see who you align with.</span>
+                        <span class="m-desc">Read candidates' real positions with the names and parties stripped away. Rank what they actually said — then discover whose ideas you genuinely align with, free of the labels.</span>
                     </a>
-                    <a class="logo-trigger" data-tool="treasury" data-name="Treasury Tracker" data-cta="Understand"
+                    <a class="logo-trigger" data-tool="treasury" data-name="Treasury Tracker"
                        href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener">
                         <img class="logo-l" src="brand/treasury-tracker/Logo/SVG/treasury-tracker-logo-light.svg" alt="Treasury Tracker" />
                         <img class="logo-d" src="brand/treasury-tracker/Logo/SVG/treasury-tracker-logo-dark.svg" alt="" aria-hidden="true" />
-                        <span class="m-desc">Explore municipal budgets line by line. See what your city spends and how it compares year over year.</span>
+                        <span class="m-desc">Explore your city's budget line by line. See what actually gets funded, track how spending shifts year over year, and follow where your tax dollars really go.</span>
                     </a>
-                    <a class="logo-trigger" data-tool="trivia" data-name="Civic Trivia Championships" data-cta="Play"
+                    <a class="logo-trigger" data-tool="trivia" data-name="Civic Trivia Championships"
                        href="https://ctc.empowered.vote" target="_blank" rel="noopener">
                         <span class="wordmark">Civic Trivia<small>Championships</small></span>
-                        <span class="m-desc">Test what you know about civics in a friendly, competitive trivia format.</span>
+                        <span class="m-desc">Test how well you really know civics — from local government to national institutions — in a fast, friendly, head-to-head trivia format.</span>
                     </a>
                 </div>
 
@@ -885,7 +895,6 @@
                     <div class="preview-info">
                         <h3 id="preview-name"></h3>
                         <p id="preview-desc"></p>
-                        <a class="preview-open" id="preview-open" target="_blank" rel="noopener">Open <span class="arr">→</span></a>
                     </div>
                 </div>
             </div>
@@ -1235,7 +1244,7 @@
             ];
             var infoName = document.getElementById('preview-name');
             var infoDesc = document.getElementById('preview-desc');
-            var infoOpen = document.getElementById('preview-open');
+            var logosWrap = document.querySelector('.showcase-logos');
             if (!wrap || !imgs[0] || !imgs[1]) return;
 
             var current    = 0;
@@ -1273,19 +1282,18 @@
                 imgs[1].style.opacity = '0';
                 current = 0;
 
-                // Highlight the active logo and populate the description panel
+                // Highlight the active logo (dims the rest) and fill the description panel
                 var trigger = null;
                 document.querySelectorAll('.showcase-logos .logo-trigger').forEach(function (t) {
                     var on = t.dataset.tool === tool;
                     t.classList.toggle('is-active', on);
                     if (on) trigger = t;
                 });
+                if (logosWrap) logosWrap.classList.add('has-active');
                 if (trigger && infoName) {
                     var descEl = trigger.querySelector('.m-desc');
                     infoName.textContent = trigger.dataset.name || '';
                     infoDesc.textContent = descEl ? descEl.textContent : '';
-                    infoOpen.setAttribute('href', trigger.getAttribute('href'));
-                    infoOpen.innerHTML = (trigger.dataset.cta || 'Open') + ' <span class="arr">→</span>';
                 }
 
                 var theme = document.documentElement.dataset.theme || 'light';
@@ -1304,13 +1312,29 @@
                 }
             }
 
+            function clearPreview() {
+                cancelLoads();
+                clearInterval(timer);
+                activeTool = null;
+                wrap.classList.remove('is-active');
+                if (logosWrap) logosWrap.classList.remove('has-active');
+                document.querySelectorAll('.showcase-logos .logo-trigger').forEach(function (t) {
+                    t.classList.remove('is-active');
+                });
+            }
+
             var logoTriggers = document.querySelectorAll('.showcase-logos .logo-trigger[data-tool]');
             logoTriggers.forEach(function (t) {
                 t.addEventListener('mouseenter', function () { startPreview(t.dataset.tool); });
                 t.addEventListener('focus',      function () { startPreview(t.dataset.tool); });
             });
-            // Populate the panel on load with the first tool (kept sticky — we never blank it)
-            if (logoTriggers[0]) startPreview(logoTriggers[0].dataset.tool);
+            // Nothing highlighted → blank panel. Clear once the pointer/focus leaves the list.
+            if (logosWrap) {
+                logosWrap.addEventListener('mouseleave', clearPreview);
+                logosWrap.addEventListener('focusout', function (e) {
+                    if (!logosWrap.contains(e.relatedTarget)) clearPreview();
+                });
+            }
             // Swap light/dark screenshots when the color theme changes
             new MutationObserver(function () {
                 if (activeTool) { var t = activeTool; activeTool = null; startPreview(t); }
