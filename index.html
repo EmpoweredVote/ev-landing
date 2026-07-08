@@ -380,8 +380,8 @@
            knocks out their washed-out cream fill for a theme-appropriate tone. */
         .preview-rest {
             position: absolute;
-            inset: 13%;
-            background-image: url("icons/favicon.png");
+            inset: 18% 13%;
+            background-image: url("icons/logo-light.png");
             background-position: center;
             background-repeat: no-repeat;
             background-size: contain;
@@ -389,6 +389,7 @@
             transition: opacity 0.4s ease;
             pointer-events: none;
         }
+        [data-theme="dark"] .preview-rest { background-image: url("icons/logo-dark.png"); }
 
         /* ---------------- FEATURE SHOWCASE (hero) ---------------- */
         /* Widen the hero container so the showcase uses the screen width
@@ -404,10 +405,10 @@
 
         .showcase {
             display: grid;
-            grid-template-columns: minmax(0, 300px) 1fr;
+            grid-template-columns: minmax(0, 290px) 1fr;
             gap: 56px;
             align-items: center;
-            max-width: 1180px;
+            max-width: 1320px;
             margin: 38px auto 0;
         }
         .showcase-logos {
@@ -494,7 +495,7 @@
             flex-direction: column;
             gap: 18px;
             width: 100%;
-            max-width: 820px;
+            max-width: none;   /* fill the track so the screenshot uses the freed space */
             margin-left: 0;
         }
         /* Card background + rim + screen fill only while a screenshot is showing. */
