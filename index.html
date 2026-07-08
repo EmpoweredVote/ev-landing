@@ -351,15 +351,18 @@
         }
 
         .preview-frame {
-            border: 1px solid var(--border);
+            /* No rim/shadow at rest, so the stick figures read as living on the page.
+               The frame fades in only when a screenshot is showing. */
+            border: 1px solid transparent;
             border-radius: 14px;
             overflow: hidden;
-            box-shadow: var(--shadow-md);
+            box-shadow: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
         .preview-screen {
             position: relative;
             aspect-ratio: 1905 / 952;
-            background: var(--bg);
+            background: transparent;   /* transparent at rest so the page shows through behind the figure */
             overflow: hidden;
         }
         .preview-img {
@@ -400,22 +403,24 @@
 
         .showcase {
             display: grid;
-            grid-template-columns: minmax(380px, 42%) 1fr;
-            gap: 56px;
+            grid-template-columns: minmax(300px, 34%) 1fr;
+            gap: 40px;
             align-items: center;
             margin: 38px auto 0;
         }
         .showcase-logos {
             display: flex;
             flex-direction: column;
+            align-items: flex-end;   /* right-align each lockup so the icons line up */
             gap: 6px;
         }
         .logo-trigger {
             position: relative;
             display: flex;
             align-items: center;
+            justify-content: flex-end;   /* content hugs the right edge */
             min-height: 96px;
-            padding: 18px 26px;
+            padding: 18px 24px;
             border-radius: 16px;
             border: 1px solid transparent;
             text-decoration: none;
@@ -441,11 +446,11 @@
         .logo-trigger::before {
             content: "";
             position: absolute;
-            left: 0; top: 50%;
+            right: 0; top: 50%;
             transform: translateY(-50%) scaleY(0);
             width: 4px; height: 62%;
             background: var(--yellow);
-            border-radius: 0 3px 3px 0;
+            border-radius: 3px 0 0 3px;
             transition: transform 0.18s ease;
         }
         .logo-trigger.is-active::before { transform: translateY(-50%) scaleY(1); }
@@ -485,9 +490,15 @@
             gap: 18px;
             width: 100%;
             max-width: 680px;
-            margin-left: auto;
+            margin-left: 0;   /* left-align in its cell so screenshots sit a bit further left */
         }
-        .showcase-preview .preview-frame { background: var(--card); }
+        /* Card background + rim + screen fill only while a screenshot is showing. */
+        .showcase-preview.is-active .preview-frame {
+            background: var(--card);
+            border-color: var(--border);
+            box-shadow: var(--shadow-md);
+        }
+        .showcase-preview.is-active .preview-screen { background: var(--bg); }
         /* While a screenshot is showing, hide the resting layer so it can't peek
            through the letterbox bars of a contained image. */
         .showcase-preview.is-active .preview-rest { opacity: 0; }
@@ -511,9 +522,11 @@
             .hero > .wrap { max-width: 720px; }
             .showcase { grid-template-columns: 1fr; gap: 14px; max-width: 560px; }
             .showcase-preview { display: none; }
+            .showcase-logos { align-items: stretch; }   /* full-width cards, not right-aligned */
             .logo-trigger {
                 flex-direction: column;
                 align-items: flex-start;
+                justify-content: flex-start;
                 gap: 12px;
                 padding: 22px;
                 opacity: 1 !important;
@@ -523,7 +536,7 @@
                 box-shadow: var(--shadow-sm);
             }
             .logo-trigger img { height: 48px; }
-            .logo-trigger::before { height: 100%; top: 0; transform: none; }
+            .logo-trigger::before { left: 0; right: auto; height: 100%; top: 0; transform: none; border-radius: 0 3px 3px 0; }
             .logo-trigger.is-active::before { transform: none; }
             .logo-trigger .m-desc {
                 display: block;
@@ -1527,10 +1540,10 @@
                     }, 1500);
                 }
 
-                // Behind the screenshots, rotate the resting figure once the preview has
-                // been up ~1.5s (a quick flick over tools never triggers a change, so it
-                // won't spam). Whatever pose is set here is revealed on mouse-out.
-                restTimer = setInterval(swapStick, 1500);
+                // Behind the screenshots, rotate the resting figure while a preview is up.
+                // A hover shorter than this never triggers a change (so quick flicks over
+                // tools don't spam); whatever pose is set here is revealed on mouse-out.
+                restTimer = setInterval(swapStick, 800);
             }
 
             function clearPreview() {
