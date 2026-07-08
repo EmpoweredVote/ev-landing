@@ -41,6 +41,9 @@
 
             --radius-card: 14px;
             --radius-pill: 999px;
+
+            /* Recolor filter for pale/grey resting stick figures (light theme) */
+            --fig-filter: grayscale(1) brightness(0.55);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -368,6 +371,20 @@
             transition: opacity 0.4s ease;
             display: block;
         }
+        /* Resting layer behind the screenshots (EV mark, then stickman poses).
+           Colored figures show as-is; pale/grey figures get --fig-filter, which
+           knocks out their washed-out cream fill for a theme-appropriate tone. */
+        .preview-rest {
+            position: absolute;
+            inset: 13%;
+            background-image: url("icons/favicon.png");
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0.9;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
 
         /* ---------------- FEATURE SHOWCASE (hero) ---------------- */
         /* Widen the hero container so the showcase uses the screen width
@@ -460,7 +477,8 @@
         /* Description shown inline on mobile only; on desktop it lives in the preview panel */
         .logo-trigger .m-desc { display: none; }
 
-        /* Preview panel — right side, a touch smaller; blank until a tool is highlighted */
+        /* Preview panel — right side, a touch smaller. The frame is always visible
+           (EV mark at rest); only the description fills in once a tool is highlighted. */
         .showcase-preview {
             display: flex;
             flex-direction: column;
@@ -468,11 +486,11 @@
             width: 100%;
             max-width: 680px;
             margin-left: auto;
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
-        .showcase-preview.is-active { opacity: 1; }
         .showcase-preview .preview-frame { background: var(--card); }
+        /* While a screenshot is showing, hide the resting layer so it can't peek
+           through the letterbox bars of a contained image. */
+        .showcase-preview.is-active .preview-rest { opacity: 0; }
         .preview-info { min-height: 128px; }
         .preview-info h3 {
             font-size: 1.3rem;
@@ -772,6 +790,7 @@
             --coral-soft: #2B1410;
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
             --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --fig-filter: grayscale(1) brightness(1.7);
             color-scheme: dark;
         }
 
@@ -952,6 +971,9 @@
                 <div class="showcase-preview" aria-hidden="true">
                     <div class="preview-frame">
                         <div class="preview-screen">
+                            <!-- Resting layer, behind the screenshots. EV mark on first load;
+                                 swapped for a rotating stickman pose once a tool is previewed. -->
+                            <div class="preview-rest" id="preview-rest" aria-hidden="true"></div>
                             <img class="preview-img" id="preview-img-a" alt="" />
                             <img class="preview-img" id="preview-img-b" alt="" />
                         </div>
@@ -1404,11 +1426,46 @@
                 }
             };
 
+            // Resting stick-figure poses (behind the screenshots). Colored files keep
+            // their own color (c set); pale/grey files are recolored via a CSS mask.
+            var STICKS_DIR = 'icons/Sticks/';
+            var STICKS = [
+                { f: 'noun-confused-by-road-directions-2760070-FED12E.png', c: '#FED12E' },
+                { f: 'noun-superhero-690777-FF5740.png',        c: '#FF5740' },
+                { f: 'noun-upset-642138-FF5740.png',            c: '#FF5740' },
+                { f: 'noun-woman-body-687039-C462DD.png',       c: '#C462DD' },
+                { f: 'noun_Shy_1926288_00bbd3.png',             c: '#00bbd3' },
+                { f: 'noun_Stickman akimbo_1926276_00bbd3.png', c: '#00bbd3' },
+                { f: 'noun_confident_1926296_00bbd3.png',       c: '#00bbd3' },
+                { f: 'noun_confident_1926296_0b3b60.png',       c: '#0b3b60' },
+                { f: 'noun_confident_1926296_e91d2d.png',       c: '#e91d2d' },
+                { f: 'noun_confident_1926296_ffce02.png',       c: '#ffce02' },
+                { f: 'noun_yoga_937685_ffce02.png',             c: '#ffce02' },
+                { f: 'noun_Business Man_574806.png',                   c: null },
+                { f: 'noun_Businessman with Suitcase_982772.png',      c: null },
+                { f: 'noun_Family_1747770.png',                        c: null },
+                { f: 'noun_Head Student_1248177.png',                  c: null },
+                { f: 'noun_Love_2020943.png',                          c: null },
+                { f: 'noun_Neighbor dispute_1930950.png',              c: null },
+                { f: 'noun_Prehistoric Man Burning Fire_685646.png',   c: null },
+                { f: 'noun_avoid electronics equipment_2750421.png',   c: null },
+                { f: 'noun_ballot_3139174.png',                        c: null },
+                { f: 'noun_board games_1258152.png',                   c: null },
+                { f: 'noun_confused_1201393.png',                      c: null },
+                { f: 'noun_depression_640563.png',                     c: null },
+                { f: 'noun_persuade_1914996.png',                      c: null },
+                { f: 'noun_speech_16988 (1).png',                      c: null },
+                { f: 'noun_stressful phone call_2767337.png',          c: null },
+                { f: 'noun_stubborn businessman_2735401.png',          c: null },
+                { f: 'noun_working idea_1278276.png',                  c: null }
+            ];
+
             var wrap = document.querySelector('.showcase-preview');
             var imgs = [
                 document.getElementById('preview-img-a'),
                 document.getElementById('preview-img-b')
             ];
+            var rest     = document.getElementById('preview-rest');
             var infoName = document.getElementById('preview-name');
             var infoDesc = document.getElementById('preview-desc');
             var logosWrap = document.querySelector('.showcase-logos');
@@ -1418,6 +1475,22 @@
             var activeTool = null;
             var activeIdx  = 0;
             var timer      = null;
+            var restTimer  = null;   // swaps the hidden resting figure every ~1.5s while hovering
+            var lastStick  = -1;
+
+            // Swap the resting layer to a random pose (kept behind the screenshots, so it
+            // only becomes visible once the pointer leaves the tool list).
+            function swapStick() {
+                if (!rest || !STICKS.length) return;
+                var i;
+                do { i = Math.floor(Math.random() * STICKS.length); }
+                while (STICKS.length > 1 && i === lastStick);
+                lastStick = i;
+                var s = STICKS[i];
+                rest.style.backgroundImage = 'url("' + encodeURI(STICKS_DIR + s.f) + '")';
+                // Colored figures keep their own color; pale/grey ones get recolored.
+                rest.style.filter = s.c ? 'none' : 'var(--fig-filter)';
+            }
 
             function cancelLoads() {
                 imgs[0].onload = null; imgs[0].onerror = null;
@@ -1443,6 +1516,7 @@
                 if (activeTool === tool) return;
                 cancelLoads();
                 clearInterval(timer);
+                clearInterval(restTimer);
                 activeTool = tool;
                 activeIdx  = 0;
                 imgs[0].style.opacity = '0';
@@ -1477,13 +1551,25 @@
                         crossfadeTo(frames[activeIdx]);
                     }, 1500);
                 }
+
+                // Behind the screenshots, rotate the resting figure once the preview has
+                // been up ~1.5s (a quick flick over tools never triggers a change, so it
+                // won't spam). Whatever pose is set here is revealed on mouse-out.
+                restTimer = setInterval(swapStick, 1500);
             }
 
             function clearPreview() {
                 cancelLoads();
                 clearInterval(timer);
+                clearInterval(restTimer);   // stop swapping; leave the last pose to be revealed
                 activeTool = null;
                 wrap.classList.remove('is-active');
+                // Fade the screenshots back out so the resting EV mark shows again,
+                // and clear the description panel.
+                imgs[0].style.opacity = '0';
+                imgs[1].style.opacity = '0';
+                if (infoName) infoName.textContent = '';
+                if (infoDesc) infoDesc.textContent = '';
                 if (logosWrap) logosWrap.classList.remove('has-active');
                 document.querySelectorAll('.showcase-logos .logo-trigger').forEach(function (t) {
                     t.classList.remove('is-active');
