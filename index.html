@@ -1200,6 +1200,9 @@
         </div>
     </footer>
 
+    <!-- Stick-figure poses for the tool preview, auto-generated from icons/Sticks/
+         by tools/gen-sticks.mjs. Sets window.EV_STICKS. -->
+    <script src="icons/Sticks/sticks-manifest.js"></script>
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -1426,39 +1429,11 @@
                 }
             };
 
-            // Resting stick-figure poses (behind the screenshots). Colored files keep
-            // their own color (c set); pale/grey files are recolored via a CSS mask.
+            // Resting stick-figure poses (behind the screenshots), auto-discovered from
+            // icons/Sticks/ via tools/gen-sticks.mjs → window.EV_STICKS. Colored files keep
+            // their own color (c set); pale/grey files are recolored via a CSS filter.
             var STICKS_DIR = 'icons/Sticks/';
-            var STICKS = [
-                { f: 'noun-confused-by-road-directions-2760070-FED12E.png', c: '#FED12E' },
-                { f: 'noun-superhero-690777-FF5740.png',        c: '#FF5740' },
-                { f: 'noun-upset-642138-FF5740.png',            c: '#FF5740' },
-                { f: 'noun-woman-body-687039-C462DD.png',       c: '#C462DD' },
-                { f: 'noun_Shy_1926288_00bbd3.png',             c: '#00bbd3' },
-                { f: 'noun_Stickman akimbo_1926276_00bbd3.png', c: '#00bbd3' },
-                { f: 'noun_confident_1926296_00bbd3.png',       c: '#00bbd3' },
-                { f: 'noun_confident_1926296_0b3b60.png',       c: '#0b3b60' },
-                { f: 'noun_confident_1926296_e91d2d.png',       c: '#e91d2d' },
-                { f: 'noun_confident_1926296_ffce02.png',       c: '#ffce02' },
-                { f: 'noun_yoga_937685_ffce02.png',             c: '#ffce02' },
-                { f: 'noun_Business Man_574806.png',                   c: null },
-                { f: 'noun_Businessman with Suitcase_982772.png',      c: null },
-                { f: 'noun_Family_1747770.png',                        c: null },
-                { f: 'noun_Head Student_1248177.png',                  c: null },
-                { f: 'noun_Love_2020943.png',                          c: null },
-                { f: 'noun_Neighbor dispute_1930950.png',              c: null },
-                { f: 'noun_Prehistoric Man Burning Fire_685646.png',   c: null },
-                { f: 'noun_avoid electronics equipment_2750421.png',   c: null },
-                { f: 'noun_ballot_3139174.png',                        c: null },
-                { f: 'noun_board games_1258152.png',                   c: null },
-                { f: 'noun_confused_1201393.png',                      c: null },
-                { f: 'noun_depression_640563.png',                     c: null },
-                { f: 'noun_persuade_1914996.png',                      c: null },
-                { f: 'noun_speech_16988 (1).png',                      c: null },
-                { f: 'noun_stressful phone call_2767337.png',          c: null },
-                { f: 'noun_stubborn businessman_2735401.png',          c: null },
-                { f: 'noun_working idea_1278276.png',                  c: null }
-            ];
+            var STICKS = (window.EV_STICKS || []);
 
             var wrap = document.querySelector('.showcase-preview');
             var imgs = [
