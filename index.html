@@ -352,10 +352,10 @@
 
         .preview-frame {
             /* No rim/shadow at rest, so the stick figures read as living on the page.
-               The frame fades in only when a screenshot is showing. */
+               The frame + mat fade in only when a screenshot is showing. */
             border: 1px solid transparent;
-            border-radius: 14px;
-            overflow: hidden;
+            border-radius: 16px;
+            padding: 16px;              /* inner mat around the screenshot */
             box-shadow: none;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
@@ -363,6 +363,7 @@
             position: relative;
             aspect-ratio: 1905 / 952;
             background: transparent;   /* transparent at rest so the page shows through behind the figure */
+            border-radius: 8px;
             overflow: hidden;
         }
         .preview-img {
@@ -403,9 +404,10 @@
 
         .showcase {
             display: grid;
-            grid-template-columns: minmax(0, 330px) 1fr;
-            gap: 48px;
+            grid-template-columns: minmax(0, 300px) 1fr;
+            gap: 56px;
             align-items: center;
+            max-width: 1180px;
             margin: 38px auto 0;
         }
         .showcase-logos {
@@ -492,8 +494,8 @@
             flex-direction: column;
             gap: 18px;
             width: 100%;
-            max-width: 680px;
-            margin-left: 0;   /* left-align in its cell so screenshots sit a bit further left */
+            max-width: 820px;
+            margin-left: 0;
         }
         /* Card background + rim + screen fill only while a screenshot is showing. */
         .showcase-preview.is-active .preview-frame {
@@ -1445,6 +1447,10 @@
                 }
             };
 
+            // Set to false to disable the rotating stick figures — the panel then just
+            // rests on the EV mark. (Everything else keeps working.)
+            var STICKS_ENABLED = true;
+
             // Resting stick-figure poses (behind the screenshots), auto-discovered from
             // icons/Sticks/ via tools/gen-sticks.mjs → window.EV_STICKS. Colored files keep
             // their own color (c set); pale/grey files are recolored via a CSS filter.
@@ -1546,7 +1552,7 @@
                 // Behind the screenshots, rotate the resting figure while a preview is up.
                 // A hover shorter than this never triggers a change (so quick flicks over
                 // tools don't spam); whatever pose is set here is revealed on mouse-out.
-                restTimer = setInterval(swapStick, 500);
+                if (STICKS_ENABLED) restTimer = setInterval(swapStick, 500);
             }
 
             function clearPreview() {
