@@ -20,7 +20,10 @@ const items = readdirSync(dir)
   .sort((a, b) => a.localeCompare(b))
   .map((f) => {
     const m = f.match(/[-_]([0-9a-fA-F]{6})\.png$/);
-    const c = m && /[a-fA-F]/.test(m[1]) ? '#' + m[1] : null;
+    let c = m && /[a-fA-F]/.test(m[1]) ? '#' + m[1] : null;
+    // Pure white is a neutral, not a brand color — recolor it per theme (like the
+    // grey figures) so it stays visible on the light background too.
+    if (c && c.toLowerCase() === '#ffffff') c = null;
     return { f, c };
   });
 

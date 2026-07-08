@@ -46,10 +46,6 @@ window.EV_STICKS = [
     "c": null
   },
   {
-    "f": "noun_Family_1747770.png",
-    "c": null
-  },
-  {
     "f": "noun_Head Student_1248177.png",
     "c": null
   },
@@ -98,19 +94,195 @@ window.EV_STICKS = [
     "c": "#ffce02"
   },
   {
+    "f": "noun-arcade-game-642051-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-business-presentation-2759097-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-calm-4859777-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-calm-640507-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-card-game-1258162-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-carry-4859779-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-casino-690865-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-cater-4860242-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-citizen-2762935-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-community-2739772-FFFFFF.png",
+    "c": null
+  },
+  {
     "f": "noun-confused-by-road-directions-2760070-FED12E.png",
     "c": "#FED12E"
+  },
+  {
+    "f": "noun-confused-by-road-directions-2760070-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-democratic-country-1922743-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-dual-citizenship-2762932-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-father-and-son-2739681-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-gaming-at-home-642049-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-happy-people-2739773-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-illegal-immigrant-2762934-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-labor-group-2739775-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-man-with-bill-640562-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-mother-and-child-2739688-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-no-time-1926716-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-people-playing-chess-642045-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-people-walking-969594-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-politician-977779-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-president-969595-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-republic-government-1922732-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-self-mediation-681150-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-showing-important-notice-854674-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-slot-machine-690871-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-smiling-group-of-people-2739774-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-speaker-on-stage-854677-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-speakers-854671-FFFFFF.png",
+    "c": null
   },
   {
     "f": "noun-superhero-690777-FF5740.png",
     "c": "#FF5740"
   },
   {
+    "f": "noun-supporter-638000-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-table-690866-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-teacher-explaining-642084-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-teacher-reading-642108-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-tired-father-2739683-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-truce-1930947-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-unhappy-audience-854678-FFFFFF.png",
+    "c": null
+  },
+  {
     "f": "noun-upset-642138-FF5740.png",
     "c": "#FF5740"
   },
   {
+    "f": "noun-upset-642138-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-wealth-1922730-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-win-lose-or-draw-1258165-FFFFFF.png",
+    "c": null
+  },
+  {
     "f": "noun-woman-body-687039-C462DD.png",
     "c": "#C462DD"
+  },
+  {
+    "f": "noun-workers-union-2739770-FFFFFF.png",
+    "c": null
+  },
+  {
+    "f": "noun-yoga-882212-FFFFFF.png",
+    "c": null
   }
 ];
