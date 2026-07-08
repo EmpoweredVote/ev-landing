@@ -403,8 +403,8 @@
 
         .showcase {
             display: grid;
-            grid-template-columns: minmax(300px, 34%) 1fr;
-            gap: 40px;
+            grid-template-columns: minmax(0, 330px) 1fr;
+            gap: 48px;
             align-items: center;
             margin: 38px auto 0;
         }
@@ -462,6 +462,9 @@
         .logo-trigger .logo-d { display: none; }
         [data-theme="dark"] .logo-trigger .logo-l { display: none; }
         [data-theme="dark"] .logo-trigger .logo-d { display: block; }
+        /* Trivia has no icon; pad its right so the wordmark ends on the same line as
+           the other lockups' text (whose icons occupy that trailing space). */
+        .logo-trigger[data-tool="trivia"] { padding-right: 124px; }
         /* Trivia text wordmark (no brand logo yet) */
         .logo-trigger .wordmark {
             font-weight: 800;
