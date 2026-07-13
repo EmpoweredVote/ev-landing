@@ -79,13 +79,34 @@
   .person small{display:block;color:var(--dim);font-size:12px}
   footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px;max-width:80ch}
   footer b{color:var(--paper)}
+  /* Reach & Engagement (usage funnel + ecosystem; hand-maintained from PostHog) */
+  .funnel{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+  .fstep .frow{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;margin-bottom:5px;gap:12px}
+  .fstep .flabel{color:var(--text);font-weight:600}
+  .fstep .fcount{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ftrack{height:26px;background:var(--line);border-radius:2px;overflow:hidden}
+  .fbar{height:100%;display:flex;align-items:center;padding:0 9px;min-width:42px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .fbar.b1{background:rgba(155,164,174,.5);color:var(--text)}
+  .fbar.b2{background:var(--live);color:#12261A}
+  .fbar.b3{background:var(--gold);color:#14202E}
+  .fbar.b4{background:var(--teal);color:#0C1C1A}
+  .fcap{font-size:12.5px;color:var(--dim);margin:14px 0 0;max-width:52ch}
+  .eco{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+  .ecorow{display:grid;grid-template-columns:128px 1fr 34px;align-items:center;gap:10px;font-size:13px}
+  .ecorow .ehost{color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ecorow .eval{color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
+  .etrack{height:15px;background:var(--line);border-radius:2px;overflow:hidden}
+  .ebar{height:100%;background:rgba(155,164,174,.38);border-radius:2px}
+  .ecorow.me .ehost{color:var(--gold);font-weight:700}
+  .ecorow.me .ebar{background:var(--gold)}
+  .ecorow.me .eval{color:var(--gold);font-weight:700}
 </style>
 <div class="wrap">
 
 <header>
   <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; <span data-auto="asof">July 12, 2026</span></p>
   <h1 class="serif">State of the Platform</h1>
-  <p class="sub">Every number on this page comes from the live database or verified git history, not from estimates.  We build tools for shared facts; our progress report should be one.  <b>Eight apps are live or in alpha, three are in active development, and the deep data work is far ahead of what most of us realized.</b></p>
+  <p class="sub">Every number on this page comes from the live database, verified git history, or our product analytics, not from estimates.  We build tools for shared facts; our progress report should be one.  <b>Eight apps are live or in alpha, three are in active development, and the deep data work is far ahead of what most of us realized.</b></p>
 
   <div class="statband">
     <div class="stat"><div class="n" data-auto="pols_curated">8,105</div><div class="l">curated officials and candidates (plus a <span data-auto="pool">76,330</span>-record discovery pool in triage)</div></div>
@@ -308,6 +329,56 @@
   <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deep tiers add legislatures, counties, and cities.</p>
 </div>
 
+<!--
+  Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
+  a rolling 90-day window with internal/test traffic excluded.  refresh.mjs does NOT
+  touch these — it only reads the platform Postgres DB.  Re-pull from PostHog and edit
+  by hand when the story changes.  Last pulled: 90 days ending July 13, 2026.
+-->
+<div class="h2row"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
+<div class="push">
+  <h3 class="serif">The reach problem, stated plainly</h3>
+  <p>The Compass isn't failing to convert &mdash; it's failing to get seen.  Of everyone who reached it in the last 90 days, <b>9 in 10 engaged and nearly half completed a full calibration</b>; that is a healthy flow.  The catch is the denominator: <b>only 52 people reached it in a quarter</b>, fewer than any other app on the platform.  The main site drew 142 unique visitors in the same window, and most never made it to the Compass.  The highest-leverage work in front of us isn't rewording the calibration questions &mdash; it's getting the tool in front of the voters already in our ecosystem.</p>
+</div>
+<div class="cols" style="margin-top:18px">
+  <div class="card">
+    <h3 class="serif">Once someone arrives</h3>
+    <p>The Compass funnel, measured against everyone who landed on it.</p>
+    <div class="funnel">
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount">52 people</span></div>
+        <div class="ftrack"><div class="fbar b1" style="width:100%">100%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount">47 people</span></div>
+        <div class="ftrack"><div class="fbar b2" style="width:90%">90%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount">24 people</span></div>
+        <div class="ftrack"><div class="fbar b3" style="width:46%">46%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Compared to a politician</span><span class="fcount">10 people</span></div>
+        <div class="ftrack"><div class="fbar b4" style="width:19%">19%</div></div>
+      </div>
+    </div>
+    <p class="fcap">&ldquo;Loaded the quiz&rdquo; fires on page load, so read it as &ldquo;didn't bounce.&rdquo;  The first real signal of intent is completing a calibration &mdash; and roughly half of everyone who arrives does.</p>
+  </div>
+  <div class="card">
+    <h3 class="serif">How many arrive</h3>
+    <p>Unique visitors per app across the empowered.vote ecosystem, same 90 days.</p>
+    <div class="eco">
+      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval">142</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:62%"></span></span><span class="eval">88</span></div>
+      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:51%"></span></span><span class="eval">73</span></div>
+      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:37%"></span></span><span class="eval">52</span></div>
+      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:28%"></span></span><span class="eval">40</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:22%"></span></span><span class="eval">31</span></div>
+    </div>
+    <p class="fcap">One new Compass visitor roughly every 40 hours.  The audience already exists on the platform; the gap is the hand-off into the Compass, not the Compass itself.</p>
+  </div>
+</div>
+
 <div class="h2row"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>
 <div class="card" style="padding:6px 22px">
   <div class="horizon">
@@ -338,7 +409,7 @@
 </div>
 
 <footer>
-  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">July 12, 2026</span>.  Stance area groupings combine state and local coverage; the ~1,228 candidate rows are records not yet linked to an office.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
+  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">July 12, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 90 days ending July 13, 2026, with internal and test traffic excluded.  Stance area groupings combine state and local coverage; the ~1,228 candidate rows are records not yet linked to an office.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
 </footer>
 
 </div>
