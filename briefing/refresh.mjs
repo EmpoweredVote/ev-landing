@@ -32,6 +32,7 @@ const all = async (sql) => (await client.query(sql)).rows;
 
 const fmt = (n) => Number(n).toLocaleString('en-US');
 const fmtM = (n) => (Number(n) / 1e6).toFixed(1).replace(/\.0$/, '') + ' million';
+const fmtB = (n) => (Number(n) / 1e9).toFixed(1).replace(/\.0$/, '') + ' billion';
 
 // ---------- queries ----------
 const core = await one(`SELECT
@@ -74,6 +75,20 @@ const byState = await all(`
   JOIN essentials.governments g ON g.id = c.government_id
   WHERE g.state IS NOT NULL AND trim(g.state) <> ''
   GROUP BY 1`);
+
+// Campaign finance (FEC).  Wrapped: if the schema is absent, leave the spans as-is.
+let finance = null;
+try {
+  finance = await one(`SELECT
+    count(*) AS fin_contribs,
+    count(DISTINCT politician_source_id) AS fin_pols,
+    round(sum(amount)) AS fin_dollars,
+    count(DISTINCT election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_cycles,
+    min(election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_min_cycle,
+    max(election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_max_cycle
+    FROM transparent_motivations.contributions`);
+} catch { /* finance schema unavailable; leave existing values */ }
+
 await client.end();
 
 // ---------- commits in the last 30 days across local repos (best effort) ----------
@@ -122,6 +137,14 @@ const values = {
   t_states: fmt(treasury.t_states), t_towns: fmt(treasury.t_towns),
   tier_deep: String(tiers.t3), tier_growing: String(tiers.t2), tier_seeded: String(tiers.t1),
   commits30: reposCounted ? '~' + fmt(Math.round(commits30 / 100) * 100) : null,
+  ...(finance ? {
+    fin_contribs_m: fmtM(finance.fin_contribs),
+    fin_dollars_b: fmtB(finance.fin_dollars),
+    fin_pols: fmt(finance.fin_pols),
+    fin_cycles: String(finance.fin_cycles),
+    fin_min_cycle: String(finance.fin_min_cycle),
+    fin_max_cycle: String(finance.fin_max_cycle),
+  } : {}),
 };
 
 // ---------- apply ----------
