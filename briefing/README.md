@@ -11,8 +11,17 @@ repos), and the as-of date.
 
 Everything else is deliberately hand-curated: the narrative sections ("The
 current push", feature journeys and next steps, "The Road Ahead"), the stance
-coverage table (its area groupings are editorial), the volunteer roster, and
-the ACFR states bullet.  Judgment stays human; only facts are automated.
+coverage table (its area groupings are editorial), the volunteer roster, the
+ACFR states bullet, and the **Reach & Engagement** figures (funnel + per-app
+visitors).  Judgment stays human; only facts are automated.
+
+The Reach & Engagement numbers are the one set that does NOT come from the
+platform database — they are product-analytics figures from PostHog, and
+`refresh.mjs` does not touch them.  When you refresh them, pull from the live
+**Compass — Top of Funnel** dashboard so the page never drifts from the source:
+<https://us.posthog.com/project/444996/dashboard/1840760> (funnel 30d/90d +
+unique visitors by app).  Update the funnel steps, the visitor bars, and the
+"90 days ending …" date in the section and the footer by hand.
 
 ## How to refresh
 
