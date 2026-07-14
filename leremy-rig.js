@@ -11,6 +11,7 @@ if (window.LeremyRig) return; // __LEREMY_IIFE__ guard: no second eval / competi
 // ───────────────────────────────────────────────────────────
 
 const D = Math.PI / 180;
+const SEQ_FALL = 4.5;   // duration of the toddler fall-and-recover sequence (fall + scold anims)
 
 // Proportions tuned to the reference figure: big head, short WIDE
 // torso block, long thick limbs. Everything scales from head radius R.
@@ -810,32 +811,70 @@ const ANIMATIONS = {
   },
   fall: {
     label: "Fell down", mood: "whoops!", seated: true,
+    // t = elapsed seconds of the ~4.5s fall-and-recover sequence (SEQ_FALL)
     frame(t) {
-      // toddler plops onto the ground, flails, then sits looking up
       const p = clone(REST);
-      p.lean = 6; p.hunch = 8;
-      p.headTilt = 8 + wave(t, t < 0.6 ? 5 : 1.2) * 5;
-      p.legRU = 70; p.legRF = 12;                 // legs sprawled out front
-      p.legLU = 58; p.legLF = 8;
-      const flail = t < 0.55 ? wave(t, 6) : wave(t, 1.3);
-      p.armRU = 58 + flail * 22; p.armRF = 28;
-      p.armLU = -58 - flail * 22; p.armLF = -26;
+      if (t < SEQ_FALL - 0.9) {
+        // sitting on the ground \u2014 gentle, slow (no fast flailing)
+        p.lean = 6; p.hunch = 8;
+        p.headTilt = 8 + wave(t, 0.7) * 4;
+        p.legRU = 70; p.legRF = 12; p.legLU = 58; p.legLF = 8;   // sprawled out front
+        p.armRU = 50 + wave(t, 0.7) * 4; p.armRF = 26;
+        p.armLU = -50 - wave(t, 0.7) * 4; p.armLF = -24;
+      } else {
+        // being stood back up by the parent
+        const k = Math.min(1, (t - (SEQ_FALL - 0.9)) / 0.9);
+        p.lean = 6 * (1 - k);
+        p.hunch = 8 * (1 - k) - 4 * k;
+        p.headTilt = 8 * (1 - k);
+        p.legRU = 70 * (1 - k) + 8 * k; p.legRF = 12 * (1 - k) + 3 * k;
+        p.legLU = 58 * (1 - k) - 8 * k; p.legLF = 8 * (1 - k) - 3 * k;
+        p.armRU = 50 * (1 - k) + 120 * k; p.armLU = -50 * (1 - k) - 120 * k;   // arms lift as he's raised
+        p.armRF = 26; p.armLF = -24;
+      }
       return p;
     },
   },
-  dismay: {
-    label: "Dismay", mood: "\u2026every single time",
+  scold: {
+    label: "Come on, kid", mood: "up you get\u2026",
+    // t = elapsed of the same ~4.5s sequence: gesture -> swoop down -> lift
     frame(t) {
-      // adult turns back, one arm up to the forehead in exhaustion
       const p = clone(REST);
-      const br = wave(t, 0.5);
-      const raise = Math.min(1, t / 0.4);
-      p.lean = 3;
-      p.hunch = 8 + br * 2;                        // slumped back
-      p.headTilt = (16 + br * 3) * raise;          // head tips back \u2014 ugh
-      p.bob = br * 1.5;
-      p.armRU = 40 + 108 * raise; p.armRF = 20 + (186 + br * 6) * raise;  // hand to forehead
-      p.armLU = -14; p.armLF = -8;
+      if (t < 1.8) {
+        // "come on, man" \u2014 arm flung out to the side, exasperated head shake
+        const br = wave(t, 0.6);
+        p.lean = -3;
+        p.headTilt = -6 + wave(t, 0.8) * 5;
+        p.armRU = 96 + br * 5; p.armRF = 100 + br * 8;   // arm out and away
+        p.armLU = -18; p.armLF = -12;
+      } else if (t < SEQ_FALL - 0.9) {
+        // swoop DOWN toward the kid \u2014 bend over, reach down
+        const k = Math.min(1, (t - 1.8) / (SEQ_FALL - 0.9 - 1.8));
+        p.hunch = -46 * k; p.lean = 8 * k; p.headTilt = -20 * k; p.bob = 8 * k;
+        p.armRU = 15 + 58 * k; p.armRF = 11 + 34 * k;
+        p.armLU = -15 - 58 * k; p.armLF = -11 - 34 * k;
+      } else {
+        // stand back up, lifting the kid
+        const k = Math.min(1, (t - (SEQ_FALL - 0.9)) / 0.9);
+        p.hunch = -46 * (1 - k); p.lean = 8 * (1 - k); p.headTilt = -20 * (1 - k); p.bob = 8 * (1 - k);
+        p.armRU = 73; p.armRF = 45; p.armLU = -73; p.armLF = -45;   // arms forward, holding him up
+      }
+      return p;
+    },
+  },
+  toddlemarch: {
+    label: "Stiff toddle", mood: "wheee \u2014 whoa!",
+    frame(t) {
+      const p = clone(REST);
+      const sw = wave(t, 1.3);
+      p.bob = -Math.abs(sw) * 3 + 2;
+      p.lean = sw * 7;                          // big wobble, about to topple
+      p.hunch = -4;
+      p.headTilt = -2 + sw * 4;
+      p.legRU = sw * 20; p.legLU = -sw * 20;    // STIFF legs, barely any knee bend
+      p.legRF = p.legRU * 0.2; p.legLF = p.legLU * 0.2;
+      p.armRU = 72 + sw * 10; p.armRF = 30;     // arms flared out wide for balance
+      p.armLU = -72 - sw * 10; p.armLF = -30;
       return p;
     },
   },
@@ -850,6 +889,19 @@ const ANIMATIONS = {
       p.armRU = 158 + wave(t, 1.1) * 4;             // right arm up-and-out, pointing
       p.armRF = 150 + wave(t, 1.1) * 4;
       p.armLU = -52; p.armLF = 132;                 // left hand on hip
+      return p;
+    },
+  },
+  heave: {
+    label: "Pick it up", mood: "…annd, lift.",
+    frame(t) {   // t = elapsed of the ~1.2s pickup: bend down to grab, then straighten
+      const p = clone(REST);
+      const bend = Math.sin(Math.min(1, t / 1.2) * Math.PI);  // 0 -> 1 (crouch) -> 0
+      p.hunch = -22 * bend;                 // bend forward toward the line
+      p.bob = 12 * bend;                    // crouch down
+      p.headTilt = -12 * bend;
+      p.armRU = 16 + 34 * bend; p.armRF = 6 + 22 * bend;      // reach down, then lift back to carry
+      p.armLU = -16 - 34 * bend; p.armLF = -6 - 22 * bend;
       return p;
     },
   },

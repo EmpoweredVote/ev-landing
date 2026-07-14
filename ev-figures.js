@@ -39,7 +39,7 @@
       entries.forEach(function (e) {
         // toddler: click him and he falls; the adult turns and throws up an arm
         if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
-          if (Math.abs(ev.clientX - e._toddSX) < 42 && Math.abs(ev.clientY - e._toddSY) < 72) { e._fall = 2.8; return; }
+          if (Math.abs(ev.clientX - e._toddSX) < 42 && Math.abs(ev.clientY - e._toddSY) < 72) { e._fall = 4.5; return; }
         }
         if (e.spec.mode !== 'rope' || !e.w) return;
         var cr = e.c.getBoundingClientRect();
@@ -116,14 +116,13 @@
       var withTot = opt.allowToddler && chance(0.5);
       var g = withTot ? pick(['stroll', 'shuffle']) : pick(GAITS);   // gentle gait when escorting a toddler
       var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: withTot ? 12 : GSPEED[g], tone: (opt.tone != null ? opt.tone : pick(TONES)) };
-      if (withTot) { s.toddler = true; s.toddlerTone = pick(TONES); }
+      if (withTot) { s.toddler = true; s.toddlerTone = pick(TONES); s.toddlerStyle = pick(['waddle', 'march']); }
       return s;
     }
     // one figure (or none) for a note-card top edge
     function noteSlot(anchor, opt) {
       opt = opt || {};
       var r = Math.random();
-      if (opt.allowClimb && r < 0.22) return { mode: 'vclimb', anchor: anchor, tone: pick(TONES) };
       if (r < 0.45) return walker(anchor, opt);
       if (r < 0.74) return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : pick(TONES)) };
       if (r < 0.9 || opt.always) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: pick(TONES) };
@@ -139,7 +138,7 @@
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
       add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));  // Note 1 always hosts a Bobit (moved off Note 2)
-      add(noteSlot('.note.n-ai', { allowClimb: true }));                     // Note 2 (n-team) intentionally left clear
+      add(noteSlot('.note.n-ai', {}));                                       // Note 2 (n-team) intentionally left clear
       add(noteSlot('.note.n-money', {}));
       // watch top — an elder, or a random walker
       add(chance(0.5)
@@ -147,9 +146,8 @@
         : walker('section.watch', {}));
       // watch thumbnail corner — peeker, idler, or hover-jumper
       var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: pick(TONES) };
-      if (pr < 0.5) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }
-      else if (pr < 0.8) { pk.anim = pick(IDLES); }
-      else { pk.anim = 'jump'; pk.hover = 'jump'; }
+      if (pr < 0.6) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }  // peek (hover: shrug)
+      else { pk.anim = pick(IDLES); }                             // idle (hover: wave). Only the footer stander jumps.
       add(pk);
       if (chance(0.8)) add({ mode: 'rope', anchor: 'section.watch .wrap', x: 0.90, tone: 2 });
       // footer pair — always present so the meet-and-greet keeps happening
@@ -432,28 +430,48 @@
           return;
         }
         if (spec.mode === 'patrol') {
-          // toddler waddling in front (adult trails behind); click him and he falls down
+          var SEQ = 4.5;   // toddler fall-and-recover length (matches SEQ_FALL in the rig)
+          // toddler in front (adult trails); click him -> he falls, the parent scoops him back up
           if (spec.toddler) {
             var TS = S * 0.62;
             var tTgt = (e._dirR ? 1 : -1) * 48;                       // leads farther ahead, so the adult is clearly behind
             e._toff = (e._toff == null) ? tTgt : e._toff + (tTgt - e._toff) * Math.min(1, dt * 5);
             var toddX = figX + e._toff;
             e._toddSX = cr.left + toddX; e._toddSY = cr.top + feetY - 26;   // for click hit-testing
-            R.drawShadow(ctx, toddX, feetY, 10, shadow);
             var totCol = figColor(spec.toddlerTone != null ? spec.toddlerTone : 1);
-            if (e._fall > 0) drawFig(ctx, toddX, feetY - 8 * TS, TS, !e._dirR, A.fall.frame(2.8 - e._fall), { color: totCol });
-            else drawFig(ctx, toddX, feetY - 112 * TS, TS, !e._dirR, A.toddle.frame(tt * 1.1 + 1.7), { color: totCol });
+            var standYtot = feetY - 112 * TS, groundYtot = feetY - 8 * TS;
+            R.drawShadow(ctx, toddX, feetY, 10, shadow);
+            if (e._fall > 0) {
+              var ft = SEQ - e._fall;                                 // elapsed
+              var ky;                                                 // 0 standing .. 1 on the ground
+              if (ft < 0.7) ky = smooth01(ft / 0.7);                  // topple down (slow)
+              else if (ft < SEQ - 0.9) ky = 1;                        // sit
+              else ky = 1 - smooth01((ft - (SEQ - 0.9)) / 0.9);       // lifted back to standing
+              drawFig(ctx, toddX, standYtot + (groundYtot - standYtot) * ky, TS, !e._dirR, A.fall.frame(ft), { color: totCol });
+            } else {
+              var totAnim = spec.toddlerStyle === 'march' ? A.toddlemarch : A.toddle;
+              drawFig(ctx, toddX, standYtot, TS, !e._dirR, totAnim.frame(tt * 1.1 + 1.7), { color: totCol });
+            }
           }
           R.drawShadow(ctx, figX, feetY, 16, shadow);
-          var animP, ptP, flipP;
-          if (spec.toddler && e._fall > 0) { animP = A.dismay; ptP = 2.8 - e._fall; flipP = false; }  // adult turns, arm up, exhausted
-          else {
+          var animP, ptP, flipP, parentX = figX;
+          if (spec.toddler && e._fall > 0) {
+            var ft2 = SEQ - e._fall;
+            animP = A.scold; ptP = ft2;
+            flipP = e._dirR ? false : true;                           // face the fallen kid (ahead in travel dir)
+            var reach = ft2 < 1.8 ? 0 : smooth01((ft2 - 1.8) / 1.2);  // step toward the kid to reach him
+            parentX = figX + e._toff * 0.5 * reach;
+          } else {
             animP = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim];
             ptP = e.greet ? e.greet : tt;
             // when greeting, face the viewer — unless it's the footer meet, then turn to face the stander (left)
             flipP = e.greet ? (e._meet ? true : false) : !e._dirR;
           }
-          drawFig(ctx, figX, feetY - 112 * S, S, flipP, animP.frame(ptP, e._wave), { color: col, cane: animP.cane });
+          var pPose = animP.frame(ptP, e._wave);
+          if (spec.toddler && spec.toddlerStyle === 'march' && !e.greet && !e._fall) {
+            pPose.armRU = Math.max(pPose.armRU, 44); pPose.armLU = Math.min(pPose.armLU, -44);   // catch-ready
+          }
+          drawFig(ctx, parentX, feetY - 112 * S, S, flipP, pPose, { color: col, cane: animP.cane });
           return;
         }
         if (spec.mode === 'beam') {
@@ -474,10 +492,14 @@
             e.linger = 2.0;
           } else if (e.greet) {
             e.linger -= dt;
-            if (e.linger <= 0) { e.greet = 0; e.wF = e.wB = false; }
+            if (e.linger <= 0) {
+              if (e.load === 'line' && (e.dF > 0.25 || e.dB > 0.25)) e._pickup = 1.2;   // bend down & lift, don't snap
+              e.greet = 0; e.wF = e.wB = false;
+            }
           }
-          // advance (frozen while greeting or dwelling off-screen); swap load at each off-screen turn
-          if (!e.greet) {
+          if (e._pickup > 0) e._pickup = Math.max(0, e._pickup - dt);
+          // advance (frozen while greeting, picking up, or dwelling off-screen); swap load at each off-screen turn
+          if (!e.greet && !(e._pickup > 0)) {
             if (e.dwell > 0) e.dwell -= dt;
             else {
               e.bx += e.dir * speedB * dt;
@@ -509,17 +531,28 @@
             // the logo's red circle
             ctx.fillStyle = cssVar('--coral', '#FF5740');
             ctx.beginPath(); ctx.arc((fx + bx2) / 2, carryY, 16, 0, Math.PI * 2); ctx.fill();
-          } else {
-            var yF = carryY + (groundY - carryY) * e.dF;
-            var yB = carryY + (groundY - carryY) * e.dB;
+          } else {   // line load
             ctx.strokeStyle = figColor(2);   // legible gold on light, bright yellow on dark
             ctx.lineWidth = 5; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yF); ctx.lineTo(bx2 - e.dir * 12, yB); ctx.stroke();
+            if (e._pickup > 0) {
+              // being picked up: line lifts off the ground as they straighten
+              var pe = 1.2 - e._pickup, lift = pe < 0.6 ? 0 : (pe - 0.6) / 0.6;
+              var yPick = groundY + (carryY - groundY) * smooth01(lift);
+              ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yPick); ctx.lineTo(bx2 - e.dir * 12, yPick); ctx.stroke();
+            } else {
+              var yF = carryY + (groundY - carryY) * e.dF;
+              var yB = carryY + (groundY - carryY) * e.dB;
+              ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yF); ctx.lineTo(bx2 - e.dir * 12, yB); ctx.stroke();
+            }
           }
           R.drawShadow(ctx, fx, feetY, 15, shadow);
           R.drawShadow(ctx, bx2, feetY, 15, shadow);
           var poseF, poseB, flipF = !goingR, flipB = !goingR;
-          if (e.greet) {
+          if (e._pickup > 0) {
+            // both crouch to grab the dropped line and lift it together
+            var peP = 1.2 - e._pickup;
+            poseF = A.heave.frame(peP); poseB = A.heave.frame(peP);
+          } else if (e.greet) {
             var holdPose = A.holdannoyed.frame(e.greet);
             poseF = e.wF ? A.greet.frame(e.greet, { hand: 'R', hz: 1.5 }) : holdPose;
             poseB = e.wB ? A.greet.frame(e.greet, { hand: 'L', hz: 1.95 }) : holdPose;
