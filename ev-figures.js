@@ -24,14 +24,17 @@
     var mx = -1e4, my = -1e4;
     document.addEventListener('mousemove', function (ev) { mx = ev.clientX; my = ev.clientY; }, { passive: true });
 
-    // when a hero tool is highlighted, the presenter Bobit points up at the preview
-    var featureOn = false;
+    // when a hero tool is highlighted, the presenter Bobit points straight at THAT tool
+    var featureOn = false, featureCX = 0, featureCY = 0;
     var logosWrap = document.querySelector('.showcase-logos');
     if (logosWrap) {
-      logosWrap.addEventListener('mouseenter', function () { featureOn = true; });
+      var aimAt = function (el) { var r = el.getBoundingClientRect(); featureOn = true; featureCX = r.left + r.width / 2; featureCY = r.top + r.height / 2; };
       logosWrap.addEventListener('mouseleave', function () { featureOn = false; });
-      logosWrap.addEventListener('focusin', function () { featureOn = true; });
       logosWrap.addEventListener('focusout', function () { featureOn = false; });
+      logosWrap.querySelectorAll('.logo-trigger').forEach(function (tr) {
+        tr.addEventListener('mouseenter', function () { aimAt(tr); });
+        tr.addEventListener('focus', function () { aimAt(tr); });
+      });
     }
 
     // click to shove a rope Bobit / tip over a toddler
@@ -103,7 +106,7 @@
     // tone: 0 = teal/blue · 1 = coral/red · 2 = marigold/yellow
     function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
     function chance(p) { return Math.random() < p; }
-    var GAITS = ['stroll', 'strut', 'scurry', 'march', 'sneak', 'trudge', 'shuffle'];
+    var GAITS = ['stroll', 'strut', 'sneak', 'trudge', 'shuffle'];   // no stiff march / frantic scurry in the rotation
     var GSPEED = { stroll: 32, strut: 40, scurry: 62, march: 34, sneak: 22, trudge: 16, shuffle: 20 };
     var IDLES = ['bored', 'sassy', 'confused', 'standstill', 'present'];
     var SEATS = ['sit', 'read'];
@@ -147,7 +150,7 @@
       if (pr < 0.6) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }  // peek (hover: shrug)
       else { pk.anim = pick(IDLES); }                             // idle (hover: wave). Only the footer stander jumps.
       add(pk);
-      if (chance(0.85)) add({ mode: 'rope', anchor: 'section.watch .wrap', x: 0.42, tone: pick(TONES) });
+      if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid .watch-card:nth-of-type(3) .watch-thumb', tone: pick(TONES) });
       // footer pair — always present so the meet-and-greet keeps happening
       add(walker('footer', { tone: 0 }));
       add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
@@ -222,12 +225,12 @@
         if (spec.mode === 'rope') {
           var wR = 300;                                                       // room for the frame bar + the swing
           sizeCanvas(e, wR, 260);
-          var leftR = r.left + sx + r.width * spec.x - 130;                   // pivot (x=130 in canvas) lands at spec.x
+          var leftR = r.right + sx - 215;                                     // pivot (x=215 in canvas) at the video's right edge
           var maxLeftR = sx + document.documentElement.clientWidth - wR - 4;  // never past the viewport (no h-scroll)
           if (leftR > maxLeftR) leftR = maxLeftR;
           if (leftR < sx + 4) leftR = sx + 4;
           e.c.style.left = leftR + 'px';
-          e.c.style.top = (r.top + sy - 6) + 'px';
+          e.c.style.top = (r.top + sy - 44) + 'px';                          // frame up near the Talks line
           return;
         }
         if (spec.mode === 'seat') {
@@ -403,21 +406,34 @@
           return;
         }
         if (spec.mode === 'stand') {
-          var animSt, ptSt, flipSt = false;
+          var oyS = feetY - 112 * S;
           if (spec.presenter) {
-            flipSt = true;                                   // face inward, toward the preview/logo
-            if (e.greet) { animSt = A[spec.hoverAnim || 'greet']; ptSt = e.greet; }
-            else if (featureOn) { animSt = A.presentup; ptSt = tt; }   // point up at the highlighted feature
-            else { animSt = A.present; ptSt = tt; }                    // proud, showing off the tools
+            R.drawShadow(ctx, w / 2, feetY, 16, shadow);
+            if (e.greet) {
+              drawFig(ctx, w / 2, oyS, S, true, A[spec.hoverAnim || 'greet'].frame(e.greet, e._wave), { color: col });
+            } else if (featureOn) {
+              // aim a straight arm directly at the highlighted tool's on-screen position
+              var ox = cr.left + w / 2, oy = cr.top + oyS - 26;   // ~shoulder
+              var Adeg = Math.atan2(-(featureCX - ox), (featureCY - oy)) * 180 / Math.PI;
+              var pp = Object.assign({}, R.REST);
+              pp.lean = -3; pp.headTilt = -8; pp.bob = 1 + Math.sin(tt * 2) * 1.2;
+              pp.armRU = Adeg - pp.lean; pp.armRF = Adeg - pp.lean + Math.sin(tt * 3) * 2;
+              pp.armLU = -12; pp.armLF = -7;              // other arm at his side
+              drawFig(ctx, w / 2, oyS, S, true, pp, { color: col });
+            } else {
+              drawFig(ctx, w / 2, oyS, S, true, A.standstill.frame(tt), { color: col });   // arms at side while the EV logo is up
+            }
+            return;
           }
-          else if (spec.hover === 'jump') {
+          var animSt, ptSt, flipSt = false;
+          if (spec.hover === 'jump') {
             if (e.greet) { animSt = A.jump; ptSt = e.greet; }
             else if (e.wave > 0) { e.wave += dt; if (e.wave > 2.2) e.wave = 0; animSt = A.greet; ptSt = e.wave; }  // greets the walker (starts before he stops)
             else { animSt = A.standstill; ptSt = tt; }
           }
           else { animSt = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
           R.drawShadow(ctx, w / 2, feetY, 16, shadow);
-          drawFig(ctx, w / 2, feetY - 112 * S, S, flipSt, animSt.frame(ptSt, e._wave), { color: col });
+          drawFig(ctx, w / 2, oyS, S, flipSt, animSt.frame(ptSt, e._wave), { color: col });
           return;
         }
         if (spec.mode === 'seat') {
@@ -592,39 +608,39 @@
         if (spec.mode === 'rope') {
           // Two-step: he sits on a horizontal frame bar; click BREAKS it and he grabs
           // the rope and dangles; then clicking/pushing him swings him (pendulum).
-          var pivotX = 130;                       // left end: where he sits, then hangs from
+          var pivotX = 215;                       // RIGHT end (at the video's right edge): his end
           var barY = 48;                          // frame height (low enough that his head/torso clear the top)
           var grey = cssVar('--border', '#C9C6BE');
           ctx.strokeStyle = grey; ctx.lineCap = 'round';
           e.rphase = e.rphase || 'sit';
+          var py = h - 70, Lh = py - 148 * S;      // pivot(top) -> hands, pendulum length
 
           if (e.rphase === 'sit') {
             ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY); ctx.stroke();   // suspender
-            ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(w - 12, barY); ctx.stroke(); // the frame bar
-            var sitX = pivotX + 16;               // he sits on the left end of the bar
+            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY); ctx.stroke();   // suspender at HIS end
+            ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(12, barY); ctx.stroke();    // frame bar extends LEFT
+            var sitX = pivotX - 16;               // he sits on the right end
             e._ropeSX = cr.left + sitX; e._ropeSY = cr.top + barY + 20;
             drawFig(ctx, sitX, barY, S, false, A.sit.frame(tt, e._wave), { color: col });
             return;
           }
 
-          var py = h - 70, Lh = py - 148 * S;      // pivot(top) -> hands, pendulum length
-
           if (e.rphase === 'break') {
             e.breakT = (e.breakT || 0) + dt;
             var bk = Math.min(1, e.breakT / 0.7);
             ctx.lineWidth = 3.5;
-            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY + bk * (py - barY)); ctx.stroke();  // rope drops down
-            ctx.save(); ctx.globalAlpha = 1 - bk;   // broken bar swings off and fades
-            ctx.translate(pivotX + 16, barY); ctx.rotate(bk * 1.5);
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(w - 12 - (pivotX + 16), 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY + bk * (py - barY)); ctx.stroke();  // his rope drops down
+            ctx.save(); ctx.globalAlpha = 1 - bk;   // the rest of the bar breaks off and swings away LEFT
+            ctx.translate(pivotX - 20, barY); ctx.rotate(-bk * 1.5);
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-(pivotX - 20 - 12), 0); ctx.stroke();
             ctx.restore();
-            drawFig(ctx, pivotX, barY + bk * (py - barY), S, false, A.rope.frame(tt), { color: col });   // drops to hang
+            var hx = (pivotX - 16) + 16 * smooth01(bk);   // swings RIGHT to hang under his end
+            drawFig(ctx, hx, barY + bk * (py - barY), S, false, A.rope.frame(tt), { color: col });
             if (bk >= 1) { e.rphase = 'hang'; e.ang = 0; e.vel = 0; e.scramble = 1; }   // grabs on, startled
             return;
           }
 
-          // hang: damped pendulum around the left pivot; click adds velocity (see click handler)
+          // hang: damped pendulum around the RIGHT pivot; click adds velocity (see click handler)
           e.ang = e.ang || 0; e.vel = e.vel || 0;
           e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;
           e.ang += e.vel * dt;
