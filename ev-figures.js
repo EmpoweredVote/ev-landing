@@ -33,7 +33,9 @@
         var bodyX = cr.left + e.w / 2 - Math.sin(e.ang || 0) * Lh;   // +ang swings the body left
         if (Math.abs(ev.clientX - bodyX) < 60 && ev.clientY > cr.top && ev.clientY < cr.top + py + 30) {
           var dir = ev.clientX > bodyX ? 1 : -1;          // push away from the click
-          e.vel = Math.max(-5, Math.min(5, (e.vel || 0) + dir * 2.6));
+          // cap velocity so the biggest possible swing still stays inside the canvas
+          e.vel = Math.max(-1.9, Math.min(1.9, (e.vel || 0) + dir * 1.6));
+          e.scramble = 1;                                 // startled — scrambles like he might fall
         }
       });
     }, { passive: true });
@@ -149,8 +151,13 @@
           return;
         }
         if (spec.mode === 'rope') {
-          sizeCanvas(e, 240, 250);           // wider so a hard swing doesn't clip
-          e.c.style.left = (r.left + sx + r.width * spec.x - 120) + 'px';
+          var wR = 300;                                                       // wide enough for the full (capped) swing
+          sizeCanvas(e, wR, 250);
+          var leftR = r.left + sx + r.width * spec.x - wR / 2;
+          var maxLeftR = sx + document.documentElement.clientWidth - wR - 4;  // never past the viewport (no h-scroll)
+          if (leftR > maxLeftR) leftR = maxLeftR;
+          if (leftR < sx + 4) leftR = sx + 4;
+          e.c.style.left = leftR + 'px';
           e.c.style.top = (r.top + sy - 10) + 'px';
           return;
         }
@@ -388,9 +395,19 @@
           e.ang = e.ang || 0; e.vel = e.vel || 0;
           e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;   // k=9 (~2s period), light damping -> stops after ~7s
           e.ang += e.vel * dt;
+          if (e.scramble > 0) e.scramble = Math.max(0, e.scramble - dt / 1.1);   // startle fades over ~1.1s
           // Draw rope AND figure in ONE rotated frame so they can never drift apart.
           // The rope bows sideways in this local frame (a vine flex trailing the swing).
           var bow = Math.max(-24, Math.min(24, e.vel * 9));
+          var poseR = A.rope.frame(tt);
+          if (e.scramble > 0) {
+            // panicked scramble — legs kick for footing, head whips around; grip stays put
+            var scr = e.scramble, fl = Math.sin(tt * 34);
+            poseR.legRF += fl * 28 * scr;  poseR.legLF += -fl * 28 * scr;
+            poseR.legRU += fl * 10 * scr;  poseR.legLU += -fl * 10 * scr;
+            poseR.headTilt += Math.sin(tt * 27) * 12 * scr;
+            poseR.bob += Math.sin(tt * 31) * 3 * scr;
+          }
           ctx.save();
           ctx.translate(w / 2, 0); ctx.rotate(e.ang); ctx.translate(-w / 2, 0);
           ctx.strokeStyle = cssVar('--border', '#E5E7EB');
@@ -399,7 +416,7 @@
           ctx.moveTo(w / 2, 0);
           ctx.quadraticCurveTo(w / 2 - bow, Lh * 0.5, w / 2, Lh);   // ends exactly at the hands
           ctx.stroke();
-          drawFig(ctx, w / 2, py, S, false, A.rope.frame(tt), { color: col });
+          drawFig(ctx, w / 2, py, S, false, poseR, { color: col });
           ctx.restore();
           return;
         }
