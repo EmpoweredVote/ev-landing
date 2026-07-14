@@ -83,21 +83,20 @@
     });
 
     // ---- figure specs ----
+    // tone: 0 = teal/blue · 1 = coral/red · 2 = marigold/yellow (pins each figure's color)
     var SPECS = [
-      { mode: 'beam',   anchor: '.hero',                edge: 'bottom' },                     // 2 workers + beam
-      { mode: 'stand',  anchor: '.hero .meta-row',      edge: 'top', x: 0.90, anim: 'bored' },
+      { mode: 'beam',   anchor: '.hero',                edge: 'bottom', tone: 0 },             // 2 workers + beam
+      { mode: 'stand',  anchor: '.hero .meta-row',      edge: 'top', x: 0.90, anim: 'bored', tone: 1 },
       { mode: 'why',    anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' },
       { mode: 'why',    anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' },
       { mode: 'why',    anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' },
-      { mode: 'patrol', anchor: '.note.n-alpha',        edge: 'top', anim: 'stroll', speed: 34 },
-      { mode: 'seat',   anchor: '.note.n-team',         edge: 'top', x: 0.80, anim: 'read' },
-      { mode: 'vclimb', anchor: '.note.n-ai' },
-      { mode: 'seat',   anchor: '.note.n-money',        edge: 'top', x: 0.10, anim: 'sit' },
-      { mode: 'patrol', anchor: 'section.watch',        edge: 'top', anim: 'stroll', speed: 26 },
-      { mode: 'stand',  anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, anim: 'peek' },
-      { mode: 'rope',   anchor: 'section.watch .wrap',  x: 0.90 },
-      { mode: 'patrol', anchor: 'footer',               edge: 'top', anim: 'strut', speed: 46 },
-      { mode: 'stand',  anchor: 'footer',               edge: 'top', x: 0.06, anim: 'jump', hover: 'jump' },
+      { mode: 'patrol', anchor: '.note.n-alpha',        edge: 'top', anim: 'stroll', speed: 34, tone: 2, toddler: true },  // yellow walker + toddler
+      { mode: 'seat',   anchor: '.note.n-money',        edge: 'top', x: 0.10, anim: 'read', tone: 0 },                     // blue reader (moved from Note 2)
+      { mode: 'patrol', anchor: 'section.watch',        edge: 'top', anim: 'elder', speed: 15, tone: 1, hoverAnim: 'elderangry' },  // hunched elder w/ cane
+      { mode: 'stand',  anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, anim: 'peek', tone: 1, hoverAnim: 'shrug' },
+      { mode: 'rope',   anchor: 'section.watch .wrap',  x: 0.90, tone: 2 },
+      { mode: 'patrol', anchor: 'footer',               edge: 'top', anim: 'strut', speed: 46, tone: 0 },   // blue walker
+      { mode: 'stand',  anchor: 'footer',               edge: 'top', x: 0.06, anim: 'jump', hover: 'jump', tone: 1 },  // red stander
     ];
 
     var entries = [];
@@ -241,7 +240,7 @@
         if (cr.bottom < -40 || cr.top > window.innerHeight + 40) return;
         ctx.clearRect(0, 0, w, h);
         var feetY = h - 6;
-        var col = figColor(e.ci);
+        var col = figColor(spec.tone != null ? spec.tone : e.ci);
         var hoverable = spec.mode === 'stand' || spec.mode === 'patrol' || spec.mode === 'seat';
         // per-entry clock freezes while greeting, so patrols resume where they stopped
         if (e.greet) e.greet += dt;
@@ -348,7 +347,7 @@
             else if (e.wave > 0) { e.wave += dt; if (e.wave > 2.2) e.wave = 0; animSt = A.greet; ptSt = e.wave; }  // greets the walker (starts before he stops)
             else { animSt = A.standstill; ptSt = tt; }
           }
-          else { animSt = e.greet ? A.greet : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
+          else { animSt = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
           R.drawShadow(ctx, w / 2, feetY, 16, shadow);
           drawFig(ctx, w / 2, feetY - 112 * S, S, false, animSt.frame(ptSt), { color: col });
           return;
@@ -361,12 +360,21 @@
           return;
         }
         if (spec.mode === 'patrol') {
+          // toddler waddling in front, in the direction of travel (offset eases across at turns)
+          if (spec.toddler) {
+            var TS = S * 0.62;
+            var tTgt = (e._dirR ? 1 : -1) * 34;
+            e._toff = (e._toff == null) ? tTgt : e._toff + (tTgt - e._toff) * Math.min(1, dt * 5);
+            var toddX = figX + e._toff;
+            R.drawShadow(ctx, toddX, feetY, 10, shadow);
+            drawFig(ctx, toddX, feetY - 112 * TS, TS, !e._dirR, A.toddle.frame(tt * 1.6 + 1.7), { color: figColor(1) });
+          }
           R.drawShadow(ctx, figX, feetY, 16, shadow);
-          var animP = e.greet ? A.greet : A[spec.anim];
+          var animP = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim];
           var ptP = e.greet ? e.greet : tt;
           // when greeting, face the viewer — unless it's the footer meet, then turn to face the stander (left)
           var flipP = e.greet ? (e._meet ? true : false) : !e._dirR;
-          drawFig(ctx, figX, feetY - 112 * S, S, flipP, animP.frame(ptP), { color: col });
+          drawFig(ctx, figX, feetY - 112 * S, S, flipP, animP.frame(ptP), { color: col, cane: animP.cane });
           return;
         }
         if (spec.mode === 'beam') {

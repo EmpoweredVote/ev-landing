@@ -136,6 +136,32 @@ function draw(ctx, j, cfg = CFG, opts = {}) {
 
   // desk in FRONT of the figure (draw last so it sits over the legs)
   if (opts.desk) drawDesk(ctx, j, opts.deskColor || color, opts.screenColor);
+
+  // walking cane in the right hand
+  if (opts.cane) drawCane(ctx, j, color);
+}
+
+// rigid cane from the right hand, extended along the forearm direction:
+// plants toward the ground when the hand is low, brandishes when it's raised.
+function drawCane(ctx, j, color) {
+  const eR = j.eR, hR = j.hR;
+  const dx = hR.x - eR.x, dy = hR.y - eR.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const caneLen = 72;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(hR.x, hR.y);
+  ctx.lineTo(hR.x + ux * caneLen, hR.y + uy * caneLen);
+  ctx.stroke();
+  // little crook handle just above the grip
+  const px = -uy, py = ux;
+  ctx.beginPath();
+  ctx.moveTo(hR.x - ux * 6, hR.y - uy * 6);
+  ctx.quadraticCurveTo(hR.x - ux * 12, hR.y - uy * 12, hR.x - ux * 10 + px * 9, hR.y - uy * 10 + py * 9);
+  ctx.stroke();
+  ctx.restore();
 }
 
 // office swivel chair, seen in profile behind a seated figure facing right.
@@ -720,6 +746,55 @@ const ANIMATIONS = {
       const p = clone(REST);
       p.bob = wave(t, 0.3) * 1.5;
       p.headTilt = wave(t, 0.08) * 6;
+      return p;
+    },
+  },
+  toddle: {
+    label: "Toddle", mood: "wobble wobble!",
+    frame(t) {
+      const p = clone(REST);
+      const sw = wave(t, 1.5);                    // quick little steps
+      p.bob = -Math.abs(sw) * 5 + 2;
+      p.lean = sw * 5;                            // big side-to-side sway
+      p.hunch = -6;
+      p.headTilt = -2 + sw * 3;
+      p.legRU = sw * 16; p.legLU = -sw * 16;
+      p.legRF = p.legRU - Math.max(0, sw) * 22;
+      p.legLF = p.legLU - Math.max(0, -sw) * 22;
+      p.armRU = 42 + sw * 8; p.armRF = 22;        // arms out for balance
+      p.armLU = -42 - sw * 8; p.armLF = -22;
+      return p;
+    },
+  },
+  elder: {
+    label: "Elder", mood: "back in my day\u2026", cane: true,
+    frame(t) {
+      const p = clone(REST);
+      const step = wave(t, 0.55);                 // slow shuffle
+      p.hunch = -30 + wave(t, 0.25) * 2;          // permanently stooped
+      p.headTilt = -16;                           // head hangs forward
+      p.lean = 5;
+      p.bob = -Math.abs(step) * 2 + 2;
+      p.legRU = step * 12; p.legLU = -step * 12;
+      p.legRF = p.legRU - Math.max(0, step) * 10;
+      p.legLF = p.legLU - Math.max(0, -step) * 10;
+      p.armRU = 54; p.armRF = 40;                 // right hand out front on the cane
+      p.armLU = -12; p.armLF = -8;                // left arm hangs
+      return p;
+    },
+  },
+  elderangry: {
+    label: "Elder (angry)", mood: "get off my lawn!", cane: true,
+    frame(t) {
+      const p = clone(REST);
+      p.hunch = -18;                              // straightens up to tell you off
+      p.headTilt = -2 + wave(t, 3) * 3;           // glaring up at you
+      p.lean = 2;
+      p.legRU = 10; p.legLU = -12; p.legLF = -6;  // planted stance
+      const shake = wave(t, 8);                   // brandishes the cane and shakes it
+      p.armRU = 150 + shake * 14;
+      p.armRF = 120 + shake * 22;
+      p.armLU = -18; p.armLF = -10;
       return p;
     },
   },
