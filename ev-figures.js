@@ -83,21 +83,64 @@
     });
 
     // ---- figure specs ----
-    // tone: 0 = teal/blue · 1 = coral/red · 2 = marigold/yellow (pins each figure's color)
-    var SPECS = [
-      { mode: 'beam',   anchor: '.hero',                edge: 'bottom', tone: 0 },             // 2 workers + beam
-      { mode: 'stand',  anchor: '.hero .meta-row',      edge: 'top', x: 0.90, anim: 'bored', tone: 1 },
-      { mode: 'why',    anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' },
-      { mode: 'why',    anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' },
-      { mode: 'why',    anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' },
-      { mode: 'patrol', anchor: '.note.n-alpha',        edge: 'top', anim: 'stroll', speed: 34, tone: 2, toddler: true },  // yellow walker + toddler
-      { mode: 'seat',   anchor: '.note.n-money',        edge: 'top', x: 0.10, anim: 'read', tone: 0 },                     // blue reader (moved from Note 2)
-      { mode: 'patrol', anchor: 'section.watch',        edge: 'top', anim: 'elder', speed: 15, tone: 1, hoverAnim: 'elderangry' },  // hunched elder w/ cane
-      { mode: 'stand',  anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, anim: 'peek', tone: 1, hoverAnim: 'shrug' },
-      { mode: 'rope',   anchor: 'section.watch .wrap',  x: 0.90, tone: 2 },
-      { mode: 'patrol', anchor: 'footer',               edge: 'top', anim: 'strut', speed: 46, tone: 0 },   // blue walker
-      { mode: 'stand',  anchor: 'footer',               edge: 'top', x: 0.06, anim: 'jump', hover: 'jump', tone: 1 },  // red stander
-    ];
+    // ── Randomized casting: each page load staffs every section from a pool,
+    //    so you get a different batch of Bobits every visit. ──
+    // tone: 0 = teal/blue · 1 = coral/red · 2 = marigold/yellow
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+    function chance(p) { return Math.random() < p; }
+    var GAITS = ['stroll', 'strut', 'scurry', 'march', 'sneak', 'trudge', 'shuffle'];
+    var GSPEED = { stroll: 32, strut: 40, scurry: 62, march: 34, sneak: 22, trudge: 16, shuffle: 20 };
+    var IDLES = ['bored', 'sassy', 'confused', 'exhausted', 'standstill', 'present'];
+    var SEATS = ['sit', 'read'];
+
+    function walker(anchor, opt) {
+      opt = opt || {};
+      var g = pick(GAITS);
+      var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: GSPEED[g], tone: (opt.tone != null ? opt.tone : pick([0, 1, 2])) };
+      if (opt.allowToddler && chance(0.5)) s.toddler = true;
+      return s;
+    }
+    // one figure (or none) for a note-card top edge
+    function noteSlot(anchor, opt) {
+      opt = opt || {};
+      var r = Math.random();
+      if (opt.allowClimb && r < 0.22) return { mode: 'vclimb', anchor: anchor, tone: pick([0, 1]) };
+      if (r < 0.45) return walker(anchor, opt);
+      if (r < 0.74) return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : pick([0, 1, 2])) };
+      if (r < 0.9) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: pick([0, 1, 2]) };
+      return null;   // sometimes empty
+    }
+
+    function buildCast() {
+      var out = [];
+      var add = function (s) { if (s) out.push(s); };
+      add({ mode: 'beam', anchor: '.hero', edge: 'bottom', tone: 0 });                                    // hero crew — always
+      if (chance(0.85)) add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.86 + Math.random() * 0.08, anim: pick(IDLES), tone: pick([1, 2]) });
+      add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' });       // fixed (content)
+      add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
+      add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
+      add(noteSlot('.note.n-alpha', { allowToddler: true }));
+      add(noteSlot('.note.n-team', {}));
+      add(noteSlot('.note.n-ai', { allowClimb: true }));
+      add(noteSlot('.note.n-money', {}));
+      // watch top — an elder, or a random walker
+      add(chance(0.5)
+        ? { mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: pick([1, 2]), hoverAnim: 'elderangry' }
+        : walker('section.watch', {}));
+      // watch thumbnail corner — peeker, idler, or hover-jumper
+      var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: 1 };
+      if (pr < 0.5) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }
+      else if (pr < 0.8) { pk.anim = pick(IDLES); }
+      else { pk.anim = 'jump'; pk.hover = 'jump'; }
+      add(pk);
+      if (chance(0.8)) add({ mode: 'rope', anchor: 'section.watch .wrap', x: 0.90, tone: 2 });
+      // footer pair — always present so the meet-and-greet keeps happening
+      add(walker('footer', { tone: 0 }));
+      add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
+      return out;
+    }
+
+    var SPECS = buildCast();
 
     var entries = [];
     var ci = 0;
