@@ -121,6 +121,15 @@
       entries.push({ spec: spec, el: el, c: c, ctx: c.getContext('2d'), phase: i * 2.13, w: 0, h: 0, ci: (spec.mode === 'why' ? 0 : ci++), lt: 0, greet: 0, linger: 0 });
     });
 
+    // footer pair: the strolling Bobit greets the standing one when he walks up
+    var footWalk = null, footStand = null;
+    entries.forEach(function (e) {
+      if (e.spec.anchor === 'footer' && e.spec.mode === 'patrol') footWalk = e;
+      if (e.spec.anchor === 'footer' && e.spec.mode === 'stand') footStand = e;
+    });
+
+    function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
+
     function sizeCanvas(e, w, h) {
       if (e.w !== w || e.h !== h) {
         e.w = w; e.h = h;
@@ -200,6 +209,24 @@
       var ink = inkCache;
       var shadow = 'rgba(127,127,127,0.18)';
 
+      // ── footer meet-and-greet: walker approaches the stander → both wave, walker pauses ──
+      if (footWalk && footWalk.w && footStand && footStand.w) {
+        footWalk._cool = Math.max(0, (footWalk._cool || 0) - dt);
+        var fwr = footWalk.c.getBoundingClientRect();
+        if (fwr.top < window.innerHeight && fwr.bottom > 0) {          // only when the footer is on screen
+          var padF = 70, spanF = footWalk.w - padF * 2;
+          var ttF = footWalk.lt + footWalk.phase;
+          var uF = (ttF * footWalk.spec.speed / spanF) % 2; if (uF < 0) uF += 2;
+          var walkerX = fwr.left + padF + (uF < 1 ? uF : 2 - uF) * spanF;
+          var standX = footStand.c.getBoundingClientRect().left + footStand.w / 2;
+          if (Math.abs(walkerX - standX) < 58 && !footWalk.greet && footWalk._cool <= 0) {
+            footWalk.greet = 0.001; footWalk.linger = 1.6; footWalk._meet = true;  // he stops & waves, facing the stander
+            footStand.wave = 0.001;                                                 // the stander waves back
+            footWalk._cool = 6;                                                     // don't repeat until he's walked off and looped back
+          }
+        }
+      }
+
       entries.forEach(function (e) {
         var spec = e.spec, ctx = e.ctx, w = e.w, h = e.h;
         if (!w) return;
@@ -230,7 +257,7 @@
             e.linger = 1.6;
           } else if (e.greet) {
             e.linger -= dt;
-            if (e.linger <= 0) e.greet = 0;
+            if (e.linger <= 0) { e.greet = 0; e._meet = false; }
           }
         }
 
@@ -310,7 +337,11 @@
         }
         if (spec.mode === 'stand') {
           var animSt, ptSt;
-          if (spec.hover === 'jump') { animSt = e.greet ? A.jump : A.standstill; ptSt = e.greet ? e.greet : tt; }
+          if (spec.hover === 'jump') {
+            if (e.greet) { animSt = A.jump; ptSt = e.greet; }
+            else if (e.wave > 0) { e.wave += dt; if (e.wave > 1.8) e.wave = 0; animSt = A.greet; ptSt = e.wave; }  // waves back at the walker
+            else { animSt = A.standstill; ptSt = tt; }
+          }
           else { animSt = e.greet ? A.greet : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
           R.drawShadow(ctx, w / 2, feetY, 16, shadow);
           drawFig(ctx, w / 2, feetY - 112 * S, S, false, animSt.frame(ptSt), { color: col });
@@ -327,7 +358,9 @@
           R.drawShadow(ctx, figX, feetY, 16, shadow);
           var animP = e.greet ? A.greet : A[spec.anim];
           var ptP = e.greet ? e.greet : tt;
-          drawFig(ctx, figX, feetY - 112 * S, S, e.greet ? false : !e._dirR, animP.frame(ptP), { color: col });
+          // when greeting, face the viewer — unless it's the footer meet, then turn to face the stander (left)
+          var flipP = e.greet ? (e._meet ? true : false) : !e._dirR;
+          drawFig(ctx, figX, feetY - 112 * S, S, flipP, animP.frame(ptP), { color: col });
           return;
         }
         if (spec.mode === 'beam') {
@@ -382,10 +415,28 @@
           return;
         }
         if (spec.mode === 'vclimb') {
-          var u3 = (tt * 0.10) % 2; if (u3 < 0) u3 += 2;
-          var tri3 = u3 < 1 ? u3 : 2 - u3;
-          var y3 = (h - 50) - tri3 * (h - 100);
-          drawFig(ctx, w / 2, y3, S, false, A.climb.frame(tt), { color: col });
+          // Climb UP (limbs synced to the rise, so each pull ratchets him up a notch),
+          // pause at the top, then RAPPEL down in kick-off bounces (limb cycle reversed).
+          var topY = 48, botY = h - 46, travel = botY - topY;
+          var STEPS = 5;
+          var upDur = STEPS * 1.7, topPause = 0.6, downDur = 1.9;
+          var Tc = upDur + topPause + downDur;
+          var phc = ((tt % Tc) + Tc) % Tc;
+          var y3, poseC;
+          if (phc < upDur) {
+            var pu = phc / upDur;
+            poseC = A.climb.frame(phc);                         // limbs cycle in real time
+            var sp = pu * STEPS;                                // ratchet: body bumps up once per limb cycle
+            y3 = botY - ((Math.floor(sp) + smooth01(sp - Math.floor(sp))) / STEPS) * travel;
+          } else if (phc < upDur + topPause) {
+            y3 = topY; poseC = A.climb.frame(upDur);            // reached the top, brief settle
+          } else {
+            var pd = (phc - upDur - topPause) / downDur;        // 0..1 descent
+            poseC = A.climb.frame(upDur - pd * downDur * 2.2);  // reverse the limb cycle → reaching downward
+            var seg = pd * 2, si = Math.floor(seg), sf = seg - si;
+            y3 = topY + ((si + (1 - (1 - sf) * (1 - sf))) / 2) * travel;   // two kick-off drops
+          }
+          drawFig(ctx, w / 2, y3, S, false, poseC, { color: col });
           return;
         }
         if (spec.mode === 'rope') {
@@ -427,5 +478,8 @@
     setInterval(tick, 1000 / 50);
     setInterval(reposition, 700);
     window.addEventListener('resize', reposition);
+
+    // opt-in debug handle (no effect unless the page is loaded with #figdebug)
+    if (location.hash === '#figdebug') window.__evFigDebug = { entries: entries, footWalk: footWalk, footStand: footStand };
   });
 })();
