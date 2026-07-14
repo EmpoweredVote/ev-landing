@@ -117,7 +117,9 @@
       } else {
         document.body.appendChild(c);
       }
-      entries.push({ spec: spec, el: el, c: c, ctx: c.getContext('2d'), phase: i * 2.13, w: 0, h: 0, ci: (spec.mode === 'why' ? 0 : ci++), lt: 0, greet: 0, linger: 0 });
+      // per-figure wave variation: alternating hand + a spread of speeds (so waves aren't uniform)
+      var wv = { hand: (i % 2 === 0 ? 'R' : 'L'), hz: 1.25 + (i % 4) * 0.28 };
+      entries.push({ spec: spec, el: el, c: c, ctx: c.getContext('2d'), phase: i * 2.13, w: 0, h: 0, ci: (spec.mode === 'why' ? 0 : ci++), lt: 0, greet: 0, linger: 0, _wave: wv });
     });
 
     // footer pair: the strolling Bobit greets the standing one when he walks up
@@ -349,14 +351,14 @@
           }
           else { animSt = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
           R.drawShadow(ctx, w / 2, feetY, 16, shadow);
-          drawFig(ctx, w / 2, feetY - 112 * S, S, false, animSt.frame(ptSt), { color: col });
+          drawFig(ctx, w / 2, feetY - 112 * S, S, false, animSt.frame(ptSt, e._wave), { color: col });
           return;
         }
         if (spec.mode === 'seat') {
           var animSe = e.greet ? A.greetseat : A[spec.anim];
           var ptSe = e.greet ? e.greet : tt;
           var seatY = h - 42;   // matches the seat line set in reposition(); leaves room for dangling legs
-          drawFig(ctx, w / 2, seatY, S, spec.x > 0.5, animSe.frame(ptSe), { color: col, book: (!e.greet && spec.anim === 'read') });
+          drawFig(ctx, w / 2, seatY, S, spec.x > 0.5, animSe.frame(ptSe, e._wave), { color: col, book: (!e.greet && spec.anim === 'read') });
           return;
         }
         if (spec.mode === 'patrol') {
@@ -374,7 +376,7 @@
           var ptP = e.greet ? e.greet : tt;
           // when greeting, face the viewer — unless it's the footer meet, then turn to face the stander (left)
           var flipP = e.greet ? (e._meet ? true : false) : !e._dirR;
-          drawFig(ctx, figX, feetY - 112 * S, S, flipP, animP.frame(ptP), { color: col, cane: animP.cane });
+          drawFig(ctx, figX, feetY - 112 * S, S, flipP, animP.frame(ptP, e._wave), { color: col, cane: animP.cane });
           return;
         }
         if (spec.mode === 'beam') {
@@ -414,10 +416,9 @@
           R.drawShadow(ctx, bx2, feetY, 15, shadow);
           var poseF, poseB, flipF = !goingR, flipB = !goingR;
           if (e.greet) {
-            var wavPose = A.greet.frame(e.greet);
             var holdPose = A.holdannoyed.frame(e.greet);
-            poseF = e.wF ? wavPose : holdPose;
-            poseB = e.wB ? wavPose : holdPose;
+            poseF = e.wF ? A.greet.frame(e.greet, { hand: 'R', hz: 1.5 }) : holdPose;
+            poseB = e.wB ? A.greet.frame(e.greet, { hand: 'L', hz: 1.95 }) : holdPose;
             flipF = e.wF ? false : (bx2 < fx);   // holder turns toward his partner
             flipB = e.wB ? false : (fx < bx2);
           } else {

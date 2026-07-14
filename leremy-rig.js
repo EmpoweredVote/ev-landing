@@ -710,31 +710,36 @@ const ANIMATIONS = {
   },
   greet: {
     label: "Greet", mood: "oh! hi there",
-    frame(t) {
-      // hover reaction: snap to attention, curious head cock, then a wave
+    // v = { hand:'R'|'L', hz } lets each figure wave with a different hand / speed
+    frame(t, v) {
+      v = v || {};
+      const hz = v.hz || 1.6;
       const p = clone(REST);
       const look = Math.min(1, t / 0.35);
       p.bob = 1 + wave(t, 0.9) * 1.5;
       p.hunch = -4 * look;
       p.headTilt = -12 * look + wave(t, 0.5) * 3;
       const wv = Math.min(1, Math.max(0, (t - 0.55) / 0.3));
-      p.armRU = 15 + 137 * wv;
-      p.armRF = 11 + 143 * wv + (t > 0.9 ? wave(t, 1.6) * 24 : 0);
+      const osc = t > 0.9 ? wave(t, hz) * 24 : 0;
+      if (v.hand === 'L') { p.armLU = -15 - 137 * wv; p.armLF = -11 - 143 * wv - osc; }
+      else { p.armRU = 15 + 137 * wv; p.armRF = 11 + 143 * wv + osc; }
       return p;
     },
   },
   greetseat: {
     label: "Greet (seated)", mood: "oh! hi there", seated: true,
-    frame(t) {
+    frame(t, v) {
+      v = v || {};
+      const hz = v.hz || 1.6;
       const p = clone(REST);
       const look = Math.min(1, t / 0.35);
       p.bob = wave(t, 0.9) * 1.2;
       p.hunch = -6 * look;
       p.headTilt = -16 * look + wave(t, 0.5) * 3;
       const wv = Math.min(1, Math.max(0, (t - 0.55) / 0.3));
-      p.armRU = 26 + 126 * wv;
-      p.armRF = 10 + 144 * wv + (t > 0.9 ? wave(t, 1.6) * 24 : 0);
-      p.armLU = -22; p.armLF = -8;
+      const osc = t > 0.9 ? wave(t, hz) * 24 : 0;
+      if (v.hand === 'L') { p.armLU = -26 - 126 * wv; p.armLF = -10 - 144 * wv - osc; p.armRU = 22; p.armRF = 8; }
+      else { p.armRU = 26 + 126 * wv; p.armRF = 10 + 144 * wv + osc; p.armLU = -22; p.armLF = -8; }
       p.legRU = 82; p.legRF = 10;
       p.legLU = 74; p.legLF = 6;
       return p;
