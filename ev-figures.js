@@ -51,9 +51,12 @@
 
     // Brand-derived figure palettes — no hard red/blue.
     // Light mode: brighter, vivid set. Dark mode: the dark-theme brand variants.
+    // 0 teal · 1 coral · 2 gold · 3 green · 4 purple · 5 orange — tuned per theme for legibility.
+    // Light values are deep enough to read on the near-white bg (esp. the gold, ~3:1);
+    // dark values are bright.
     var FIG_COLORS = {
-      light: ['#007D99', '#FF5740', '#E8A400'],   // bright teal, coral, marigold
-      dark:  ['#1DA8C6', '#FF6B52', '#FFD740']    // dark-theme teal, coral, yellow
+      light: ['#007D99', '#FF5740', '#B8860B', '#2E9E5B', '#7A4FD0', '#E0641C'],
+      dark:  ['#1DA8C6', '#FF6B52', '#FFD740', '#43D07E', '#B49BFF', '#FF9A4D']
     };
     function figColor(i) {
       var th = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
@@ -96,23 +99,24 @@
     var GSPEED = { stroll: 32, strut: 40, scurry: 62, march: 34, sneak: 22, trudge: 16, shuffle: 20 };
     var IDLES = ['bored', 'sassy', 'confused', 'exhausted', 'standstill', 'present'];
     var SEATS = ['sit', 'read'];
+    var TONES = [0, 1, 2, 3, 4, 5];   // full palette (teal/coral/gold/green/purple/orange)
 
     function walker(anchor, opt) {
       opt = opt || {};
       var withTot = opt.allowToddler && chance(0.5);
       var g = withTot ? pick(['stroll', 'shuffle']) : pick(GAITS);   // gentle gait when escorting a toddler
-      var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: withTot ? 12 : GSPEED[g], tone: (opt.tone != null ? opt.tone : pick([0, 1, 2])) };
-      if (withTot) s.toddler = true;
+      var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: withTot ? 12 : GSPEED[g], tone: (opt.tone != null ? opt.tone : pick(TONES)) };
+      if (withTot) { s.toddler = true; s.toddlerTone = pick(TONES); }
       return s;
     }
     // one figure (or none) for a note-card top edge
     function noteSlot(anchor, opt) {
       opt = opt || {};
       var r = Math.random();
-      if (opt.allowClimb && r < 0.22) return { mode: 'vclimb', anchor: anchor, tone: pick([0, 1]) };
+      if (opt.allowClimb && r < 0.22) return { mode: 'vclimb', anchor: anchor, tone: pick(TONES) };
       if (r < 0.45) return walker(anchor, opt);
-      if (r < 0.74) return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : pick([0, 1, 2])) };
-      if (r < 0.9 || opt.always) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: pick([0, 1, 2]) };
+      if (r < 0.74) return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : pick(TONES)) };
+      if (r < 0.9 || opt.always) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: pick(TONES) };
       return null;   // sometimes empty
     }
 
@@ -120,7 +124,7 @@
       var out = [];
       var add = function (s) { if (s) out.push(s); };
       add({ mode: 'beam', anchor: '.hero', edge: 'bottom', tone: 0 });                                    // hero crew — always
-      if (chance(0.85)) add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.86 + Math.random() * 0.08, anim: pick(IDLES), tone: pick([1, 2]) });
+      if (chance(0.85)) add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.86 + Math.random() * 0.08, anim: pick(IDLES), tone: pick(TONES) });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' });       // fixed (content)
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
@@ -129,10 +133,10 @@
       add(noteSlot('.note.n-money', {}));
       // watch top — an elder, or a random walker
       add(chance(0.5)
-        ? { mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: pick([1, 2]), hoverAnim: 'elderangry' }
+        ? { mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: pick(TONES), hoverAnim: 'elderangry' }
         : walker('section.watch', {}));
       // watch thumbnail corner — peeker, idler, or hover-jumper
-      var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: 1 };
+      var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: pick(TONES) };
       if (pr < 0.5) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }
       else if (pr < 0.8) { pk.anim = pick(IDLES); }
       else { pk.anim = 'jump'; pk.hover = 'jump'; }
@@ -319,7 +323,7 @@
         }
 
         if (spec.mode === 'why') {
-          var color = cssVar(spec.color, ink);
+          var color = spec.color === '--yellow' ? figColor(2) : cssVar(spec.color, ink);   // legible gold instead of faint --yellow
           var anim = A[spec.anim];
           var ws = 0.62;
           // ground line shared with the standing why-figures (their feet land at ~h-8);
@@ -420,8 +424,9 @@
             var toddX = figX + e._toff;
             e._toddSX = cr.left + toddX; e._toddSY = cr.top + feetY - 26;   // for click hit-testing
             R.drawShadow(ctx, toddX, feetY, 10, shadow);
-            if (e._fall > 0) drawFig(ctx, toddX, feetY - 8 * TS, TS, !e._dirR, A.fall.frame(2.8 - e._fall), { color: figColor(1) });
-            else drawFig(ctx, toddX, feetY - 112 * TS, TS, !e._dirR, A.toddle.frame(tt * 1.1 + 1.7), { color: figColor(1) });
+            var totCol = figColor(spec.toddlerTone != null ? spec.toddlerTone : 1);
+            if (e._fall > 0) drawFig(ctx, toddX, feetY - 8 * TS, TS, !e._dirR, A.fall.frame(2.8 - e._fall), { color: totCol });
+            else drawFig(ctx, toddX, feetY - 112 * TS, TS, !e._dirR, A.toddle.frame(tt * 1.1 + 1.7), { color: totCol });
           }
           R.drawShadow(ctx, figX, feetY, 16, shadow);
           var animP, ptP, flipP;
@@ -485,7 +490,7 @@
           } else {
             var yF = carryY + (groundY - carryY) * e.dF;
             var yB = carryY + (groundY - carryY) * e.dB;
-            ctx.strokeStyle = cssVar('--yellow', '#FED12E');
+            ctx.strokeStyle = figColor(2);   // legible gold on light, bright yellow on dark
             ctx.lineWidth = 5; ctx.lineCap = 'round';
             ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yF); ctx.lineTo(bx2 - e.dir * 12, yB); ctx.stroke();
           }
