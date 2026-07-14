@@ -41,14 +41,12 @@
         if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
           if (Math.abs(ev.clientX - e._toddSX) < 42 && Math.abs(ev.clientY - e._toddSY) < 72) { e._fall = 4.5; return; }
         }
-        if (e.spec.mode !== 'rope' || !e.w) return;
-        var cr = e.c.getBoundingClientRect();
-        var py = e.h - 70, Lh = py - 148 * S;
-        var bodyX = cr.left + e.w / 2 - Math.sin(e.ang || 0) * Lh;   // +ang swings the body left
-        if (Math.abs(ev.clientX - bodyX) < 60 && ev.clientY > cr.top && ev.clientY < cr.top + py + 30) {
-          var dir = ev.clientX > bodyX ? 1 : -1;          // push away from the click
-          // cap velocity so the biggest possible swing still stays inside the canvas
-          e.vel = Math.max(-1.9, Math.min(1.9, (e.vel || 0) + dir * 1.6));
+        if (e.spec.mode !== 'rope' || !e.w || e._ropeSX == null) return;
+        if (Math.abs(ev.clientX - e._ropeSX) > 55 || Math.abs(ev.clientY - e._ropeSY) > 82) return;
+        if (e.rphase === 'sit') { e.rphase = 'break'; e.breakT = 0; return; }   // frame breaks out from under him
+        if (e.rphase === 'hang') {
+          var dir = ev.clientX > e._ropeSX ? 1 : -1;      // push away from the click
+          e.vel = Math.max(-1.9, Math.min(1.9, (e.vel || 0) + dir * 1.6));   // capped so the swing stays in frame
           e.scramble = 1;                                 // startled — scrambles like he might fall
         }
       });
@@ -149,7 +147,7 @@
       if (pr < 0.6) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }  // peek (hover: shrug)
       else { pk.anim = pick(IDLES); }                             // idle (hover: wave). Only the footer stander jumps.
       add(pk);
-      if (chance(0.8)) add({ mode: 'rope', anchor: 'section.watch .wrap', x: 0.90, tone: 2 });
+      if (chance(0.85)) add({ mode: 'rope', anchor: 'section.watch .wrap', x: 0.42, tone: pick(TONES) });
       // footer pair — always present so the meet-and-greet keeps happening
       add(walker('footer', { tone: 0 }));
       add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
@@ -222,14 +220,14 @@
           return;
         }
         if (spec.mode === 'rope') {
-          var wR = 300;                                                       // wide enough for the full (capped) swing
-          sizeCanvas(e, wR, 250);
-          var leftR = r.left + sx + r.width * spec.x - wR / 2;
+          var wR = 300;                                                       // room for the frame bar + the swing
+          sizeCanvas(e, wR, 260);
+          var leftR = r.left + sx + r.width * spec.x - 130;                   // pivot (x=130 in canvas) lands at spec.x
           var maxLeftR = sx + document.documentElement.clientWidth - wR - 4;  // never past the viewport (no h-scroll)
           if (leftR > maxLeftR) leftR = maxLeftR;
           if (leftR < sx + 4) leftR = sx + 4;
           e.c.style.left = leftR + 'px';
-          e.c.style.top = (r.top + sy - 10) + 'px';
+          e.c.style.top = (r.top + sy - 6) + 'px';
           return;
         }
         if (spec.mode === 'seat') {
@@ -592,34 +590,60 @@
           return;
         }
         if (spec.mode === 'rope') {
-          var py = h - 70;
-          var Lh = py - 148 * S;                 // pivot(top) -> hands, i.e. pendulum length
-          // damped pendulum: click adds velocity (see the click handler above), gravity pulls back
+          // Two-step: he sits on a horizontal frame bar; click BREAKS it and he grabs
+          // the rope and dangles; then clicking/pushing him swings him (pendulum).
+          var pivotX = 130;                       // left end: where he sits, then hangs from
+          var barY = 48;                          // frame height (low enough that his head/torso clear the top)
+          var grey = cssVar('--border', '#C9C6BE');
+          ctx.strokeStyle = grey; ctx.lineCap = 'round';
+          e.rphase = e.rphase || 'sit';
+
+          if (e.rphase === 'sit') {
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY); ctx.stroke();   // suspender
+            ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(w - 12, barY); ctx.stroke(); // the frame bar
+            var sitX = pivotX + 16;               // he sits on the left end of the bar
+            e._ropeSX = cr.left + sitX; e._ropeSY = cr.top + barY + 20;
+            drawFig(ctx, sitX, barY, S, false, A.sit.frame(tt, e._wave), { color: col });
+            return;
+          }
+
+          var py = h - 70, Lh = py - 148 * S;      // pivot(top) -> hands, pendulum length
+
+          if (e.rphase === 'break') {
+            e.breakT = (e.breakT || 0) + dt;
+            var bk = Math.min(1, e.breakT / 0.7);
+            ctx.lineWidth = 3.5;
+            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY + bk * (py - barY)); ctx.stroke();  // rope drops down
+            ctx.save(); ctx.globalAlpha = 1 - bk;   // broken bar swings off and fades
+            ctx.translate(pivotX + 16, barY); ctx.rotate(bk * 1.5);
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(w - 12 - (pivotX + 16), 0); ctx.stroke();
+            ctx.restore();
+            drawFig(ctx, pivotX, barY + bk * (py - barY), S, false, A.rope.frame(tt), { color: col });   // drops to hang
+            if (bk >= 1) { e.rphase = 'hang'; e.ang = 0; e.vel = 0; e.scramble = 1; }   // grabs on, startled
+            return;
+          }
+
+          // hang: damped pendulum around the left pivot; click adds velocity (see click handler)
           e.ang = e.ang || 0; e.vel = e.vel || 0;
-          e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;   // k=9 (~2s period), light damping -> stops after ~7s
+          e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;
           e.ang += e.vel * dt;
-          if (e.scramble > 0) e.scramble = Math.max(0, e.scramble - dt / 1.1);   // startle fades over ~1.1s
-          // Draw rope AND figure in ONE rotated frame so they can never drift apart.
-          // The rope bows sideways in this local frame (a vine flex trailing the swing).
+          if (e.scramble > 0) e.scramble = Math.max(0, e.scramble - dt / 1.1);
           var bow = Math.max(-24, Math.min(24, e.vel * 9));
           var poseR = A.rope.frame(tt);
           if (e.scramble > 0) {
-            // panicked scramble — legs kick for footing, head whips around; grip stays put
             var scr = e.scramble, fl = Math.sin(tt * 34);
             poseR.legRF += fl * 28 * scr;  poseR.legLF += -fl * 28 * scr;
             poseR.legRU += fl * 10 * scr;  poseR.legLU += -fl * 10 * scr;
             poseR.headTilt += Math.sin(tt * 27) * 12 * scr;
             poseR.bob += Math.sin(tt * 31) * 3 * scr;
           }
+          e._ropeSX = cr.left + pivotX - Math.sin(e.ang) * Lh; e._ropeSY = cr.top + py - 40;   // hit test tracks the swing
           ctx.save();
-          ctx.translate(w / 2, 0); ctx.rotate(e.ang); ctx.translate(-w / 2, 0);
-          ctx.strokeStyle = cssVar('--border', '#E5E7EB');
-          ctx.lineWidth = 3.5; ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(w / 2, 0);
-          ctx.quadraticCurveTo(w / 2 - bow, Lh * 0.5, w / 2, Lh);   // ends exactly at the hands
-          ctx.stroke();
-          drawFig(ctx, w / 2, py, S, false, poseR, { color: col });
+          ctx.translate(pivotX, 0); ctx.rotate(e.ang); ctx.translate(-pivotX, 0);
+          ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.quadraticCurveTo(pivotX - bow, Lh * 0.5, pivotX, Lh); ctx.stroke();
+          drawFig(ctx, pivotX, py, S, false, poseR, { color: col });
           ctx.restore();
           return;
         }
