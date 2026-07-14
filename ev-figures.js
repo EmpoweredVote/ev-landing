@@ -24,6 +24,16 @@
     var mx = -1e4, my = -1e4;
     document.addEventListener('mousemove', function (ev) { mx = ev.clientX; my = ev.clientY; }, { passive: true });
 
+    // when a hero tool is highlighted, the presenter Bobit points up at the preview
+    var featureOn = false;
+    var logosWrap = document.querySelector('.showcase-logos');
+    if (logosWrap) {
+      logosWrap.addEventListener('mouseenter', function () { featureOn = true; });
+      logosWrap.addEventListener('mouseleave', function () { featureOn = false; });
+      logosWrap.addEventListener('focusin', function () { featureOn = true; });
+      logosWrap.addEventListener('focusout', function () { featureOn = false; });
+    }
+
     // click to shove a rope Bobit / tip over a toddler
     document.addEventListener('click', function (ev) {
       entries.forEach(function (e) {
@@ -97,7 +107,7 @@
     function chance(p) { return Math.random() < p; }
     var GAITS = ['stroll', 'strut', 'scurry', 'march', 'sneak', 'trudge', 'shuffle'];
     var GSPEED = { stroll: 32, strut: 40, scurry: 62, march: 34, sneak: 22, trudge: 16, shuffle: 20 };
-    var IDLES = ['bored', 'sassy', 'confused', 'exhausted', 'standstill', 'present'];
+    var IDLES = ['bored', 'sassy', 'confused', 'standstill', 'present'];
     var SEATS = ['sit', 'read'];
     var TONES = [0, 1, 2, 3, 4, 5];   // full palette (teal/coral/gold/green/purple/orange)
 
@@ -124,7 +134,7 @@
       var out = [];
       var add = function (s) { if (s) out.push(s); };
       add({ mode: 'beam', anchor: '.hero', edge: 'bottom', tone: 0 });                                    // hero crew — always
-      if (chance(0.85)) add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.86 + Math.random() * 0.08, anim: pick(IDLES), tone: pick(TONES) });
+      add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.9, anim: 'present', tone: 0, presenter: true });  // proud host under the logo
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' });       // fixed (content)
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
@@ -181,7 +191,7 @@
     });
 
     function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
-    var BEAM_LOADS = ['line', 'triangle'];   // what the crew hauls; swapped off-screen each trip
+    var BEAM_LOADS = ['line', 'triangle', 'circle'];   // what the crew hauls; swapped off-screen each trip
     function nextLoad(cur) { var o = BEAM_LOADS.filter(function (x) { return x !== cur; }); return o[Math.floor(Math.random() * o.length)]; }
 
     function sizeCanvas(e, w, h) {
@@ -397,15 +407,21 @@
           return;
         }
         if (spec.mode === 'stand') {
-          var animSt, ptSt;
-          if (spec.hover === 'jump') {
+          var animSt, ptSt, flipSt = false;
+          if (spec.presenter) {
+            flipSt = true;                                   // face inward, toward the preview/logo
+            if (e.greet) { animSt = A[spec.hoverAnim || 'greet']; ptSt = e.greet; }
+            else if (featureOn) { animSt = A.presentup; ptSt = tt; }   // point up at the highlighted feature
+            else { animSt = A.present; ptSt = tt; }                    // proud, showing off the tools
+          }
+          else if (spec.hover === 'jump') {
             if (e.greet) { animSt = A.jump; ptSt = e.greet; }
             else if (e.wave > 0) { e.wave += dt; if (e.wave > 2.2) e.wave = 0; animSt = A.greet; ptSt = e.wave; }  // greets the walker (starts before he stops)
             else { animSt = A.standstill; ptSt = tt; }
           }
           else { animSt = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
           R.drawShadow(ctx, w / 2, feetY, 16, shadow);
-          drawFig(ctx, w / 2, feetY - 112 * S, S, false, animSt.frame(ptSt, e._wave), { color: col });
+          drawFig(ctx, w / 2, feetY - 112 * S, S, flipSt, animSt.frame(ptSt, e._wave), { color: col });
           return;
         }
         if (spec.mode === 'seat') {
@@ -478,15 +494,21 @@
           e.dB += (((e.greet && e.wB && dropOK) ? 1 : 0) - e.dB) * kB;
           var carryY = feetY - 97 * S, groundY = feetY - 3;
           if (e.load === 'triangle') {
-            // the logo's red triangle: tip toward the front, a semicircle scooped out of the back edge
-            var baseX = bx2, tipX = fx + e.dir * 4, cyT = carryY, rT = 18;
+            // logo-style red triangle: tip forward, a MEDIUM notch bitten out of the mid back edge
+            var baseX = bx2, tipX = fx + e.dir * 4, cyT = carryY, halfT = 18, notch = 11;
             ctx.fillStyle = cssVar('--coral', '#FF5740');
             ctx.beginPath();
-            ctx.moveTo(baseX, cyT - rT);
-            ctx.lineTo(tipX, cyT);
-            ctx.lineTo(baseX, cyT + rT);
-            ctx.arc(baseX, cyT, rT, Math.PI / 2, -Math.PI / 2, true);   // concave semicircle notch in the base
+            ctx.moveTo(baseX, cyT - halfT);            // top back corner
+            ctx.lineTo(tipX, cyT);                     // tip
+            ctx.lineTo(baseX, cyT + halfT);            // bottom back corner
+            ctx.lineTo(baseX, cyT + notch);            // up the flat base to the notch
+            ctx.arc(baseX, cyT, notch, Math.PI / 2, -Math.PI / 2, true);  // medium semicircle bite
+            ctx.lineTo(baseX, cyT - halfT);            // remaining flat base up to the top corner
             ctx.closePath(); ctx.fill();
+          } else if (e.load === 'circle') {
+            // the logo's red circle
+            ctx.fillStyle = cssVar('--coral', '#FF5740');
+            ctx.beginPath(); ctx.arc((fx + bx2) / 2, carryY, 16, 0, Math.PI * 2); ctx.fill();
           } else {
             var yF = carryY + (groundY - carryY) * e.dF;
             var yB = carryY + (groundY - carryY) * e.dB;

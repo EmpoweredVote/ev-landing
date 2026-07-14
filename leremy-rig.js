@@ -839,6 +839,20 @@ const ANIMATIONS = {
       return p;
     },
   },
+  presentup: {
+    label: "Presenting (up)", mood: "ta-da — check this one out!",
+    frame(t) {
+      // proud host pointing up at the feature above him; hand-on-hip, excited bounce
+      const p = clone(REST);
+      p.lean = -3;
+      p.bob = 1 + wave(t, 1.1) * 2;                 // proud little bounce
+      p.headTilt = -14;                             // looking up at it
+      p.armRU = 158 + wave(t, 1.1) * 4;             // right arm up-and-out, pointing
+      p.armRF = 150 + wave(t, 1.1) * 4;
+      p.armLU = -52; p.armLF = 132;                 // left hand on hip
+      return p;
+    },
+  },
 };
 
 // lateral gait generator: legs scissor front/back in profile, hunch carries the upper body
