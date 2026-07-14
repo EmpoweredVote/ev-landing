@@ -209,7 +209,9 @@
       var ink = inkCache;
       var shadow = 'rgba(127,127,127,0.18)';
 
-      // ── footer meet-and-greet: walker approaches the stander → both wave, walker pauses ──
+      // ── footer meet-and-greet: a call-and-response, not a synchronized wave ──
+      // Stage 1: the stander spots the walker coming and waves FIRST (walker still moving).
+      // Stage 2: the walker arrives, stops, and returns the wave ~0.9s later (overlaps, not in sync).
       if (footWalk && footWalk.w && footStand && footStand.w) {
         footWalk._cool = Math.max(0, (footWalk._cool || 0) - dt);
         var fwr = footWalk.c.getBoundingClientRect();
@@ -219,10 +221,14 @@
           var uF = (ttF * footWalk.spec.speed / spanF) % 2; if (uF < 0) uF += 2;
           var walkerX = fwr.left + padF + (uF < 1 ? uF : 2 - uF) * spanF;
           var standX = footStand.c.getBoundingClientRect().left + footStand.w / 2;
-          if (Math.abs(walkerX - standX) < 58 && !footWalk.greet && footWalk._cool <= 0) {
-            footWalk.greet = 0.001; footWalk.linger = 1.6; footWalk._meet = true;  // he stops & waves, facing the stander
-            footStand.wave = 0.001;                                                 // the stander waves back
-            footWalk._cool = 6;                                                     // don't repeat until he's walked off and looped back
+          var distF = Math.abs(walkerX - standX);
+          var towardStander = uF > 1;                                   // moving left, toward the far-left stander
+          if (towardStander && footWalk._cool <= 0 && !footWalk.greet) {
+            if (distF < 104 && !footStand.wave) footStand.wave = 0.001; // red waves first, from a step away
+            if (distF < 58) {                                           // blue reaches him, stops, returns the wave
+              footWalk.greet = 0.001; footWalk.linger = 1.6; footWalk._meet = true;
+              footWalk._cool = 6;                                       // don't repeat until he's looped back
+            }
           }
         }
       }
@@ -339,7 +345,7 @@
           var animSt, ptSt;
           if (spec.hover === 'jump') {
             if (e.greet) { animSt = A.jump; ptSt = e.greet; }
-            else if (e.wave > 0) { e.wave += dt; if (e.wave > 1.8) e.wave = 0; animSt = A.greet; ptSt = e.wave; }  // waves back at the walker
+            else if (e.wave > 0) { e.wave += dt; if (e.wave > 2.2) e.wave = 0; animSt = A.greet; ptSt = e.wave; }  // greets the walker (starts before he stops)
             else { animSt = A.standstill; ptSt = tt; }
           }
           else { animSt = e.greet ? A.greet : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
