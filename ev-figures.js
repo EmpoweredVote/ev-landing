@@ -156,10 +156,9 @@
       add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));  // Note 1 always hosts a Bobit (moved off Note 2)
       add(noteSlot('.note.n-ai', {}));                                       // Note 2 (n-team) intentionally left clear
       add(noteSlot('.note.n-money', {}));
-      // watch top — an elder, or a random walker
-      add(chance(0.5)
-        ? { mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: takeTone(), hoverAnim: 'elderangry' }
-        : walker('section.watch', {}));
+      // watch top (the 02/How-we-work ↔ 03/Talks split) — was getting crowded with samey walkers;
+      // keep only the distinctive elder here, and often leave the split clear
+      if (chance(0.4)) add({ mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: takeTone(), hoverAnim: 'elderangry' });
       // watch thumbnail corner — peeker, idler, or hover-jumper
       var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: takeTone() };
       if (pr < 0.6) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }  // peek (hover: shrug)
