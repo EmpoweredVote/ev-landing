@@ -30,9 +30,9 @@
         if (e.spec.mode !== 'rope' || !e.w) return;
         var cr = e.c.getBoundingClientRect();
         var py = e.h - 70, Lh = py - 148 * S;
-        var bodyX = cr.left + e.w / 2 + Math.sin(e.ang || 0) * Lh;
+        var bodyX = cr.left + e.w / 2 - Math.sin(e.ang || 0) * Lh;   // +ang swings the body left
         if (Math.abs(ev.clientX - bodyX) < 60 && ev.clientY > cr.top && ev.clientY < cr.top + py + 30) {
-          var dir = ev.clientX < bodyX ? 1 : -1;          // push away from the click
+          var dir = ev.clientX > bodyX ? 1 : -1;          // push away from the click
           e.vel = Math.max(-5, Math.min(5, (e.vel || 0) + dir * 2.6));
         }
       });
@@ -93,7 +93,7 @@
       { mode: 'seat',   anchor: '.note.n-money',        edge: 'top', x: 0.10, anim: 'sit' },
       { mode: 'patrol', anchor: 'section.watch',        edge: 'top', anim: 'stroll', speed: 26 },
       { mode: 'stand',  anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, anim: 'peek' },
-      { mode: 'rope',   anchor: 'section.watch .wrap',  x: 0.96 },
+      { mode: 'rope',   anchor: 'section.watch .wrap',  x: 0.90 },
       { mode: 'patrol', anchor: 'footer',               edge: 'top', anim: 'strut', speed: 46 },
       { mode: 'stand',  anchor: 'footer',               edge: 'top', x: 0.06, anim: 'jump', hover: 'jump' },
     ];
@@ -139,14 +139,18 @@
         var r = e.el.getBoundingClientRect();
         if (spec.mode === 'vclimb') {
           var h = Math.min(300, Math.max(200, r.height));
-          sizeCanvas(e, 170, h);
-          e.c.style.left = (r.right + sx - 85) + 'px';
+          var wV = 150;
+          sizeCanvas(e, wV, h);
+          var leftV = r.right + sx - wV / 2;                                  // centered on the note's right edge
+          var maxLeftV = sx + document.documentElement.clientWidth - wV - 4;  // but never past the viewport (no h-scroll)
+          if (leftV > maxLeftV) leftV = maxLeftV;
+          e.c.style.left = leftV + 'px';
           e.c.style.top = (r.top + sy + (r.height - h) / 2) + 'px';
           return;
         }
         if (spec.mode === 'rope') {
-          sizeCanvas(e, 170, 250);
-          e.c.style.left = (r.left + sx + r.width * spec.x - 85) + 'px';
+          sizeCanvas(e, 240, 250);           // wider so a hard swing doesn't clip
+          e.c.style.left = (r.left + sx + r.width * spec.x - 120) + 'px';
           e.c.style.top = (r.top + sy - 10) + 'px';
           return;
         }
@@ -384,20 +388,17 @@
           e.ang = e.ang || 0; e.vel = e.vel || 0;
           e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;   // k=9 (~2s period), light damping -> stops after ~7s
           e.ang += e.vel * dt;
-          var s = Math.sin(e.ang), cSw = Math.cos(e.ang);
-          var handX = w / 2 + s * Lh, handY = cSw * Lh;   // swung hand position
-          // rope curves like a vine — control point bows perpendicular, proportional to speed (whip)
-          var bow = Math.max(-26, Math.min(26, e.vel * 10));
-          var mxr = (w / 2 + handX) / 2, myr = handY / 2;
+          // Draw rope AND figure in ONE rotated frame so they can never drift apart.
+          // The rope bows sideways in this local frame (a vine flex trailing the swing).
+          var bow = Math.max(-24, Math.min(24, e.vel * 9));
+          ctx.save();
+          ctx.translate(w / 2, 0); ctx.rotate(e.ang); ctx.translate(-w / 2, 0);
           ctx.strokeStyle = cssVar('--border', '#E5E7EB');
           ctx.lineWidth = 3.5; ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.moveTo(w / 2, 0);
-          ctx.quadraticCurveTo(mxr + cSw * bow, myr - s * bow, handX, handY);
+          ctx.quadraticCurveTo(w / 2 - bow, Lh * 0.5, w / 2, Lh);   // ends exactly at the hands
           ctx.stroke();
-          // the Bobit hangs off the rope end, rotated with the swing
-          ctx.save();
-          ctx.translate(w / 2, 0); ctx.rotate(e.ang); ctx.translate(-w / 2, 0);
           drawFig(ctx, w / 2, py, S, false, A.rope.frame(tt), { color: col });
           ctx.restore();
           return;
