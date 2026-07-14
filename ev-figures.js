@@ -545,7 +545,9 @@
             R.drawShadow(ctx, frontX, feetY, 15, shadow); R.drawShadow(ctx, backX, feetY, 15, shadow);
             drawFig(ctx, frontX, feetY - 112 * S, S, frontFlip, frontPose, { color: col });
             drawFig(ctx, backX, feetY - 112 * S, S, backFlip, backPose, { color: col });
-            if (ballX < -70 || ballX > w + 70 || gt > 12) {   // track them until all the way off-screen, then respawn
+            // respawn only once BOTH carriers have run the whole way off the trailing edge (not when the ball leaves)
+            var gone = function (x) { return gdir > 0 ? (x < -70) : (x > w + 70); };
+            if ((gone(frontX) && gone(backX)) || gt > 16) {
               e.gagOn = false; e.greet = 0; e.wF = e.wB = false;
               e.dir = gdir; e.bx = gdir > 0 ? -endMargin : w + endMargin; e.dwell = 0.8;
             }
@@ -668,8 +670,8 @@
 
           if (e.rphase === 'sit') {
             ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY); ctx.stroke();               // suspender holds the right end
-            ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(pivotX - barLen, barY); ctx.stroke();   // frame extends LEFT
+            // starter reads as one flat bar (level with the "03 / Talks" bar) — no vertical riser on the right
+            ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(pivotX - barLen, barY); ctx.stroke();   // frame extends LEFT, flat
             var sitX = pivotX - barLen + 16;              // he sits on the LEFT end
             e._ropeSX = cr.left + sitX; e._ropeSY = cr.top + barY + 18;
             drawFig(ctx, sitX, barY, S, false, A.sit.frame(tt, e._wave), { color: col });
