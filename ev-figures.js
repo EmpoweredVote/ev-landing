@@ -24,6 +24,20 @@
     var mx = -1e4, my = -1e4;
     document.addEventListener('mousemove', function (ev) { mx = ev.clientX; my = ev.clientY; }, { passive: true });
 
+    // click to shove a rope Bobit — swings it like a vine, then damps to rest
+    document.addEventListener('click', function (ev) {
+      entries.forEach(function (e) {
+        if (e.spec.mode !== 'rope' || !e.w) return;
+        var cr = e.c.getBoundingClientRect();
+        var py = e.h - 70, Lh = py - 148 * S;
+        var bodyX = cr.left + e.w / 2 + Math.sin(e.ang || 0) * Lh;
+        if (Math.abs(ev.clientX - bodyX) < 60 && ev.clientY > cr.top && ev.clientY < cr.top + py + 30) {
+          var dir = ev.clientX < bodyX ? 1 : -1;          // push away from the click
+          e.vel = Math.max(-5, Math.min(5, (e.vel || 0) + dir * 2.6));
+        }
+      });
+    }, { passive: true });
+
     function cssVar(name, fallback) {
       var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
       return v || fallback;
@@ -136,6 +150,15 @@
           e.c.style.top = (r.top + sy - 10) + 'px';
           return;
         }
+        if (spec.mode === 'seat') {
+          // taller canvas + seat line 42px above the bottom so dangling shins clear the edge
+          var hSe = 180;
+          sizeCanvas(e, 190, hSe);
+          var edgeYSe = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
+          e.c.style.left = (r.left + sx + r.width * spec.x - 95) + 'px';
+          e.c.style.top = (edgeYSe - (hSe - 42)) + 'px';
+          return;
+        }
         var full = (spec.mode === 'beam' || spec.mode === 'patrol');
         var w = full ? Math.max(300, r.width) : 190;
         sizeCanvas(e, w, FIG_H);
@@ -204,8 +227,9 @@
           var color = cssVar(spec.color, ink);
           var anim = A[spec.anim];
           var ws = 0.62;
-          // chair Bobits sit higher so the castor base + desk clear the canvas floor
-          var py0 = anim.chair ? (h - 72 * ws) : anim.seated ? (h - 10 - 8 * ws) : (h - 8 - 112 * ws);
+          // ground line shared with the standing why-figures (their feet land at ~h-8);
+          // seat the chair Bobit so its castor base (~68px below pelvis, local) rests on it
+          var py0 = anim.chair ? (h - 8 - 68 * ws) : anim.seated ? (h - 10 - 8 * ws) : (h - 8 - 112 * ws);
           // desk extends to the right of the figure, so nudge the origin left to center the scene
           var ox = anim.chair ? (w / 2 - 18) : w / 2;
           if (anim.seated && !anim.chair) {
@@ -284,7 +308,8 @@
         if (spec.mode === 'seat') {
           var animSe = e.greet ? A.greetseat : A[spec.anim];
           var ptSe = e.greet ? e.greet : tt;
-          drawFig(ctx, w / 2, feetY - 8 * S, S, spec.x > 0.5, animSe.frame(ptSe), { color: col, book: (!e.greet && spec.anim === 'read') });
+          var seatY = h - 42;   // matches the seat line set in reposition(); leaves room for dangling legs
+          drawFig(ctx, w / 2, seatY, S, spec.x > 0.5, animSe.frame(ptSe), { color: col, book: (!e.greet && spec.anim === 'read') });
           return;
         }
         if (spec.mode === 'patrol') {
@@ -354,10 +379,27 @@
         }
         if (spec.mode === 'rope') {
           var py = h - 70;
+          var Lh = py - 148 * S;                 // pivot(top) -> hands, i.e. pendulum length
+          // damped pendulum: click adds velocity (see the click handler above), gravity pulls back
+          e.ang = e.ang || 0; e.vel = e.vel || 0;
+          e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;   // k=9 (~2s period), light damping -> stops after ~7s
+          e.ang += e.vel * dt;
+          var s = Math.sin(e.ang), cSw = Math.cos(e.ang);
+          var handX = w / 2 + s * Lh, handY = cSw * Lh;   // swung hand position
+          // rope curves like a vine — control point bows perpendicular, proportional to speed (whip)
+          var bow = Math.max(-26, Math.min(26, e.vel * 10));
+          var mxr = (w / 2 + handX) / 2, myr = handY / 2;
           ctx.strokeStyle = cssVar('--border', '#E5E7EB');
           ctx.lineWidth = 3.5; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, py - 148 * S); ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(w / 2, 0);
+          ctx.quadraticCurveTo(mxr + cSw * bow, myr - s * bow, handX, handY);
+          ctx.stroke();
+          // the Bobit hangs off the rope end, rotated with the swing
+          ctx.save();
+          ctx.translate(w / 2, 0); ctx.rotate(e.ang); ctx.translate(-w / 2, 0);
           drawFig(ctx, w / 2, py, S, false, A.rope.frame(tt), { color: col });
+          ctx.restore();
           return;
         }
       });
