@@ -190,8 +190,8 @@
     });
 
     function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
-    var BEAM_LOADS = ['line', 'triangle', 'circle'];   // what the crew hauls; swapped off-screen each trip
-    function nextLoad(cur) { var o = BEAM_LOADS.filter(function (x) { return x !== cur; }); return o[Math.floor(Math.random() * o.length)]; }
+    var BEAM_LOADS = ['circle'];   // the crew just hauls the ball now (no triangle/line swapping)
+    function nextLoad(cur) { var o = BEAM_LOADS.filter(function (x) { return x !== cur; }); return o.length ? o[Math.floor(Math.random() * o.length)] : cur; }
 
     function sizeCanvas(e, w, h) {
       if (e.w !== w || e.h !== h) {
@@ -223,9 +223,9 @@
           return;
         }
         if (spec.mode === 'rope') {
-          var wR = 300;                                                       // room for the frame bar + the swing
-          sizeCanvas(e, wR, 260);
-          var leftR = r.right + sx - 215;                                     // pivot (x=215 in canvas) at the video's right edge
+          var wR = 350;                                                       // room for the frame bar + long swing
+          sizeCanvas(e, wR, 300);
+          var leftR = r.right + sx - 220;                                     // pivot (x=250) ~30px right of the video edge (over the chasm)
           var maxLeftR = sx + document.documentElement.clientWidth - wR - 4;  // never past the viewport (no h-scroll)
           if (leftR > maxLeftR) leftR = maxLeftR;
           if (leftR < sx + 4) leftR = sx + 4;
@@ -492,7 +492,7 @@
           // The crew hauls a load ALL the way off one edge, dwells off-screen,
           // then walks back carrying a different load (yellow line ↔ red triangle).
           var speedB = 30, halfGap = 24, endMargin = 110;
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = 'line'; e.dwell = 0; }
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = 'circle'; e.dwell = 0; }
           var fx = e.bx + e.dir * halfGap;      // front (leading) carrier
           var bx2 = e.bx - e.dir * halfGap;     // back carrier
           // hover: a carrier drops his end (line only) and waves; partner holds, annoyed
@@ -504,23 +504,28 @@
           if (e.gagOn) {
             e.gagT += dt; var gt = e.gagT, gdir = e.gdir, ballR = 16;
             var carryYg = feetY - 97 * S, footYg = feetY - 6;
+            var LAND = 0.5, TORN_END = 2.7, CHASE_F = 3.4;
             var ballX, ballY;
-            if (gt < 0.4) { ballX = e.gF; ballY = carryYg + (footYg - ballR - carryYg) * smooth01(gt / 0.4); }   // drop onto his foot
-            else { var rt = gt - 0.4; ballX = e.gF - gdir * (26 * rt + 26 * rt * rt); ballY = footYg - ballR; } // rolls back, accelerating
+            if (gt < LAND) { ballX = e.gF; ballY = carryYg + (footYg - ballR - carryYg) * smooth01(gt / LAND); }   // drops onto his foot
+            else { var rt = gt - LAND; ballX = e.gF - gdir * (16 * rt + 6 * rt * rt); ballY = footYg - ballR; }    // then rolls slowly back
+            // front guy: keeps CARRYING as it falls; only hops in pain once it LANDS; then chases
             var frontX = e.gF, frontPose, frontFlip = gdir < 0;
-            if (gt < 3.0) { frontPose = A.painhop.frame(Math.max(0, gt - 0.4)); }                                // hop in pain
-            else { var ct = gt - 3.0; frontX = e.gF - gdir * (58 * ct + 30 * ct * ct); frontPose = A.scurry.frame(gt); frontFlip = gdir > 0; }
+            if (gt < LAND) frontPose = A.carry.frame(tt);
+            else if (gt < CHASE_F) frontPose = A.painhop.frame(gt - LAND);
+            else { var ct = gt - CHASE_F; frontX = e.gF - gdir * (52 * ct + 24 * ct * ct); frontPose = A.scurry.frame(gt); frontFlip = gdir > 0; }
+            // back guy: keeps carrying, then TORN (looks friend<->ball), then chases too
             var backX = e.gB, backPose, backFlip = gdir < 0;
-            if (gt < 2.4) { backPose = A.holdannoyed.frame(gt); }                                                // looks friend<->ball
-            else { var bt = gt - 2.4; backX = e.gB - gdir * (72 * bt + 34 * bt * bt); backPose = A.scurry.frame(gt); backFlip = gdir > 0; }
+            if (gt < LAND) backPose = A.carry.frame(tt + 0.16);
+            else if (gt < TORN_END) backPose = A.holdannoyed.frame(gt - LAND);
+            else { var bt = gt - TORN_END; backX = e.gB - gdir * (64 * bt + 28 * bt * bt); backPose = A.scurry.frame(gt); backFlip = gdir > 0; }
             ctx.fillStyle = cssVar('--coral', '#FF5740');
             ctx.beginPath(); ctx.arc(ballX, ballY, ballR, 0, Math.PI * 2); ctx.fill();
             R.drawShadow(ctx, frontX, feetY, 15, shadow); R.drawShadow(ctx, backX, feetY, 15, shadow);
             drawFig(ctx, frontX, feetY - 112 * S, S, frontFlip, frontPose, { color: col });
             drawFig(ctx, backX, feetY - 112 * S, S, backFlip, backPose, { color: col });
-            if (ballX < -60 || ballX > w + 60 || gt > 8) {   // all off — respawn the crew with a new load
+            if (ballX < -70 || ballX > w + 70 || gt > 12) {   // track them until all the way off-screen, then respawn
               e.gagOn = false; e.greet = 0; e.wF = e.wB = false;
-              e.load = nextLoad('circle'); e.dir = gdir; e.bx = gdir > 0 ? -endMargin : w + endMargin; e.dwell = 0.6;
+              e.dir = gdir; e.bx = gdir > 0 ? -endMargin : w + endMargin; e.dwell = 0.8;
             }
             return;
           }
@@ -633,59 +638,51 @@
         if (spec.mode === 'rope') {
           // Two-step: he sits on a horizontal frame bar; click BREAKS it and he grabs
           // the rope and dangles; then clicking/pushing him swings him (pendulum).
-          var pivotX = 215;                       // RIGHT end (at the video's right edge): his end
-          var barY = 48;                          // frame height (low enough that his head/torso clear the top)
+          var pivotX = 250, barY = 46, barLen = 145;   // pivot far right (over the chasm); frame extends LEFT
           var grey = cssVar('--border', '#C9C6BE');
           ctx.strokeStyle = grey; ctx.lineCap = 'round';
           e.rphase = e.rphase || 'sit';
-          var py = h - 70, Lh = py - 148 * S;      // pivot(top) -> hands, pendulum length
+          var handAbove = 148 * S;                        // hands sit this far above the pelvis in the rope pose
 
           if (e.rphase === 'sit') {
             ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY); ctx.stroke();   // suspender at HIS end
-            ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(12, barY); ctx.stroke();    // frame bar extends LEFT
-            var sitX = pivotX - 16;               // he sits on the right end
-            e._ropeSX = cr.left + sitX; e._ropeSY = cr.top + barY + 20;
+            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY); ctx.stroke();               // suspender holds the right end
+            ctx.beginPath(); ctx.moveTo(pivotX, barY); ctx.lineTo(pivotX - barLen, barY); ctx.stroke();   // frame extends LEFT
+            var sitX = pivotX - barLen + 16;              // he sits on the LEFT end
+            e._ropeSX = cr.left + sitX; e._ropeSY = cr.top + barY + 18;
             drawFig(ctx, sitX, barY, S, false, A.sit.frame(tt, e._wave), { color: col });
             return;
           }
 
+          // swingAng = rope's angle LEFT of straight-down. break: 90deg->0 (swings down & right); hang: pendulum
+          var swingAng, bow = 0;
           if (e.rphase === 'break') {
             e.breakT = (e.breakT || 0) + dt;
-            var bk = Math.min(1, e.breakT / 0.7);
-            ctx.lineWidth = 3.5;
-            ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY + bk * (py - barY)); ctx.stroke();  // his rope drops down
-            ctx.save(); ctx.globalAlpha = 1 - bk;   // the rest of the bar breaks off and swings away LEFT
-            ctx.translate(pivotX - 20, barY); ctx.rotate(-bk * 1.5);
-            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-(pivotX - 20 - 12), 0); ctx.stroke();
-            ctx.restore();
-            var hx = (pivotX - 16) + 16 * smooth01(bk);   // swings RIGHT to hang under his end
-            drawFig(ctx, hx, barY + bk * (py - barY), S, false, A.rope.frame(tt), { color: col });
+            var bk = Math.min(1, e.breakT / 0.85);
+            swingAng = (Math.PI / 2) * (1 - smooth01(bk));
             if (bk >= 1) { e.rphase = 'hang'; e.ang = 0; e.vel = 0; e.scramble = 1; }   // grabs on, startled
-            return;
+          } else {
+            e.ang = e.ang || 0; e.vel = e.vel || 0;
+            e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;
+            e.ang += e.vel * dt;
+            if (e.scramble > 0) e.scramble = Math.max(0, e.scramble - dt / 1.1);
+            swingAng = e.ang;
+            bow = Math.max(-22, Math.min(22, e.vel * 9));
           }
-
-          // hang: damped pendulum around the RIGHT pivot; click adds velocity (see click handler)
-          e.ang = e.ang || 0; e.vel = e.vel || 0;
-          e.vel += (-9 * e.ang - 0.9 * e.vel) * dt;
-          e.ang += e.vel * dt;
-          if (e.scramble > 0) e.scramble = Math.max(0, e.scramble - dt / 1.1);
-          var bow = Math.max(-24, Math.min(24, e.vel * 9));
+          var handX = pivotX - Math.sin(swingAng) * barLen;
+          var handY = barY + Math.cos(swingAng) * barLen;
+          ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.lineTo(pivotX, barY); ctx.stroke();                 // suspender stays
+          ctx.beginPath(); ctx.moveTo(pivotX, barY);
+          ctx.quadraticCurveTo((pivotX + handX) / 2 + bow, (barY + handY) / 2, handX, handY); ctx.stroke();
           var poseR = A.rope.frame(tt);
           if (e.scramble > 0) {
             var scr = e.scramble, fl = Math.sin(tt * 34);
-            poseR.legRF += fl * 28 * scr;  poseR.legLF += -fl * 28 * scr;
-            poseR.legRU += fl * 10 * scr;  poseR.legLU += -fl * 10 * scr;
-            poseR.headTilt += Math.sin(tt * 27) * 12 * scr;
-            poseR.bob += Math.sin(tt * 31) * 3 * scr;
+            poseR.legRF += fl * 28 * scr; poseR.legLF += -fl * 28 * scr;
+            poseR.headTilt += Math.sin(tt * 27) * 12 * scr; poseR.bob += Math.sin(tt * 31) * 3 * scr;
           }
-          e._ropeSX = cr.left + pivotX - Math.sin(e.ang) * Lh; e._ropeSY = cr.top + py - 40;   // hit test tracks the swing
-          ctx.save();
-          ctx.translate(pivotX, 0); ctx.rotate(e.ang); ctx.translate(-pivotX, 0);
-          ctx.lineWidth = 3.5;
-          ctx.beginPath(); ctx.moveTo(pivotX, 0); ctx.quadraticCurveTo(pivotX - bow, Lh * 0.5, pivotX, Lh); ctx.stroke();
-          drawFig(ctx, pivotX, py, S, false, poseR, { color: col });
-          ctx.restore();
+          e._ropeSX = cr.left + handX; e._ropeSY = cr.top + handY + 40;   // hit test tracks the swing
+          drawFig(ctx, handX, handY + handAbove, S, false, poseR, { color: col });   // hangs UPRIGHT below his hands
           return;
         }
       });

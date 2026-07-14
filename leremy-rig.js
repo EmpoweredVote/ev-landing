@@ -782,14 +782,14 @@ const ANIMATIONS = {
       const p = clone(REST);
       const s = wave(t, 0.5);                       // slow step cycle
       const w = Math.abs(s);                        // weight-bearing, peaks mid-stride
-      p.hunch = -28 - w * 8;                        // hunches down to lean on the cane
-      p.headTilt = -16;                             // head hangs forward
-      p.lean = 4 + s * 3;                           // rocks over the cane
+      p.hunch = -42 - w * 8;                        // deeply stooped over the cane
+      p.headTilt = -14;                             // head hangs forward
+      p.lean = 5 + s * 3;                           // rocks over the cane
       p.bob = 1 + w * 15;                           // pronounced hitch onto the cane
       p.legRU = s * 9; p.legLU = -s * 9;            // short shuffle steps
       p.legRF = p.legRU - Math.max(0, s) * 7;
       p.legLF = p.legLU - Math.max(0, -s) * 7;
-      p.armRU = 52; p.armRF = 26;                   // steady hand gripping the vertical cane
+      p.armRU = 66; p.armRF = 34;                   // cane hand reaches well forward, clear of his legs
       p.armLU = -12; p.armLF = -8;                  // free arm hangs
       return p;
     },
