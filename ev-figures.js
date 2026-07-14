@@ -24,9 +24,13 @@
     var mx = -1e4, my = -1e4;
     document.addEventListener('mousemove', function (ev) { mx = ev.clientX; my = ev.clientY; }, { passive: true });
 
-    // click to shove a rope Bobit — swings it like a vine, then damps to rest
+    // click to shove a rope Bobit / tip over a toddler
     document.addEventListener('click', function (ev) {
       entries.forEach(function (e) {
+        // toddler: click him and he falls; the adult turns and throws up an arm
+        if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
+          if (Math.abs(ev.clientX - e._toddSX) < 42 && Math.abs(ev.clientY - e._toddSY) < 72) { e._fall = 2.8; return; }
+        }
         if (e.spec.mode !== 'rope' || !e.w) return;
         var cr = e.c.getBoundingClientRect();
         var py = e.h - 70, Lh = py - 148 * S;
@@ -95,9 +99,10 @@
 
     function walker(anchor, opt) {
       opt = opt || {};
-      var g = pick(GAITS);
-      var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: GSPEED[g], tone: (opt.tone != null ? opt.tone : pick([0, 1, 2])) };
-      if (opt.allowToddler && chance(0.5)) s.toddler = true;
+      var withTot = opt.allowToddler && chance(0.5);
+      var g = withTot ? pick(['stroll', 'shuffle']) : pick(GAITS);   // gentle gait when escorting a toddler
+      var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: withTot ? 12 : GSPEED[g], tone: (opt.tone != null ? opt.tone : pick([0, 1, 2])) };
+      if (withTot) s.toddler = true;
       return s;
     }
     // one figure (or none) for a note-card top edge
@@ -291,7 +296,8 @@
         var hoverable = spec.mode === 'stand' || spec.mode === 'patrol' || spec.mode === 'seat';
         // per-entry clock freezes while greeting, so patrols resume where they stopped
         if (e.greet) e.greet += dt;
-        e.lt += dt * (e.greet ? 0 : 1);
+        if (e._fall > 0) e._fall = Math.max(0, e._fall - dt);
+        e.lt += dt * ((e.greet || e._fall > 0) ? 0 : 1);
         var tt = e.lt + e.phase;
         // current figure x within the canvas
         var figX = w / 2;
@@ -407,20 +413,26 @@
           return;
         }
         if (spec.mode === 'patrol') {
-          // toddler waddling in front, in the direction of travel (offset eases across at turns)
+          // toddler waddling in front (adult trails behind); click him and he falls down
           if (spec.toddler) {
             var TS = S * 0.62;
-            var tTgt = (e._dirR ? 1 : -1) * 34;
+            var tTgt = (e._dirR ? 1 : -1) * 48;                       // leads farther ahead, so the adult is clearly behind
             e._toff = (e._toff == null) ? tTgt : e._toff + (tTgt - e._toff) * Math.min(1, dt * 5);
             var toddX = figX + e._toff;
+            e._toddSX = cr.left + toddX; e._toddSY = cr.top + feetY - 26;   // for click hit-testing
             R.drawShadow(ctx, toddX, feetY, 10, shadow);
-            drawFig(ctx, toddX, feetY - 112 * TS, TS, !e._dirR, A.toddle.frame(tt * 1.6 + 1.7), { color: figColor(1) });
+            if (e._fall > 0) drawFig(ctx, toddX, feetY - 8 * TS, TS, !e._dirR, A.fall.frame(2.8 - e._fall), { color: figColor(1) });
+            else drawFig(ctx, toddX, feetY - 112 * TS, TS, !e._dirR, A.toddle.frame(tt * 1.1 + 1.7), { color: figColor(1) });
           }
           R.drawShadow(ctx, figX, feetY, 16, shadow);
-          var animP = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim];
-          var ptP = e.greet ? e.greet : tt;
-          // when greeting, face the viewer — unless it's the footer meet, then turn to face the stander (left)
-          var flipP = e.greet ? (e._meet ? true : false) : !e._dirR;
+          var animP, ptP, flipP;
+          if (spec.toddler && e._fall > 0) { animP = A.dismay; ptP = 2.8 - e._fall; flipP = false; }  // adult turns, arm up, exhausted
+          else {
+            animP = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim];
+            ptP = e.greet ? e.greet : tt;
+            // when greeting, face the viewer — unless it's the footer meet, then turn to face the stander (left)
+            flipP = e.greet ? (e._meet ? true : false) : !e._dirR;
+          }
           drawFig(ctx, figX, feetY - 112 * S, S, flipP, animP.frame(ptP, e._wave), { color: col, cane: animP.cane });
           return;
         }

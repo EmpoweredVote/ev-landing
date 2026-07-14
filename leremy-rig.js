@@ -142,13 +142,14 @@ function draw(ctx, j, cfg = CFG, opts = {}) {
 }
 
 // rigid cane from the right hand, extended along the forearm direction:
-// plants toward the ground when the hand is low, brandishes when it's raised.
+// when the hand is low it reaches all the way to the ground; when raised it's a brandished stick.
 function drawCane(ctx, j, color) {
   const eR = j.eR, hR = j.hR;
   const dx = hR.x - eR.x, dy = hR.y - eR.y;
   const len = Math.hypot(dx, dy) || 1;
   const ux = dx / len, uy = dy / len;
-  const caneLen = 72;
+  const groundY = Math.max(j.fR.y, j.fL.y) + 8;
+  const caneLen = uy > 0.2 ? Math.min(170, (groundY - hR.y) / uy) : 86;  // reach the floor while walking
   ctx.save();
   ctx.strokeStyle = color; ctx.lineWidth = 4.5; ctx.lineCap = "round";
   ctx.beginPath();
@@ -774,17 +775,22 @@ const ANIMATIONS = {
   elder: {
     label: "Elder", mood: "back in my day\u2026", cane: true,
     frame(t) {
+      // cane gait: the cane is a 3rd leg \u2014 it plants forward, the body hitches
+      // down onto it, then the legs shuffle through. Slow and deliberate.
       const p = clone(REST);
-      const step = wave(t, 0.55);                 // slow shuffle
-      p.hunch = -30 + wave(t, 0.25) * 2;          // permanently stooped
-      p.headTilt = -16;                           // head hangs forward
-      p.lean = 5;
-      p.bob = -Math.abs(step) * 2 + 2;
-      p.legRU = step * 12; p.legLU = -step * 12;
-      p.legRF = p.legRU - Math.max(0, step) * 10;
-      p.legLF = p.legLU - Math.max(0, -step) * 10;
-      p.armRU = 54; p.armRF = 40;                 // right hand out front on the cane
-      p.armLU = -12; p.armLF = -8;                // left arm hangs
+      const step = wave(t, 0.5);                   // slow steps
+      const plant = (wave(t, 0.5, -1.5) + 1) / 2;  // cane plant, out of phase with the legs
+      p.hunch = -30;
+      p.headTilt = -16;                            // head hangs forward
+      p.lean = 6;
+      p.legRU = step * 9; p.legLU = -step * 9;     // short shuffle steps
+      p.legRF = p.legRU - Math.max(0, step) * 7;
+      p.legLF = p.legLU - Math.max(0, -step) * 7;
+      // cane arm: reaches forward to plant, then bears weight
+      p.armRU = 42 + plant * 14;
+      p.armRF = 50 + plant * 14;
+      p.bob = 3 - plant * 3;                       // dip onto the cane on each plant
+      p.armLU = -12; p.armLF = -8;                 // free arm hangs
       return p;
     },
   },
@@ -793,13 +799,44 @@ const ANIMATIONS = {
     frame(t) {
       const p = clone(REST);
       p.hunch = -18;                              // straightens up to tell you off
-      p.headTilt = -2 + wave(t, 3) * 3;           // glaring up at you
+      p.headTilt = -4 + wave(t, 0.7) * 4;         // glaring up at you
       p.lean = 2;
       p.legRU = 10; p.legLU = -12; p.legLF = -6;  // planted stance
-      const shake = wave(t, 8);                   // brandishes the cane and shakes it
-      p.armRU = 150 + shake * 14;
-      p.armRF = 120 + shake * 22;
+      const shake = wave(t, 1.1);                 // BIG, SLOW cane swings
+      p.armRU = 140 + shake * 30;
+      p.armRF = 118 + shake * 46;
       p.armLU = -18; p.armLF = -10;
+      return p;
+    },
+  },
+  fall: {
+    label: "Fell down", mood: "whoops!", seated: true,
+    frame(t) {
+      // toddler plops onto the ground, flails, then sits looking up
+      const p = clone(REST);
+      p.lean = 6; p.hunch = 8;
+      p.headTilt = 8 + wave(t, t < 0.6 ? 5 : 1.2) * 5;
+      p.legRU = 70; p.legRF = 12;                 // legs sprawled out front
+      p.legLU = 58; p.legLF = 8;
+      const flail = t < 0.55 ? wave(t, 6) : wave(t, 1.3);
+      p.armRU = 58 + flail * 22; p.armRF = 28;
+      p.armLU = -58 - flail * 22; p.armLF = -26;
+      return p;
+    },
+  },
+  dismay: {
+    label: "Dismay", mood: "\u2026every single time",
+    frame(t) {
+      // adult turns back, one arm up to the forehead in exhaustion
+      const p = clone(REST);
+      const br = wave(t, 0.5);
+      const raise = Math.min(1, t / 0.4);
+      p.lean = 3;
+      p.hunch = 8 + br * 2;                        // slumped back
+      p.headTilt = (16 + br * 3) * raise;          // head tips back \u2014 ugh
+      p.bob = br * 1.5;
+      p.armRU = 40 + 108 * raise; p.armRF = 20 + (186 + br * 6) * raise;  // hand to forehead
+      p.armLU = -14; p.armLF = -8;
       return p;
     },
   },
