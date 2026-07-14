@@ -111,23 +111,38 @@
     var IDLES = ['bored', 'sassy', 'confused', 'standstill', 'present'];
     var SEATS = ['sit', 'read'];
     var TONES = [0, 1, 2, 3, 4, 5];   // full palette (teal/coral/gold/green/purple/orange)
+    // ── colour-diversity safeguard: hand out tones from a shuffled bag rather than i.i.d. random,
+    //    so we never get a page of four coral clones. Every 6 draws touches all 6 colours once;
+    //    on refill we avoid repeating the last tone across the seam. ──
+    var _toneBag = [], _lastTone = null;
+    function takeTone() {
+      if (!_toneBag.length) {
+        var t = TONES.slice();
+        for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = t[i]; t[i] = t[j]; t[j] = tmp; }
+        if (t[0] === _lastTone && t.length > 1) t.push(t.shift());
+        _toneBag = t;
+      }
+      _lastTone = _toneBag.shift();
+      return _lastTone;
+    }
 
     function walker(anchor, opt) {
       opt = opt || {};
       var withTot = opt.allowToddler && chance(0.5);
       var g = withTot ? pick(['stroll', 'shuffle']) : pick(GAITS);   // gentle gait when escorting a toddler
-      var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: withTot ? 12 : GSPEED[g], tone: (opt.tone != null ? opt.tone : pick(TONES)) };
-      if (withTot) { s.toddler = true; s.toddlerTone = pick(TONES); s.toddlerStyle = pick(['waddle', 'march']); }
+      var s = { mode: 'patrol', anchor: anchor, edge: 'top', anim: g, speed: withTot ? 12 : GSPEED[g], tone: (opt.tone != null ? opt.tone : takeTone()) };
+      if (withTot) { s.toddler = true; s.toddlerTone = takeTone(); s.toddlerStyle = pick(['waddle', 'march']); }
       return s;
     }
-    // one figure (or none) for a note-card top edge
+    // one figure (or none) for a note-card top edge — biased toward readers/sitters for a calmer, more varied cast
     function noteSlot(anchor, opt) {
       opt = opt || {};
+      var seat = function () { return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : takeTone()) }; };
       var r = Math.random();
-      if (r < 0.45) return walker(anchor, opt);
-      if (r < 0.74) return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : pick(TONES)) };
-      if (r < 0.9 || opt.always) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: pick(TONES) };
-      return null;   // sometimes empty
+      if (r < 0.46) return seat();                       // most common: a reader or sitter
+      if (r < 0.78) return walker(anchor, opt);
+      if (r < 0.9) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: takeTone() };
+      return opt.always ? seat() : null;                 // 'always' anchors fall back to a reader, not empty
     }
 
     function buildCast() {
@@ -143,14 +158,14 @@
       add(noteSlot('.note.n-money', {}));
       // watch top — an elder, or a random walker
       add(chance(0.5)
-        ? { mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: pick(TONES), hoverAnim: 'elderangry' }
+        ? { mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: takeTone(), hoverAnim: 'elderangry' }
         : walker('section.watch', {}));
       // watch thumbnail corner — peeker, idler, or hover-jumper
-      var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: pick(TONES) };
+      var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: takeTone() };
       if (pr < 0.6) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }  // peek (hover: shrug)
       else { pk.anim = pick(IDLES); }                             // idle (hover: wave). Only the footer stander jumps.
       add(pk);
-      if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid .watch-card:nth-of-type(3) .watch-thumb', tone: pick(TONES) });
+      if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid .watch-card:nth-of-type(3) .watch-thumb', tone: takeTone() });
       // footer pair — always present so the meet-and-greet keeps happening
       add(walker('footer', { tone: 0 }));
       add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
@@ -230,7 +245,10 @@
           if (leftR > maxLeftR) leftR = maxLeftR;
           if (leftR < sx + 4) leftR = sx + 4;
           e.c.style.left = leftR + 'px';
-          e.c.style.top = (r.top + sy - 44) + 'px';                          // frame up near the Talks line
+          // the frame bar (canvas y=46) should hang level with the short "03 / Talks" section bar, not on the video
+          if (!e._barEl) e._barEl = document.querySelector('.watch .section-num .bar');
+          var barTopY = e._barEl ? (e._barEl.getBoundingClientRect().top + sy) : (r.top + sy - 44);
+          e.c.style.top = (barTopY - 46 + 1) + 'px';                          // +1 centers the 2px section bar
           return;
         }
         if (spec.mode === 'seat') {
@@ -500,24 +518,28 @@
           var nearB = Math.abs(mx - (cr.left + bx2)) < 36;
           var inY = my > cr.top + h - 92 && my < cr.top + h + 6;
           // ── ball gag: hovering while carrying the CIRCLE drops it on the front guy's foot ──
-          if (e.load === 'circle' && (nearF || nearB) && inY && !e.gagOn) { e.gagOn = true; e.gagT = 0; e.gF = fx; e.gB = bx2; e.gdir = e.dir; }
+          if (e.load === 'circle' && (nearF || nearB) && inY && !e.gagOn) { e.gagOn = true; e.gagT = 0; e.gF = fx; e.gB = bx2; e.gdir = e.dir; e.gBackChase = -1; }
           if (e.gagOn) {
             e.gagT += dt; var gt = e.gagT, gdir = e.gdir, ballR = 16;
             var carryYg = feetY - 97 * S, footYg = feetY - 6;
-            var LAND = 0.5, TORN_END = 2.7, CHASE_F = 3.4;
+            var LAND = 0.5, CHASE_F = 3.4;
+            var edgeX = gdir > 0 ? -70 : w + 70;   // trailing edge the ball rolls toward
             var ballX, ballY;
             if (gt < LAND) { ballX = e.gF; ballY = carryYg + (footYg - ballR - carryYg) * smooth01(gt / LAND); }   // drops onto his foot
-            else { var rt = gt - LAND; ballX = e.gF - gdir * (16 * rt + 6 * rt * rt); ballY = footYg - ballR; }    // then rolls slowly back
+            else { var rt = gt - LAND; ballX = e.gF - gdir * (130 * rt + 24 * rt * rt); ballY = footYg - ballR; }   // then rolls FAST — off the edge before anyone gives chase
+            // the unhurt (back) guy holds off until the ball is ~halfway between him and the edge, so it can roll longer
+            var halfway = (e.gB + edgeX) / 2;
+            if (e.gBackChase < 0 && ((gdir > 0 && ballX <= halfway) || (gdir < 0 && ballX >= halfway))) e.gBackChase = gt;
             // front guy: keeps CARRYING as it falls; only hops in pain once it LANDS; then chases
             var frontX = e.gF, frontPose, frontFlip = gdir < 0;
             if (gt < LAND) frontPose = A.carry.frame(tt);
             else if (gt < CHASE_F) frontPose = A.painhop.frame(gt - LAND);
             else { var ct = gt - CHASE_F; frontX = e.gF - gdir * (52 * ct + 24 * ct * ct); frontPose = A.scurry.frame(gt); frontFlip = gdir > 0; }
-            // back guy: keeps carrying, then TORN (looks friend<->ball), then chases too
+            // back guy: keeps carrying, then TORN (looks friend<->ball), then chases once the ball is halfway to the edge
             var backX = e.gB, backPose, backFlip = gdir < 0;
             if (gt < LAND) backPose = A.carry.frame(tt + 0.16);
-            else if (gt < TORN_END) backPose = A.holdannoyed.frame(gt - LAND);
-            else { var bt = gt - TORN_END; backX = e.gB - gdir * (64 * bt + 28 * bt * bt); backPose = A.scurry.frame(gt); backFlip = gdir > 0; }
+            else if (e.gBackChase < 0) backPose = A.holdannoyed.frame(gt - LAND);
+            else { var bt = gt - e.gBackChase; backX = e.gB - gdir * (64 * bt + 28 * bt * bt); backPose = A.scurry.frame(gt); backFlip = gdir > 0; }
             ctx.fillStyle = cssVar('--coral', '#FF5740');
             ctx.beginPath(); ctx.arc(ballX, ballY, ballR, 0, Math.PI * 2); ctx.fill();
             R.drawShadow(ctx, frontX, feetY, 15, shadow); R.drawShadow(ctx, backX, feetY, 15, shadow);
