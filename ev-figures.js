@@ -130,6 +130,8 @@
     });
 
     function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
+    var BEAM_LOADS = ['line', 'triangle'];   // what the crew hauls; swapped off-screen each trip
+    function nextLoad(cur) { var o = BEAM_LOADS.filter(function (x) { return x !== cur; }); return o[Math.floor(Math.random() * o.length)]; }
 
     function sizeCanvas(e, w, h) {
       if (e.w !== w || e.h !== h) {
@@ -380,14 +382,13 @@
           return;
         }
         if (spec.mode === 'beam') {
-          var pad2 = 90, span2 = w - pad2 * 2;
-          var u2 = (tt * 30 / span2) % 2; if (u2 < 0) u2 += 2;
-          var tri2 = u2 < 1 ? u2 : 2 - u2;
-          var goingR = u2 < 1, dir = goingR ? 1 : -1;
-          var fx = pad2 + tri2 * span2;
-          var bx2 = fx - dir * 46;
-          // hover on a carrier → that one drops HIS end and waves; his partner
-          // keeps holding, looking back and forth, annoyed. Hover both → both drop.
+          // The crew hauls a load ALL the way off one edge, dwells off-screen,
+          // then walks back carrying a different load (yellow line ↔ red triangle).
+          var speedB = 30, halfGap = 24, endMargin = 110;
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = 'line'; e.dwell = 0; }
+          var fx = e.bx + e.dir * halfGap;      // front (leading) carrier
+          var bx2 = e.bx - e.dir * halfGap;     // back carrier
+          // hover: a carrier drops his end (line only) and waves; partner holds, annoyed
           var nearF = Math.abs(mx - (cr.left + fx)) < 36;
           var nearB = Math.abs(mx - (cr.left + bx2)) < 36;
           var inY = my > cr.top + h - 92 && my < cr.top + h + 6;
@@ -400,18 +401,37 @@
             e.linger -= dt;
             if (e.linger <= 0) { e.greet = 0; e.wF = e.wB = false; }
           }
-          // each end drops / is picked back up independently
+          // advance (frozen while greeting or dwelling off-screen); swap load at each off-screen turn
+          if (!e.greet) {
+            if (e.dwell > 0) e.dwell -= dt;
+            else {
+              e.bx += e.dir * speedB * dt;
+              if (e.bx > w + endMargin) { e.dir = -1; e.load = nextLoad(e.load); e.dwell = 1.1; }
+              else if (e.bx < -endMargin) { e.dir = 1; e.load = nextLoad(e.load); e.dwell = 1.1; }
+            }
+            fx = e.bx + e.dir * halfGap; bx2 = e.bx - e.dir * halfGap;
+          }
+          var goingR = e.dir > 0;
+          // drop/raise each end (line load only — a rigid triangle isn't dropped)
           e.dF = e.dF || 0; e.dB = e.dB || 0;
-          var k = Math.min(1, dt * 6);
-          e.dF += (((e.greet && e.wF) ? 1 : 0) - e.dF) * k;
-          e.dB += (((e.greet && e.wB) ? 1 : 0) - e.dB) * k;
+          var kB = Math.min(1, dt * 6), dropOK = e.load === 'line';
+          e.dF += (((e.greet && e.wF && dropOK) ? 1 : 0) - e.dF) * kB;
+          e.dB += (((e.greet && e.wB && dropOK) ? 1 : 0) - e.dB) * kB;
           var carryY = feetY - 97 * S, groundY = feetY - 3;
-          var yF = carryY + (groundY - carryY) * e.dF;
-          var yB = carryY + (groundY - carryY) * e.dB;
-          // the yellow line they're building (same as the "see our books" underline)
-          ctx.strokeStyle = cssVar('--yellow', '#FED12E');
-          ctx.lineWidth = 5; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(fx + dir * 12, yF); ctx.lineTo(bx2 - dir * 12, yB); ctx.stroke();
+          if (e.load === 'triangle') {
+            // the logo's red triangle, base at the back carrier, tip toward the front
+            var baseX = bx2, tipX = fx + e.dir * 4;
+            ctx.fillStyle = cssVar('--coral', '#FF5740');
+            ctx.beginPath();
+            ctx.moveTo(baseX, carryY - 18); ctx.lineTo(baseX, carryY + 18); ctx.lineTo(tipX, carryY);
+            ctx.closePath(); ctx.fill();
+          } else {
+            var yF = carryY + (groundY - carryY) * e.dF;
+            var yB = carryY + (groundY - carryY) * e.dB;
+            ctx.strokeStyle = cssVar('--yellow', '#FED12E');
+            ctx.lineWidth = 5; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yF); ctx.lineTo(bx2 - e.dir * 12, yB); ctx.stroke();
+          }
           R.drawShadow(ctx, fx, feetY, 15, shadow);
           R.drawShadow(ctx, bx2, feetY, 15, shadow);
           var poseF, poseB, flipF = !goingR, flipB = !goingR;
