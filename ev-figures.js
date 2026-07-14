@@ -499,6 +499,31 @@
           var nearF = Math.abs(mx - (cr.left + fx)) < 36;
           var nearB = Math.abs(mx - (cr.left + bx2)) < 36;
           var inY = my > cr.top + h - 92 && my < cr.top + h + 6;
+          // ── ball gag: hovering while carrying the CIRCLE drops it on the front guy's foot ──
+          if (e.load === 'circle' && (nearF || nearB) && inY && !e.gagOn) { e.gagOn = true; e.gagT = 0; e.gF = fx; e.gB = bx2; e.gdir = e.dir; }
+          if (e.gagOn) {
+            e.gagT += dt; var gt = e.gagT, gdir = e.gdir, ballR = 16;
+            var carryYg = feetY - 97 * S, footYg = feetY - 6;
+            var ballX, ballY;
+            if (gt < 0.4) { ballX = e.gF; ballY = carryYg + (footYg - ballR - carryYg) * smooth01(gt / 0.4); }   // drop onto his foot
+            else { var rt = gt - 0.4; ballX = e.gF - gdir * (26 * rt + 26 * rt * rt); ballY = footYg - ballR; } // rolls back, accelerating
+            var frontX = e.gF, frontPose, frontFlip = gdir < 0;
+            if (gt < 3.0) { frontPose = A.painhop.frame(Math.max(0, gt - 0.4)); }                                // hop in pain
+            else { var ct = gt - 3.0; frontX = e.gF - gdir * (58 * ct + 30 * ct * ct); frontPose = A.scurry.frame(gt); frontFlip = gdir > 0; }
+            var backX = e.gB, backPose, backFlip = gdir < 0;
+            if (gt < 2.4) { backPose = A.holdannoyed.frame(gt); }                                                // looks friend<->ball
+            else { var bt = gt - 2.4; backX = e.gB - gdir * (72 * bt + 34 * bt * bt); backPose = A.scurry.frame(gt); backFlip = gdir > 0; }
+            ctx.fillStyle = cssVar('--coral', '#FF5740');
+            ctx.beginPath(); ctx.arc(ballX, ballY, ballR, 0, Math.PI * 2); ctx.fill();
+            R.drawShadow(ctx, frontX, feetY, 15, shadow); R.drawShadow(ctx, backX, feetY, 15, shadow);
+            drawFig(ctx, frontX, feetY - 112 * S, S, frontFlip, frontPose, { color: col });
+            drawFig(ctx, backX, feetY - 112 * S, S, backFlip, backPose, { color: col });
+            if (ballX < -60 || ballX > w + 60 || gt > 8) {   // all off — respawn the crew with a new load
+              e.gagOn = false; e.greet = 0; e.wF = e.wB = false;
+              e.load = nextLoad('circle'); e.dir = gdir; e.bx = gdir > 0 ? -endMargin : w + endMargin; e.dwell = 0.6;
+            }
+            return;
+          }
           if ((nearF || nearB) && inY) {
             if (!e.greet) e.greet = 0.001;
             if (nearF) e.wF = true;

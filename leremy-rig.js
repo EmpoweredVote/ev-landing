@@ -905,6 +905,21 @@ const ANIMATIONS = {
       return p;
     },
   },
+  painhop: {
+    label: "Ow, my foot", mood: "OW ow ow!",
+    frame(t) {
+      const p = clone(REST);
+      const hop = Math.abs(Math.sin(t * 3.5 * Math.PI));   // hops on the good foot
+      p.bob = -hop * 12 + 2;
+      p.lean = 8; p.hunch = -6;
+      p.headTilt = -22;                    // looking down at the hurt foot
+      p.legRU = 46; p.legRF = -82;         // hurt foot yanked up
+      p.legLU = -6; p.legLF = -3;          // good leg hops
+      p.armRU = 40; p.armRF = 98;          // both hands clutch the raised foot
+      p.armLU = -40; p.armLF = -98;
+      return p;
+    },
+  },
 };
 
 // lateral gait generator: legs scissor front/back in profile, hunch carries the upper body
