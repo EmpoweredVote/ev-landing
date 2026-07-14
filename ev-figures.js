@@ -112,7 +112,7 @@
       if (opt.allowClimb && r < 0.22) return { mode: 'vclimb', anchor: anchor, tone: pick([0, 1]) };
       if (r < 0.45) return walker(anchor, opt);
       if (r < 0.74) return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : pick([0, 1, 2])) };
-      if (r < 0.9) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: pick([0, 1, 2]) };
+      if (r < 0.9 || opt.always) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: pick([0, 1, 2]) };
       return null;   // sometimes empty
     }
 
@@ -124,9 +124,8 @@
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' });       // fixed (content)
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
-      add(noteSlot('.note.n-alpha', { allowToddler: true }));
-      add(noteSlot('.note.n-team', {}));
-      add(noteSlot('.note.n-ai', { allowClimb: true }));
+      add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));  // Note 1 always hosts a Bobit (moved off Note 2)
+      add(noteSlot('.note.n-ai', { allowClimb: true }));                     // Note 2 (n-team) intentionally left clear
       add(noteSlot('.note.n-money', {}));
       // watch top — an elder, or a random walker
       add(chance(0.5)
@@ -474,11 +473,14 @@
           e.dB += (((e.greet && e.wB && dropOK) ? 1 : 0) - e.dB) * kB;
           var carryY = feetY - 97 * S, groundY = feetY - 3;
           if (e.load === 'triangle') {
-            // the logo's red triangle, base at the back carrier, tip toward the front
-            var baseX = bx2, tipX = fx + e.dir * 4;
+            // the logo's red triangle: tip toward the front, a semicircle scooped out of the back edge
+            var baseX = bx2, tipX = fx + e.dir * 4, cyT = carryY, rT = 18;
             ctx.fillStyle = cssVar('--coral', '#FF5740');
             ctx.beginPath();
-            ctx.moveTo(baseX, carryY - 18); ctx.lineTo(baseX, carryY + 18); ctx.lineTo(tipX, carryY);
+            ctx.moveTo(baseX, cyT - rT);
+            ctx.lineTo(tipX, cyT);
+            ctx.lineTo(baseX, cyT + rT);
+            ctx.arc(baseX, cyT, rT, Math.PI / 2, -Math.PI / 2, true);   // concave semicircle notch in the base
             ctx.closePath(); ctx.fill();
           } else {
             var yF = carryY + (groundY - carryY) * e.dF;

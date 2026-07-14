@@ -144,24 +144,25 @@ function draw(ctx, j, cfg = CFG, opts = {}) {
 // rigid cane from the right hand, extended along the forearm direction:
 // when the hand is low it reaches all the way to the ground; when raised it's a brandished stick.
 function drawCane(ctx, j, color) {
-  const eR = j.eR, hR = j.hR;
-  const dx = hR.x - eR.x, dy = hR.y - eR.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len, uy = dy / len;
+  const hR = j.hR;
   const groundY = Math.max(j.fR.y, j.fL.y) + 8;
-  const caneLen = uy > 0.2 ? Math.min(170, (groundY - hR.y) / uy) : 86;  // reach the floor while walking
   ctx.save();
   ctx.strokeStyle = color; ctx.lineWidth = 4.5; ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(hR.x, hR.y);
-  ctx.lineTo(hR.x + ux * caneLen, hR.y + uy * caneLen);
-  ctx.stroke();
-  // little crook handle just above the grip
-  const px = -uy, py = ux;
-  ctx.beginPath();
-  ctx.moveTo(hR.x - ux * 6, hR.y - uy * 6);
-  ctx.quadraticCurveTo(hR.x - ux * 12, hR.y - uy * 12, hR.x - ux * 10 + px * 9, hR.y - uy * 10 + py * 9);
-  ctx.stroke();
+  if (hR.y < j.N.y - 4) {
+    // hand raised → brandished stick, rigid along the forearm
+    const eR = j.eR, dx = hR.x - eR.x, dy = hR.y - eR.y, len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len, L = 90;
+    ctx.beginPath(); ctx.moveTo(hR.x, hR.y); ctx.lineTo(hR.x + ux * L, hR.y + uy * L); ctx.stroke();
+    const px = -uy, py = ux;
+    ctx.beginPath();
+    ctx.moveTo(hR.x - ux * 6, hR.y - uy * 6);
+    ctx.quadraticCurveTo(hR.x - ux * 12, hR.y - uy * 12, hR.x - ux * 10 + px * 9, hR.y - uy * 10 + py * 9);
+    ctx.stroke();
+  } else {
+    // walking → cane straight down, PERPENDICULAR to the ground, planted at the foot line
+    ctx.beginPath(); ctx.moveTo(hR.x, hR.y); ctx.lineTo(hR.x, groundY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hR.x, hR.y); ctx.quadraticCurveTo(hR.x - 3, hR.y - 10, hR.x - 11, hR.y - 8); ctx.stroke();  // crook handle
+  }
   ctx.restore();
 }
 
@@ -775,22 +776,20 @@ const ANIMATIONS = {
   elder: {
     label: "Elder", mood: "back in my day\u2026", cane: true,
     frame(t) {
-      // cane gait: the cane is a 3rd leg \u2014 it plants forward, the body hitches
-      // down onto it, then the legs shuffle through. Slow and deliberate.
+      // Cane held vertical (a planted 3rd leg). The hand stays steady; the body
+      // HEAVES down onto the cane each stride and hunches to bear its weight.
       const p = clone(REST);
-      const step = wave(t, 0.5);                   // slow steps
-      const plant = (wave(t, 0.5, -1.5) + 1) / 2;  // cane plant, out of phase with the legs
-      p.hunch = -30;
-      p.headTilt = -16;                            // head hangs forward
-      p.lean = 6;
-      p.legRU = step * 9; p.legLU = -step * 9;     // short shuffle steps
-      p.legRF = p.legRU - Math.max(0, step) * 7;
-      p.legLF = p.legLU - Math.max(0, -step) * 7;
-      // cane arm: reaches forward to plant, then bears weight
-      p.armRU = 42 + plant * 14;
-      p.armRF = 50 + plant * 14;
-      p.bob = 3 - plant * 3;                       // dip onto the cane on each plant
-      p.armLU = -12; p.armLF = -8;                 // free arm hangs
+      const s = wave(t, 0.5);                       // slow step cycle
+      const w = Math.abs(s);                        // weight-bearing, peaks mid-stride
+      p.hunch = -28 - w * 8;                        // hunches down to lean on the cane
+      p.headTilt = -16;                             // head hangs forward
+      p.lean = 4 + s * 3;                           // rocks over the cane
+      p.bob = 1 + w * 15;                           // pronounced hitch onto the cane
+      p.legRU = s * 9; p.legLU = -s * 9;            // short shuffle steps
+      p.legRF = p.legRU - Math.max(0, s) * 7;
+      p.legLF = p.legLU - Math.max(0, -s) * 7;
+      p.armRU = 52; p.armRF = 26;                   // steady hand gripping the vertical cane
+      p.armLU = -12; p.armLF = -8;                  // free arm hangs
       return p;
     },
   },

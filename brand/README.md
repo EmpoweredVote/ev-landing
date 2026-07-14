@@ -36,8 +36,10 @@ The landing page product **cards** (`index.html`) use hand-tuned symbol copies i
 live glyphs; the files here are the untouched source of truth. Sync any card change
 back to the tuned `icons/` versions rather than pointing cards at these directly.
 
-## Known issues
+## Notes
 
-- **Compass dark logo** — the brand pack shipped no true `compass-logo-dark.svg`
-  (it contained a mislabeled PNG). As a placeholder, `Logo/SVG/compass-logo-dark.svg`
-  is currently a copy of the light logo. Replace it with the real dark artwork when available.
+- **Compass dark variant** — the brand pack shipped no true dark logo (the dark
+  files were copies of the light artwork). The dark SVGs and PNGs are now a
+  recolor of the light artwork with the dark teal `#00657C` swapped for the
+  bright teal `#1DA8C6` (the dark-mode `--teal`), so the wordmark/mark read on
+  dark backgrounds. Coral/yellow are unchanged.
