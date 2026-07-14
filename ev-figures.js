@@ -204,7 +204,14 @@
     });
 
     function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
-    var BEAM_LOADS = ['circle'];   // the crew just hauls the ball now (no triangle/line swapping)
+    // blend two rig poses field-by-field (both come from clone(REST) so they share keys) — for organic pose transitions
+    function lerpPose(a, b, k) {
+      var out = {};
+      for (var key in a) out[key] = (typeof a[key] === 'number' && typeof b[key] === 'number') ? a[key] + (b[key] - a[key]) * k : a[key];
+      for (var kb in b) if (!(kb in out)) out[kb] = b[kb];
+      return out;
+    }
+    var BEAM_LOADS = ['circle', 'line'];   // crew alternates the ball and the yellow line (no notched triangle)
     function nextLoad(cur) { var o = BEAM_LOADS.filter(function (x) { return x !== cur; }); return o.length ? o[Math.floor(Math.random() * o.length)] : cur; }
 
     function sizeCanvas(e, w, h) {
@@ -529,11 +536,25 @@
             // the unhurt (back) guy holds off until the ball is ~halfway between him and the edge, so it can roll longer
             var halfway = (e.gB + edgeX) / 2;
             if (e.gBackChase < 0 && ((gdir > 0 && ballX <= halfway) || (gdir < 0 && ballX >= halfway))) e.gBackChase = gt;
-            // front guy: keeps CARRYING as it falls; only hops in pain once it LANDS; then chases
+            // front guy: carries as it falls → hops clutching his foot → head comes UP to watch it
+            // get away → turns and eases into the chase (pose blended, no hard pop)
             var frontX = e.gF, frontPose, frontFlip = gdir < 0;
             if (gt < LAND) frontPose = A.carry.frame(tt);
-            else if (gt < CHASE_F) frontPose = A.painhop.frame(gt - LAND);
-            else { var ct = gt - CHASE_F; frontX = e.gF - gdir * (52 * ct + 24 * ct * ct); frontPose = A.scurry.frame(gt); frontFlip = gdir > 0; }
+            else {
+              var pain = A.painhop.frame(gt - LAND);
+              var lookUp = smooth01((gt - 1.7) / 0.9);              // gaze lifts from the foot (1.7s) to fully up (2.6s)
+              pain.headTilt = -22 + lookUp * 40;                    // -22 (down at the foot) → +18 (up, after the ball)
+              frontFlip = lookUp < 0.5 ? (gdir < 0) : (gdir > 0);   // turns around to face it as he looks up
+              if (gt < CHASE_F) {
+                frontPose = pain;
+              } else {
+                var ct = gt - CHASE_F;
+                var k = smooth01(ct / 0.6);                         // ease the pain stance into the run over 0.6s
+                frontX = e.gF - gdir * (52 * ct + 24 * ct * ct) * smooth01(ct / 0.5);   // ramp speed up from a standstill
+                frontPose = lerpPose(pain, A.scurry.frame(gt), k);
+                frontFlip = gdir > 0;
+              }
+            }
             // back guy: keeps carrying, then TORN (looks friend<->ball), then chases once the ball is halfway to the edge
             var backX = e.gB, backPose, backFlip = gdir < 0;
             if (gt < LAND) backPose = A.carry.frame(tt + 0.16);
