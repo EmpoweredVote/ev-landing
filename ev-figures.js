@@ -514,9 +514,11 @@
         }
         if (spec.mode === 'beam') {
           // The crew hauls a load ALL the way off one edge, dwells off-screen,
-          // then walks back carrying a different load (yellow line ↔ red triangle).
+          // then walks back carrying the other load (red ball ↔ yellow line).
+          // Start load is randomized so the line shows up right away ~half the time
+          // (otherwise you'd wait a full ~28s off-screen traverse to see it swap).
           var speedB = 30, halfGap = 24, endMargin = 110;
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = 'circle'; e.dwell = 0; }
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.dwell = 0; }
           var fx = e.bx + e.dir * halfGap;      // front (leading) carrier
           var bx2 = e.bx - e.dir * halfGap;     // back carrier
           // hover: a carrier drops his end (line only) and waves; partner holds, annoyed
