@@ -333,12 +333,12 @@
   Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
   a rolling 90-day window with internal/test traffic excluded.  refresh.mjs does NOT
   touch these — it only reads the platform Postgres DB.  Re-pull from PostHog and edit
-  by hand when the story changes.  Last pulled: 90 days ending July 13, 2026.
+  by hand when the story changes.  Last pulled: 90 days ending July 14, 2026.
 -->
 <div class="h2row"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
 <div class="push">
   <h3 class="serif">The reach problem, stated plainly</h3>
-  <p>The Compass isn't failing to convert &mdash; it's failing to get seen.  Of everyone who reached it in the last 90 days, <b>9 in 10 engaged and nearly half completed a full calibration</b>; that is a healthy flow.  The catch is the denominator: <b>only 52 people reached it in a quarter</b>, fewer than any other app on the platform.  The main site drew 142 unique visitors in the same window, and most never made it to the Compass.  The highest-leverage work in front of us isn't rewording the calibration questions &mdash; it's getting the tool in front of the voters already in our ecosystem.</p>
+  <p>The Compass isn't failing to convert &mdash; it's failing to get seen.  Of everyone who reached it in the last 90 days, <b>9 in 10 engaged and nearly half completed a full calibration</b>; that is a healthy flow.  The catch is the denominator: <b>only 55 people reached it in a quarter</b>.  The main site drew 148 unique visitors in the same window, and most never made it to the Compass.  The highest-leverage work in front of us isn't rewording the calibration questions &mdash; it's getting the tool in front of the voters already in our ecosystem.</p>
 </div>
 <div class="cols" style="margin-top:18px">
   <div class="card">
@@ -346,20 +346,20 @@
     <p>The Compass funnel, measured against everyone who landed on it.</p>
     <div class="funnel">
       <div class="fstep">
-        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount">52 people</span></div>
+        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount">55 people</span></div>
         <div class="ftrack"><div class="fbar b1" style="width:100%">100%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount">47 people</span></div>
-        <div class="ftrack"><div class="fbar b2" style="width:90%">90%</div></div>
+        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount">50 people</span></div>
+        <div class="ftrack"><div class="fbar b2" style="width:91%">91%</div></div>
       </div>
       <div class="fstep">
         <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount">24 people</span></div>
-        <div class="ftrack"><div class="fbar b3" style="width:46%">46%</div></div>
+        <div class="ftrack"><div class="fbar b3" style="width:44%">44%</div></div>
       </div>
       <div class="fstep">
         <div class="frow"><span class="flabel">Compared to a politician</span><span class="fcount">10 people</span></div>
-        <div class="ftrack"><div class="fbar b4" style="width:19%">19%</div></div>
+        <div class="ftrack"><div class="fbar b4" style="width:18%">18%</div></div>
       </div>
     </div>
     <p class="fcap">&ldquo;Loaded the quiz&rdquo; fires on page load, so read it as &ldquo;didn't bounce.&rdquo;  The first real signal of intent is completing a calibration &mdash; and roughly half of everyone who arrives does.</p>
@@ -368,12 +368,12 @@
     <h3 class="serif">How many arrive</h3>
     <p>Unique visitors per app across the empowered.vote ecosystem, same 90 days.</p>
     <div class="eco">
-      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval">142</span></div>
-      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:62%"></span></span><span class="eval">88</span></div>
-      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:51%"></span></span><span class="eval">73</span></div>
-      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:37%"></span></span><span class="eval">52</span></div>
-      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:28%"></span></span><span class="eval">40</span></div>
-      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:22%"></span></span><span class="eval">31</span></div>
+      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval">148</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:62%"></span></span><span class="eval">91</span></div>
+      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:51%"></span></span><span class="eval">75</span></div>
+      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:37%"></span></span><span class="eval">55</span></div>
+      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:27%"></span></span><span class="eval">40</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:21%"></span></span><span class="eval">31</span></div>
     </div>
     <p class="fcap">One new Compass visitor roughly every 40 hours.  The audience already exists on the platform; the gap is the hand-off into the Compass, not the Compass itself.</p>
   </div>
@@ -409,7 +409,7 @@
 </div>
 
 <footer>
-  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">July 14, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 90 days ending July 13, 2026, with internal and test traffic excluded.  Stance area groupings combine state and local coverage; the ~1,228 candidate rows are records not yet linked to an office.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
+  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">July 14, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 90 days ending July 14, 2026, with internal and test traffic excluded.  Stance area groupings combine state and local coverage; the ~1,228 candidate rows are records not yet linked to an office.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
 </footer>
 
 </div>
