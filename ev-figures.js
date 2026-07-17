@@ -143,9 +143,10 @@
       opt = opt || {};
       var seat = function () { return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : takeTone()) }; };
       var r = Math.random();
-      if (r < 0.46) return seat();                       // most common: a reader or sitter
-      if (r < 0.78) return walker(anchor, opt);
-      if (r < 0.9) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: takeTone() };
+      if (r < 0.12) return { mode: 'paddlepair', anchor: anchor, edge: 'top', x: pick([0.32, 0.5, 0.68]), tone: takeTone(), tone2: takeTone() };  // two Bobits rallying a ball
+      if (r < 0.54) return seat();                       // most common: a reader or sitter
+      if (r < 0.82) return walker(anchor, opt);
+      if (r < 0.92) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: takeTone() };
       return opt.always ? seat() : null;                 // 'always' anchors fall back to a reader, not empty
     }
 
@@ -259,6 +260,13 @@
           if (!e._barEl) e._barEl = document.querySelector('.watch .section-num .bar');
           var barTopY = e._barEl ? (e._barEl.getBoundingClientRect().top + sy) : (r.top + sy - 44);
           e.c.style.top = (barTopY - 46 + 1) + 'px';                          // +1 centers the 2px section bar
+          return;
+        }
+        if (spec.mode === 'paddlepair') {
+          var wPP = 250; sizeCanvas(e, wPP, FIG_H);   // wide enough for two players + a lob between them
+          var edgeYPP = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
+          e.c.style.left = (r.left + sx + r.width * spec.x - wPP / 2) + 'px';
+          e.c.style.top = (edgeYPP - (FIG_H - 6)) + 'px';
           return;
         }
         if (spec.mode === 'seat') {
@@ -384,6 +392,51 @@
       }
     }
 
+    // ── paddleball RALLY: two Bobits face each other and volley one ball back and forth —
+    //    a few bounces on a paddle, then a lob across to the partner, who catches and returns. ──
+    function drawPaddlePair(e, ctx, w, h, feetY, tt, colA, colB, shadow, dt) {
+      var cxc = w / 2, gap = 108;
+      var xL = cxc - gap / 2, xR = cxc + gap / 2;
+      var paddleY = feetY - 58, tipL = xL + 18, tipR = xR - 18;
+      var bounceDur = 0.4, bouncesPerTurn = 2, tossDur = 0.55, bounceA = 20, arcH = 46;
+      if (!e.rl) { e.rl = 'bounceL'; e.rlT = 0; }
+      e.rlT += dt;
+      var ballX, ballY, activeL = false, activeR = false;
+      switch (e.rl) {
+        case 'bounceL':
+          ballX = tipL; ballY = paddleY - bounceA * Math.abs(Math.sin(Math.PI * e.rlT / bounceDur)); activeL = true;
+          if (e.rlT >= bouncesPerTurn * bounceDur) { e.rl = 'tossLR'; e.rlT = 0; }
+          break;
+        case 'tossLR': {
+          var p = Math.min(1, e.rlT / tossDur);
+          ballX = tipL + (tipR - tipL) * p; ballY = paddleY - arcH * Math.sin(Math.PI * p);
+          if (e.rlT >= tossDur) { e.rl = 'bounceR'; e.rlT = 0; }
+          break;
+        }
+        case 'bounceR':
+          ballX = tipR; ballY = paddleY - bounceA * Math.abs(Math.sin(Math.PI * e.rlT / bounceDur)); activeR = true;
+          if (e.rlT >= bouncesPerTurn * bounceDur) { e.rl = 'tossRL'; e.rlT = 0; }
+          break;
+        case 'tossRL': {
+          var pr = Math.min(1, e.rlT / tossDur);
+          ballX = tipR + (tipL - tipR) * pr; ballY = paddleY - arcH * Math.sin(Math.PI * pr);
+          if (e.rlT >= tossDur) { e.rl = 'bounceL'; e.rlT = 0; }
+          break;
+        }
+      }
+      // the two players (arm out with the paddle; the active side taps, the waiter holds steady)
+      var poseL = A.paddleball.frame(activeL ? tt : 0.34);
+      var poseR = A.paddleball.frame(activeR ? tt : 0.34);
+      R.drawShadow(ctx, xL, feetY, 14, shadow);
+      R.drawShadow(ctx, xR, feetY, 14, shadow);
+      drawFig(ctx, xL, feetY - 112 * S, S, false, poseL, { color: colA });   // faces right, toward center
+      drawFig(ctx, xR, feetY - 112 * S, S, true, poseR, { color: colB });    // faces left, toward center
+      // paddle faces (scene-drawn so the ball meets them), then the shared ball
+      ctx.fillStyle = colA; ctx.beginPath(); ctx.ellipse(tipL, paddleY, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = colB; ctx.beginPath(); ctx.ellipse(tipR, paddleY, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(ballX, ballY - 4, 5, 0, Math.PI * 2); ctx.fill();   // gold ball
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -436,6 +489,10 @@
         var tt = e.lt + e.phase;
         // current figure x within the canvas
         var figX = w / 2;
+        if (spec.mode === 'paddlepair') {
+          drawPaddlePair(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt);
+          return;
+        }
         if (spec.mode === 'patrol') {
           var pad = 70, span = w - pad * 2;
           var u = (tt * spec.speed / span) % 2; if (u < 0) u += 2;
