@@ -44,6 +44,10 @@
         if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
           if (Math.abs(ev.clientX - e._toddSX) < 42 && Math.abs(ev.clientY - e._toddSY) < 72) { e._fall = 4.5; return; }
         }
+        // light-gag Bobit: click him and he waves briefly, then gets right back to work
+        if (e.spec.mode === 'beam' && e.scene === 'light' && e._lgSX != null && !(e.lightWave > 0)) {
+          if (Math.abs(ev.clientX - e._lgSX) < 42 && Math.abs(ev.clientY - e._lgSY) < 72) { e.lightWave = 1.4; return; }
+        }
         if (e.spec.mode !== 'rope' || !e.w || e._ropeSX == null) return;
         if (Math.abs(ev.clientX - e._ropeSX) > 55 || Math.abs(ev.clientY - e._ropeSY) > 82) return;
         if (e.rphase === 'sit') { e.rphase = 'break'; e.breakT = 0; return; }   // frame breaks out from under him
@@ -285,6 +289,101 @@
       ctx.restore();
     }
 
+    // ── "the light went out" gag (runs in the beam rotation instead of a two-carry pass):
+    //    the 501(c)(3) yellow swatch flickers and dies → a lone Bobit walks in, notices it,
+    //    runs off, runs back with a fresh yellow box, screws it back in (light on), looks
+    //    around, and keeps walking off. Click him → a quick wave, then back to work. ──
+    function startLight(e, w) {
+      e.scene = 'light';
+      e.lp = 'out'; e.lt2 = 0; e.lgLit = false; e.lightWave = 0;
+      e.lgDir = 1;                                  // enters from the left (nearest the left-side 501(c)(3) swatch)
+      e.lgX = -46;                                 // starts off-screen
+      e.lgFace = e.lgDir;
+    }
+    function runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt) {
+      if (!('_swatchEl' in e)) e._swatchEl = document.querySelector('.hero .meta-row .swatch.s-yellow');
+      var sw = e._swatchEl;
+      var swX = w * 0.28, swY = 63;                                     // fallback if the swatch can't be measured
+      if (sw) { var rr = sw.getBoundingClientRect(); swX = rr.left + rr.width / 2 - cr.left; swY = rr.top + rr.height / 2 - cr.top; }
+      var YEL = cssVar('--yellow', '#FED12E'), OFF = '#6E7681';         // lit vs dead-bulb grey
+      var speedWalk = 132, speedRun = 264, stopX = swX;
+      var pose = null, carryBox = false, boxRise = 0, swOn = e.lgLit, flip = e.lgFace < 0;
+
+      if (e.lightWave > 0 && e.lp !== 'out') {
+        e.lightWave -= dt;                                             // clicked: brief wave, position & phase frozen
+        pose = A.greet.frame(1.4 - e.lightWave, e._wave); flip = false;
+        carryBox = (e.lp === 'runback' || e.lp === 'install');
+      } else {
+        switch (e.lp) {
+          case 'out': {
+            e.lt2 += dt; var ft = e.lt2, on = true, flk = [0.12, 0.20, 0.26, 0.42, 0.48, 0.70];
+            for (var i = 0; i < flk.length; i++) if (ft > flk[i]) on = !on;      // dying-bulb flicker,
+            swOn = ft > 0.72 ? false : on;                                        // then goes dark
+            if (ft > 1.5) { e.lp = 'walkin'; e.lt2 = 0; }
+            break;
+          }
+          case 'walkin':
+            e.lgX += e.lgDir * speedWalk * dt; e.lgFace = e.lgDir; flip = e.lgDir < 0; pose = A.stroll.frame(tt);
+            if ((e.lgDir > 0 && e.lgX >= stopX) || (e.lgDir < 0 && e.lgX <= stopX)) { e.lgX = stopX; e.lp = 'notice'; e.lt2 = 0; }
+            break;
+          case 'notice':
+            e.lt2 += dt; pose = A.presentup.frame(e.lt2); flip = e.lgFace < 0;    // points up at the dead light
+            if (e.lt2 > 1.1) { e.lp = 'runoff'; e.lt2 = 0; }
+            break;
+          case 'runoff': {
+            e.lgX -= e.lgDir * speedRun * dt; e.lgFace = -e.lgDir; flip = -e.lgDir < 0; pose = A.scurry.frame(tt);
+            var off = e.lgDir > 0 ? (e.lgX < -46) : (e.lgX > w + 46);
+            if (off) { e.lp = 'runback'; e.lt2 = 0; }
+            break;
+          }
+          case 'runback':
+            e.lgX += e.lgDir * speedRun * dt; e.lgFace = e.lgDir; flip = e.lgDir < 0; pose = A.scurry.frame(tt); carryBox = true;
+            if ((e.lgDir > 0 && e.lgX >= stopX) || (e.lgDir < 0 && e.lgX <= stopX)) { e.lgX = stopX; e.lp = 'install'; e.lt2 = 0; }
+            break;
+          case 'install': {
+            e.lt2 += dt; pose = A.presentup.frame(e.lt2); flip = e.lgFace < 0;
+            var p = smooth01(e.lt2 / 0.9); carryBox = true; boxRise = p;          // box rises from his hands to the swatch
+            if (e.lt2 > 0.9) { var since = e.lt2 - 0.9; if (since > 0.22) e.lgLit = true; swOn = e.lgLit || (Math.floor(since * 22) % 2 === 0); }
+            else swOn = false;
+            if (e.lt2 > 1.6) { e.lp = 'lookaround'; e.lt2 = 0; }
+            break;
+          }
+          case 'lookaround':
+            e.lt2 += dt; pose = A.confused.frame(e.lt2); flip = e.lgFace < 0; swOn = true;   // stops, looks around
+            if (e.lt2 > 1.3) { e.lp = 'walkoff'; e.lt2 = 0; }
+            break;
+          case 'walkoff': {
+            e.lgX += e.lgDir * speedWalk * dt; e.lgFace = e.lgDir; flip = e.lgDir < 0; pose = A.stroll.frame(tt); swOn = true;
+            var gone = e.lgDir > 0 ? (e.lgX > w + 46) : (e.lgX < -46);
+            if (gone) {                                                           // done — hand back to the carry rotation
+              if (sw) sw.style.background = YEL;
+              e.scene = 'carry'; e.dir = e.lgDir; e.bx = e.lgDir > 0 ? -110 : w + 110; e.dwell = 0.9;
+              e.load = BEAM_LOADS[Math.floor(Math.random() * BEAM_LOADS.length)];
+              return;
+            }
+            break;
+          }
+        }
+      }
+
+      if (sw) sw.style.background = swOn ? YEL : OFF;
+
+      if (pose) {
+        R.drawShadow(ctx, e.lgX, feetY, 15, shadow);
+        drawFig(ctx, e.lgX, feetY - 112 * S, S, flip, pose, { color: col });
+        if (carryBox) {
+          var bx0 = e.lgX + e.lgFace * 12, by0 = feetY - 44;                      // box in his hands, then lofted to the swatch
+          var bxX = bx0 + (swX - bx0) * boxRise, bxY = by0 + (swY - by0) * boxRise, bs = 12;
+          ctx.fillStyle = YEL; ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(bxX - bs / 2, bxY - bs / 2, bs, bs, 2); else ctx.rect(bxX - bs / 2, bxY - bs / 2, bs, bs);
+          ctx.fill();
+        }
+        e._lgSX = cr.left + e.lgX; e._lgSY = cr.top + feetY - 20;
+      } else {
+        e._lgSX = null;
+      }
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -518,7 +617,9 @@
           // Start load is randomized so the line shows up right away ~half the time
           // (otherwise you'd wait a full ~28s off-screen traverse to see it swap).
           var speedB = 30, halfGap = 24, endMargin = 110;
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.dwell = 0; }
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.dwell = 0; e.scene = 'carry'; if (chance(0.3)) startLight(e, w); }
+          // some passes run the "light went out" solo gag instead of the two-carry
+          if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
           var fx = e.bx + e.dir * halfGap;      // front (leading) carrier
           var bx2 = e.bx - e.dir * halfGap;     // back carrier
           // hover: a carrier drops his end (line only) and waves; partner holds, annoyed
@@ -593,8 +694,8 @@
             if (e.dwell > 0) e.dwell -= dt;
             else {
               e.bx += e.dir * speedB * dt;
-              if (e.bx > w + endMargin) { e.dir = -1; e.load = nextLoad(e.load); e.dwell = 1.1; }
-              else if (e.bx < -endMargin) { e.dir = 1; e.load = nextLoad(e.load); e.dwell = 1.1; }
+              if (e.bx > w + endMargin) { e.dir = -1; if (chance(0.45)) startLight(e, w); else { e.load = nextLoad(e.load); e.dwell = 1.1; } }
+              else if (e.bx < -endMargin) { e.dir = 1; if (chance(0.45)) startLight(e, w); else { e.load = nextLoad(e.load); e.dwell = 1.1; } }
             }
             fx = e.bx + e.dir * halfGap; bx2 = e.bx - e.dir * halfGap;
           }
