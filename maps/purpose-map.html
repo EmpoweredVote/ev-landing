@@ -1,4 +1,4 @@
-<title>Empowered.Vote's Purpose</title>
+<title>Empowered Vote · Purpose</title>
 <style>
 @font-face {
   font-family: 'Figtree';
@@ -8,8 +8,9 @@
 }
 
 :root {
-  --canvas: #F1F4F3;
-  --dot: #DCE3E1;
+  --canvas: #EEF2F1;
+  --canvas2: #F7FAF9;
+  --dot: #D7E0DD;
   --surface: #FFFFFF;
   --ink: #20292E;
   --ink-soft: #5B6B73;
@@ -22,11 +23,15 @@
   --b3: #BE4A64;
   --b4: #33709E;
   --b5: #6E8F1F;
+  --pill-inform: #E0B400;
+  --pill-connect: #17A8A8;
+  --pill-empower: #E0492C;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #10161A;
-    --dot: #1D262C;
+    --canvas: #0D1317;
+    --canvas2: #131C21;
+    --dot: #1C262C;
     --surface: #1C252C;
     --ink: #E6ECEF;
     --ink-soft: #92A3AC;
@@ -39,28 +44,41 @@
     --b3: #E1718D;
     --b4: #62A5E8;
     --b5: #9CBE45;
+    --pill-inform: #FFD426;
+    --pill-connect: #2BD9D9;
+    --pill-empower: #FF6B52;
   }
 }
 :root[data-theme="light"] {
-  --canvas: #F1F4F3; --dot: #DCE3E1; --surface: #FFFFFF; --ink: #20292E;
+  --canvas: #EEF2F1; --canvas2: #F7FAF9; --dot: #D7E0DD; --surface: #FFFFFF; --ink: #20292E;
   --ink-soft: #5B6B73; --line: #D7DFDD; --shadow: 23, 32, 36; --hit: #D9A514;
   --b0: #0E8A7B; --b1: #B96E12; --b2: #5757C9; --b3: #BE4A64; --b4: #33709E; --b5: #6E8F1F;
+  --pill-inform: #E0B400; --pill-connect: #17A8A8; --pill-empower: #E0492C;
 }
 :root[data-theme="dark"] {
-  --canvas: #10161A; --dot: #1D262C; --surface: #1C252C; --ink: #E6ECEF;
+  --canvas: #0D1317; --canvas2: #131C21; --dot: #1C262C; --surface: #1C252C; --ink: #E6ECEF;
   --ink-soft: #92A3AC; --line: #2C3941; --shadow: 0, 0, 0; --hit: #E8BE45;
   --b0: #2FB8A6; --b1: #E09A44; --b2: #8D8DF2; --b3: #E1718D; --b4: #62A5E8; --b5: #9CBE45;
+  --pill-inform: #FFD426; --pill-connect: #2BD9D9; --pill-empower: #FF6B52;
 }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; overflow: hidden; }
 body {
   font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif;
-  background: var(--canvas);
-  background-image: radial-gradient(var(--dot) 1.15px, transparent 1.15px);
-  background-size: 26px 26px;
+  background:
+    radial-gradient(130% 100% at 50% 0%, var(--canvas2), var(--canvas) 62%);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+}
+#viewport::before {
+  content: "";
+  position: fixed; inset: 0;
+  background-image: radial-gradient(var(--dot) 1.15px, transparent 1.15px);
+  background-size: 26px 26px;
+  pointer-events: none;
+  opacity: .9;
+  z-index: 0;
 }
 
 #viewport {
@@ -74,12 +92,14 @@ body {
   position: absolute; left: 0; top: 0;
   transform-origin: 0 0;
   will-change: transform;
+  z-index: 1;
 }
 #wires { position: absolute; overflow: visible; pointer-events: none; }
 #nodes { position: absolute; left: 0; top: 0; }
 
 .node {
   position: absolute;
+  width: max-content;
   max-width: 260px;
   padding: 7px 13px 8px;
   border-radius: 10px;
@@ -92,7 +112,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   box-shadow: 0 1px 3px rgba(var(--shadow), 0.12);
-  transition: box-shadow .15s ease, opacity .2s ease;
+  transition: box-shadow .15s ease, opacity .2s ease, transform .12s ease;
 }
 .node:hover { box-shadow: 0 3px 10px rgba(var(--shadow), 0.20); }
 .node.enter { animation: pop .22s ease-out; }
@@ -104,6 +124,25 @@ body {
   .node.enter { animation: none; }
 }
 
+/* A node that carries an explainer page gets a soft accent halo so it reads as clickable. */
+.node.hasx {
+  box-shadow: 0 1px 3px rgba(var(--shadow), 0.12),
+              0 0 0 2px color-mix(in srgb, var(--bc, var(--ink)) 26%, transparent);
+}
+.node.hasx:hover {
+  box-shadow: 0 3px 12px rgba(var(--shadow), 0.22),
+              0 0 0 3px color-mix(in srgb, var(--bc, var(--ink)) 42%, transparent);
+}
+.node.hasx::after {
+  content: "";
+  position: absolute;
+  top: -4px; left: -4px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--bc, var(--ink));
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
 .node.depth-0 {
   background: var(--ink);
   color: var(--canvas);
@@ -113,9 +152,10 @@ body {
   letter-spacing: .01em;
   padding: 13px 22px 14px;
   border-radius: 14px;
-  max-width: 300px;
+  max-width: 320px;
   box-shadow: 0 4px 16px rgba(var(--shadow), 0.25);
 }
+.node.depth-0.hasx::after { background: var(--canvas); box-shadow: 0 0 0 2px var(--ink); }
 .node.depth-1 {
   background: var(--bc);
   color: #FFFFFF;
@@ -124,6 +164,7 @@ body {
   font-size: 15px;
   padding: 8px 15px 9px;
   border-radius: 11px;
+  max-width: 300px;
 }
 :root[data-theme="dark"] .node.depth-1 { color: #10161A; }
 @media (prefers-color-scheme: dark) {
@@ -146,19 +187,8 @@ body {
 .node.hit { outline: 3px solid var(--hit); outline-offset: 2px; }
 .node.dim { opacity: .32; }
 
-.node .thumb {
-  display: block;
-  width: 100%;
-  border-radius: 6px;
-  margin: 3px 0 6px;
-  pointer-events: none;
-}
-.node .adorn {
-  display: inline-block;
-  margin-left: 6px;
-  font-size: 11px;
-  opacity: .8;
-}
+.node .thumb { display: block; width: 100%; border-radius: 6px; margin: 3px 0 6px; pointer-events: none; }
+.node .adorn { display: inline-block; margin-left: 6px; font-size: 11px; opacity: .8; }
 
 .toggle {
   position: absolute;
@@ -223,7 +253,7 @@ body {
   border-radius: 12px;
   padding: 9px 15px 10px;
   box-shadow: 0 2px 8px rgba(var(--shadow), 0.12);
-  max-width: min(300px, 52vw);
+  max-width: min(320px, 52vw);
 }
 #titlechip b { font-size: 15px; font-weight: 800; letter-spacing: .01em; }
 #titlechip span { color: var(--ink-soft); font-size: 12px; }
@@ -261,117 +291,129 @@ body {
 }
 .hud button.icon { width: 32px; padding: 7px 0; text-align: center; font-size: 15px; font-weight: 500; }
 
-#hint {
-  bottom: 14px; left: 14px;
-  color: var(--ink-soft);
-  font-size: 12px;
-  pointer-events: none;
+/* Bottom-center: pillar legend + control hint (map sits on the right, panel on the left) */
+#botleft { bottom: 14px; left: 50%; transform: translateX(-50%); flex-direction: column; gap: 8px; align-items: center; }
+#legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px 14px;
+  box-shadow: 0 2px 8px rgba(var(--shadow), 0.12);
 }
+#legend .lg { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+#legend .sw { width: 13px; height: 13px; border-radius: 4px; flex: none; }
+#legend .lg b { font-weight: 800; }
+#legend .lg span { color: var(--ink-soft); }
+#hint { color: var(--ink-soft); font-size: 12px; pointer-events: none; text-align: center; }
+@media (max-width: 720px) { #legend .lg span { display: none; } #hint { display: none; } }
 
 #detail {
   position: fixed;
-  right: 14px; bottom: 14px;
-  width: min(340px, calc(100vw - 28px));
-  max-height: min(64vh, 560px);
+  left: 14px; bottom: 14px;
+  width: min(420px, calc(100vw - 28px));
+  max-height: min(78vh, 720px);
   overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-top: 3px solid var(--bc, var(--ink));
-  border-radius: 12px;
-  padding: 14px 16px 15px;
-  box-shadow: 0 6px 24px rgba(var(--shadow), 0.22);
+  border-radius: 14px;
+  box-shadow: 0 10px 34px rgba(var(--shadow), 0.26);
   z-index: 11;
   display: none;
 }
 #detail.open { display: block; }
-#detail .crumb {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  margin: 0 0 4px;
-  padding-right: 20px;
-}
-#detail h2 { margin: 0 0 8px; font-size: 16px; font-weight: 800; line-height: 1.3; }
-#detail h2 strong { font-weight: 800; }
-#detail img { width: 100%; border-radius: 8px; margin: 2px 0 10px; display: block; }
-#detail .pdfnote { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 10px; }
-#detail a.go {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--bc, var(--ink));
-  text-decoration: none;
-  border: 1.5px solid currentColor;
-  border-radius: 8px;
-  padding: 7px 12px;
-  margin: 0 0 8px;
+#detail .pad { padding: 15px 17px 16px; }
+
+/* Mascot stage at the top of an explainer page */
+#dstage {
+  position: relative;
+  height: 150px;
+  border-radius: 14px 14px 0 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background:
+    radial-gradient(120% 90% at 50% 6%, color-mix(in srgb, var(--bc, var(--ink)) 16%, var(--surface)), color-mix(in srgb, var(--bc, var(--ink)) 6%, var(--surface)));
+  border-bottom: 1px solid var(--line);
+  display: none;
+}
+#detail.hasfig #dstage { display: block; }
+#dstage::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 16%;
+  border-bottom: 1px solid color-mix(in srgb, var(--bc, var(--ink)) 22%, transparent);
+}
+#dfig { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+#detail .crumb {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-soft); margin: 0 0 4px; padding-right: 20px;
+}
+#detail h2 { margin: 0 0 9px; font-size: 18px; font-weight: 800; line-height: 1.25; }
+#detail h2 strong { font-weight: 800; }
+
+#dexplain { font-size: 14px; line-height: 1.58; color: var(--ink); }
+#dexplain p { margin: 0 0 10px; }
+#dexplain p:last-child { margin-bottom: 0; }
+#dexplain strong { font-weight: 800; }
+#dexplain ul { margin: 0 0 10px; padding-left: 18px; }
+#dexplain li { margin: 0 0 6px; line-height: 1.5; }
+#dexplain blockquote {
+  margin: 0 0 10px; padding: 2px 0 2px 13px;
+  border-left: 3px solid var(--bc, var(--ink));
+  font-weight: 700; font-size: 15px; line-height: 1.32; color: var(--ink);
+}
+#dexplain .eq {
+  font-family: Consolas, ui-monospace, monospace;
+  font-weight: 700; font-size: 15px;
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  border-radius: 8px; padding: 9px 11px; margin: 0 0 10px;
+}
+#dexplain .eq span { color: var(--ink-soft); margin: 0 5px; }
+
+#detail img { width: 100%; border-radius: 8px; margin: 8px 0 2px; display: block; }
+#detail .pdfnote { font-size: 12.5px; color: var(--ink-soft); margin: 10px 0 0; }
+#detail #dlinks { margin-top: 12px; }
+#detail a.go {
+  display: block; font-size: 13px; font-weight: 700;
+  color: var(--bc, var(--ink)); text-decoration: none;
+  border: 1.5px solid currentColor; border-radius: 8px;
+  padding: 7px 12px; margin: 0 0 8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 #detail a.go:last-child { margin-bottom: 0; }
 #detail .urltxt {
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--ink-soft);
-  word-break: break-all;
-  user-select: all;
-  -webkit-user-select: all;
-  margin: -4px 2px 10px;
+  font-size: 11px; line-height: 1.4; color: var(--ink-soft);
+  word-break: break-all; user-select: all; -webkit-user-select: all; margin: -4px 2px 10px;
 }
 #detail .close {
-  position: absolute; top: 8px; right: 10px;
-  border: none; background: none;
-  color: var(--ink-soft);
-  font-size: 16px; cursor: pointer;
-  padding: 4px;
-  font-family: inherit;
+  position: absolute; top: 8px; right: 10px; z-index: 3;
+  border: none; background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--ink-soft); font-size: 16px; cursor: pointer;
+  padding: 4px 7px; border-radius: 8px; font-family: inherit;
 }
+#detail .close:hover { color: var(--ink); }
 
 #help {
   position: fixed; inset: 0;
   background: rgba(var(--shadow), 0.45);
-  display: none;
-  align-items: center; justify-content: center;
-  z-index: 20;
-  padding: 20px;
+  display: none; align-items: center; justify-content: center;
+  z-index: 20; padding: 20px;
 }
 #help.open { display: flex; }
 #help .sheet {
-  background: var(--surface);
-  border-radius: 16px;
-  max-width: 520px;
-  max-height: min(78vh, 640px);
-  overflow-y: auto;
-  padding: 26px 30px 28px;
-  box-shadow: 0 12px 48px rgba(var(--shadow), 0.35);
+  background: var(--surface); border-radius: 16px;
+  max-width: 520px; max-height: min(78vh, 640px); overflow-y: auto;
+  padding: 26px 30px 28px; box-shadow: 0 12px 48px rgba(var(--shadow), 0.35);
 }
 #help h2 { margin: 0 0 4px; font-size: 20px; font-weight: 800; }
-#help h3 {
-  margin: 20px 0 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
+#help h3 { margin: 20px 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-soft); }
 #help p, #help li { font-size: 13.5px; line-height: 1.55; color: var(--ink); margin: 0 0 6px; }
 #help ul { margin: 0; padding-left: 18px; }
 #help code {
-  font-family: Consolas, ui-monospace, monospace;
-  font-size: 12px;
-  background: color-mix(in srgb, var(--ink) 7%, var(--surface));
-  border-radius: 4px;
-  padding: 1px 5px;
+  font-family: Consolas, ui-monospace, monospace; font-size: 12px;
+  background: color-mix(in srgb, var(--ink) 7%, var(--surface)); border-radius: 4px; padding: 1px 5px;
 }
 #help .sheet button {
-  margin-top: 14px;
-  font-family: inherit;
-  font-size: 13px; font-weight: 700;
-  background: var(--ink); color: var(--canvas);
-  border: none; border-radius: 9px;
+  margin-top: 14px; font-family: inherit; font-size: 13px; font-weight: 700;
+  background: var(--ink); color: var(--canvas); border: none; border-radius: 9px;
   padding: 9px 18px; cursor: pointer;
 }
 </style>
@@ -395,47 +437,1221 @@ body {
   <button class="icon" id="helpbtn" aria-label="Help">?</button>
 </div>
 
-<div class="hud" id="hint">Drag to pan &middot; scroll to zoom &middot; click a node for details &middot; &plusmn; buttons expand branches &middot; drag a node's edge to resize</div>
+<div class="hud" id="botleft">
+  <div id="legend" aria-label="The three pillars">
+    <span class="lg"><span class="sw" style="background:var(--pill-inform)"></span><b>Inform</b>&nbsp;<span>facts</span></span>
+    <span class="lg"><span class="sw" style="background:var(--pill-connect)"></span><b>Connect</b>&nbsp;<span>values</span></span>
+    <span class="lg"><span class="sw" style="background:var(--pill-empower)"></span><b>Empower</b>&nbsp;<span>solutions</span></span>
+  </div>
+  <div id="hint">Drag to pan &middot; scroll to zoom &middot; click a glowing node for its explainer</div>
+</div>
 
 <aside id="detail">
   <button class="close" id="detailclose" aria-label="Close details">&#10005;</button>
-  <p class="crumb" id="dcrumb"></p>
-  <h2 id="dtitle"></h2>
-  <div id="dmedia"></div>
-  <div id="dlinks"></div>
+  <div id="dstage"><canvas id="dfig"></canvas></div>
+  <div class="pad">
+    <p class="crumb" id="dcrumb"></p>
+    <h2 id="dtitle"></h2>
+    <div id="dexplain"></div>
+    <div id="dmedia"></div>
+    <div id="dlinks"></div>
+  </div>
 </aside>
 
 <div id="help" role="dialog" aria-modal="true">
   <div class="sheet">
     <h2>How this map works</h2>
-    <p>A self-contained interactive mind map.  One HTML file, no accounts, no subscription.  Converted from a MindMeister export with structure, colors, links, and images intact.</p>
+    <p>A self-contained interactive mind map of Empowered Vote's purpose.  One HTML file, no accounts, no subscription.</p>
 
     <h3>Controls</h3>
     <ul>
       <li>Drag the background to pan, scroll or pinch to zoom.</li>
+      <li>Nodes with a soft glowing ring have an <b>explainer page</b>.  Click one to open it, complete with a little animated guide.</li>
       <li>The round <code>+</code>/<code>&#8722;</code> buttons on a node expand or collapse its branch.  A number shows how many topics are hidden inside.</li>
-      <li>Click any node to open its links, videos, and images in the detail card.  <code>&#8599;</code> marks a link, <code>&#9654;</code> a video, <code>&#128206;</code> an attached image.</li>
       <li>Type in the search box to find topics anywhere in the map; matching branches expand automatically.</li>
-      <li>Hover a node and drag the slim bar on its outer edge to make the box wider or narrower.  Widths are remembered in this browser.</li>
+      <li>Hover a node and drag the slim bar on its outer edge to change its width.  Widths are remembered in this browser.</li>
       <li><b>Expand all</b> opens every branch; <b>Collapse</b> returns to the overview.</li>
     </ul>
 
     <h3>A note on links</h3>
-    <p>Opened locally or from a normal web host, every link and video opens in a new tab.  Viewed as a claude.ai artifact, the security sandbox blocks the page from opening other sites; use the copyable address shown under each link button instead.</p>
+    <p>Opened locally or from a normal web host, every link and video opens in a new tab.  Viewed inside a sandboxed preview, use the copyable address shown under each link instead.</p>
 
     <h3>Editing</h3>
-    <p>All content lives in one <code>MAP</code> object at the top of this file's script.  Edit the object, save, and the layout rebuilds itself.  To restructure it conversationally, hand the file back to Claude.</p>
+    <p>All content, including every explainer, lives in one <code>MAP</code> object at the top of this file's script.  Edit it, save, and the layout rebuilds itself.  To restructure it conversationally, hand the file back to Claude.  Nothing here depends on MindMeister.</p>
     <button id="helpclose">Got it</button>
   </div>
 </div>
 
+<script>// ─── Leremy Rig (idempotent, single controller) ───
+(function(){
+"use strict";
+if (window.LeremyRig) return; // __LEREMY_IIFE__ guard: no second eval / competing interval
+// ───────────────────────────────────────────────────────────
+// Leremy Rig — articulated stick-figure engine
+// A skeleton of joints (forward kinematics) rendered as thick
+// round-capped capsules + a filled head, to match the "leremy"
+// Noun Project pictogram style. Poses are procedural functions of
+// time, so every loop stays perfectly on-model.
+// ───────────────────────────────────────────────────────────
+
+const D = Math.PI / 180;
+const SEQ_FALL = 4.5;   // duration of the toddler fall-and-recover sequence (fall + scold anims)
+
+// Proportions tuned to the reference figure: big head, short WIDE
+// torso block, long thick limbs. Everything scales from head radius R.
+const CFG = {
+  R: 30,          // head radius
+  gap: 9,         // neck gap between head and torso
+  torsoLen: 74,   // shoulder -> hip
+  torsoW: 24,     // torso bar width (slim rounded capsule)
+  neckW: 22,      // narrower at the neck (taper)
+  armW: 12,       // limb thickness
+  upperArm: 42,
+  foreArm: 40,
+  legW: 14,
+  thigh: 56,
+  shin: 54,
+  shoulderHalf: 5,  // limbs attach inside the torso capsule (no shoulder bumps)
+  hipHalf: 4,
+};
+
+// angle convention: 0° points straight DOWN. +ve rotates toward
+// viewer's right (clockwise on screen). vec returns a unit dir.
+function vec(a) { const r = a * D; return { x: Math.sin(r), y: Math.cos(r) }; }
+function add(p, v, l) { return { x: p.x + v.x * l, y: p.y + v.y * l }; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+// Compute all joint world positions from a pose.
+// pose angles are RELATIVE to the torso lean, so leaning carries limbs.
+function computePose(pose, cfg = CFG, origin = { x: 0, y: 0 }) {
+  const lean = pose.lean || 0;
+  const hunch = pose.hunch || 0;             // forward spine curl (deg)
+  const spineA = 180 + lean;                 // pelvis -> up
+  const P = { x: origin.x, y: origin.y + (pose.bob || 0) };  // pelvis
+
+  // curved spine: lower half curls a little, upper half curls fully
+  const M = add(P, vec(spineA + hunch * 0.4), cfg.torsoLen * 0.55);  // mid spine
+  const upA = spineA + hunch;                // upper-body direction
+  const N = add(M, vec(upA), cfg.torsoLen * 0.45);          // neck
+  const shoulderC = add(M, vec(upA), cfg.torsoLen * 0.35);
+  const H = add(N, vec(upA + (pose.headTilt || 0)), cfg.gap + cfg.R); // head center
+
+  const perpR = upA - 90, perpL = upA + 90;
+  const sR = add(shoulderC, vec(perpR), cfg.shoulderHalf); // viewer-right shoulder
+  const sL = add(shoulderC, vec(perpL), cfg.shoulderHalf); // viewer-left shoulder
+
+  const ub = lean + hunch;                   // arms hang from the curled upper body
+  const eR = add(sR, vec(ub + pose.armRU), cfg.upperArm);
+  const hR = add(eR, vec(ub + pose.armRF), cfg.foreArm);
+  const eL = add(sL, vec(ub + pose.armLU), cfg.upperArm);
+  const hL = add(eL, vec(ub + pose.armLF), cfg.foreArm);
+
+  const pperpR = spineA - 90, pperpL = spineA + 90;
+  const hipR = add(P, vec(pperpR), cfg.hipHalf);
+  const hipL = add(P, vec(pperpL), cfg.hipHalf);
+  const kR = add(hipR, vec(lean + pose.legRU), cfg.thigh);
+  const fR = add(kR, vec(lean + pose.legRF), cfg.shin);
+  const kL = add(hipL, vec(lean + pose.legLU), cfg.thigh);
+  const fL = add(kL, vec(lean + pose.legLF), cfg.shin);
+
+  return { P, M, N, H, shoulderC, sR, sL, eR, hR, eL, hL, hipR, hipL, kR, kL, fR, fL, lean, spineA };
+}
+
+function capsule(ctx, a, b, w) {
+  ctx.lineWidth = w;
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+}
+
+// Draw the figure. opts: { color, mega, megaColor, arm ('R'|'L') for prop }
+function draw(ctx, j, cfg = CFG, opts = {}) {
+  const color = opts.color || "#172B4D";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+
+  // which arm holds the prop -> draw it as the FRONT arm
+  const megaArm = opts.arm || "R";
+
+  // office chair sits BEHIND the figure (draw first so the body occludes it)
+  if (opts.chair) drawChair(ctx, j, opts.chairColor || color);
+
+  // back leg + back arm first (viewer-left = back by convention)
+  capsule(ctx, j.hipL, j.kL, cfg.legW);
+  capsule(ctx, j.kL, j.fL, cfg.legW);
+  if (megaArm !== "L") { capsule(ctx, j.sL, j.eL, cfg.armW); capsule(ctx, j.eL, j.hL, cfg.armW); }
+
+  // torso — tapered filled block (wide at shoulders, narrower at waist)
+  drawTorso(ctx, j, cfg);
+
+  // front leg
+  capsule(ctx, j.hipR, j.kR, cfg.legW);
+  capsule(ctx, j.kR, j.fR, cfg.legW);
+
+  // front arm
+  if (megaArm === "L") { capsule(ctx, j.sL, j.eL, cfg.armW); capsule(ctx, j.eL, j.hL, cfg.armW); }
+  else { capsule(ctx, j.sR, j.eR, cfg.armW); capsule(ctx, j.eR, j.hR, cfg.armW); }
+
+  // head
+  ctx.beginPath();
+  ctx.arc(j.H.x, j.H.y, cfg.R, 0, Math.PI * 2);
+  ctx.fill();
+
+  // megaphone in the prop hand
+  if (opts.mega) {
+    const hand = megaArm === "L" ? j.hL : j.hR;
+    const elb = megaArm === "L" ? j.eL : j.eR;
+    drawMegaphone(ctx, hand, elb, j.H, opts.megaColor || "#FFD426");
+  }
+
+  // open book between the hands, tilted for a reading perspective
+  if (opts.book) {
+    const mx = (j.hR.x + j.hL.x) / 2, my = (j.hR.y + j.hL.y) / 2;
+    drawBook(ctx, mx, my, color, -0.24);
+  }
+
+  // Charlie Brown exhaustion swirl over the head
+  if (opts.swirl) drawSwirl(ctx, j.H, cfg.R, color, opts.time || 0);
+
+  // laptop resting on the knees
+  if (opts.laptop) drawLaptop(ctx, j.kR, j.kL, color);
+
+  // desk in FRONT of the figure (draw last so it sits over the legs)
+  if (opts.desk) drawDesk(ctx, j, opts.deskColor || color, opts.screenColor);
+
+  // walking cane in the right hand
+  if (opts.cane) drawCane(ctx, j, color);
+}
+
+// rigid cane from the right hand, extended along the forearm direction:
+// when the hand is low it reaches all the way to the ground; when raised it's a brandished stick.
+function drawCane(ctx, j, color) {
+  const hR = j.hR;
+  const groundY = Math.max(j.fR.y, j.fL.y) + 8;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+  if (hR.y < j.N.y - 4) {
+    // hand raised → brandished stick, rigid along the forearm
+    const eR = j.eR, dx = hR.x - eR.x, dy = hR.y - eR.y, len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len, L = 90;
+    ctx.beginPath(); ctx.moveTo(hR.x, hR.y); ctx.lineTo(hR.x + ux * L, hR.y + uy * L); ctx.stroke();
+    const px = -uy, py = ux;
+    ctx.beginPath();
+    ctx.moveTo(hR.x - ux * 6, hR.y - uy * 6);
+    ctx.quadraticCurveTo(hR.x - ux * 12, hR.y - uy * 12, hR.x - ux * 10 + px * 9, hR.y - uy * 10 + py * 9);
+    ctx.stroke();
+  } else {
+    // walking → cane straight down, PERPENDICULAR to the ground, planted at the foot line
+    ctx.beginPath(); ctx.moveTo(hR.x, hR.y); ctx.lineTo(hR.x, groundY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hR.x, hR.y); ctx.quadraticCurveTo(hR.x - 3, hR.y - 10, hR.x - 11, hR.y - 8); ctx.stroke();  // crook handle
+  }
+  ctx.restore();
+}
+
+// office swivel chair, seen in profile behind a seated figure facing right.
+// backrest rises up-and-back (left); a post drops to a splayed castor base.
+function drawChair(ctx, j, color) {
+  const P = j.P;                       // pelvis = seat center
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  // seat pad
+  ctx.lineWidth = 7;
+  ctx.beginPath(); ctx.moveTo(P.x - 26, P.y + 12); ctx.lineTo(P.x + 20, P.y + 12); ctx.stroke();
+  // backrest, reclined slightly back
+  ctx.lineWidth = 9;
+  ctx.beginPath(); ctx.moveTo(P.x - 22, P.y + 10); ctx.lineTo(P.x - 34, P.y - 52); ctx.stroke();
+  // gas post
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(P.x - 3, P.y + 14); ctx.lineTo(P.x - 3, P.y + 46); ctx.stroke();
+  // splayed base legs to castors
+  ctx.lineWidth = 5;
+  const base = { x: P.x - 3, y: P.y + 46 };
+  const cast = [[-34, 60], [2, 64], [34, 60]];
+  cast.forEach(function (c) {
+    ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(P.x + c[0], P.y + c[1]); ctx.stroke();
+    ctx.beginPath(); ctx.arc(P.x + c[0], P.y + c[1], 4, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+// a desk in front of a seated figure (facing right): tabletop over the knees,
+// a front leg to the floor, and a monitor angled back toward the figure.
+function drawDesk(ctx, j, color, screenColor) {
+  const kneeY = Math.min(j.kR.y, j.kL.y);
+  const topY = kneeY - 10;
+  const x0 = 40, x1 = 98;               // desk spans out in front of the figure
+  const groundY = Math.max(j.fR.y, j.fL.y) + 6;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  // tabletop
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(x0, topY); ctx.lineTo(x1, topY); ctx.stroke();
+  // front leg
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(x1 - 4, topY + 3); ctx.lineTo(x1 - 4, groundY); ctx.stroke();
+  // monitor: stand + screen tilted back toward the figure
+  const mx = x0 + 30;
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(mx, topY); ctx.lineTo(mx, topY - 14); ctx.stroke();
+  ctx.save();
+  ctx.translate(mx, topY - 14);
+  ctx.rotate(-0.18);
+  ctx.fillStyle = screenColor || "#FFFFFF";
+  ctx.strokeStyle = color; ctx.lineWidth = 3.5;
+  roundRectPath(ctx, -6, -30, 34, 30, 4);
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+  ctx.restore();
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawSwirl(ctx, H, R, color, t) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3.2;
+  ctx.lineCap = "round";
+  const cx = H.x, cy = H.y - R - 24;
+  const rot = t * 1.1;
+  ctx.beginPath();
+  for (let a = 0; a <= Math.PI * 4.6; a += 0.14) {
+    const r = 3 + a * 1.5;
+    const x = cx + Math.cos(a + rot) * r;
+    const y = cy + Math.sin(a + rot) * r * 0.55;   // squashed scribble-spiral
+    if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawLaptop(ctx, kR, kL, color) {
+  const x = (kR.x + kL.x) / 2, y = Math.min(kR.y, kL.y) - 6;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineCap = "round";
+  // base on the knees
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(x - 18, y); ctx.lineTo(x + 24, y); ctx.stroke();
+  // screen tilted away from the figure
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(x + 22, y); ctx.lineTo(x + 32, y - 38); ctx.stroke();
+  ctx.restore();
+}
+
+function drawBook(ctx, x, y, color, rot) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot || 0);
+  ctx.fillStyle = "#FFFFFF";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin = "round";
+  // near page slightly larger — cheap perspective
+  ctx.beginPath();
+  ctx.moveTo(0, -2); ctx.lineTo(-21, -12); ctx.lineTo(-21, 4); ctx.lineTo(0, 13); ctx.closePath();
+  ctx.moveTo(0, -2); ctx.lineTo(27, -9); ctx.lineTo(27, 8); ctx.lineTo(0, 13); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawTorso(ctx, j, cfg) {
+  // curved spine: rounded capsule bent through the mid-spine point
+  ctx.lineCap = "round";
+  ctx.lineWidth = cfg.torsoW;
+  ctx.beginPath();
+  ctx.moveTo(j.P.x, j.P.y);
+  ctx.quadraticCurveTo(j.M.x, j.M.y, j.shoulderC.x, j.shoulderC.y);
+  ctx.stroke();
+}
+
+function drawMegaphone(ctx, hand, elbow, head, color) {
+  // orient the cone from the hand toward the mouth (near head)
+  const dx = head.x - hand.x, dy = (head.y + 6) - hand.y;
+  const ang = Math.atan2(dy, dx);
+  ctx.save();
+  ctx.translate(hand.x, hand.y);
+  ctx.rotate(ang);
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineJoin = "round";
+  // handle stub
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-6, -7, 14, 14, 4) : ctx.rect(-6, -7, 14, 14); ctx.fill();
+  // cone opening away from mouth (bell points out, mouth end small)
+  const L = 40, r0 = 7, r1 = 22;
+  ctx.beginPath();
+  ctx.moveTo(6, -r0);
+  ctx.lineTo(6 + L, -r1);
+  ctx.lineTo(6 + L, r1);
+  ctx.lineTo(6, r0);
+  ctx.closePath();
+  ctx.lineWidth = 3; ctx.stroke(); ctx.fill();
+  ctx.restore();
+}
+
+// ── ground shadow ──────────────────────────────────────────
+function drawShadow(ctx, cx, groundY, w, color = "rgba(23,43,77,0.10)") {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(cx, groundY, w, w * 0.16, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ── skeleton overlay (proof-of-concept view) ───────────────
+function drawSkeleton(ctx, j, cfg = CFG, accent = "#00C7B1") {
+  ctx.save();
+  ctx.strokeStyle = accent;
+  ctx.fillStyle = accent;
+  ctx.lineWidth = 2.5;
+  const bones = [
+    [j.P, j.M], [j.M, j.N], [j.N, j.H],
+    [j.sL, j.eL], [j.eL, j.hL], [j.sR, j.eR], [j.eR, j.hR],
+    [j.hipL, j.kL], [j.kL, j.fL], [j.hipR, j.kR], [j.kR, j.fR],
+    [j.sL, j.sR],
+  ];
+  ctx.setLineDash([]);
+  bones.forEach(([a, b]) => { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); });
+  const joints = [j.P, j.N, j.shoulderC, j.sL, j.eL, j.hL, j.sR, j.eR, j.hR, j.hipL, j.kL, j.fL, j.hipR, j.kR, j.fR];
+  joints.forEach((p) => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill(); });
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(j.H.x, j.H.y, cfg.R, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+// ── REST pose ──────────────────────────────────────────────
+// convention: RIGHT limb (viewer-right) splays with +angle (rightward),
+// LEFT limb with -angle. up = ±180.
+const REST = {
+  lean: 0, headTilt: 0, bob: 0,
+  armRU: 15, armRF: 11, armLU: -15, armLF: -11,
+  legRU: 7, legRF: 3, legLU: -7, legLF: -3,
+};
+
+const clone = (o) => Object.assign({}, o);
+const wave = (t, f, ph = 0) => Math.sin(t * f * Math.PI * 2 + ph);
+
+// ── ANIMATIONS ─────────────────────────────────────────────
+// each: { label, mood, mega?, arm?, frame(t) -> pose }   (t in seconds)
+const ANIMATIONS = {
+  bored: {
+    label: "Bored", mood: "…is this still loading?",
+    frame(t) {
+      const p = clone(REST);
+      const br = wave(t, 0.28);              // slow breathing
+      p.bob = br * 3 + 2;
+      p.headTilt = 12 + wave(t, 0.18) * 6;   // head lolls to the side
+      p.lean = wave(t, 0.13) * 2;
+      p.armRU = 13 + br * 3; p.armRF = 9 + br * 2;
+      p.armLU = -13 - br * 2; p.armLF = -9 - br * 2;
+      const shift = wave(t, 0.13);
+      p.legRU = 7 + shift * 3; p.legLU = -7 + shift * 3;   // idle weight-shift
+      return p;
+    },
+  },
+  friendly: {
+    label: "Friendly wave", mood: "hey there! 👋",
+    frame(t) {
+      const p = clone(REST);
+      p.bob = wave(t, 0.9) * 2.5 + 1;
+      p.headTilt = -6 + wave(t, 0.9) * 3;
+      // right arm up and waving (up-and-out to the right)
+      p.armRU = 150;
+      p.armRF = 152 + wave(t, 1.6) * 24;
+      p.armLU = -18; p.armLF = -14;
+      return p;
+    },
+  },
+  present: {
+    label: "Presenting", mood: "…and THAT's the plan.",
+    frame(t) {
+      const p = clone(REST);
+      p.lean = -3;
+      p.bob = wave(t, 0.5) * 2;
+      p.headTilt = -6;
+      // right arm extended, pointing out toward the content
+      p.armRU = 88 + wave(t, 0.5) * 6;
+      p.armRF = 94 + wave(t, 0.5) * 8;
+      // left hand on hip (elbow out, hand back toward waist)
+      p.armLU = -52; p.armLF = 132;
+      return p;
+    },
+  },
+  shrug: {
+    label: "Shrug", mood: "don't ask me ¯\\_(ツ)_/¯",
+    frame(t) {
+      const p = clone(REST);
+      // shrug pulse every ~3.5s: up, hold a beat, drop
+      const c = ((t % 3.5) + 3.5) % 3.5;
+      const sh = Math.min(1, Math.max(0, c / 0.5)) * Math.min(1, Math.max(0, (2.2 - c) / 0.6));
+      p.bob = 2 - sh * 4;
+      p.hunch = -3 - sh * 4;
+      p.headTilt = wave(t, 0.2) * 4 + sh * 12;   // head cocks with the shrug
+      // elbows pin to the sides, forearms swing out palms-up
+      p.armRU = 15 + sh * 30; p.armRF = 11 + sh * 130;
+      p.armLU = -15 - sh * 30; p.armLF = -11 - sh * 130;
+      return p;
+    },
+  },
+  confused: {
+    label: "Confused", mood: "wait… what does this button do?",
+    frame(t) {
+      const p = clone(REST);
+      const br = wave(t, 0.3);
+      p.bob = br * 2;
+      p.lean = -2;
+      p.hunch = -5;
+      p.headTilt = -10 + wave(t, 0.12) * 8;      // puzzling side to side
+      // scratching the crown: elbow flared WAY out, forearm folded back over the head
+      p.armRU = 122 + wave(t, 0.25) * 4;
+      p.armRF = 218 + wave(t, 2.2) * 9;          // scratch-scratch wiggle
+      // left hand on hip
+      p.armLU = -52; p.armLF = 132;
+      // weight on one leg
+      p.legRU = 4; p.legLU = -14; p.legLF = -8;
+      return p;
+    },
+  },
+  spent: {
+    label: "Spent", mood: "that… was a LOT of research", swirl: true,
+    frame(t) {
+      // strong still silhouette, minimal motion: doubled over,
+      // hands braced on the thighs, catching breath
+      const p = clone(REST);
+      const br = wave(t, 0.25);                  // slow heavy breathing only
+      p.lean = 5;
+      p.hunch = -(44 + br * 3);                  // deep forward fold
+      p.headTilt = -8 + br * 2;                  // head hanging
+      p.bob = 4 + br * 1.5;
+      // arms straight down, hands braced on the thighs
+      p.armRU = 58; p.armRF = 26;
+      p.armLU = 46; p.armLF = 18;
+      // knees buckled
+      p.legRU = 14; p.legRF = -20;
+      p.legLU = -4; p.legLF = -16;
+      return p;
+    },
+  },
+  notlistening: {
+    label: "Not listening", mood: "la la la, can't hear you",
+    frame(t) {
+      // strong still: both hands clamped over the ears, elbows flared wide.
+      // Motion is just breathing + an occasional emphatic head shake.
+      const p = clone(REST);
+      const br = wave(t, 0.28);
+      p.bob = 1 + br * 1.5;
+      p.hunch = -4;
+      // head shake burst every ~3.2s
+      const c = ((t % 3.2) + 3.2) % 3.2;
+      const win = c < 0.9 ? Math.sin(Math.PI * c / 0.9) : 0;
+      p.headTilt = Math.sin(t * 22) * 10 * win;
+      // hands ON the ears: elbows flared out horizontally, forearms folded
+      // tightly back in so the hands press the sides of the head
+      p.armRU = 105 + br * 2; p.armRF = 194;
+      p.armLU = -105 - br * 2; p.armLF = -194;
+      // planted stance
+      p.legRU = 10; p.legLU = -10;
+      return p;
+    },
+  },
+  witsend: {
+    label: "Wits' end", mood: "you have GOT to be kidding me", seated: true, chair: true, desk: true,
+    frame(t) {
+      // profile: reclined back in an office chair at a desk, slumped away from
+      // the monitor. Every few seconds a hand drags down the face. At wits' end.
+      const p = clone(REST);
+      const br = wave(t, 0.3);
+      p.lean = 2;
+      p.hunch = 22 + br * 2;                    // reclined back into the chair
+      p.bob = 2 + br * 1.2;
+      // hand-drag-down-the-face gesture every ~6s
+      const c = ((t % 6) + 6) % 6;
+      const drag = c < 2.2 ? Math.sin(Math.PI * (c / 2.2)) : 0;   // 0 -> 1 -> 0
+      p.headTilt = 24 + br * 3 - drag * 12;     // head thrown back, dips as the hand covers it
+      // right arm limp on the armrest, sweeps up to the face during the drag
+      p.armRU = 26 + br * 2 + drag * 122;
+      p.armRF = 14 + drag * 150;
+      // left arm hangs limp
+      p.armLU = -30 - br * 2; p.armLF = -18;
+      // legs out under the desk, lazy alternating foot bounce
+      p.legRU = 82; p.legRF = 18 + wave(t, 0.5) * 4;
+      p.legLU = 74; p.legLF = 10 + wave(t, 0.5, Math.PI) * 4;
+      return p;
+    },
+  },
+  exhausted: {
+    label: "Exhausted", mood: "I. Am. So. Tired.",
+    frame(t) {
+      const p = clone(REST);
+      const br = wave(t, 0.35);              // heavy slow breathing
+      p.lean = 15 + br * 3;
+      p.bob = br * 5 + 6;
+      p.headTilt = 26 + br * 5;              // head hangs
+      // arms dangle heavily
+      p.armRU = 8 + br * 4; p.armRF = 6 + br * 3;
+      p.armLU = -8 - br * 4; p.armLF = -6 - br * 3;
+      // knees slightly buckled
+      p.legRU = 9; p.legRF = -3; p.legLU = -9; p.legLF = 3;
+      return p;
+    },
+  },
+  sassy: {
+    label: "Sassy", mood: "oh, we're doing THIS?",
+    frame(t) {
+      const p = clone(REST);
+      p.lean = -6;
+      p.bob = wave(t, 0.7) * 2;
+      p.headTilt = -16 + wave(t, 0.7) * 3;
+      // left hand firmly on hip
+      p.armLU = -52; p.armLF = 132;
+      // right arm gestures dismissively now and then
+      const g = Math.max(0, wave(t, 0.4));
+      p.armRU = 30 + g * 34;
+      p.armRF = 24 + g * 54 + wave(t, 1.2) * 10;
+      // cocked hip: weight on right leg, left leg kicked out
+      p.legRU = 4; p.legLU = -18; p.legLF = -12;
+      return p;
+    },
+  },
+  // ── gait explorer: lateral walks, pitched FORWARD (negative hunch = toward travel) ──
+  stroll:  makeGait({ label: "Stroll", mood: "just moseying…", speed: 2.0, stride: 24, hunch: -12, knee: 30, arm: 14, bob: 3, head: -5 }),
+  shuffle: makeGait({ label: "Shuffle", mood: "five more minutes…", speed: 1.5, stride: 10, hunch: -20, knee: 12, arm: 5, bob: 1.5, head: -9 }),
+  strut:   makeGait({ label: "Strut", mood: "yeah, I own this ledge.", speed: 2.2, stride: 30, hunch: -8, knee: 34, arm: 26, bob: 4, head: -6 }),
+  scurry:  makeGait({ label: "Scurry", mood: "late late late late", speed: 4.6, stride: 15, hunch: -24, knee: 26, arm: 8, bob: 2, head: -7 }),
+  march:   makeGait({ label: "March", mood: "hup, two, three, four", speed: 2.4, stride: 34, hunch: -2, knee: 6, arm: 30, bob: 5, head: 0 }),
+  sneak:   makeGait({ label: "Sneak", mood: "shhh… nobody saw that", speed: 1.3, stride: 22, hunch: -32, knee: 52, arm: 10, bob: 6, head: -11 }),
+  trudge:  makeGait({ label: "Trudge", mood: "why is this site SO long", speed: 1.1, stride: 13, hunch: -26, knee: 16, arm: 6, bob: 5, head: -15 }),
+  carry: (() => {
+    const g = makeGait({ label: "Carrying", mood: "beam coming through!", speed: 1.8, stride: 18, hunch: -14, knee: 22, arm: 0, bob: 2.5, head: -6 });
+    const base = g.frame;
+    g.frame = (t) => { const p = base(t); p.armRU = 16; p.armRF = 6; p.armLU = -16; p.armLF = -6; return p; };
+    return g;
+  })(),
+  climb: {
+    label: "Climb", mood: "up we go…",
+    frame(t) {
+      const p = clone(REST);
+      // spiderman wall-climb: limbs spread wide, moving one at a time —
+      // right hand → left foot → left hand → right foot
+      const step = (ph) => {
+        const x = (((t * 0.55 + ph) % 1) + 1) % 1;
+        return x < 0.2 ? (1 - Math.cos((x / 0.2) * Math.PI)) / 2 : 1 - (x - 0.2) / 0.8;
+      };
+      const rh = step(0), lf = step(0.25), lh = step(0.5), rf = step(0.75);
+      p.hunch = -10;
+      p.headTilt = 16;                         // eyes on the next hold
+      p.bob = -(rh + lf + lh + rf) * 1.6;
+      // arms out on wide diagonals, each ratcheting up on its beat
+      p.armRU = 108 + rh * 52; p.armRF = 124 + rh * 50;
+      p.armLU = -108 - lh * 52; p.armLF = -124 - lh * 50;
+      // frog-wide legs, knee climbing on its beat
+      p.legRU = 34 + rf * 26;
+      p.legRF = p.legRU - 46 - rf * 16;
+      p.legLU = -34 - lf * 26;
+      p.legLF = p.legLU + 46 + lf * 16;
+      return p;
+    },
+  },
+  rope: {
+    label: "Rope climb", mood: "hand over hand…", rope: true,
+    frame(t) {
+      const p = clone(REST);
+      const sw = Math.sin(t * 1.3 * Math.PI);   // hand-over-hand alternation
+      p.hunch = -6;
+      p.headTilt = 14;                          // looking up the rope
+      p.bob = -Math.abs(sw) * 7;                // body hitches up on each pull
+      p.lean = sw * 2;                          // slight sway
+      // both hands overhead on the rope, alternating grips
+      p.armRU = 168 + sw * 12; p.armRF = 176 + sw * 8;
+      p.armLU = -168 + sw * 12; p.armLF = -176 + sw * 8;
+      // legs wrapped: knees bent, ankles pinching the rope
+      p.legRU = 22 + sw * 6; p.legRF = p.legRU - 68;
+      p.legLU = -14 - sw * 6; p.legLF = p.legLU + 62;
+      return p;
+    },
+  },
+  peek: {
+    label: "Peeking over", mood: "how far down IS that…",
+    frame(t) {
+      const p = clone(REST);
+      // careful lean-out every ~5s: creep in, hold, pull back
+      const c = ((t % 5) + 5) % 5;
+      const pk = Math.min(1, Math.max(0, c / 1.2)) * Math.min(1, Math.max(0, (4.2 - c) / 0.8));
+      p.bob = pk * 2;
+      p.hunch = -(10 + pk * 26);                // craning forward over the edge
+      p.headTilt = -(8 + pk * 14) + wave(t, 2.5) * pk * 2;  // looking down, tiny wobble
+      // arms trail behind for counterbalance
+      p.armRU = -18 - pk * 40; p.armRF = -14 - pk * 30;
+      p.armLU = -26 - pk * 45; p.armLF = -20 - pk * 35;
+      // front foot toes the edge, back leg planted
+      p.legRU = 14 + pk * 6; p.legRF = 8;
+      p.legLU = -16 - pk * 10; p.legLF = -6;
+      return p;
+    },
+  },
+  jump: {
+    label: "Jump", mood: "wheee!",
+    frame(t) {
+      const p = clone(REST);
+      const T = 1.6, ph = (((t % T) + T) % T) / T;
+      const e = (a, b, x) => Math.min(1, Math.max(0, (x - a) / (b - a)));
+      const crouch = e(0.05, 0.3, ph) - e(0.38, 0.52, ph);   // wind up, then release
+      const airT = e(0.38, 0.92, ph);
+      const air = Math.sin(Math.PI * airT);                   // airborne arc
+      const land = Math.sin(Math.PI * e(0.9, 1.0, ph));       // landing absorb
+      p.bob = crouch * 14 - air * 48 + land * 6;
+      p.hunch = -8 + crouch * -14 + air * 6 - land * 6;
+      p.headTilt = crouch * -6 + air * 10;
+      // arms swing back on crouch, throw up in the air
+      p.armRU = 15 + crouch * 35 - air * 155; p.armRF = 10 + crouch * 20 - air * 150;
+      p.armLU = -15 - crouch * 35 + air * 155; p.armLF = -10 - crouch * 20 + air * 150;
+      // asymmetric tuck — lead leg pulls high, trail leg stays long (no heel-click)
+      p.legRU = 8 + crouch * 30 + air * 46; p.legRF = 4 - crouch * 55 - air * 80 - land * 16;
+      p.legLU = -8 - crouch * 30 + air * 14; p.legLF = -4 + crouch * 55 + air * 32 + land * 16;
+      return p;
+    },
+  },
+  sit: {
+    label: "Hanging out", mood: "nice view up here", seated: true,
+    frame(t) {
+      const p = clone(REST);
+      const br = wave(t, 0.3);
+      p.lean = 3;
+      p.hunch = -(8 + br * 2);                 // relaxed round back (forward)
+      p.bob = br * 1.5;
+      // bored + curious: slow scan, occasional lean-in peek over the edge
+      const peek = Math.max(0, wave(t, 0.07, 1)) ** 6;
+      p.hunch -= peek * 18;
+      p.headTilt = wave(t, 0.09) * 16 + peek * 12;
+      p.armRU = 26 + br * 2; p.armRF = 10;
+      p.armLU = -22 - br * 2; p.armLF = -8;
+      // seated: thighs out front, shins dangling, lazy alternating kick
+      p.legRU = 82; p.legRF = 6 + wave(t, 0.45) * 14;
+      p.legLU = 74; p.legLF = 4 + wave(t, 0.45, Math.PI) * 14;
+      return p;
+    },
+  },
+  read: {
+    label: "Reading", mood: "just one more chapter…", seated: true, book: true,
+    frame(t) {
+      const p = clone(REST);
+      const br = wave(t, 0.28);
+      p.lean = 4;
+      p.hunch = -(22 + br * 3);               // curled FORWARD over the book
+      p.bob = br * 1.5;
+      p.headTilt = -(12 + br * 2);            // eyes down on the page
+      // page-flip twitch every few seconds
+      const flip = Math.max(0, wave(t, 0.18)) ** 10;
+      // relaxed asymmetric hold in front of the curled body
+      p.armRU = 62 + br * 2; p.armRF = 132 + flip * 26;
+      p.armLU = 42 - br * 2; p.armLF = 108 + br * 3;
+      // seated, one lazy bounce
+      p.legRU = 78; p.legRF = 12 + wave(t, 0.3) * 6;
+      p.legLU = 70; p.legLF = 5;
+      return p;
+    },
+  },
+  holdannoyed: {
+    label: "Holding (annoyed)", mood: "you CANNOT be serious",
+    frame(t) {
+      // still gripping his end of the line, head swiveling in exasperation
+      // between the slacker and you
+      const p = clone(REST);
+      const look = Math.min(1, t / 0.35);
+      p.bob = 0.5;
+      p.armRU = 16; p.armRF = 6;
+      p.armLU = -16; p.armLF = -6;
+      p.headTilt = wave(t, 0.5) * 20 * look;
+      p.hunch = -4 * look;
+      p.legRU = 9; p.legLU = -9;
+      return p;
+    },
+  },
+  annoyed: {
+    label: "Annoyed", mood: "seriously? we're CARRYING here",
+    frame(t) {
+      // exasperated partner: both hands on hips, head swiveling
+      // between the slacker and you
+      const p = clone(REST);
+      const look = Math.min(1, t / 0.35);
+      p.bob = 1;
+      p.hunch = -6 * look;
+      p.headTilt = wave(t, 0.4) * 16 * look;
+      p.armRU = 15 + 37 * look; p.armRF = 11 - 143 * look;
+      p.armLU = -15 - 37 * look; p.armLF = -11 + 143 * look;
+      return p;
+    },
+  },
+  greet: {
+    label: "Greet", mood: "oh! hi there",
+    // v = { hand:'R'|'L', hz } lets each figure wave with a different hand / speed
+    frame(t, v) {
+      v = v || {};
+      const hz = v.hz || 1.6;
+      const p = clone(REST);
+      const look = Math.min(1, t / 0.35);
+      p.bob = 1 + wave(t, 0.9) * 1.5;
+      p.hunch = -4 * look;
+      p.headTilt = -12 * look + wave(t, 0.5) * 3;
+      const wv = Math.min(1, Math.max(0, (t - 0.55) / 0.3));
+      const osc = t > 0.9 ? wave(t, hz) * 24 : 0;
+      if (v.hand === 'L') { p.armLU = -15 - 137 * wv; p.armLF = -11 - 143 * wv - osc; }
+      else { p.armRU = 15 + 137 * wv; p.armRF = 11 + 143 * wv + osc; }
+      return p;
+    },
+  },
+  greetseat: {
+    label: "Greet (seated)", mood: "oh! hi there", seated: true,
+    frame(t, v) {
+      v = v || {};
+      const hz = v.hz || 1.6;
+      const p = clone(REST);
+      const look = Math.min(1, t / 0.35);
+      p.bob = wave(t, 0.9) * 1.2;
+      p.hunch = -6 * look;
+      p.headTilt = -16 * look + wave(t, 0.5) * 3;
+      const wv = Math.min(1, Math.max(0, (t - 0.55) / 0.3));
+      const osc = t > 0.9 ? wave(t, hz) * 24 : 0;
+      if (v.hand === 'L') { p.armLU = -26 - 126 * wv; p.armLF = -10 - 144 * wv - osc; p.armRU = 22; p.armRF = 8; }
+      else { p.armRU = 26 + 126 * wv; p.armRF = 10 + 144 * wv + osc; p.armLU = -22; p.armLF = -8; }
+      p.legRU = 82; p.legRF = 10;
+      p.legLU = 74; p.legLF = 6;
+      return p;
+    },
+  },
+  standstill: {
+    label: "Standing by", mood: "\u2026",
+    frame(t) {
+      const p = clone(REST);
+      p.bob = wave(t, 0.3) * 1.5;
+      p.headTilt = wave(t, 0.08) * 6;
+      return p;
+    },
+  },
+  toddle: {
+    label: "Toddle", mood: "wobble wobble!",
+    frame(t) {
+      const p = clone(REST);
+      const sw = wave(t, 1.5);                    // quick little steps
+      p.bob = -Math.abs(sw) * 5 + 2;
+      p.lean = sw * 5;                            // big side-to-side sway
+      p.hunch = -6;
+      p.headTilt = -2 + sw * 3;
+      p.legRU = sw * 16; p.legLU = -sw * 16;
+      p.legRF = p.legRU - Math.max(0, sw) * 22;
+      p.legLF = p.legLU - Math.max(0, -sw) * 22;
+      p.armRU = 42 + sw * 8; p.armRF = 22;        // arms out for balance
+      p.armLU = -42 - sw * 8; p.armLF = -22;
+      return p;
+    },
+  },
+  elder: {
+    label: "Elder", mood: "back in my day\u2026", cane: true,
+    frame(t) {
+      // Cane held vertical (a planted 3rd leg). The hand stays steady; the body
+      // HEAVES down onto the cane each stride and hunches to bear its weight.
+      const p = clone(REST);
+      const s = wave(t, 0.5);                       // slow step cycle
+      const w = Math.abs(s);                        // weight-bearing, peaks mid-stride
+      p.hunch = -42 - w * 8;                        // deeply stooped over the cane
+      p.headTilt = -14;                             // head hangs forward
+      p.lean = 5 + s * 3;                           // rocks over the cane
+      p.bob = 1 + w * 15;                           // pronounced hitch onto the cane
+      p.legRU = s * 9; p.legLU = -s * 9;            // short shuffle steps
+      p.legRF = p.legRU - Math.max(0, s) * 7;
+      p.legLF = p.legLU - Math.max(0, -s) * 7;
+      p.armRU = 66; p.armRF = 34;                   // cane hand reaches well forward, clear of his legs
+      p.armLU = -12; p.armLF = -8;                  // free arm hangs
+      return p;
+    },
+  },
+  elderangry: {
+    label: "Elder (angry)", mood: "get off my lawn!", cane: true,
+    frame(t) {
+      const p = clone(REST);
+      p.hunch = -18;                              // straightens up to tell you off
+      p.headTilt = -4 + wave(t, 0.7) * 4;         // glaring up at you
+      p.lean = 2;
+      p.legRU = 10; p.legLU = -12; p.legLF = -6;  // planted stance
+      const shake = wave(t, 1.1);                 // BIG, SLOW cane swings
+      p.armRU = 140 + shake * 30;
+      p.armRF = 118 + shake * 46;
+      p.armLU = -18; p.armLF = -10;
+      return p;
+    },
+  },
+  fall: {
+    label: "Fell down", mood: "whoops!", seated: true,
+    // t = elapsed seconds of the ~4.5s fall-and-recover sequence (SEQ_FALL)
+    frame(t) {
+      const p = clone(REST);
+      if (t < SEQ_FALL - 0.9) {
+        // sitting on the ground \u2014 gentle, slow (no fast flailing)
+        p.lean = 6; p.hunch = 8;
+        p.headTilt = 8 + wave(t, 0.7) * 4;
+        p.legRU = 70; p.legRF = 12; p.legLU = 58; p.legLF = 8;   // sprawled out front
+        p.armRU = 50 + wave(t, 0.7) * 4; p.armRF = 26;
+        p.armLU = -50 - wave(t, 0.7) * 4; p.armLF = -24;
+      } else {
+        // being stood back up by the parent
+        const k = Math.min(1, (t - (SEQ_FALL - 0.9)) / 0.9);
+        p.lean = 6 * (1 - k);
+        p.hunch = 8 * (1 - k) - 4 * k;
+        p.headTilt = 8 * (1 - k);
+        p.legRU = 70 * (1 - k) + 8 * k; p.legRF = 12 * (1 - k) + 3 * k;
+        p.legLU = 58 * (1 - k) - 8 * k; p.legLF = 8 * (1 - k) - 3 * k;
+        p.armRU = 50 * (1 - k) + 120 * k; p.armLU = -50 * (1 - k) - 120 * k;   // arms lift as he's raised
+        p.armRF = 26; p.armLF = -24;
+      }
+      return p;
+    },
+  },
+  scold: {
+    label: "Come on, kid", mood: "up you get\u2026",
+    // t = elapsed of the same ~4.5s sequence: gesture -> swoop down -> lift
+    frame(t) {
+      const p = clone(REST);
+      if (t < 1.8) {
+        // "come on, man" \u2014 arm flung out to the side, exasperated head shake
+        const br = wave(t, 0.6);
+        p.lean = -3;
+        p.headTilt = -6 + wave(t, 0.8) * 5;
+        p.armRU = 96 + br * 5; p.armRF = 100 + br * 8;   // arm out and away
+        p.armLU = -18; p.armLF = -12;
+      } else if (t < SEQ_FALL - 0.9) {
+        // swoop DOWN toward the kid \u2014 bend over, reach down
+        const k = Math.min(1, (t - 1.8) / (SEQ_FALL - 0.9 - 1.8));
+        p.hunch = -46 * k; p.lean = 8 * k; p.headTilt = -20 * k; p.bob = 8 * k;
+        p.armRU = 15 + 58 * k; p.armRF = 11 + 34 * k;
+        p.armLU = -15 - 58 * k; p.armLF = -11 - 34 * k;
+      } else {
+        // stand back up, lifting the kid
+        const k = Math.min(1, (t - (SEQ_FALL - 0.9)) / 0.9);
+        p.hunch = -46 * (1 - k); p.lean = 8 * (1 - k); p.headTilt = -20 * (1 - k); p.bob = 8 * (1 - k);
+        p.armRU = 73; p.armRF = 45; p.armLU = -73; p.armLF = -45;   // arms forward, holding him up
+      }
+      return p;
+    },
+  },
+  toddlemarch: {
+    label: "Stiff toddle", mood: "wheee \u2014 whoa!",
+    frame(t) {
+      const p = clone(REST);
+      const sw = wave(t, 1.3);
+      p.bob = -Math.abs(sw) * 3 + 2;
+      p.lean = sw * 7;                          // big wobble, about to topple
+      p.hunch = -4;
+      p.headTilt = -2 + sw * 4;
+      p.legRU = sw * 20; p.legLU = -sw * 20;    // STIFF legs, barely any knee bend
+      p.legRF = p.legRU * 0.2; p.legLF = p.legLU * 0.2;
+      p.armRU = 72 + sw * 10; p.armRF = 30;     // arms flared out wide for balance
+      p.armLU = -72 - sw * 10; p.armLF = -30;
+      return p;
+    },
+  },
+  presentup: {
+    label: "Presenting (up)", mood: "ta-da — check this one out!",
+    frame(t) {
+      // proud host pointing up at the feature above him; hand-on-hip, excited bounce
+      const p = clone(REST);
+      p.lean = -3;
+      p.bob = 1 + wave(t, 1.1) * 2;                 // proud little bounce
+      p.headTilt = -14;                             // looking up at it
+      p.armRU = 158 + wave(t, 1.1) * 4;             // right arm up-and-out, pointing
+      p.armRF = 150 + wave(t, 1.1) * 4;
+      p.armLU = -52; p.armLF = 132;                 // left hand on hip
+      return p;
+    },
+  },
+  heave: {
+    label: "Pick it up", mood: "…annd, lift.",
+    frame(t) {   // t = elapsed of the ~1.2s pickup: bend down to grab, then straighten
+      const p = clone(REST);
+      const bend = Math.sin(Math.min(1, t / 1.2) * Math.PI);  // 0 -> 1 (crouch) -> 0
+      p.hunch = -22 * bend;                 // bend forward toward the line
+      p.bob = 12 * bend;                    // crouch down
+      p.headTilt = -12 * bend;
+      p.armRU = 16 + 34 * bend; p.armRF = 6 + 22 * bend;      // reach down, then lift back to carry
+      p.armLU = -16 - 34 * bend; p.armLF = -6 - 22 * bend;
+      return p;
+    },
+  },
+  painhop: {
+    label: "Ow, my foot", mood: "OW ow ow!",
+    frame(t) {
+      const p = clone(REST);
+      const hop = Math.abs(Math.sin(t * 3.5 * Math.PI));   // hops on the good foot
+      p.bob = -hop * 12 + 2;
+      p.lean = 8; p.hunch = -6;
+      p.headTilt = -22;                    // looking down at the hurt foot
+      p.legRU = 46; p.legRF = -82;         // hurt foot yanked up
+      p.legLU = -6; p.legLF = -3;          // good leg hops
+      p.armRU = 40; p.armRF = 98;          // both hands clutch the raised foot
+      p.armLU = -40; p.armLF = -98;
+      return p;
+    },
+  },
+};
+
+// lateral gait generator: legs scissor front/back in profile, hunch carries the upper body
+function makeGait(g) {
+  return {
+    label: g.label, mood: g.mood,
+    frame(t) {
+      const p = clone(REST);
+      const sw = Math.sin(t * g.speed * Math.PI);
+      p.bob = -Math.abs(sw) * g.bob + 2;
+      p.lean = -2;
+      p.hunch = g.hunch + wave(t, g.speed / 4) * 3;
+      p.headTilt = g.head + wave(t, g.speed / 2) * 3;
+      p.legRU = sw * g.stride;
+      p.legLU = -sw * g.stride;
+      p.legRF = p.legRU - Math.max(0, sw) * g.knee;   // knee bends as leg swings forward
+      p.legLF = p.legLU - Math.max(0, -sw) * g.knee;
+      p.armRU = 4 - sw * g.arm; p.armRF = 2 - sw * g.arm * 0.6;
+      p.armLU = -4 + sw * g.arm; p.armLF = -2 + sw * g.arm * 0.6;
+      return p;
+    },
+  };
+}
+ANIMATIONS.walk = ANIMATIONS.stroll;   // scene walker + old references
+
+const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "sit", "read"];
+
+// ── singleton animation controller ─────────────────────────
+// Owns its own rAF + state so it is immune to React re-mounts.
+const RT = { animKey: "friendly", playing: true, speed: 1, showSkel: false, clock: 0, scene: 0 };
+let stageC = null, sceneC = null, running = false, last = 0;
+
+function attach(stage, scene) {
+  stageC = stage; sceneC = scene;
+  last = performance.now();
+  if (!running) { running = true; setInterval(tick, 1000 / 60); }
+  tick(); // paint an immediate first frame
+}
+function setAnim(k) { RT.animKey = k; RT.clock = 0; tick(); }
+function setPlaying(p) { RT.playing = p; tick(); }
+function setSpeed(s) { RT.speed = s; tick(); }
+function setSkel(v) { RT.showSkel = v; tick(); }
+
+function tick() {
+  const now = performance.now();
+  let dt = (now - last) / 1000; last = now;
+  if (dt > 0.1) dt = 0.1;
+  if (RT.playing) RT.clock += dt * RT.speed;
+  RT.scene += dt * RT.speed;
+  try {
+    if (stageC && stageC.isConnected) drawStage(stageC);
+    if (sceneC && sceneC.isConnected) drawScene(sceneC);
+  } catch (e) { /* keep the interval alive */ }
+}
+
+function fit(c) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (w && h && (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr))) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const ctx = c.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+function figure(ctx, ox, oy, s, flip, pose, opts, skel) {
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.scale(flip ? -s : s, s);
+  const j = computePose(pose, CFG, { x: 0, y: 0 });
+  draw(ctx, j, CFG, opts);
+  if (skel) drawSkeleton(ctx, j, CFG);
+  ctx.restore();
+}
+
+function drawStage(c) {
+  const { ctx, w } = fit(c);
+  ctx.clearRect(0, 0, w, 560);
+  const anim = ANIMATIONS[RT.animKey] || ANIMATIONS.friendly;
+  const pose = anim.frame(RT.clock);
+  const oy = anim.seated ? 300 : 372;
+  drawShadow(ctx, w / 2, 500, 66);
+  if (anim.seated) {
+    // simple plinth to sit on
+    ctx.fillStyle = "#E4E2DC";
+    roundRect(ctx, w / 2 - 58, oy + 12, 116, 500 - (oy + 12), 10);
+    ctx.fill();
+  }
+  if (anim.rope) {
+    // the rope, hanging from above down to the hands
+    ctx.strokeStyle = "#C9C6BE"; ctx.lineWidth = 5; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(w / 2, 46); ctx.lineTo(w / 2, oy - 148); ctx.stroke();
+  }
+  figure(ctx, w / 2, oy, 1, false, pose,
+    { color: "#172B4D", mega: anim.mega, arm: anim.arm, megaColor: "#FFB800", book: anim.book, swirl: anim.swirl, laptop: anim.laptop, time: RT.clock }, RT.showSkel);
+}
+
+function roundRect(ctx, x, y, w, h, r, topOnly) {
+  ctx.beginPath();
+  if (topOnly) {
+    ctx.moveTo(x, y + h); ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r); ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r); ctx.lineTo(x + w, y + h); ctx.closePath();
+    return;
+  }
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawScene(c) {
+  const { ctx, w, h } = fit(c);
+  ctx.clearRect(0, 0, w, h);
+  const bx = 40, by = 190, bw = w - 80, bh = 92, barTop = by;
+  ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = "#E4E2DC"; ctx.lineWidth = 1.5;
+  roundRect(ctx, bx, by, bw, bh, 14); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#F2F0EA"; roundRect(ctx, bx, by, bw, 30, 14, true); ctx.fill();
+  ["#FB6933", "#FFD426", "#00C7B1"].forEach((col, i) => {
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(bx + 20 + i * 18, by + 15, 5, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.fillStyle = "#FBFBF9"; roundRect(ctx, bx + 84, by + 6, bw - 120, 18, 9); ctx.fill();
+  ctx.fillStyle = "#B4B0A6"; ctx.font = "600 10px Manrope, sans-serif";
+  ctx.fillText("empowered.vote", bx + 96, by + 19);
+  ctx.fillStyle = "#EEEBE3";
+  roundRect(ctx, bx + 20, by + 46, bw * 0.5, 8, 4); ctx.fill();
+  roundRect(ctx, bx + 20, by + 62, bw * 0.34, 8, 4); ctx.fill();
+
+  // ── tiny figures hanging out on the window (Fraggle-style) ──
+  const s = 0.34, span = bw - 320;
+  const feetY = barTop + 2;
+
+  // 1. construction crew — two workers hauling a border-colored beam along the top
+  const u = RT.scene * 0.055;
+  const frac = ((u % 2) + 2) % 2;
+  const tri = frac < 1 ? frac : 2 - frac;
+  const goingRight = frac < 1;
+  const dir = goingRight ? 1 : -1;
+  const fx = bx + 130 + tri * (span - 60);
+  const cx2 = fx - dir * 52;
+  // the beam they're carrying (same color as the window border)
+  const beamY = feetY - 97 * s;
+  ctx.strokeStyle = "#E4E2DC"; ctx.lineWidth = 5; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(fx + dir * 14, beamY); ctx.lineTo(cx2 - dir * 14, beamY); ctx.stroke();
+  drawShadow(ctx, fx, feetY, 24 * s * 2, "rgba(23,43,77,.10)");
+  drawShadow(ctx, cx2, feetY, 24 * s * 2, "rgba(23,43,77,.10)");
+  figure(ctx, fx, feetY - 112 * s, s, !goingRight, ANIMATIONS.carry.frame(RT.scene), { color: "#172B4D" }, false);
+  figure(ctx, cx2, feetY - 112 * s, s, !goingRight, ANIMATIONS.carry.frame(RT.scene + 0.16), { color: "#172B4D" }, false);
+
+  // 2. sitter — perched up top, legs dangling, lazy kicks
+  const sx = bx + bw - 150;
+  drawShadow(ctx, sx, feetY, 24 * s * 2, "rgba(23,43,77,.10)");
+  figure(ctx, sx, feetY - 8 * s, s, true, ANIMATIONS.sit.frame(RT.scene + 3.1), { color: "#172B4D" }, false);
+
+  // 3. reader — sitting on the left corner, nose in a book
+  const lx = bx + 46;
+  drawShadow(ctx, lx, feetY, 24 * s * 2, "rgba(23,43,77,.10)");
+  figure(ctx, lx, feetY - 8 * s, s, false, ANIMATIONS.read.frame(RT.scene + 7.4), { color: "#172B4D", book: true }, false);
+
+  // 4. climber — scales the right edge, hops off at the top, hangs out, repeat
+  const T = 9, cph = ((RT.scene / T) % 1 + 1) % 1;
+  const edgeX = bx + bw + 6 * s;
+  const topPelvis = by - 2, botPelvis = by + bh - 6;
+  if (cph < 0.5) {
+    // climbing up the edge
+    const k = cph / 0.5;
+    figure(ctx, edgeX, botPelvis - k * (botPelvis - topPelvis), s, false, ANIMATIONS.climb.frame(RT.scene), { color: "#172B4D" }, false);
+  } else if (cph < 0.62) {
+    // leap off onto the ledge
+    const k = (cph - 0.5) / 0.12;
+    const jx = edgeX - k * 44;
+    const jy = topPelvis - Math.sin(Math.PI * k) * 20 + k * (feetY - 112 * s - topPelvis);
+    figure(ctx, jx, jy, s, true, ANIMATIONS.jump.frame((0.42 + k * 0.5) * 1.6), { color: "#172B4D" }, false);
+  } else {
+    // landed: hang out on the corner, a little smug
+    const lx2 = edgeX - 44;
+    drawShadow(ctx, lx2, feetY, 24 * s * 2, "rgba(23,43,77,.10)");
+    figure(ctx, lx2, feetY - 112 * s, s, true, ANIMATIONS.bored.frame(RT.scene), { color: "#172B4D" }, false);
+  }
+}
+
+
+// ── classic-script global (loaded once via <script src>) ──
+window.LeremyRig = { CFG, REST, ANIMATIONS, ORDER, computePose, draw, drawShadow, drawSkeleton, attach, setAnim, setPlaying, setSpeed, setSkel };
+
+})();
+
+// ── Empowered Vote mascot animation extras ───────────────────────────
+// Reusable concept poses layered on top of LeremyRig.  Load AFTER
+// leremy-rig.js.  Each new animation is registered into
+// LeremyRig.ANIMATIONS by name, so the mind map, the decks, and the
+// landing page can all reuse it via ANIMATIONS[name].frame(t).
+//
+// Canonical home: keep this file beside leremy-rig.js.  When you invent a
+// new explainer pose, add it here (not inline in a single map) so it stays
+// leverageable everywhere.
+(function () {
+  "use strict";
+  if (!window.LeremyRig) return;
+  var A = window.LeremyRig.ANIMATIONS;
+  var base = A.present;                       // calm standing base with breathing + gentle lean
+  function osc(t, hz) { return Math.sin(t * hz * Math.PI * 2); }
+
+  var EXTRAS = {
+    // Both arms raised in celebration. Good for wins / horizon goals.
+    cheer: { label: "Cheer", mood: "yes, we can do this", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var s = osc(t, 1.05);
+      p.armRU = 150 + s * 6;  p.armRF = 150 + s * 9;
+      p.armLU = -150 - s * 6; p.armLF = -150 - s * 9;
+      p.headTilt = -7;
+      p.bob = (p.bob || 0) - 1.5 - Math.abs(s) * 2;
+      return p;
+    } },
+    // Hand to chin, head tilted, slow sway. Good for "think about this".
+    ponder: { label: "Ponder", mood: "hmm, let me think", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var s = osc(t, 0.45);
+      p.armRU = 34;  p.armRF = -162 + s * 3;      // upper arm lifts, forearm folds up to the chin
+      p.headTilt = 11 + s * 2;
+      p.hunch = (p.hunch || 0) - 2;
+      return p;
+    } },
+    // One arm extended, presenting outward to the side. Good for "here is the idea".
+    offer: { label: "Offer", mood: "here, take a look", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var s = osc(t, 0.7);
+      p.armRU = 78 + s * 3;  p.armRF = 92 + s * 3;  // right arm reaches out, palm up
+      p.headTilt = -3;
+      return p;
+    } }
+  };
+
+  Object.keys(EXTRAS).forEach(function (k) {
+    A[k] = EXTRAS[k];
+    if (window.LeremyRig.ORDER && window.LeremyRig.ORDER.indexOf(k) < 0) window.LeremyRig.ORDER.push(k);
+  });
+})();
+</script>
+
 <script>
 'use strict';
 
-const MAP = {"t":"Empowered.Vote's Purpose","c":[{"t":"We empower the search for shared solutions","side":1,"c":[{"t":"A \u003cstrong>shared solution\u003c/strong> is a solution you anticipate would be embraced by everyone if we all saw the problem with the same clarity","c":[{"t":"Video: What's Empowered Vote?","v":"https://www.youtube.com/watch?v=yTXb3di5-II"}]}]},{"t":"Why","side":1,"c":[{"t":"1","c":[{"t":"Shared Solutions last for a very long time without any need for manipulation or coercion to remain in place.","c":[{"t":"Values lead to Infinite Solutions","c":[{"t":"If someone steals your juice box, it doesn't matter if you're 3 or 103, it will feel like an injustice for very similar reasons"}]},{"t":"Private Objectives lead to Finite Solutions","c":[{"t":"Maximizing profits leads to Finite Solutions"}]}]}]},{"t":"2","c":[{"t":"Shareable Solutions are necessary for...","c":[{"t":"Democracy","c":[{"t":"United comes before States"}]},{"t":"World Peace"}]}]},{"t":"3","c":[{"t":"By committing to each other that we search for Shared Solutions, it gives us a framework that highlights when that's not true","c":[{"t":"Video:  How can you know the truth in their heart?","v":"https://www.youtube.com/watch?v=El68xH5sd2Y"}]}]}]},{"t":"How","side":1,"c":[{"t":"Value-driven framework examples","c":[{"t":"Video: How to Create Solutions that Last Forever","v":"https://www.youtube.com/watch?v=xTud12rLWIo"},{"t":"1","c":[{"t":"Mom's Cake Trick","c":[{"t":"Scales indefinitely"},{"t":"Works on things that are not cake"},{"t":"Was used long before my mom","c":[{"t":"Founding Fathers / Separation of Powers"}]}]}]},{"t":"2","c":[{"t":"Golden Rule"}]},{"t":"3","c":[{"t":"Omnipotent Succession Plan","c":[{"t":"As a thought exercise, you are all powerful, able to right every wrong you see fit"},{"t":"But you still get old and die and when you do, you must choose who to pass your power on to - your Omnipotent Succession Plan"},{"t":"Your successor will choose their successor, as will each next person until they pass their power to someone that uses it to primarily cause harm - at which point the game ends in a loss"},{"t":"Players are not scored based solely on the wrongs they make right in their life, but for the proper stewardship of their power ever afterwards"},{"t":"How would you choose your successor?"}]}]}]},{"t":"Formula","c":[{"t":"sFacts + sValues = sSolutions","c":[{"t":"Inform Pillar","s":{"bg":"FFD426","b":1}},{"t":"Connect Pillar","s":{"bg":"2BD9D9","b":1}},{"t":"Empower Pillar","s":{"bg":"FF4019","b":1}}]}]},{"t":"2 Mars Problems","c":[{"t":"1st Mars Problem","c":[{"t":"Now that we have the weapons to end all life on earth, how do we not end in a nuclear holocaust?"}]},{"t":"2nd Mars Problem","c":[{"t":"What would an ideal democratic government look like for the first generation of Martian Colonists?"}]},{"t":"Both are absurdly large in scope","c":[{"t":"When the problem is large enough, you can guarantee we are all on the same side","c":[{"t":"Ideally, none of us want the world to end in a nuclear holocaust"},{"t":"Not wanting to end all life on Earth is an almost universally shared goal"},{"t":"If someone is comfortable ending all life on earth, it's not someone you should collaborate with"}]},{"t":"When we solve problems generations out, we are confined to using value-driven solutions","c":[{"t":"Free from the motivated reasoning of our current situation"}]}]}]}]},{"t":"Who","side":1,"c":[{"t":"Me as a Game Developer and Systems Designer","c":[{"t":"Value Driven Designs","c":[{"t":"Player Focused"}]},{"t":"Design engaging systems to land on sSolutions"}]},{"t":"Micro-Donors","c":[{"t":"Remove Profit Motive"}]},{"t":"Our Audience","c":[{"t":"The 2nd Mars Problem"}]}]},{"t":"What","side":1,"c":[{"t":"Empowered.Vote","c":[{"t":"Civic Platform split across 3 Pillars","c":[{"t":"Inform Pillar","s":{"bg":"FFD426","b":1},"c":[{"t":"Empowered Essentials","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Waiting in line to vote for people I don't know"}]},{"t":"Goal","c":[{"t":"Make it easy for citizens to understand their representatives"}]},{"t":"Summary","c":[{"t":"A voter types in their zip code"},{"t":"They are given a customized list of civic representatives that serve that area"},{"t":"During an election cycle, other candidates for those positions are also listed"},{"t":"Clicking on any person listed will take you to their profile page, that breaks down their civic priorities further"},{"t":"Clicking on 'Funding' allows you to see the donations that candidate has received"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1x0TqeX1zFjdr41AubKkWDVkdsBkwQWb4/view?usp=sharing"]},{"t":"Wireframe","u":["https://www.figma.com/proto/kdvOzDDbhUcNna0sgaxYOq/Essential-Feature?page-id=4%253A19&node-id=316-440&viewport=-233%252C-989%252C0.26&t=K6jj7ypSxcB7DQdl-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=316%253A440&show-proto-sidebar=1"]}]},{"t":"Empowered Compass","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Voter Driven over Party Driven"}]},{"t":"Goal","c":[{"t":"Create a visual representation for the civic priorities of citizens and leaders"}]},{"t":"Summary","c":[{"t":"Citizens first calibrate their personal compass by filling out a questionnaire to identify their civic priorities; the vote-worthy issues they care the most about"},{"t":"Based on how they feel on each issue, determines how far along they are represented along that vector"},{"t":"Each issue is placed as a spoke on a spider graph, their Empowered Compass"},{"t":"Once a visual representation of their civic priorities has been created, citizens can quickly see how civic leaders feel on the issues that the citizen prioritizes"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1HZUsXW_3-gDmJGEQO3hvbElPgJLE-Stp/view?usp=sharing"]},{"t":"Wireframe","u":["https://www.figma.com/proto/J9mfnUSnc2k6fUQDhw9L7h/Empowered-Vote-Style-Guide?page-id=176%253A37&node-id=1399-11651&viewport=265%252C-2298%252C0.04&t=hoK8LkedqjkVPclQ-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=1399%253A11651"]}]},{"t":"Treasury Tracker","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Explorable Graphs of civic budgets"}]},{"t":"Goal","c":[{"t":"Make it easy for average citizens to see the impact of their taxes with nuance"}]},{"t":"Summary","c":[{"t":"Treasury Tracker can be viewed from a few different lenses: Local, State, Federal"},{"t":"Publicly available budgets are presented in a digestible fashion with an interactive series of graphs"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1TRegAIN8x04q9KZjs9Bhkp0Rhtq9C8B_/view?usp=drive_link"]},{"t":"Wireframe","u":["https://www.figma.com/proto/7ANUifnZtlQ22iBI3g9tRT/Treasury-Tracker?page-id=0%3A1&node-id=126-1250&viewport=-913%2C-1216%2C0.2&t=POiUTGq4quIg0lZp-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=126%3A1250"]},{"t":"Prototype","u":["https://ev-prototypes.netlify.app/treasury-tracker/dist/"]}]},{"t":"Read &amp; Rank","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Election Machine in Finland"},{"t":"NYT and Washington Post quizzes at election season"}]},{"t":"Goal","c":[{"t":"Help citizens find candidates that matches their preferences with nuance, free from the motivated reasoning inherent in political parties"}]},{"t":"Summary","c":[{"t":"During an election cycle, candidates are asked to summarize their position on trending civic issues"},{"t":"Citizens then read the questions that were asked, and then read the various responses from each of the candidates."},{"t":"If the citizen agrees with any or all of the 'anonymous' responses, then they rank them in order of priority"},{"t":"Any solutions they don't agree with, they leave blank"},{"t":"At the end of Read &amp; Rank, citizens are told which civic leaders they most frequently aligned with"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/10qtyBt87Ik5qxpe7Cc23uv7QTX7P3_Hy/view?usp=drive_link"]},{"t":"Wireframe","u":["https://www.figma.com/proto/J9mfnUSnc2k6fUQDhw9L7h/Empowered-Vote-Style-Guide?page-id=176%253A37&node-id=1484-7352&viewport=-1229%252C-2030%252C0.07&t=ZoXLewD2MmMSokAF-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=1484%253A7352"]},{"t":"Prototype","u":["https://ev-prototypes.netlify.app/read-rank/dist/"]}]},{"t":"Empowered Badges","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Girl Scout &amp; Boy Scout Badges"},{"t":"WoW Achievements"}]},{"t":"Goal","c":[{"t":"Make the pursuit of the same information both fun and engaging"}]},{"t":"Summary","c":[{"t":"Citizens find a badge they are interested in acquiring"},{"t":"They watch / read the curated content associated with that badge"},{"t":"They are asked questions via a Post-Check, to validate they understood the content presented"},{"t":"If they understood the content, they earn the badge associated with that content"}]},{"t":"Walk Through","u":["https://docs.google.com/presentation/d/1nXyCJ7Km_o0vsj8IdQLuHP5tCjmO6eV-vkTIv8KKcWw/edit?usp=sharing"]},{"t":"Wireframe","u":["https://www.figma.com/proto/kH9RAmp3d9X4o3JswwmkeM/Empowered-Badges?page-id=0%253A1&node-id=5-141&viewport=124%252C399%252C0.25&t=OTZI9aZZqimfDxrr-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=5%253A141"]},{"t":"Prototype","u":["https://ev-prototypes.netlify.app/empowered-badges/dist/"]}]},{"t":"Fallacy Finders","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Bar Trivia"},{"t":"Spelling Bee"}]},{"t":"Goal","c":[{"t":"Give friends a safe and productive environment to learn to spot common logical fallacies"}]},{"t":"Summary","c":[{"t":"This is a team-based game, where those within earshot are on your team, but your team is competing against other teams elsewhere"},{"t":"Each player is assigned a logical fallacy to protect their team from"},{"t":"As a team, players watch a piece of civic content; a campaign speech, a debate, a nightly newscast"},{"t":"As they see the logical fallacy they are assigned get used in the video, they press a button"},{"t":"Much like bar trivia, all teams that spot the fallacy are given points, with the teams that answered fastest getting a few points extra"},{"t":"Every 10-15 minutes, the fallacies that each player protects against are shuffled amongst teammates"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/187q1anG2r-iqaGOcEtYedV5MRop1ljc7/view?usp=drive_link"]},{"t":"Wireframe","u":["https://www.figma.com/proto/J9mfnUSnc2k6fUQDhw9L7h/Empowered-Vote-Style-Guide?page-id=2016%253A2989&node-id=2016-7222&viewport=-5%252C-529%252C0.05&t=RLlU2ePNYRYN5o39-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=2016%253A7222"]}]},{"t":"Civic Trivia Championships","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Trivia Game Show"}]},{"t":"Goal","c":[{"t":"Socialize civic information in a format that is broadly engaging"}]},{"t":"Summary","c":[{"t":"A gameshow that asks questions on civic information"},{"t":"Can be played over local issues in a Civil Civics community"},{"t":"Can be played over State, Federal, and Global issues within their Equal Slice community"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/15SdL5kBFSzgZZ8ngB7AI1QTLPct3jwy7/view?usp=drive_link"]},{"t":"Prototype","u":["https://ctc.empowered.vote/"]}]}]},{"t":"Connect Pillar","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Connected Accounts","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Bank Account"}]},{"t":"Goal","c":[{"t":"Each person may only have one account, so each must be authenticated and protected"}]},{"t":"Summary","c":[{"t":"The techniques we use to authenticate accounts will evolve with our technology, but the goal that each person only has one voice in our discussions is steadfast"},{"t":"When a person decides to engage with others on our platform, they must authenticate their account, verifying their identity and location"},{"t":"Outside of law enforcement purposes, we do not share any data on Connected Accounts with others"}]}]},{"t":"Empowered Listening","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Youtube debates needing an egg timer"}]},{"t":"Goal","c":[{"t":"Facilitate healthier, more productive debates"}]},{"t":"Summary","c":[{"t":"Debate software that makes it easier to stay on task, give equitable time to all parties, and find shared solutions"},{"t":"Some debates on our platform require an Empowered Badge to participate.  This helps us start our conversations with a shared foundation of facts.","c":[{"t":"All speakers must have the same Empowered Badge unlocked to participate"},{"t":"Observers that have the Empowered Badge unlocked will be able to vote / influence the priorities of the debate"}]},{"t":"Live transcription","c":[{"t":"&quot;You just said this 3 minutes ago.&quot;"}]},{"t":"Observers may play Fallacy Finders"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/15FovKFgmoE0XjXXenOb-LTIM5WE7_KOO/view?usp=drive_link"]}]},{"t":"Civil Civics","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Game Theory and Iterative Relations"}]},{"t":"Goal","c":[{"t":"Empower citizens to commune locally"}]},{"t":"Summary","c":[{"t":"After Connecting their account, citizens are placed in a series of communities; Civil Civics is based upon geographic location"},{"t":"Only authenticated voices from your community are allowed to post in Civil Civics"},{"t":"This hub is designed to support local communities"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/11RlLErJ3NEytgm7kVo4NIr3LOJCi6wyZ/view?usp=drive_link"]}]},{"t":"Equal Slices","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"WoW Servers"}]},{"t":"Goal","c":[{"t":"Create global iterative communities that feel local on scope"}]},{"t":"Summary","c":[{"t":"Where Civil Civics focuses on local issues, Equal Slices supports the healthy exploration of State and Federal civic issues"},{"t":"Each Equal Slice consists of a cohort of roughly 30,000 people"},{"t":"Every two years, each slice is split in two and trades one half of their cohort for one half of another cohort"}]}]},{"t":"Issues in Focus","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Empowered Subreddits"}]},{"t":"Goal","c":[{"t":"Support communities dedicated to exploring vote-worthy civic issues"}]},{"t":"Summary","c":[{"t":"These communities are dedicated towards the exploration of a specific civic topic"},{"t":"Each possible 'spoke' on a citizen's Empowered Compass has a community to explore that issue, productively"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1mXCg6nmX0dJ8K2Ch49ovBPxHJU0FvDJk/view?usp=drive_link"]}]},{"t":"Emparks","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Comments in a Shared Doc"}]},{"t":"Goal","c":[{"t":"Connect with Friends and Empowered Accounts Asynchronously"}]},{"t":"Summary","c":[{"t":"Platform-wide social annotation"},{"t":"Asynchronous shared experiences"},{"t":"Five Colored Types","c":[{"t":"Yellow (Questions)"},{"t":"Orange (Evidence Request)"},{"t":"Blue (Discussions)"},{"t":"Purple (Fallacy Flags)"},{"t":"Green (Endorsements)"}]},{"t":"Rate Limited for Quality","c":[{"t":"Connect Accounts start with 3 public Emparks/Day"},{"t":"Empowered Accounts start with 8  public Emparks/Day"}]}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1NT__21cwyCy0sS9abLI8v0oWrZzVUsNi/view?usp=sharing"]}]},{"t":"Common Ground","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Adversarial Collaboration"}]},{"t":"Goal","c":[{"t":"Create proof through shared observations"}]},{"t":"Summary","c":[{"t":"Adversarial Collaboration involves three parties, two that disagree on a civic topic and a third that will act as an arbiter for that discussion"},{"t":"The two that disagree participate in an experiment, where each has identified a contrasting outcome that would prove their case"},{"t":"They bring their experiment to an Arbiter, who searches for logical fallacies and helps them run and observe the experiment's outcome"},{"t":"Afterwards, each of the three parties describe their findings"},{"t":"We celebrate the experiments where all parties feel it was fairly explored and someone changed their mind"}]}]},{"t":"Symposium","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Speech and Debate Tournaments"},{"t":"American Idol"},{"t":"March Madness"}]},{"t":"Goal","c":[{"t":"Create a hub to explore individual topics deeply through a series of public debates and supported discussions"}]},{"t":"Summary","c":[{"t":"Roughly a month before a Symposium begins, a topic is announced along with the release of a corresponding Empowered Badge"},{"t":"Speakers and voters must unlock the corresponding Badge before participating in the Symposium, ensuring everyone involved in the discussion is using a shared set of facts"},{"t":"Empowered Accounts have structured debates on civic topic, only defending the stances they believe in"},{"t":"Like American Idol, Connected Accounts watch the Symposium and vote to decide who they believe is presenting the most compelling solutions"},{"t":"As the weeks progress, fewer speakers remain"},{"t":"By the End of the Symposium, the speakers present their solutions on the Awareness Exchange and Connected Accounts can spend Empowered Gems to convey their civic influence"}]}]},{"t":"Community Council","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Tribunal"}]},{"t":"Goal","c":[{"t":"To empower our community to democratically administer justice for behavioral problems"}]},{"t":"Summary","c":[{"t":"When a community member behaves toxicly towards another, then it shouldn't be the leaders of Empowered.Vote that choose to remove their voice from the conversation.  Rather, we need a shared framework where the community can police themselves."},{"t":"A Community Council's jurisdiction extends only upon Empowered.Vote, and no further."},{"t":"Jurors are chosen randomly from a pool of Connected Accounts who have signed up to participate."},{"t":"Evidence that might justify a ban are presented to the Jurors, then they vote."},{"t":"Community may ban / expel members based on how they treat others."}]}]}]},{"t":"Empower Pillar","s":{"bg":"FF4019","b":1},"c":[{"t":"Empowered Accounts","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Safety, Transparency, and Privacy"}]},{"t":"Goal","c":[{"t":"Hold our civic leaders to a higher degree of transparency"}]},{"t":"Summary","c":[{"t":"Empowered Accounts are for Civic Leaders and first start as Connected Accounts"},{"t":"When a Civic Leader decides to empower their account, they must make sure that their compass is calibrated, as it will be broadly shared"},{"t":"Where Connected Accounts value privacy, Empowered Accounts prioritize transparency"}]}]},{"t":"Empowered Candidates","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"E-Harmony dating profiles"}]},{"t":"Goal","c":[{"t":"Empower citizens to run for public office based on the strength of their solutions instead of the depth of their bank account"}]},{"t":"Summary","c":[{"t":"We create a customizable campaign hub for every Empowered Account that wants to run for office."},{"t":"We will never charge for this service."},{"t":"If it requires wealth to get candidates elected in a Democracy, then that Democracy will primarily serve the Wealthy."}]}]},{"t":"Empowered Gems","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Video Game Currencies"}]},{"t":"Goal","c":[{"t":"Create a currency unique to our platform that represents civic influence"}]},{"t":"Summary","c":[{"t":"Empowered Gems represent Civic Influence and are never sold for cash"},{"t":"Connected Accounts get a stipend of Empowered Gems on a set cadence"},{"t":"Gems come in different shades, depending on whether they support a local Civil Civic community, or federal concerns"},{"t":"Connected Accounts can 'bank' a portion of their gems, but if their reserves are maxed, Gems are placed in a 'Use it or Lose it' scenario"}]}]},{"t":"Awareness Exchange","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Hollywood Stock Exchange"}]},{"t":"Goal","c":[{"t":"Create a literal marketplace of ideas"}]},{"t":"Summary","c":[{"t":"This is a stock market simulator where solutions are treated as stocks and Facts are rated as bonds"},{"t":"Players may invest  a portion of their  Empowered Gems in a solution and give paid a 'dividend' if that solution is adopted and another if it is highly rated after implementation"}]}]},{"t":"Empowered Filing","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Turbo Tax"},{"t":"Kurzgesagt"}]},{"t":"Goal","c":[{"t":"Create a free and easy way to file your taxes"}]},{"t":"Summary","c":[{"t":"Based off of the work in Treasury Tracker, we provide a clear way for citizen to both understand their taxes - and their origins"},{"t":"Navigating how to pay your taxes shouldn't be a billion dollar industry, so we provide basic tax assistance for free."},{"t":"Citizens can use this information to see with clarity how much they are paying in taxes, broken out"}]}]},{"t":"Martian University","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Kahn Academy"},{"t":"Duolingo"},{"t":"Brilliant"}]},{"t":"Goal","c":[{"t":"Refine an online education program that would be able to completely educate a Martian Colony for generations"}]},{"t":"Summary","c":[{"t":"The first generation of colonists will need a way to train the next.  Martian University uses this lens to build a general education platform that would be able to educate everyone on that planet, by creating a platform that could educate everyone on this planet."}]}]},{"t":"Empowered Bills","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Opensource Legislation"},{"t":"Many of our current bills are constructed in the backroom of special interest groups like the Heritage Foundation"}]},{"t":"Goal","c":[{"t":"Framework that allows citizens to transparently create bills"}]},{"t":"Summary","c":[{"t":"10 Step workflow that entwines a transparent system of checks and balances throughout the development process of a bill","c":[{"t":"Step 1","c":[{"t":"A problem is identified and put on the Awareness Exchange"}]},{"t":"Step 2","c":[{"t":"Connected Accounts spend Empowered Gems on the Exchange to highlight shared concerns"}]},{"t":"Step 3","c":[{"t":"Empowered Accounts take prominent issues and articulate values they believe will lead to its resolution"}]},{"t":"Step 4","c":[{"t":"Connected Accounts ratify the values that best encapsulate their desired solution"}]},{"t":"Step 5","c":[{"t":"Empowered Accounts draft legislation to capture the intent of the ratified values"}]},{"t":"Step 6","c":[{"t":"Empowered Accounts make a 'called shot' as to the expected impact of their bill"}]},{"t":"Step 7","c":[{"t":"Empowered Accounts verify that the legislation's intentions are clear, concsie, and aligned with the previously ratified values"}]},{"t":"Step 8","c":[{"t":"Empowered Accounts build an Empowered Badge to support the explanation of the bill"}]},{"t":"Step 9","c":[{"t":"Connected Accounts ratify Empowered Bills found on the Exchange with an investment of Empowered Gems"}]},{"t":"Step 10","c":[{"t":"Empowered Candidates run on a platform of enshringing these collectively built bills into our democracy"}]}]},{"t":"Crowdsource the creation of a bill"},{"t":"At Steps 2, 4, and 9, every Connected Account has a voice in detemining the problems, values, and solutions that we collectively decide to Empower","c":[{"t":"By threading citizens throughout the legislative process we bring transparency to each step of our development, ensuring every loophole has a detailed origin story"}]}]}]},{"t":"Dem 2.0","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Guided by the Two Mars Problems"}]},{"t":"Goal","c":[{"t":"Communally iterate on the development of a Democracy as empowered by technology"}]},{"t":"Summary","c":[{"t":"Using the framing of a future martian colony, settled generations from now.  Eventually, those colonists will need an independent government."},{"t":"A Democracy that seeks to be guided by the will of its people using technology to empower their voices."},{"t":"Since this will take generations to build, we should begin the iterative process now."}]}]}]}]}]}]}]};
+const MAP = {"t":"Empowered.Vote's Purpose","c":[{"t":"We empower the search for shared solutions","side":1,"c":[{"t":"A <strong>shared solution</strong> is a solution you anticipate would be embraced by everyone if we all saw the problem with the same clarity","c":[{"t":"Video: What's Empowered Vote?","v":"https://www.youtube.com/watch?v=yTXb3di5-II"}]}],"x":"<p>A <strong>shared solution</strong> is one you expect nearly everyone would embrace, if only we all saw the problem with the same clarity.</p><p>That is the whole aim of Empowered Vote.  Not to win an argument, but to help people reach the answer they would have found together anyway.  Every feature on the platform is a tool for finding those solutions and recognizing them when they appear.</p><blockquote>If we saw the problem the same way, we would want the same solution.</blockquote>","m":"friendly"},{"t":"Why","side":1,"c":[{"t":"1","c":[{"t":"Shared Solutions last for a very long time without any need for manipulation or coercion to remain in place.","c":[{"t":"Values lead to Infinite Solutions","c":[{"t":"If someone steals your juice box, it doesn't matter if you're 3 or 103, it will feel like an injustice for very similar reasons"}]},{"t":"Private Objectives lead to Finite Solutions","c":[{"t":"Maximizing profits leads to Finite Solutions"}]}]}],"x":"<p><strong>Shared solutions last.</strong>  A solution everyone can accept stays in place on its own.  It needs no manipulation and no coercion to survive, because the people living under it still recognize why it is fair.</p><p><strong>Values lead to infinite solutions.</strong>  If someone takes your juice box, it feels like an injustice whether you are 3 or 103, for almost exactly the same reasons.</p><p><strong>Private objectives lead to finite solutions.</strong>  A rule built only to maximize one group's advantage lasts only as long as the pressure holding it up.</p>","m":"present"},{"t":"2","c":[{"t":"Shareable Solutions are necessary for...","c":[{"t":"Democracy","c":[{"t":"United comes before States"}]},{"t":"World Peace"}]}],"x":"<p><strong>Shared solutions are the ground floor of democracy and peace.</strong>  Some things simply cannot be built any other way.</p><p><strong>Democracy</strong> assumes we can find enough common ground to live under the same rules.  Shared solutions are that common ground.  United comes before States.</p><p><strong>World peace</strong> is the same problem at a larger scale.  It holds only when the outcome is one all sides can live with, not one imposed and resented.</p>","m":"march"},{"t":"3","c":[{"t":"By committing to each other that we search for Shared Solutions, it gives us a framework that highlights when that's not true","c":[{"t":"Video:  How can you know the truth in their heart?","v":"https://www.youtube.com/watch?v=El68xH5sd2Y"}]}],"x":"<p><strong>A shared commitment shows you when it is missing.</strong>  When we agree with each other that we are searching for shared solutions, we gain a simple test.</p><p>The moment someone stops looking for an answer everyone could accept, and starts steering toward one that serves only them, the commitment makes it visible.  You cannot read what is in another person's heart, but you can watch whether they are still searching.</p>","m":"sassy"}],"x":"<p><strong>Why</strong> build a whole platform around shared solutions?  Three reasons, each its own branch.</p><ul><li><strong>They last.</strong>  A shared solution stays in place without coercion.</li><li><strong>They are required.</strong>  Democracy and peace cannot be built any other way.</li><li><strong>They expose bad faith.</strong>  A shared commitment gives you a test for when someone stops searching.</li></ul>","m":"present"},{"t":"How","side":1,"c":[{"t":"Value-driven framework examples","c":[{"t":"Video: How to Create Solutions that Last Forever","v":"https://www.youtube.com/watch?v=xTud12rLWIo"},{"t":"1","c":[{"t":"Mom's Cake Trick","c":[{"t":"Scales indefinitely"},{"t":"Works on things that are not cake"},{"t":"Was used long before my mom","c":[{"t":"Founding Fathers / Separation of Powers"}]}]}],"x":"<p><strong>Mom's Cake Trick.</strong>  One child cuts the cake, the other picks the first slice.  Suddenly the cutter is motivated to be perfectly fair.</p><p>It scales indefinitely, works on far more than cake, and long predates any one family.  The Founders reached for the same instinct when they separated powers: design the incentives so fairness is the natural outcome.</p>","m":"present"},{"t":"2","c":[{"t":"Golden Rule"}],"x":"<p><strong>The Golden Rule.</strong>  Judge a rule by whether you would accept it from the other side.  It is the oldest value-driven test there is, and it still works: if a solution only looks fair from where you happen to stand, it is not yet a shared one.</p>","m":"friendly"},{"t":"3","c":[{"t":"Omnipotent Succession Plan","c":[{"t":"As a thought exercise, you are all powerful, able to right every wrong you see fit"},{"t":"But you still get old and die and when you do, you must choose who to pass your power on to - your Omnipotent Succession Plan"},{"t":"Your successor will choose their successor, as will each next person until they pass their power to someone that uses it to primarily cause harm - at which point the game ends in a loss"},{"t":"Players are not scored based solely on the wrongs they make right in their life, but for the proper stewardship of their power ever afterwards"},{"t":"How would you choose your successor?"}]}],"x":"<p><strong>The Omnipotent Succession Plan.</strong>  Imagine you hold absolute power, able to right every wrong you see.  But you still age and die, and you must choose who inherits that power.  Your successor chooses theirs, and on it goes.</p><p>The game is lost only when someone finally uses that power mainly to cause harm.  You are scored not by the wrongs you right in your own lifetime, but by how well your power is stewarded long after you are gone.  It is a thought exercise that forces value-driven choices.</p>","m":"ponder"}],"x":"<p>We are not inventing a new way to reason.  <strong>Value-driven thinking</strong> has quietly solved hard fairness problems for a very long time.  This branch collects three examples that already work: the Cake Trick, the Golden Rule, and the Omnipotent Succession Plan.</p>","m":"present"},{"t":"Formula","c":[{"t":"sFacts + sValues = sSolutions","c":[{"t":"Inform Pillar","s":{"bg":"FFD426","b":1}},{"t":"Connect Pillar","s":{"bg":"2BD9D9","b":1}},{"t":"Empower Pillar","s":{"bg":"FF4019","b":1}}],"x":"<p>Read it as a recipe.  <strong>Shared facts</strong> are the common ground of what is true.  <strong>Shared values</strong> are the common ground of what we care about.  Put both in place and <strong>shared solutions</strong> follow.</p><p>Remove either side and the equation breaks: facts without shared values become ammunition, and values without shared facts become noise.  This is why the platform invests in both.</p>","m":"present"}],"x":"<p>The engine underneath every feature.</p><p class=\"eq\">shared facts <span>+</span> shared values <span>=</span> shared solutions</p><p>Give people the same facts, help them surface the values they already hold in common, and the solution they can share becomes findable.  The three pillars of the platform each serve one term of this equation.</p>","m":"offer"},{"t":"2 Mars Problems","c":[{"t":"1st Mars Problem","c":[{"t":"Now that we have the weapons to end all life on earth, how do we not end in a nuclear holocaust?"}],"x":"<p><strong>The First Mars Problem.</strong>  Now that we hold the weapons to end all life on Earth, how do we avoid ending in a nuclear holocaust?</p><p>Almost no one actually wants that outcome.  Naming a stake that large reveals how much common ground we already share, and anyone genuinely comfortable ending all life on Earth is not someone to collaborate with in the first place.</p>","m":"peek"},{"t":"2nd Mars Problem","c":[{"t":"What would an ideal democratic government look like for the first generation of Martian Colonists?"}],"x":"<p><strong>The Second Mars Problem.</strong>  What would an ideal democratic government look like for the first generation of colonists on Mars?</p><p>Because those people live generations from now, we cannot design for our own advantage.  That distance strips out motivated reasoning and leaves only value-driven answers.  This is the audience the platform ultimately builds for.</p>","m":"present"},{"t":"Both are absurdly large in scope","c":[{"t":"When the problem is large enough, you can guarantee we are all on the same side","c":[{"t":"Ideally, none of us want the world to end in a nuclear holocaust"},{"t":"Not wanting to end all life on Earth is an almost universally shared goal"},{"t":"If someone is comfortable ending all life on earth, it's not someone you should collaborate with"}]},{"t":"When we solve problems generations out, we are confined to using value-driven solutions","c":[{"t":"Free from the motivated reasoning of our current situation"}]}]}],"x":"<p>The philosophy grew out of two thought problems, both deliberately enormous in scope.  When a problem is that large, it is almost impossible not to be on the same side, and solving for people generations away frees us from the motivated reasoning of our own moment.</p>","m":"ponder"}],"x":"<p><strong>How</strong> do you find shared solutions on purpose?  This branch holds the method: proven value-driven frameworks, the core formula the platform runs on, and the two thought problems that keep the whole project honest.</p>","m":"present"},{"t":"Who","side":1,"c":[{"t":"Me as a Game Developer and Systems Designer","c":[{"t":"Value Driven Designs","c":[{"t":"Player Focused"}]},{"t":"Design engaging systems to land on sSolutions"}],"x":"<p><strong>The builder.</strong>  A game developer and systems designer, drawn to value-driven, player-focused design.  Games are systems that shape behavior through incentives rather than force, which is exactly what finding shared solutions requires.</p><p>The craft here is to design engaging systems that land people on shared solutions, without ever pressuring them toward a predetermined answer.</p>","m":"present"},{"t":"Micro-Donors","c":[{"t":"Remove Profit Motive"}],"x":"<p><strong>The funders.</strong>  Many people giving small amounts, so no single check can bend the mission.  This is how the profit motive is removed at the root: when the platform answers to a broad base of small donors rather than a few large ones, its incentives stay aligned with the search for shared solutions.</p>","m":"friendly"},{"t":"Our Audience","c":[{"t":"The 2nd Mars Problem"}],"x":"<p><strong>The audience.</strong>  Ultimately the Second Mars Problem: the generations who will inherit whatever civic tools we build now.  Designing for them, rather than for today's advantage, is what keeps the work honest.</p>","m":"offer"}],"x":"<p><strong>Who</strong> builds this, and for whom?  A systems designer draws the tools, many small donors fund them so no single check can bend the mission, and the intended beneficiary is the generation that inherits whatever civic infrastructure we manage to build now.</p>","m":"friendly"},{"t":"What","side":1,"c":[{"t":"Empowered.Vote","c":[{"t":"Civic Platform split across 3 Pillars","c":[{"t":"Inform Pillar","s":{"bg":"FFD426","b":1},"c":[{"t":"Empowered Essentials","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Waiting in line to vote for people I don't know"}]},{"t":"Goal","c":[{"t":"Make it easy for citizens to understand their representatives"}]},{"t":"Summary","c":[{"t":"A voter types in their zip code"},{"t":"They are given a customized list of civic representatives that serve that area"},{"t":"During an election cycle, other candidates for those positions are also listed"},{"t":"Clicking on any person listed will take you to their profile page, that breaks down their civic priorities further"},{"t":"Clicking on 'Funding' allows you to see the donations that candidate has received"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1x0TqeX1zFjdr41AubKkWDVkdsBkwQWb4/view?usp=sharing"]},{"t":"Wireframe","u":["https://www.figma.com/proto/kdvOzDDbhUcNna0sgaxYOq/Essential-Feature?page-id=4%253A19&node-id=316-440&viewport=-233%252C-989%252C0.26&t=K6jj7ypSxcB7DQdl-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=316%253A440&show-proto-sidebar=1"]}],"x":"<p>Type in your zip code and get a clear, customized list of the representatives who serve you, plus any candidates during an election.  Each profile breaks down their civic priorities and their funding, so you can draw your own conclusions.</p><p>It grew out of a simple frustration: standing in line to vote for people you do not really know.</p>","m":"friendly"},{"t":"Empowered Compass","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Voter Driven over Party Driven"}]},{"t":"Goal","c":[{"t":"Create a visual representation for the civic priorities of citizens and leaders"}]},{"t":"Summary","c":[{"t":"Citizens first calibrate their personal compass by filling out a questionnaire to identify their civic priorities; the vote-worthy issues they care the most about"},{"t":"Based on how they feel on each issue, determines how far along they are represented along that vector"},{"t":"Each issue is placed as a spoke on a spider graph, their Empowered Compass"},{"t":"Once a visual representation of their civic priorities has been created, citizens can quickly see how civic leaders feel on the issues that the citizen prioritizes"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1HZUsXW_3-gDmJGEQO3hvbElPgJLE-Stp/view?usp=sharing"]},{"t":"Wireframe","u":["https://www.figma.com/proto/J9mfnUSnc2k6fUQDhw9L7h/Empowered-Vote-Style-Guide?page-id=176%253A37&node-id=1399-11651&viewport=265%252C-2298%252C0.04&t=hoK8LkedqjkVPclQ-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=1399%253A11651"]}],"x":"<p>Answer a questionnaire about the issues you care about most, and the Compass draws them as a spider graph of your civic priorities.  Then you can see, at a glance, how any civic leader lines up with the issues you actually prioritize.  Voter-driven, not party-driven.</p>","m":"present"},{"t":"Treasury Tracker","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Explorable Graphs of civic budgets"}]},{"t":"Goal","c":[{"t":"Make it easy for average citizens to see the impact of their taxes with nuance"}]},{"t":"Summary","c":[{"t":"Treasury Tracker can be viewed from a few different lenses: Local, State, Federal"},{"t":"Publicly available budgets are presented in a digestible fashion with an interactive series of graphs"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1TRegAIN8x04q9KZjs9Bhkp0Rhtq9C8B_/view?usp=drive_link"]},{"t":"Wireframe","u":["https://www.figma.com/proto/7ANUifnZtlQ22iBI3g9tRT/Treasury-Tracker?page-id=0%3A1&node-id=126-1250&viewport=-913%2C-1216%2C0.2&t=POiUTGq4quIg0lZp-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=126%3A1250"]},{"t":"Prototype","u":["https://ev-prototypes.netlify.app/treasury-tracker/dist/"]}],"x":"<p>Public budgets, made explorable.  Treasury Tracker takes the budgets that are already public at the local, state, and federal levels and presents them as an interactive series of graphs, so an average citizen can see the impact of their taxes with real nuance.</p>","m":"offer"},{"t":"Read &amp; Rank","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Election Machine in Finland"},{"t":"NYT and Washington Post quizzes at election season"}]},{"t":"Goal","c":[{"t":"Help citizens find candidates that matches their preferences with nuance, free from the motivated reasoning inherent in political parties"}]},{"t":"Summary","c":[{"t":"During an election cycle, candidates are asked to summarize their position on trending civic issues"},{"t":"Citizens then read the questions that were asked, and then read the various responses from each of the candidates."},{"t":"If the citizen agrees with any or all of the 'anonymous' responses, then they rank them in order of priority"},{"t":"Any solutions they don't agree with, they leave blank"},{"t":"At the end of Read &amp; Rank, citizens are told which civic leaders they most frequently aligned with"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/10qtyBt87Ik5qxpe7Cc23uv7QTX7P3_Hy/view?usp=drive_link"]},{"t":"Wireframe","u":["https://www.figma.com/proto/J9mfnUSnc2k6fUQDhw9L7h/Empowered-Vote-Style-Guide?page-id=176%253A37&node-id=1484-7352&viewport=-1229%252C-2030%252C0.07&t=ZoXLewD2MmMSokAF-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=1484%253A7352"]},{"t":"Prototype","u":["https://ev-prototypes.netlify.app/read-rank/dist/"]}],"x":"<p>A blind way to find the candidates who actually match you.  During an election, candidates summarize their positions on trending issues.  You read the questions, then the anonymous answers, and rank only the ones you agree with, leaving the rest blank.  At the end you learn which leaders you aligned with most, free from the pull of party labels.</p><p>Inspired by Finland's election machine and the quizzes newspapers run at election season.</p>","m":"present"},{"t":"Empowered Badges","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Girl Scout &amp; Boy Scout Badges"},{"t":"WoW Achievements"}]},{"t":"Goal","c":[{"t":"Make the pursuit of the same information both fun and engaging"}]},{"t":"Summary","c":[{"t":"Citizens find a badge they are interested in acquiring"},{"t":"They watch / read the curated content associated with that badge"},{"t":"They are asked questions via a Post-Check, to validate they understood the content presented"},{"t":"If they understood the content, they earn the badge associated with that content"}]},{"t":"Walk Through","u":["https://docs.google.com/presentation/d/1nXyCJ7Km_o0vsj8IdQLuHP5tCjmO6eV-vkTIv8KKcWw/edit?usp=sharing"]},{"t":"Wireframe","u":["https://www.figma.com/proto/kH9RAmp3d9X4o3JswwmkeM/Empowered-Badges?page-id=0%253A1&node-id=5-141&viewport=124%252C399%252C0.25&t=OTZI9aZZqimfDxrr-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=5%253A141"]},{"t":"Prototype","u":["https://ev-prototypes.netlify.app/empowered-badges/dist/"]}],"x":"<p>Learning the same civic material, made fun.  Pick a badge you want, work through its curated content, then answer a short post-check to confirm you understood it.  Pass, and the badge is yours.  Think scouting badges crossed with game achievements, pointed at civic knowledge.</p>","m":"cheer"},{"t":"Fallacy Finders","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Bar Trivia"},{"t":"Spelling Bee"}]},{"t":"Goal","c":[{"t":"Give friends a safe and productive environment to learn to spot common logical fallacies"}]},{"t":"Summary","c":[{"t":"This is a team-based game, where those within earshot are on your team, but your team is competing against other teams elsewhere"},{"t":"Each player is assigned a logical fallacy to protect their team from"},{"t":"As a team, players watch a piece of civic content; a campaign speech, a debate, a nightly newscast"},{"t":"As they see the logical fallacy they are assigned get used in the video, they press a button"},{"t":"Much like bar trivia, all teams that spot the fallacy are given points, with the teams that answered fastest getting a few points extra"},{"t":"Every 10-15 minutes, the fallacies that each player protects against are shuffled amongst teammates"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/187q1anG2r-iqaGOcEtYedV5MRop1ljc7/view?usp=drive_link"]},{"t":"Wireframe","u":["https://www.figma.com/proto/J9mfnUSnc2k6fUQDhw9L7h/Empowered-Vote-Style-Guide?page-id=2016%253A2989&node-id=2016-7222&viewport=-5%252C-529%252C0.05&t=RLlU2ePNYRYN5o39-1&scaling=scale-down&content-scaling=fixed&starting-point-node-id=2016%253A7222"]}],"x":"<p>A team game for learning to spot logical fallacies.  Everyone within earshot is on your team, competing against other teams elsewhere.  Each player guards against one assigned fallacy while the group watches a piece of civic content, and presses a button when their fallacy appears.  Fastest correct teams score extra, and assignments shuffle every ten to fifteen minutes.</p><p>The fallacies are flagged consistently, whatever the source or affiliation of the speaker.</p>","m":"sassy"},{"t":"Civic Trivia Championships","s":{"bg":"FFD426","b":1},"c":[{"t":"Inspiration","c":[{"t":"Trivia Game Show"}]},{"t":"Goal","c":[{"t":"Socialize civic information in a format that is broadly engaging"}]},{"t":"Summary","c":[{"t":"A gameshow that asks questions on civic information"},{"t":"Can be played over local issues in a Civil Civics community"},{"t":"Can be played over State, Federal, and Global issues within their Equal Slice community"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/15SdL5kBFSzgZZ8ngB7AI1QTLPct3jwy7/view?usp=drive_link"]},{"t":"Prototype","u":["https://ctc.empowered.vote/"]}],"x":"<p>A game show for civic information.  Questions can run over local issues inside a Civil Civics community, or over state, federal, and global issues inside an Equal Slice.  The goal is simple: socialize civic knowledge in a format that is broadly, genuinely engaging.</p>","m":"friendly"}],"x":"<p><strong>Inform.  Shared facts, open to anyone.</strong>  No account required.  This pillar makes political reality transparent: who represents you, how they are funded, where public money goes, and how your own priorities compare.</p><p>It is deliberately anti-funnel.  The copy invites, it never pressures.  Most people will only ever use Inform, and that is by design.</p>","m":"friendly"},{"t":"Connect Pillar","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Connected Accounts","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Bank Account"}]},{"t":"Goal","c":[{"t":"Each person may only have one account, so each must be authenticated and protected"}]},{"t":"Summary","c":[{"t":"The techniques we use to authenticate accounts will evolve with our technology, but the goal that each person only has one voice in our discussions is steadfast"},{"t":"When a person decides to engage with others on our platform, they must authenticate their account, verifying their identity and location"},{"t":"Outside of law enforcement purposes, we do not share any data on Connected Accounts with others"}]}],"x":"<p>One real person, one voice.  To take part in discussion, a person verifies their identity and location, much like opening a bank account.  The methods will evolve with technology, but the principle holds: each person gets a single voice.  Outside of law enforcement needs, no data on Connected Accounts is shared.</p>","m":"present"},{"t":"Empowered Listening","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Youtube debates needing an egg timer"}]},{"t":"Goal","c":[{"t":"Facilitate healthier, more productive debates"}]},{"t":"Summary","c":[{"t":"Debate software that makes it easier to stay on task, give equitable time to all parties, and find shared solutions"},{"t":"Some debates on our platform require an Empowered Badge to participate.  This helps us start our conversations with a shared foundation of facts.","c":[{"t":"All speakers must have the same Empowered Badge unlocked to participate"},{"t":"Observers that have the Empowered Badge unlocked will be able to vote / influence the priorities of the debate"}]},{"t":"Live transcription","c":[{"t":"&quot;You just said this 3 minutes ago.&quot;"}]},{"t":"Observers may play Fallacy Finders"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/15FovKFgmoE0XjXXenOb-LTIM5WE7_KOO/view?usp=drive_link"]}],"x":"<p>Debate software that makes it easier to stay on task, give equitable time to everyone, and search for shared solutions.  Live transcription can gently note when a point was already made three minutes ago.  Some debates require a shared Empowered Badge to join, so everyone starts from the same set of facts.</p>","m":"present"},{"t":"Civil Civics","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Game Theory and Iterative Relations"}]},{"t":"Goal","c":[{"t":"Empower citizens to commune locally"}]},{"t":"Summary","c":[{"t":"After Connecting their account, citizens are placed in a series of communities; Civil Civics is based upon geographic location"},{"t":"Only authenticated voices from your community are allowed to post in Civil Civics"},{"t":"This hub is designed to support local communities"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/11RlLErJ3NEytgm7kVo4NIr3LOJCi6wyZ/view?usp=drive_link"]}],"x":"<p>Your local commons.  After connecting, you are placed in communities based on where you live, and only authenticated voices from your own community can post here.  It is built to help neighbors deliberate on the issues closest to home.</p><p>Grounded in game theory and the trust that grows from repeated, ongoing relationships.</p>","m":"friendly"},{"t":"Equal Slices","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"WoW Servers"}]},{"t":"Goal","c":[{"t":"Create global iterative communities that feel local on scope"}]},{"t":"Summary","c":[{"t":"Where Civil Civics focuses on local issues, Equal Slices supports the healthy exploration of State and Federal civic issues"},{"t":"Each Equal Slice consists of a cohort of roughly 30,000 people"},{"t":"Every two years, each slice is split in two and trades one half of their cohort for one half of another cohort"}]}],"x":"<p>Global communities that still feel local.  Where Civil Civics is local, Equal Slices supports state and federal issues.  Each slice is a cohort of roughly 30,000 people, and every two years each slice splits in two and trades half of its members with another cohort, so perspectives keep mixing.</p><p>Modeled loosely on game servers.</p>","m":"march"},{"t":"Issues in Focus","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Empowered Subreddits"}]},{"t":"Goal","c":[{"t":"Support communities dedicated to exploring vote-worthy civic issues"}]},{"t":"Summary","c":[{"t":"These communities are dedicated towards the exploration of a specific civic topic"},{"t":"Each possible 'spoke' on a citizen's Empowered Compass has a community to explore that issue, productively"}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1mXCg6nmX0dJ8K2Ch49ovBPxHJU0FvDJk/view?usp=drive_link"]}],"x":"<p>A dedicated space for each issue.  Every possible spoke on a citizen's Empowered Compass has a community devoted to exploring that one civic topic productively.  Think focused, good-faith forums, one per issue.</p>","m":"ponder"},{"t":"Emparks","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Comments in a Shared Doc"}]},{"t":"Goal","c":[{"t":"Connect with Friends and Empowered Accounts Asynchronously"}]},{"t":"Summary","c":[{"t":"Platform-wide social annotation"},{"t":"Asynchronous shared experiences"},{"t":"Five Colored Types","c":[{"t":"Yellow (Questions)"},{"t":"Orange (Evidence Request)"},{"t":"Blue (Discussions)"},{"t":"Purple (Fallacy Flags)"},{"t":"Green (Endorsements)"}]},{"t":"Rate Limited for Quality","c":[{"t":"Connect Accounts start with 3 public Emparks/Day"},{"t":"Empowered Accounts start with 8  public Emparks/Day"}]}]},{"t":"Design Doc","u":["https://drive.google.com/file/d/1NT__21cwyCy0sS9abLI8v0oWrZzVUsNi/view?usp=sharing"]}],"x":"<p>Social annotation across the whole platform, asynchronously.  Like comments in a shared document, Emparks come in five colors: yellow for questions, orange for evidence requests, blue for discussion, purple for fallacy flags, and green for endorsements.  They are rate limited to protect quality, with Connected Accounts starting at three public Emparks a day and Empowered Accounts at eight.</p>","m":"offer"},{"t":"Common Ground","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Adversarial Collaboration"}]},{"t":"Goal","c":[{"t":"Create proof through shared observations"}]},{"t":"Summary","c":[{"t":"Adversarial Collaboration involves three parties, two that disagree on a civic topic and a third that will act as an arbiter for that discussion"},{"t":"The two that disagree participate in an experiment, where each has identified a contrasting outcome that would prove their case"},{"t":"They bring their experiment to an Arbiter, who searches for logical fallacies and helps them run and observe the experiment's outcome"},{"t":"Afterwards, each of the three parties describe their findings"},{"t":"We celebrate the experiments where all parties feel it was fairly explored and someone changed their mind"}]}],"x":"<p>Adversarial collaboration, structured.  Two people who disagree design an experiment together, each naming an outcome that would prove their case.  A neutral arbiter watches for logical fallacies and helps them run it.  The wins worth celebrating are the ones where the process felt fair and someone changed their mind.</p>","m":"present"},{"t":"Symposium","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Speech and Debate Tournaments"},{"t":"American Idol"},{"t":"March Madness"}]},{"t":"Goal","c":[{"t":"Create a hub to explore individual topics deeply through a series of public debates and supported discussions"}]},{"t":"Summary","c":[{"t":"Roughly a month before a Symposium begins, a topic is announced along with the release of a corresponding Empowered Badge"},{"t":"Speakers and voters must unlock the corresponding Badge before participating in the Symposium, ensuring everyone involved in the discussion is using a shared set of facts"},{"t":"Empowered Accounts have structured debates on civic topic, only defending the stances they believe in"},{"t":"Like American Idol, Connected Accounts watch the Symposium and vote to decide who they believe is presenting the most compelling solutions"},{"t":"As the weeks progress, fewer speakers remain"},{"t":"By the End of the Symposium, the speakers present their solutions on the Awareness Exchange and Connected Accounts can spend Empowered Gems to convey their civic influence"}]}],"x":"<p>A tournament for exploring one topic in depth.  About a month out, a topic is announced along with a matching Empowered Badge that speakers and voters must unlock, so everyone shares a foundation of facts.  Empowered Accounts debate the stances they genuinely hold, and, like a talent competition, viewers vote on who presents the most compelling solutions.  Fewer speakers remain each week, and the finalists present on the Awareness Exchange.</p>","m":"strut"},{"t":"Community Council","s":{"bg":"2BD9D9","b":1},"c":[{"t":"Inspiration","c":[{"t":"Tribunal"}]},{"t":"Goal","c":[{"t":"To empower our community to democratically administer justice for behavioral problems"}]},{"t":"Summary","c":[{"t":"When a community member behaves toxicly towards another, then it shouldn't be the leaders of Empowered.Vote that choose to remove their voice from the conversation.  Rather, we need a shared framework where the community can police themselves."},{"t":"A Community Council's jurisdiction extends only upon Empowered.Vote, and no further."},{"t":"Jurors are chosen randomly from a pool of Connected Accounts who have signed up to participate."},{"t":"Evidence that might justify a ban are presented to the Jurors, then they vote."},{"t":"Community may ban / expel members based on how they treat others."}]}],"x":"<p>The community polices itself.  When a member treats another badly, it should not be the leaders of Empowered Vote who remove their voice.  Instead, jurors drawn at random from volunteers review the evidence and vote.  A council's authority extends only on the platform, and nowhere else.</p><p>A tribunal, run by the community it serves.</p>","m":"present"}],"x":"<p><strong>Connect.  Shared values, for verified accounts.</strong>  Once a person verifies that they are one real human with one voice, they can take part in structured, good-faith deliberation: debates with equitable speaking time, local and national communities, adversarial collaboration, and shared annotation.</p><p>The structure is what keeps it healthy.  The tools make it easier to stay on task, hear everyone, and surface where values actually align.</p>","m":"present"},{"t":"Empower Pillar","s":{"bg":"FF4019","b":1},"c":[{"t":"Empowered Accounts","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Safety, Transparency, and Privacy"}]},{"t":"Goal","c":[{"t":"Hold our civic leaders to a higher degree of transparency"}]},{"t":"Summary","c":[{"t":"Empowered Accounts are for Civic Leaders and first start as Connected Accounts"},{"t":"When a Civic Leader decides to empower their account, they must make sure that their compass is calibrated, as it will be broadly shared"},{"t":"Where Connected Accounts value privacy, Empowered Accounts prioritize transparency"}]}],"x":"<p>A higher standard for civic leaders.  Empowered Accounts begin as Connected Accounts, and when a leader chooses to empower theirs, they calibrate their compass because it will be shared broadly.  Where Connected Accounts value privacy, Empowered Accounts prioritize transparency.</p>","m":"present"},{"t":"Empowered Candidates","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"E-Harmony dating profiles"}]},{"t":"Goal","c":[{"t":"Empower citizens to run for public office based on the strength of their solutions instead of the depth of their bank account"}]},{"t":"Summary","c":[{"t":"We create a customizable campaign hub for every Empowered Account that wants to run for office."},{"t":"We will never charge for this service."},{"t":"If it requires wealth to get candidates elected in a Democracy, then that Democracy will primarily serve the Wealthy."}]}],"x":"<p>Run on the strength of your solutions, not the size of your bank account.  Every Empowered Account that wants to run for office gets a customizable campaign hub, free, always.  The reasoning is blunt: if it takes wealth to get candidates elected, then the democracy will mostly serve the wealthy.</p>","m":"friendly"},{"t":"Empowered Gems","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Video Game Currencies"}]},{"t":"Goal","c":[{"t":"Create a currency unique to our platform that represents civic influence"}]},{"t":"Summary","c":[{"t":"Empowered Gems represent Civic Influence and are never sold for cash"},{"t":"Connected Accounts get a stipend of Empowered Gems on a set cadence"},{"t":"Gems come in different shades, depending on whether they support a local Civil Civic community, or federal concerns"},{"t":"Connected Accounts can 'bank' a portion of their gems, but if their reserves are maxed, Gems are placed in a 'Use it or Lose it' scenario"}]}],"x":"<p>A currency for civic influence, never for cash.  Connected Accounts receive a stipend of gems on a set cadence, in different shades for local versus federal concerns.  You can bank a portion, but once your reserve is full, it becomes use it or lose it, which keeps influence flowing rather than hoarded.</p>","m":"offer"},{"t":"Awareness Exchange","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Hollywood Stock Exchange"}]},{"t":"Goal","c":[{"t":"Create a literal marketplace of ideas"}]},{"t":"Summary","c":[{"t":"This is a stock market simulator where solutions are treated as stocks and Facts are rated as bonds"},{"t":"Players may invest  a portion of their  Empowered Gems in a solution and give paid a 'dividend' if that solution is adopted and another if it is highly rated after implementation"}]}],"x":"<p>A literal marketplace of ideas.  Solutions trade like stocks and facts are rated like bonds.  Players invest a portion of their Empowered Gems in a solution, and earn a dividend if it is adopted, plus another if it is rated highly after implementation.</p>","m":"strut"},{"t":"Empowered Filing","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Turbo Tax"},{"t":"Kurzgesagt"}]},{"t":"Goal","c":[{"t":"Create a free and easy way to file your taxes"}]},{"t":"Summary","c":[{"t":"Based off of the work in Treasury Tracker, we provide a clear way for citizen to both understand their taxes - and their origins"},{"t":"Navigating how to pay your taxes shouldn't be a billion dollar industry, so we provide basic tax assistance for free."},{"t":"Citizens can use this information to see with clarity how much they are paying in taxes, broken out"}]}],"x":"<p>Filing your taxes, free and clear.  Built on Treasury Tracker, it shows you what you pay and where it comes from, broken out plainly.  Navigating how to pay your taxes should not be a billion dollar industry, so basic assistance here is free.</p>","m":"present"},{"t":"Martian University","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Kahn Academy"},{"t":"Duolingo"},{"t":"Brilliant"}]},{"t":"Goal","c":[{"t":"Refine an online education program that would be able to completely educate a Martian Colony for generations"}]},{"t":"Summary","c":[{"t":"The first generation of colonists will need a way to train the next.  Martian University uses this lens to build a general education platform that would be able to educate everyone on that planet, by creating a platform that could educate everyone on this planet."}]}],"x":"<p>An education platform good enough to teach a colony for generations.  The first Martian settlers will need to train the next, so Martian University uses that lens to build general education that could teach everyone on Mars, by building something that could teach everyone on Earth.</p><p>In the spirit of Khan Academy, Duolingo, and Brilliant.</p>","m":"ponder"},{"t":"Empowered Bills","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Opensource Legislation"},{"t":"Many of our current bills are constructed in the backroom of special interest groups like the Heritage Foundation"}]},{"t":"Goal","c":[{"t":"Framework that allows citizens to transparently create bills"}]},{"t":"Summary","c":[{"t":"10 Step workflow that entwines a transparent system of checks and balances throughout the development process of a bill","c":[{"t":"Step 1","c":[{"t":"A problem is identified and put on the Awareness Exchange"}]},{"t":"Step 2","c":[{"t":"Connected Accounts spend Empowered Gems on the Exchange to highlight shared concerns"}]},{"t":"Step 3","c":[{"t":"Empowered Accounts take prominent issues and articulate values they believe will lead to its resolution"}]},{"t":"Step 4","c":[{"t":"Connected Accounts ratify the values that best encapsulate their desired solution"}]},{"t":"Step 5","c":[{"t":"Empowered Accounts draft legislation to capture the intent of the ratified values"}]},{"t":"Step 6","c":[{"t":"Empowered Accounts make a 'called shot' as to the expected impact of their bill"}]},{"t":"Step 7","c":[{"t":"Empowered Accounts verify that the legislation's intentions are clear, concsie, and aligned with the previously ratified values"}]},{"t":"Step 8","c":[{"t":"Empowered Accounts build an Empowered Badge to support the explanation of the bill"}]},{"t":"Step 9","c":[{"t":"Connected Accounts ratify Empowered Bills found on the Exchange with an investment of Empowered Gems"}]},{"t":"Step 10","c":[{"t":"Empowered Candidates run on a platform of enshringing these collectively built bills into our democracy"}]}]},{"t":"Crowdsource the creation of a bill"},{"t":"At Steps 2, 4, and 9, every Connected Account has a voice in detemining the problems, values, and solutions that we collectively decide to Empower","c":[{"t":"By threading citizens throughout the legislative process we bring transparency to each step of our development, ensuring every loophole has a detailed origin story"}]}]}],"x":"<p>A ten-step, fully transparent workflow for building legislation in the open.  Citizens surface problems, ratify the values a solution should honor, and only then is a bill drafted to match those values.  By threading people through every step, each loophole ends up with a detailed origin story.</p>","m":"present"},{"t":"Dem 2.0","s":{"bg":"FF4019","b":1},"c":[{"t":"Inspiration","c":[{"t":"Guided by the Two Mars Problems"}]},{"t":"Goal","c":[{"t":"Communally iterate on the development of a Democracy as empowered by technology"}]},{"t":"Summary","c":[{"t":"Using the framing of a future martian colony, settled generations from now.  Eventually, those colonists will need an independent government."},{"t":"A Democracy that seeks to be guided by the will of its people using technology to empower their voices."},{"t":"Since this will take generations to build, we should begin the iterative process now."}]}],"x":"<p>The horizon goal, guided by the Two Mars Problems: communally iterate on what a democracy empowered by technology could be.  Framed as the government a future Martian colony would eventually need, and since that takes generations to get right, the iterative work begins now.</p>","m":"cheer"}],"x":"<p><strong>Empower.  Shared solutions, for verified advocates and leaders.</strong>  This pillar trades privacy for transparency.  Civic leaders and candidates operate here at a higher standard of openness, and the community gains tools to turn deliberation into action: an idea marketplace, community-built bills, and the long project of Democracy 2.0.</p>","m":"strut"}],"x":"<p>The platform is organized into three pillars, each serving one term of the formula and each open to a wider circle of trust than the last.</p><ul><li><strong>Inform</strong> is open to anyone, no login.  Shared facts.</li><li><strong>Connect</strong> is for verified accounts.  Shared values.</li><li><strong>Empower</strong> is for verified advocates and leaders.  Shared solutions.</li></ul>","m":"present"}]}],"x":"<p><strong>What</strong> we are actually building: Empowered Vote, a civic platform split across three pillars that map directly onto the formula.  <strong>Inform</strong> serves shared facts, <strong>Connect</strong> serves shared values, and <strong>Empower</strong> serves shared solutions.</p>","m":"strut"}],"x":"<p>This map lays out the whole reason Empowered Vote exists, in five movements: the one-sentence <strong>thesis</strong>, <strong>Why</strong> it matters, <strong>How</strong> we get there, <strong>Who</strong> builds it, and <strong>What</strong> we are actually building.</p><p>Nodes with a soft glow have an explainer.  Click one to open its page.  Start at the thesis and follow the branches outward.</p>","m":"present"};
 
 /* ============================================================
-   Engine — layout, rendering, pan/zoom, interaction.
+   Engine - layout, rendering, pan/zoom, interaction, explainers.
    ============================================================ */
 
 const V_GAP = 13, H_GAP = 46;
@@ -450,9 +1666,10 @@ let selected = null;
 let cam = { x: 0, y: 0, z: 1 };
 const els = new Map();
 
+const stripTags = h => h.replace(/<[^>]*>/g, '');
+
 // Assign ids, depths, branch colors; capture plain text for search
 let nodeCount = 0;
-const stripTags = h => h.replace(/<[^>]*>/g, '');
 (function prep(n, id, depth, bc) {
   n.id = id; n.depth = depth;
   n.plain = stripTags(n.t).toLowerCase();
@@ -472,7 +1689,7 @@ function descendants(n) {
 }
 function kids(n) { return collapsed.has(n.id) ? [] : (n.c || []); }
 
-// Default state: collapse below the first level for big maps
+// Default state: collapse below the first level
 (function initCollapse(n) {
   if (n.depth >= 1 && (n.c || []).length) collapsed.add(n.id);
   (n.c || []).forEach(initCollapse);
@@ -488,14 +1705,18 @@ try {
   })(MAP);
 } catch (err) {}
 
-function luminance(hex) {
-  const v = parseInt(hex, 16);
-  const r = (v >> 16) & 255, g = (v >> 8) & 255, b = v & 255;
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+function hasPayload(n) {
+  return n.x || (n.u && n.u.length) || n.v || n.img || (n.atts && n.atts.length) || n.pdf;
 }
 
-function hasPayload(n) {
-  return (n.u && n.u.length) || n.v || n.img || (n.atts && n.atts.length) || n.pdf;
+/* ---- Color resolving (for the mascot ink; handles hex or var()) ---- */
+const probe = document.createElement('span');
+probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+document.body.appendChild(probe);
+function resolveColor(c) {
+  probe.style.color = '#000';
+  probe.style.color = c;
+  return getComputedStyle(probe).color || '#20292E';
 }
 
 function nodeEl(n) {
@@ -514,6 +1735,7 @@ function nodeEl(n) {
   el.classList.remove('depth-0', 'depth-1', 'depth-2', 'depth-3plus');
   el.classList.add(n.depth === 0 ? 'depth-0' : n.depth === 1 ? 'depth-1' :
                    n.depth === 2 ? 'depth-2' : 'depth-3plus');
+  el.classList.toggle('hasx', !!n.x);
   el.style.setProperty('--bc', n.bc);
   el.style.width = n.wOverride ? n.wOverride + 'px' : '';
   el.style.maxWidth = n.wOverride ? 'none' : '';
@@ -547,12 +1769,8 @@ function nodeEl(n) {
     const isCollapsed = collapsed.has(n.id);
     tg.textContent = isCollapsed ? String(descendants(n)) : '−';
     tg.setAttribute('aria-label', (isCollapsed ? 'Expand' : 'Collapse') + ' branch');
-    if (n.bc.startsWith('#')) {
-      tg.style.borderColor = n.bc;
-      tg.style.color = n.bc;
-    } else {
-      tg.style.setProperty('--bc', n.bc);
-    }
+    if (n.bc.startsWith('#')) { tg.style.borderColor = n.bc; tg.style.color = n.bc; }
+    else { tg.style.setProperty('--bc', n.bc); }
     tg.addEventListener('click', e => { e.stopPropagation(); toggle(n); });
     tg.addEventListener('pointerdown', e => e.stopPropagation());
     el.appendChild(tg);
@@ -571,10 +1789,74 @@ function nodeEl(n) {
   else el.classList.remove('enter');
   return el;
 }
+function luminance(hex) {
+  const v = parseInt(hex, 16);
+  const r = (v >> 16) & 255, g = (v >> 8) & 255, b = v & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
 
 function toggle(n) {
   if (collapsed.has(n.id)) collapsed.delete(n.id); else collapsed.add(n.id);
   render();
+}
+
+/* ---- Detail / explainer page + mascot ---- */
+const detail = document.getElementById('detail');
+const dfig = document.getElementById('dfig');
+const RIG = window.LeremyRig;
+const cardReduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let cardDPR = Math.min(1.5, window.devicePixelRatio || 1);
+let cardMood = null, cardInk = '#20292E', cardShadow = 'rgba(23,32,36,0.14)';
+let cardClock = 0, cardLast = 0, cardRAF = null;
+
+function sizeDfig() {
+  const r = dfig.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  dfig.width = Math.round(r.width * cardDPR);
+  dfig.height = Math.round(r.height * cardDPR);
+}
+function stopCardFig() { if (cardRAF) { cancelAnimationFrame(cardRAF); cardRAF = null; } }
+function startCardFig(moodName, ink) {
+  if (!RIG) return;
+  cardMood = RIG.ANIMATIONS[moodName] || RIG.ANIMATIONS.present;
+  cardInk = ink;
+  const sh = getComputedStyle(document.documentElement).getPropertyValue('--shadow').trim() || '23, 32, 36';
+  cardShadow = 'rgba(' + sh + ',0.16)';
+  cardClock = 0; cardLast = performance.now();
+  sizeDfig();
+  stopCardFig();
+  cardRAF = requestAnimationFrame(cardFrame);
+}
+function cardFrame(now) {
+  const dt = Math.min(0.05, (now - cardLast) / 1000); cardLast = now;
+  if (!cardReduce) cardClock += dt;
+  const r = dfig.getBoundingClientRect();
+  if (r.width && dfig.width && cardMood) {
+    const ctx = dfig.getContext('2d');
+    ctx.setTransform(cardDPR, 0, 0, cardDPR, 0, 0);
+    ctx.clearRect(0, 0, r.width, r.height);
+    const t = cardReduce ? 1.4 : cardClock;
+    const scale = Math.max(0.4, Math.min(0.92, (r.height * 0.74) / 253));
+    const feetY = r.height * 0.9;
+    const pelvisY = feetY - (RIG.CFG.thigh + RIG.CFG.shin) * scale * 0.98;
+    const pose = cardMood.frame(t);
+    RIG.drawShadow(ctx, r.width / 2, feetY, 30 * scale, cardShadow);
+    ctx.save();
+    ctx.translate(r.width / 2, pelvisY);
+    ctx.scale(scale, scale);
+    const j = RIG.computePose(pose, RIG.CFG, { x: 0, y: 0 });
+    RIG.draw(ctx, j, RIG.CFG, { color: cardInk, swirl: cardMood.swirl, book: cardMood.book,
+      laptop: cardMood.laptop, cane: cardMood.cane, time: t });
+    ctx.restore();
+  }
+  cardRAF = requestAnimationFrame(cardFrame);
+}
+
+function closeDetail() {
+  detail.classList.remove('open');
+  stopCardFig();
+  selected = null;
+  els.forEach(el => el.classList.remove('selected'));
 }
 
 function select(n) {
@@ -582,20 +1864,21 @@ function select(n) {
   els.forEach(el => el.classList.remove('selected'));
   const el = els.get(n.id);
   if (el) el.classList.add('selected');
-  const d = document.getElementById('detail');
-  if (!hasPayload(n)) { d.classList.remove('open'); return; }
-  d.style.setProperty('--bc', n.bc);
+  if (!hasPayload(n)) { detail.classList.remove('open'); stopCardFig(); return; }
+  detail.style.setProperty('--bc', n.bc);
+
   const crumb = [];
   let cur = MAP;
   const path = n.id.split('.').slice(1);
   for (const i of path) { crumb.push(stripTags(cur.t)); cur = cur.c[+i]; }
-  document.getElementById('dcrumb').textContent = crumb.join('  /  ') || 'Root topic';
+  document.getElementById('dcrumb').textContent = crumb.join('  /  ') || 'Start here';
   document.getElementById('dtitle').innerHTML = n.t;
+  document.getElementById('dexplain').innerHTML = n.x || '';
 
   let media = '';
   if (n.img) media += '<img src="' + n.img + '" alt="">';
   (n.atts || []).forEach(a => { media += '<img src="' + a + '" alt="Attached image">'; });
-  if (n.pdf) media += '<p class="pdfnote">&#128206; A PDF attachment exists in the original MindMeister export (not embedded here).</p>';
+  if (n.pdf) media += '<p class="pdfnote">&#128206; A PDF attachment exists in the original source (not embedded here).</p>';
   document.getElementById('dmedia').innerHTML = media;
 
   const escUrl = u => u.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -610,7 +1893,18 @@ function select(n) {
     addLink(u, label);
   });
   document.getElementById('dlinks').innerHTML = links;
-  d.classList.add('open');
+
+  // Mascot page or plain card
+  if (n.m && RIG) {
+    detail.classList.add('hasfig');
+    detail.classList.add('open');
+    startCardFig(n.m, resolveColor(n.bc));
+  } else {
+    detail.classList.remove('hasfig');
+    stopCardFig();
+    detail.classList.add('open');
+  }
+  detail.scrollTop = 0;
 }
 
 /* ---- Layout ---- */
@@ -636,15 +1930,13 @@ function render() {
   };
   subH(MAP);
 
-  // Level-1 side: honor exported positions when present, else balance
+  // Level-1 side: honor exported positions (side 1 = right, -1 = left),
+  // otherwise fall to the right.  The Purpose beats all sit on the right,
+  // in order: thesis, Why, How, Who, What.
   const right = [], left = [];
-  let hr = 0, hl = 0;
   (MAP.c || []).forEach(c => {
     if (!visible.has(c.id)) return;
-    if (c.side === 1) { right.push(c); hr += c._sh; }
-    else if (c.side === -1) { left.push(c); hl += c._sh; }
-    else if (hr <= hl) { right.push(c); hr += c._sh; }
-    else { left.push(c); hl += c._sh; }
+    (c.side === -1 ? left : right).push(c);
   });
 
   MAP._cx = 0; MAP._cy = 0;
@@ -664,10 +1956,7 @@ function render() {
   const placeSide = (list, dir) => {
     const total = list.reduce((s, c) => s + c._sh, 0) + V_GAP * Math.max(0, list.length - 1);
     let y = -total / 2;
-    list.forEach(c => {
-      placeSub(c, MAP, dir, y + c._sh / 2);
-      y += c._sh + V_GAP;
-    });
+    list.forEach(c => { placeSub(c, MAP, dir, y + c._sh / 2); y += c._sh + V_GAP; });
   };
   placeSide(right, 1);
   placeSide(left, -1);
@@ -693,7 +1982,7 @@ function render() {
       const w = k.depth === 1 ? 3 : k.depth === 2 ? 2 : 1.4;
       paths += '<path d="M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 +
         ', ' + x2 + ' ' + y2 + '" fill="none" style="stroke:' + k.bc +
-        '" stroke-width="' + w + '" stroke-linecap="round" opacity="0.85"/>';
+        '" stroke-width="' + w + '" stroke-linecap="round" opacity="0.9"/>';
       apply(k);
     });
   };
@@ -705,7 +1994,7 @@ function render() {
 function updateMeta(extra) {
   document.getElementById('maptitle').textContent = stripTags(MAP.t);
   document.getElementById('mapmeta').textContent =
-    extra || (nodeCount + ' topics · converted from MindMeister');
+    extra || (nodeCount + ' topics · click a glowing node');
 }
 
 /* ---- Search ---- */
@@ -727,7 +2016,6 @@ function runSearch(q) {
     render();
     const hitIds = new Set(hits.map(h => h.n.id));
     els.forEach((el, id) => el.classList.add(hitIds.has(id) ? 'hit' : 'dim'));
-    // Zoom to the hits
     let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
     hits.forEach(({ n }) => {
       minX = Math.min(minX, n._cx - n._w / 2); maxX = Math.max(maxX, n._cx + n._w / 2);
@@ -767,7 +2055,7 @@ function fitView() {
   fitBox(minX, maxX, minY, maxY);
 }
 
-/* ---- Node resize: drag a node's outer edge to change its width ---- */
+/* ---- Node resize ---- */
 let resizing = null;
 let renderQueued = null;
 function scheduleRender() {
@@ -784,11 +2072,7 @@ function saveWidths() {
   try { localStorage.setItem(WKEY, JSON.stringify(o)); } catch (err) {}
 }
 
-/* ---- Pointer: pan + pinch ----
-   Note: no setPointerCapture here.  Capturing to the viewport makes
-   Chrome/Edge retarget the resulting click event away from the node,
-   which silently kills node selection.  Move/up listeners live on
-   window instead, which covers the drag just as well. */
+/* ---- Pointer: pan + pinch (no setPointerCapture; it breaks node clicks) ---- */
 const pointers = new Map();
 let panStart = null, pinchStart = null, moved = 0;
 
@@ -828,21 +2112,14 @@ window.addEventListener('pointermove', e => {
   }
 });
 const endPointer = e => {
-  if (resizing) {
-    saveWidths();
-    resizing = null;
-    document.body.style.cursor = '';
-    return;
-  }
+  if (resizing) { saveWidths(); resizing = null; document.body.style.cursor = ''; return; }
   if (!pointers.has(e.pointerId)) return;
   pointers.delete(e.pointerId);
   if (pointers.size < 2) pinchStart = null;
   if (pointers.size === 0) {
     viewport.classList.remove('panning');
     if (moved < 5 && !e.target.closest('.node') && !e.target.closest('.hud')) {
-      selected = null;
-      els.forEach(el => el.classList.remove('selected'));
-      document.getElementById('detail').classList.remove('open');
+      closeDetail();
     }
     panStart = null;
   }
@@ -870,9 +2147,7 @@ document.getElementById('collapseall').onclick = () => {
   })(MAP);
   render(); fitView();
 };
-document.getElementById('detailclose').onclick = () => {
-  document.getElementById('detail').classList.remove('open');
-};
+document.getElementById('detailclose').onclick = closeDetail;
 document.getElementById('helpbtn').onclick = () =>
   document.getElementById('help').classList.add('open');
 document.getElementById('helpclose').onclick = () =>
@@ -883,12 +2158,21 @@ document.getElementById('help').addEventListener('click', e => {
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.getElementById('help').classList.remove('open');
-    document.getElementById('detail').classList.remove('open');
+    closeDetail();
   }
 });
-window.addEventListener('resize', fitView);
+window.addEventListener('resize', () => {
+  cardDPR = Math.min(1.5, window.devicePixelRatio || 1);
+  if (detail.classList.contains('open') && detail.classList.contains('hasfig')) sizeDfig();
+  fitView();
+});
 
 /* ---- Boot ---- */
-document.fonts.ready.then(() => { render(); fitView(); });
-render(); fitView();
+function boot() {
+  render();
+  fitView();
+  select(MAP);           // open the "start here" explainer
+}
+document.fonts.ready.then(() => { render(); fitView(); if (detail.classList.contains('hasfig')) sizeDfig(); });
+boot();
 </script>
