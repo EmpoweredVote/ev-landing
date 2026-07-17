@@ -53,8 +53,14 @@
           var pHitL = Math.abs(ev.clientX - e._ppSXL) < 34 && Math.abs(ev.clientY - e._ppSY) < 74;
           var pHitR = Math.abs(ev.clientX - e._ppSXR) < 34 && Math.abs(ev.clientY - e._ppSY) < 74;
           if (pHitL || pHitR) {
-            e.clicked = pHitL ? 'L' : 'R'; e.rl = 'miss'; e.missT = 0; e.mvy = 0;
-            e.mballX = (e._ballX != null ? e._ballX : e.w / 2); e.mballY = (e._ballY != null ? e._ballY : 40);
+            e.clicked = pHitL ? 'L' : 'R'; e.missT = 0; e.mvy = 0;
+            var bAtClicked = (e.rl === 'bounceL' && e.clicked === 'L') || (e.rl === 'bounceR' && e.clicked === 'R');
+            e.tinX0 = (e._ballX != null ? e._ballX : e.w / 2); e.tinY0 = (e._ballY != null ? e._ballY : 40);
+            if (bAtClicked) {   // ball already on the clicked player's paddle → he misses right away
+              e.rl = 'miss'; e.mballX = e.tinX0; e.mballY = e.tinY0;
+            } else {            // ball is elsewhere → it first travels over to the waving player, THEN drops
+              e.rl = 'tossin'; e.tinT = 0;
+            }
             return;
           }
         }
@@ -419,13 +425,28 @@
       var drawPaddle = function (hx, hy, color) { ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(hx, hy, 12, 4, 0, 0, Math.PI * 2); ctx.fill(); };
       var drawBall = function (x, y) { ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill(); };
 
-      // ── interrupted by a click: wave → drop → bounce → fetch → resume ──
-      if (e.rl === 'miss' || e.rl === 'retrieve') {
+      // ── interrupted by a click: (toss over →) wave → drop → bounce → fetch → resume ──
+      if (e.rl === 'tossin' || e.rl === 'miss' || e.rl === 'retrieve') {
         var isL = e.clicked === 'L';
         var homeX = isL ? xL : xR, otherX = isL ? xR : xL;
         var clickCol = isL ? colA : colB, otherCol = isL ? colB : colA, otherFlip = isL;
         var otherPose = A.paddleball.frame(0.34), oHand = handAt(otherPose, otherX, otherFlip);
         var drawOther = function () { R.drawShadow(ctx, otherX, feetY, 14, shadow); drawFig(ctx, otherX, baseY, S, otherFlip, otherPose, { color: otherCol }); drawPaddle(oHand.x, oHand.y, otherCol); };
+        var missTargetX = homeX + (isL ? 12 : -12), missTargetY = feetY - 56;   // where the incoming ball reaches the waving player
+
+        if (e.rl === 'tossin') {
+          // clicked player already turned to wave; the ball finishes its trip over to him, THEN drops
+          e.missT = (e.missT || 0) + dt; e.tinT += dt;
+          var tinDur = 0.5, tp = Math.min(1, e.tinT / tinDur);
+          var bxi = e.tinX0 + (missTargetX - e.tinX0) * tp;
+          var byi = e.tinY0 + (missTargetY - e.tinY0) * tp - 46 * Math.sin(Math.PI * tp);
+          R.drawShadow(ctx, homeX, feetY, 14, shadow);
+          drawFig(ctx, homeX, baseY, S, false, A.greet.frame(e.missT, e._wave), { color: clickCol });
+          drawOther();
+          drawBall(bxi, byi);
+          if (tp >= 1) { e.rl = 'miss'; e.mballX = missTargetX; e.mballY = missTargetY; e.mvy = 0; }
+          return;
+        }
 
         if (e.rl === 'miss') {
           e.missT = (e.missT || 0) + dt;
