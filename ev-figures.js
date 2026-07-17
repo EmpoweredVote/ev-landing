@@ -112,7 +112,7 @@
     function chance(p) { return Math.random() < p; }
     var GAITS = ['stroll', 'strut', 'sneak', 'trudge', 'shuffle'];   // no stiff march / frantic scurry in the rotation
     var GSPEED = { stroll: 32, strut: 40, scurry: 62, march: 34, sneak: 22, trudge: 16, shuffle: 20 };
-    var IDLES = ['bored', 'sassy', 'confused', 'standstill', 'present'];
+    var IDLES = ['bored', 'sassy', 'confused', 'standstill', 'present', 'paddleball'];
     var SEATS = ['sit', 'read'];
     var TONES = [0, 1, 2, 3, 4, 5];   // full palette (teal/coral/gold/green/purple/orange)
     // ── colour-diversity safeguard: hand out tones from a shuffled bag rather than i.i.d. random,
@@ -556,7 +556,7 @@
           }
           else { animSt = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
           R.drawShadow(ctx, w / 2, feetY, 16, shadow);
-          drawFig(ctx, w / 2, oyS, S, flipSt, animSt.frame(ptSt, e._wave), { color: col });
+          drawFig(ctx, w / 2, oyS, S, flipSt, animSt.frame(ptSt, e._wave), { color: col, paddle: animSt.paddle, time: tt });
           return;
         }
         if (spec.mode === 'seat') {

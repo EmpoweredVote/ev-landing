@@ -140,6 +140,31 @@ function draw(ctx, j, cfg = CFG, opts = {}) {
 
   // walking cane in the right hand
   if (opts.cane) drawCane(ctx, j, color);
+  if (opts.paddle) drawPaddleball(ctx, j, color, opts.time || 0);
+}
+
+// paddleball toy in the right hand: a flat paddle held face-up, with a small ball
+// bouncing on a string above it — synced to the `paddleball` animation via opts.time.
+function drawPaddleball(ctx, j, color, time) {
+  const h = j.hR, e = j.eR;
+  const dx = h.x - e.x, dy = h.y - e.y, len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;              // forearm direction (hand points this way)
+  const cx = h.x + ux * 6, cy = h.y + uy * 6;      // paddle face just past the grip
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = "round";
+  // short handle from the hand to the paddle face
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(h.x, h.y); ctx.lineTo(cx, cy); ctx.stroke();
+  // paddle face — a flat horizontal oval (seen edge-on)
+  ctx.beginPath(); ctx.ellipse(cx, cy - 2, 16, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  // ball bounces above the paddle: d = 0 at each tap, up to A between taps
+  const f = 1.5, A = 34;
+  const d = A * Math.abs(Math.sin(time * f * Math.PI));
+  const bx = cx, by = cy - 6 - d;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(cx, cy - 6); ctx.lineTo(bx, by); ctx.stroke();   // string
+  ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI * 2); ctx.fill();             // ball
+  ctx.restore();
 }
 
 // rigid cane from the right hand, extended along the forearm direction:
@@ -757,6 +782,23 @@ const ANIMATIONS = {
       return p;
     },
   },
+  paddleball: {
+    label: "Paddleball", mood: "boing\u2026 boing\u2026 boing", paddle: true,
+    // the ball's bounce (drawPaddleball) uses the SAME t, so the taps line up
+    frame(t) {
+      const p = clone(REST);
+      const tap = Math.abs(Math.sin(t * 1.5 * Math.PI));   // 0 at each tap, 1 between
+      const hit = 1 - tap;                                  // spikes to 1 on the tap
+      p.lean = 3;
+      p.bob = 1 + hit * 2;                                  // tiny dip on each tap
+      p.headTilt = -6 - hit * 4;                            // watching the ball, nods on the tap
+      // right arm holds the paddle out in front, giving little upward taps
+      p.armRU = 92 - hit * 8; p.armRF = 44 - hit * 10;
+      // left arm relaxed at the side
+      p.armLU = -14; p.armLF = -12;
+      return p;
+    },
+  },
   toddle: {
     label: "Toddle", mood: "wobble wobble!",
     frame(t) {
@@ -945,7 +987,7 @@ function makeGait(g) {
 }
 ANIMATIONS.walk = ANIMATIONS.stroll;   // scene walker + old references
 
-const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "sit", "read"];
+const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "paddleball", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "sit", "read"];
 
 // ── singleton animation controller ─────────────────────────
 // Owns its own rAF + state so it is immune to React re-mounts.
