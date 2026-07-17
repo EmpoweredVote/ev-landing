@@ -396,12 +396,7 @@
            instead of floating in the middle with big side margins. */
         .hero > .wrap { max-width: 1440px; }
         .hero-head { text-align: center; max-width: 720px; margin: 0 auto; }
-        .hero-head h1 { margin: 16px auto 22px; max-width: 26ch; }
-        .hero-lede {
-            margin: 0 auto;
-            max-width: 56ch;
-            font-size: clamp(1rem, 1.4vw, 1.12rem);
-        }
+        .hero-head h1 { margin: 16px auto 0; max-width: 26ch; }
 
         .showcase {
             display: grid;
@@ -409,7 +404,7 @@
             gap: 56px;
             align-items: center;
             max-width: 1320px;
-            margin: 38px auto 0;
+            margin: 22px auto 0;
         }
         .showcase-logos {
             display: flex;
@@ -498,6 +493,21 @@
         .preview-info p { color: var(--body); font-size: 1.02rem; line-height: 1.55; max-width: 58ch; }
 
         .hero .meta-row { justify-content: center; margin: 48px auto 0; }
+
+        /* Desktop: features sit up top; the meta-row + its Bobit crew are pushed
+           past the fold so no stick figures peek in until you scroll a little
+           ("business in front, party in the back"). Viewport-based so it holds
+           across screen heights. */
+        @media (min-width: 901px) {
+            .hero > .wrap {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                min-height: calc(100vh + 130px);
+            }
+            .hero-head, .showcase { width: 100%; }
+            .hero .meta-row { margin-top: auto; }
+        }
 
         @media (max-width: 1024px) {
             .showcase { grid-template-columns: minmax(320px, 40%) 1fr; gap: 36px; }
@@ -928,10 +938,6 @@
         <div class="wrap">
             <div class="hero-head">
                 <h1>Empowering the search for <span class="mark">Shared Solutions</span>.</h1>
-                <p class="lede hero-lede">
-                    Non-partisan, ad-free tools to see who's running, where they stand, and
-                    where the money goes. Hover a tool for a look inside — click to open it.
-                </p>
             </div>
 
             <div class="showcase">
