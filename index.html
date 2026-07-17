@@ -465,26 +465,6 @@
         .logo-trigger .logo-d { display: none; }
         [data-theme="dark"] .logo-trigger .logo-l { display: none; }
         [data-theme="dark"] .logo-trigger .logo-d { display: block; }
-        /* Trivia has no icon; pad its right so the wordmark ends on the same line as
-           the other lockups' text (whose icons occupy that trailing space). */
-        .logo-trigger[data-tool="trivia"] { padding-right: 124px; }
-        /* Trivia text wordmark (no brand logo yet) */
-        .logo-trigger .wordmark {
-            font-weight: 800;
-            font-size: 1.7rem;
-            line-height: 1.0;
-            letter-spacing: -0.02em;
-            color: var(--heading);
-        }
-        .logo-trigger .wordmark small {
-            display: block;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-top: 4px;
-        }
         /* Description shown inline on mobile only; on desktop it lives in the preview panel */
         .logo-trigger .m-desc { display: none; }
 
@@ -982,7 +962,8 @@
                     </a>
                     <a class="logo-trigger" data-tool="trivia" data-name="Civic Trivia Championships"
                        href="https://ctc.empowered.vote" target="_blank" rel="noopener">
-                        <span class="wordmark">Civic Trivia<small>Championships</small></span>
+                        <img class="logo-l" src="icons/ctc-logo-lg-light.svg" alt="Civic Trivia Championships" />
+                        <img class="logo-d" src="icons/ctc-logo-lg-dark.svg" alt="" aria-hidden="true" />
                         <span class="m-desc">Test how well you really know civics — from local government to national institutions — in a fast, friendly, head-to-head trivia format.</span>
                     </a>
                 </div>
