@@ -182,8 +182,13 @@
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
       // Note 1 always hosts a Bobit; occasionally the right spot is a kite-flyer instead
-      if (chance(0.25)) { var kg = takeTone(), kk = takeTone(); if (kk === kg) kk = (kk + 2) % 6; add({ mode: 'kite', anchor: '.note.n-alpha', edge: 'top', x: 0.72, tone: kg, tone2: kk }); }
-      else add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));
+      if (chance(0.25)) {
+        var kg = takeTone();                                                          // flyer's colour
+        var nearHue = { 0: [0, 3], 1: [1, 5], 2: [2, 5], 3: [3, 0], 4: [4], 5: [5, 1, 2] };   // avoid same/similar hues for the kite
+        var pool = TONES.filter(function (x) { return (nearHue[kg] || [kg]).indexOf(x) < 0; });
+        var kk = pool[Math.floor(Math.random() * pool.length)];                       // kite: a distinctly different colour
+        add({ mode: 'kite', anchor: '.note.n-alpha', edge: 'top', x: 0.72, tone: kg, tone2: kk });
+      } else add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));
       add(noteSlot('.note.n-ai', {}));                                       // Note 2 (n-team) intentionally left clear
       add(noteSlot('.note.n-money', {}));
       // watch top (the 02/How-we-work ↔ 03/Talks split) — was getting crowded with samey walkers;
@@ -317,9 +322,13 @@
           return;
         }
         if (spec.mode === 'kite') {
-          var wKt = 200, hKt = 210; sizeCanvas(e, wKt, hKt);   // tall + wide so the kite has sky up-and-downwind
+          var wKt = 300, hKt = 350; sizeCanvas(e, wKt, hKt);   // tall + wide so the kite has plenty of sky up-and-downwind
           var edgeYKt = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
-          e.c.style.left = (r.left + sx + r.width * spec.x - wKt / 2) + 'px';
+          var leftKt = r.left + sx + r.width * spec.x - 70;                    // flyer (gx0=70) sits at spec.x; kite reaches up-right
+          var maxLeftKt = sx + document.documentElement.clientWidth - wKt - 4; // never past the viewport (no h-scroll)
+          if (leftKt > maxLeftKt) leftKt = maxLeftKt;
+          if (leftKt < sx + 4) leftKt = sx + 4;
+          e.c.style.left = leftKt + 'px';
           e.c.style.top = (edgeYKt - (hKt - 6)) + 'px';
           return;
         }
@@ -972,7 +981,7 @@
     function kiteHold(t) { var p = Object.assign({}, R.REST); p.lean = -3; p.headTilt = -20; p.armRU = 150; p.armRF = 150; p.armLU = -16; p.armLF = -12; p.bob = Math.sin(t * 0.7) * 1.4; p.legRU = 8; p.legLU = -10; return p; }
     function kiteWave(t) { var p = kiteHold(t); var wv = Math.min(1, t / 0.3); p.armLU = -15 - 140 * wv; p.armLF = -11 - 150 * wv + Math.sin(t * 11) * 22; p.headTilt = -14; return p; }
     function drawKite(e, ctx, w, h, feetY, tt, colGuy, colKite, shadow, dt, cr) {
-      var gx0 = 74, guyBaseY = feetY - 112 * S, khX = 150, khY = 58, groundKiteY = feetY - 12;
+      var gx0 = 70, guyBaseY = feetY - 112 * S, khX = 222, khY = 52, groundKiteY = feetY - 12;   // kite flies high + well downwind (long string)
       if (e.kt == null) { e.kt = 'fly'; e.ktT = 0; e.gxCur = gx0; e.kwave = 0; e.kx = khX; e.ky = khY; e.kang = 0.28; }
       e.ktT += dt;
 
@@ -1363,14 +1372,16 @@
                 frontX = e.gF - gdir * (52 * ct + 24 * ct * ct) * smooth01(ct / 0.5);   // ramp speed up from a standstill
                 frontPose = lerpPose(pain, A.scurry.frame(gt), k);
                 frontFlip = gdir > 0;
-                // limp for the first few steps: favor the yanked (right) foot — stiffer knee + a hitch when it bears weight
-                var limp = Math.max(0, 1 - ct / 1.6);
+                // limp for the first several steps: heavily favor the yanked (right) foot — a stiff
+                // knee, a short hobbling step, and a big downward lurch each time it bears weight
+                var limp = Math.max(0, 1 - ct / 2.4);
                 if (limp > 0) {
                   var plant = Math.max(0, -Math.sin(gt * 4.6 * Math.PI));   // injured (right) foot bearing weight
-                  frontPose.legRF += limp * 26;                            // injured knee stays straighter
-                  frontPose.legRU -= limp * 6;                             // shorter step on that leg
-                  frontPose.bob += limp * plant * 5;                       // hitches down onto it each stride
-                  frontPose.headTilt += limp * 5;
+                  frontPose.legRF += limp * 42;                            // very stiff injured knee (barely bends)
+                  frontPose.legRU -= limp * 12;                            // short, hobbling step
+                  frontPose.bob += limp * plant * 12;                      // big downward lurch onto it
+                  frontPose.lean += limp * plant * 6;                      // pitches forward as he favors it
+                  frontPose.headTilt += limp * (5 + plant * 9);            // head dips with each hobble
                 }
               }
             }
