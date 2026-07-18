@@ -563,12 +563,25 @@
       switch (e.cw) {
         case 'stand':
           e.cwT += dt; cwPose = A.standstill.frame(tt);
-          if (e.cwT > 0.7) { if (e.cwX <= roamL) e.cwDir = 1; else if (e.cwX >= roamR) e.cwDir = -1; else if (Math.sin(e.cwX * 12.9) > 0.6) e.cwDir = -e.cwDir; e.cw = 'cwheel'; e.cwT = 0; e.cwX0 = e.cwX; }
+          if (e.cwT > 0.5) {   // brief pause, then head off at a brisk walk
+            if (e.cwX <= roamL) e.cwDir = 1; else if (e.cwX >= roamR) e.cwDir = -1; else if (Math.sin(e.cwX * 12.9) > 0.6) e.cwDir = -e.cwDir;
+            e.cw = 'walk'; e.cwT = 0; e.cwWalk = 1.6 + (Math.sin(e.cwX * 3.1) + 1) * 1.1;   // walk 1.6–3.8s before the next move
+          }
+          break;
+        case 'walk':
+          e.cwT += dt; e.cwX += e.cwDir * 50 * dt; cwFlip = e.cwDir < 0; cwPose = A.strut.frame(tt);
+          if (e.cwX <= roamL) { e.cwX = roamL; e.cwDir = 1; } else if (e.cwX >= roamR) { e.cwX = roamR; e.cwDir = -1; }
+          if (e.cwT > e.cwWalk) {
+            if (Math.sin(e.cwX * 7.7) > -0.3) {   // usually punctuate the walk with a single cartwheel…
+              if (e.cwX + e.cwDir * 96 > roamR) e.cwDir = -1; else if (e.cwX + e.cwDir * 96 < roamL) e.cwDir = 1;   // keep the wheel in-bounds
+              e.cw = 'cwheel'; e.cwT = 0; e.cwX0 = e.cwX;
+            } else { e.cw = 'stand'; e.cwT = 0; }   // …otherwise just pause and turn
+          }
           break;
         case 'cwheel': {
           e.cwT += dt; var pc = Math.min(1, e.cwT / 0.95);
           e.cwX = e.cwX0 + e.cwDir * 96 * pc; cwRot = e.cwDir * 2 * Math.PI * pc; cwPose = cwStar();   // L→R clockwise, R→L counter-clockwise
-          if (pc >= 1) { e.cw = 'stand'; e.cwT = 0; }
+          if (pc >= 1) { e.cw = 'walk'; e.cwT = 0; e.cwWalk = 1.6 + (Math.sin(e.cwX * 5.3) + 1) * 1.1; }   // resume walking, not another spin
           break;
         }
         case 'heap':
