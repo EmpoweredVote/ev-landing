@@ -52,22 +52,6 @@
         if (e.spec.mode === 'cartwheel' && e._cwSX != null && (e.cw === 'cwheel' || e.cw === 'stand' || e.cw === 'headshake')) {
           if (Math.abs(ev.clientX - e._cwSX) < 40 && Math.abs(ev.clientY - e._cwSY) < 84) { e.cw = 'heap'; e.cwT = 0; return; }
         }
-        // paddleball pair: click a player mid-rally → he stops, waves, drops the ball
-        if (e.spec.mode === 'paddlepair' && e._ppSY != null && e.rl !== 'miss' && e.rl !== 'retrieve') {
-          var pHitL = Math.abs(ev.clientX - e._ppSXL) < 34 && Math.abs(ev.clientY - e._ppSY) < 74;
-          var pHitR = Math.abs(ev.clientX - e._ppSXR) < 34 && Math.abs(ev.clientY - e._ppSY) < 74;
-          if (pHitL || pHitR) {
-            e.clicked = pHitL ? 'L' : 'R'; e.missT = 0; e.mvy = 0;
-            var bAtClicked = (e.rl === 'bounceL' && e.clicked === 'L') || (e.rl === 'bounceR' && e.clicked === 'R');
-            e.tinX0 = (e._ballX != null ? e._ballX : e.w / 2); e.tinY0 = (e._ballY != null ? e._ballY : 40);
-            if (bAtClicked) {   // ball already on the clicked player's paddle → he misses right away
-              e.rl = 'miss'; e.mballX = e.tinX0; e.mballY = e.tinY0;
-            } else {            // ball is elsewhere → it first travels over to the waving player, THEN drops
-              e.rl = 'tossin'; e.tinT = 0;
-            }
-            return;
-          }
-        }
         if (e.spec.mode !== 'rope' || !e.w || e._ropeSX == null) return;
         if (Math.abs(ev.clientX - e._ropeSX) > 55 || Math.abs(ev.clientY - e._ropeSY) > 82) return;
         if (e.rphase === 'sit') { e.rphase = 'break'; e.breakT = 0; return; }   // frame breaks out from under him
@@ -139,6 +123,7 @@
     //    so we never get a page of four coral clones. Every 6 draws touches all 6 colours once;
     //    on refill we avoid repeating the last tone across the seam. ──
     var _toneBag = [], _lastTone = null;
+    var _pairCast = false;   // at most one paddleball couple per page
     function takeTone() {
       if (!_toneBag.length) {
         var t = TONES.slice();
@@ -163,7 +148,7 @@
       opt = opt || {};
       var seat = function () { return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : takeTone()) }; };
       var r = Math.random();
-      if (r < 0.12) return { mode: 'paddlepair', anchor: anchor, edge: 'top', x: pick([0.32, 0.5, 0.68]), tone: takeTone(), tone2: takeTone() };  // two Bobits rallying a ball
+      if (r < 0.12 && !_pairCast) { _pairCast = true; return { mode: 'paddlepair', anchor: anchor, edge: 'top', x: pick([0.32, 0.5, 0.68]), tone: takeTone(), tone2: takeTone() }; }  // one couple per page, max
       if (r < 0.54) return seat();                       // most common: a reader or sitter
       if (r < 0.82) return walker(anchor, opt);
       if (r < 0.92) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: takeTone() };
@@ -172,6 +157,7 @@
 
     function buildCast() {
       var out = [];
+      _pairCast = false;
       var add = function (s) { if (s) out.push(s); };
       add({ mode: 'beam', anchor: '.hero', edge: 'bottom', tone: 0 });                                    // hero crew — always
       add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.9, anim: 'present', tone: 0, presenter: true });  // proud host under the logo
@@ -442,36 +428,30 @@
       var drawPaddle = function (hx, hy, color) { ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(hx, hy, 12, 4, 0, 0, Math.PI * 2); ctx.fill(); };
       var drawBall = function (x, y) { ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill(); };
 
-      // ── interrupted by a click: (toss over →) wave → drop → bounce → fetch → resume ──
-      if (e.rl === 'tossin' || e.rl === 'miss' || e.rl === 'retrieve') {
-        var isL = e.clicked === 'L';
+      // hover (canvas is pointer-events:none, so use the shared pointer position, like other reactions)
+      var overL = mx > cr.left + xL - 30 && mx < cr.left + xL + 30 && my > cr.top + feetY - 84 && my < cr.top + feetY + 8;
+      var overR = mx > cr.left + xR - 30 && mx < cr.left + xR + 30 && my > cr.top + feetY - 84 && my < cr.top + feetY + 8;
+      e.hoverSide = overL ? 'L' : (overR ? 'R' : null);
+      // a hovered player lowers his paddle to wave — so if the ball reaches HIS side, it drops
+      if (e.rl !== 'miss' && e.rl !== 'retrieve' && ((e.rl === 'bounceL' && e.hoverSide === 'L') || (e.rl === 'bounceR' && e.hoverSide === 'R'))) {
+        e.missSide = e.hoverSide; e.rl = 'miss'; e.missT = 0; e.mvy = 0;
+        e.mballX = (e._ballX != null ? e._ballX : (e.hoverSide === 'L' ? xL : xR)); e.mballY = (e._ballY != null ? e._ballY : feetY - 60);
+      }
+
+      // ── the waving player let it drop → it bounces, then he fetches it and resumes ──
+      if (e.rl === 'miss' || e.rl === 'retrieve') {
+        var isL = e.missSide === 'L';
         var homeX = isL ? xL : xR, otherX = isL ? xR : xL;
-        var clickCol = isL ? colA : colB, otherCol = isL ? colB : colA, otherFlip = isL;
+        var missCol = isL ? colA : colB, otherCol = isL ? colB : colA, otherFlip = isL;
         var otherPose = A.paddleball.frame(0.34), oHand = handAt(otherPose, otherX, otherFlip);
         var drawOther = function () { R.drawShadow(ctx, otherX, feetY, 14, shadow); drawFig(ctx, otherX, baseY, S, otherFlip, otherPose, { color: otherCol }); drawPaddle(oHand.x, oHand.y, otherCol); };
-        var missTargetX = homeX + (isL ? 12 : -12), missTargetY = feetY - 56;   // where the incoming ball reaches the waving player
-
-        if (e.rl === 'tossin') {
-          // clicked player already turned to wave; the ball finishes its trip over to him, THEN drops
-          e.missT = (e.missT || 0) + dt; e.tinT += dt;
-          var tinDur = 0.5, tp = Math.min(1, e.tinT / tinDur);
-          var bxi = e.tinX0 + (missTargetX - e.tinX0) * tp;
-          var byi = e.tinY0 + (missTargetY - e.tinY0) * tp - 46 * Math.sin(Math.PI * tp);
-          R.drawShadow(ctx, homeX, feetY, 14, shadow);
-          drawFig(ctx, homeX, baseY, S, false, A.greet.frame(e.missT, e._wave), { color: clickCol });
-          drawOther();
-          drawBall(bxi, byi);
-          if (tp >= 1) { e.rl = 'miss'; e.mballX = missTargetX; e.mballY = missTargetY; e.mvy = 0; }
-          return;
-        }
 
         if (e.rl === 'miss') {
-          e.missT = (e.missT || 0) + dt;
+          e.missT += dt;
           e.mvy = (e.mvy || 0) + 1200 * dt; e.mballY += e.mvy * dt;                 // gravity
           if (e.mballY > groundBallY) { e.mballY = groundBallY; e.mvy = -e.mvy * 0.5; }   // bounce, damped
-          var wavePose = A.greet.frame(e.missT, e._wave);
           R.drawShadow(ctx, homeX, feetY, 14, shadow);
-          drawFig(ctx, homeX, baseY, S, false, wavePose, { color: clickCol });      // faces viewer, waving
+          drawFig(ctx, homeX, baseY, S, false, A.greet.frame(e.missT, e._wave), { color: missCol });   // happily waving at us
           drawOther();
           drawBall(e.mballX, e.mballY);
           if (e.missT > 1.9 && Math.abs(e.mvy) < 45 && e.mballY >= groundBallY - 1) { e.rl = 'retrieve'; e.retStep = 'togo'; e.retX = homeX; e.retT = 0; }
@@ -482,16 +462,16 @@
         if (e.retStep === 'togo') {
           var d1 = e.mballX > e.retX ? 1 : -1; e.retX += d1 * retSpeed * dt;
           if ((d1 > 0 && e.retX >= e.mballX) || (d1 < 0 && e.retX <= e.mballX)) { e.retX = e.mballX; e.retStep = 'pick'; e.retT = 0; }
-          R.drawShadow(ctx, e.retX, feetY, 14, shadow); drawFig(ctx, e.retX, baseY, S, d1 < 0, A.stroll.frame(tt), { color: clickCol });
+          R.drawShadow(ctx, e.retX, feetY, 14, shadow); drawFig(ctx, e.retX, baseY, S, d1 < 0, A.stroll.frame(tt), { color: missCol });
           drawOther(); drawBall(e.mballX, groundBallY);
         } else if (e.retStep === 'pick') {
           e.retT += dt;
-          R.drawShadow(ctx, e.retX, feetY, 14, shadow); drawFig(ctx, e.retX, baseY, S, false, A.heave.frame(e.retT), { color: clickCol });
+          R.drawShadow(ctx, e.retX, feetY, 14, shadow); drawFig(ctx, e.retX, baseY, S, false, A.heave.frame(e.retT), { color: missCol });
           drawOther(); drawBall(e.mballX, groundBallY);                              // ball on the ground until grabbed
           if (e.retT > 1.15) { e.retStep = 'back'; }
         } else {   // back — carry the ball home in hand
           var d2 = homeX > e.retX ? 1 : -1; e.retX += d2 * retSpeed * dt;
-          var wpb = A.stroll.frame(tt); R.drawShadow(ctx, e.retX, feetY, 14, shadow); drawFig(ctx, e.retX, baseY, S, d2 < 0, wpb, { color: clickCol });
+          var wpb = A.stroll.frame(tt); R.drawShadow(ctx, e.retX, feetY, 14, shadow); drawFig(ctx, e.retX, baseY, S, d2 < 0, wpb, { color: missCol });
           drawOther();
           var chand = handAt(wpb, e.retX, d2 < 0); drawBall(chand.x, chand.y);
           if ((d2 > 0 && e.retX >= homeX) || (d2 < 0 && e.retX <= homeX)) { e.rl = isL ? 'bounceL' : 'bounceR'; e.rlT = 0; e.missT = 0; e.mvy = 0; }
@@ -499,11 +479,11 @@
         return;
       }
 
-      // ── normal rally ──
+      // ── normal rally (a hovered player lowers his paddle to wave; the other keeps playing) ──
       e.rlT += dt;
       var activeL = e.rl === 'bounceL', activeR = e.rl === 'bounceR';
-      var poseL = A.paddleball.frame(activeL ? tt : 0.34), poseR = A.paddleball.frame(activeR ? tt : 0.34);
-      var handL = handAt(poseL, xL, false), handR = handAt(poseR, xR, true);
+      var padL = A.paddleball.frame(activeL ? tt : 0.34), padR = A.paddleball.frame(activeR ? tt : 0.34);
+      var handL = handAt(padL, xL, false), handR = handAt(padR, xR, true);
       var ballX, ballY;
       switch (e.rl) {
         case 'bounceL':
@@ -528,11 +508,14 @@
         }
       }
       R.drawShadow(ctx, xL, feetY, 14, shadow); R.drawShadow(ctx, xR, feetY, 14, shadow);
-      drawFig(ctx, xL, baseY, S, false, poseL, { color: colA });   // faces right, toward center
-      drawFig(ctx, xR, baseY, S, true, poseR, { color: colB });    // faces left, toward center
-      drawPaddle(handL.x, handL.y, colA); drawPaddle(handR.x, handR.y, colB);
+      var figL = e.hoverSide === 'L' ? A.greet.frame(tt, e._wave) : padL;   // hovered → wave (faces viewer)
+      var figR = e.hoverSide === 'R' ? A.greet.frame(tt, e._wave) : padR;
+      drawFig(ctx, xL, baseY, S, false, figL, { color: colA });
+      drawFig(ctx, xR, baseY, S, e.hoverSide === 'R' ? false : true, figR, { color: colB });
+      if (e.hoverSide !== 'L') drawPaddle(handL.x, handL.y, colA);
+      if (e.hoverSide !== 'R') drawPaddle(handR.x, handR.y, colB);
       drawBall(ballX, ballY);
-      e._ballX = ballX; e._ballY = ballY;   // remembered so a click drops the ball from here
+      e._ballX = ballX; e._ballY = ballY;   // remembered so a hover-drop starts from here
     }
 
     // ── CARTWHEEL scene (occasionally replaces the footer meet pair): one Bobit practices
@@ -543,7 +526,9 @@
     var HEAP_SECS = 30;
     function cwStar() { var p = A.standstill.frame(0); p.hunch = 0; p.bob = 0; p.headTilt = 0; p.armRU = 142; p.armRF = 150; p.armLU = -142; p.armLF = -150; p.legRU = 30; p.legRF = 26; p.legLU = -30; p.legLF = -26; return p; }
     function cwHeap(t) { var p = A.standstill.frame(0); var wr = Math.sin(t * 7) * 4, wr2 = Math.sin(t * 5.3 + 1) * 5; p.hunch = -46 + wr; p.bob = 10; p.lean = 6 + wr2; p.headTilt = -22 + wr; p.legRU = 66 + Math.sin(t * 6) * 12; p.legRF = -38; p.legLU = 58 + wr2; p.legLF = -32; p.armRU = 52 + Math.sin(t * 8) * 14; p.armRF = 40; p.armLU = -56; p.armLF = -38 + wr; return p; }
-    function cwKneel(t) { var p = A.standstill.frame(0); p.hunch = -56; p.lean = 8; p.bob = 22 + Math.sin(t * 2) * 1.5; p.headTilt = -8; p.legRU = 104; p.legRF = 96; p.legLU = 96; p.legLF = 88; p.armRU = 66; p.armRF = 112; p.armLU = -66; p.armLF = -112; return p; }
+    // crouched over the fallen one — knelt low, one arm reaching in. Drawn with a y-offset so it sits on the ground.
+    var KNEEL_YOFF = 18;
+    function cwKneel(t) { var p = A.standstill.frame(0); p.bob = 6 + Math.sin(t * 2) * 1.2; p.hunch = -34; p.lean = 8; p.headTilt = -10; p.legRU = 84; p.legRF = -78; p.legLU = -70; p.legLF = 66; p.armRU = 56; p.armRF = 66; p.armLU = -34; p.armLF = -26; return p; }
     function cwFrust(t) { var p = A.standstill.frame(0); p.armRU = 166; p.armRF = 172; p.armLU = -166; p.armLF = -172; p.headTilt = Math.sin(t * 9) * 7; p.lean = -3; p.bob = Math.sin(t * 4) * 2; return p; }
     function drawCartwheel(e, ctx, w, h, feetY, tt, colA, colB, shadow, dt, cr) {
       var baseY = feetY - 112 * S, cornerX = 46, roamL = 128, roamR = w - 74;
@@ -560,7 +545,7 @@
           break;
         case 'cwheel': {
           e.cwT += dt; var pc = Math.min(1, e.cwT / 0.95);
-          e.cwX = e.cwX0 + e.cwDir * 96 * pc; cwRot = e.cwDir * -2 * Math.PI * pc; cwPose = cwStar();
+          e.cwX = e.cwX0 + e.cwDir * 96 * pc; cwRot = e.cwDir * 2 * Math.PI * pc; cwPose = cwStar();   // L→R clockwise, R→L counter-clockwise
           if (pc >= 1) { e.cw = 'stand'; e.cwT = 0; }
           break;
         }
@@ -594,11 +579,11 @@
           break;
         }
         case 'kneel':
-          e.hpT += dt; hpPose = cwKneel(e.hpT); hpFlip = e.cwX < e.hpX;
+          e.hpT += dt; hpPose = cwKneel(e.hpT); hpFlip = e.cwX < e.hpX; hpYoff = KNEEL_YOFF;
           if (e.cw === 'getup' || e.cw === 'headshake' || e.cw === 'stand') { e.hp = 'helperup'; e.hpT = 0; }
           break;
         case 'helperup': {
-          e.hpT += dt; var up = smooth01(e.hpT / 1.0); hpPose = lerpPose(cwKneel(0), A.standstill.frame(0), up); hpFlip = e.cwX < e.hpX;
+          e.hpT += dt; var up = smooth01(e.hpT / 1.0); hpPose = lerpPose(cwKneel(0), A.standstill.frame(0), up); hpFlip = e.cwX < e.hpX; hpYoff = KNEEL_YOFF * (1 - up);
           if (up >= 1) { e.hp = 'watch'; }
           break;
         }
