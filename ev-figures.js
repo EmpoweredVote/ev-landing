@@ -52,6 +52,18 @@
         if (e.spec.mode === 'cartwheel' && e._cwSX != null && (e.cw === 'cwheel' || e.cw === 'stand' || e.cw === 'headshake')) {
           if (Math.abs(ev.clientX - e._cwSX) < 40 && Math.abs(ev.clientY - e._cwSY) < 84) { e.cw = 'heap'; e.cwT = 0; return; }
         }
+        // dog-fetch: click the dog → he drops the ball & rolls over; click the owner → the mega throw
+        if (e.spec.mode === 'dogfetch' && e._dogSX != null && !e.mega && !(e.dogRoll > 0)) {
+          if (Math.abs(ev.clientX - e._dogSX) < 28 && Math.abs(ev.clientY - e._dogSY) < 40) {
+            e.dogRoll = DOG_ROLL_SECS;
+            if (e.bHeld === 'dog') { e.bHeld = 'ground'; e.bX = e.dogX; e.bY = e.h - 6 - 7; }   // drop what he was carrying
+            return;
+          }
+          if (Math.abs(ev.clientX - e._thSX) < 34 && Math.abs(ev.clientY - e._thSY) < 72) {
+            e.mega = true; e.df = 'megawind'; e.dfT = 0; e.bHeld = 'thrower';
+            return;
+          }
+        }
         if (e.spec.mode !== 'rope' || !e.w || e._ropeSX == null) return;
         if (Math.abs(ev.clientX - e._ropeSX) > 55 || Math.abs(ev.clientY - e._ropeSY) > 82) return;
         if (e.rphase === 'sit') { e.rphase = 'break'; e.breakT = 0; return; }   // frame breaks out from under him
@@ -177,9 +189,12 @@
       add(pk);
       if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid .watch-card:nth-of-type(3) .watch-thumb', tone: takeTone() });
       // footer — usually the meet-and-greet pair; occasionally a cartwheel practicer + a
-      // corner Bobit who plays medic (the walker & the lower-left stander, combined on one canvas)
-      if (chance(0.28)) {
+      // corner Bobit medic, or a Bobit playing fetch with his dog (each a wide combined canvas)
+      var fr = Math.random();
+      if (fr < 0.26) {
         add({ mode: 'cartwheel', anchor: 'footer', edge: 'top', tone: 0, tone2: 1 });
+      } else if (fr < 0.50) {
+        add({ mode: 'dogfetch', anchor: 'footer', edge: 'top', tone: 0, tone2: 5 });   // teal owner, orange pup
       } else {
         add(walker('footer', { tone: 0 }));
         add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
@@ -287,6 +302,13 @@
           e.c.style.top = (edgeYCW - (hCW - 6)) + 'px';
           return;
         }
+        if (spec.mode === 'dogfetch') {
+          var hDF = 180, wDF = Math.max(360, r.width); sizeCanvas(e, wDF, hDF);   // full-width so the throw can clear the edge
+          var edgeYDF = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
+          e.c.style.left = (r.left + sx) + 'px';
+          e.c.style.top = (edgeYDF - (hDF - 6)) + 'px';
+          return;
+        }
         if (spec.mode === 'seat') {
           // taller canvas + seat line 42px above the bottom so dangling shins clear the edge
           var hSe = 180;
@@ -333,7 +355,7 @@
       var swX = w * 0.28, swY = 63;                                     // fallback if the swatch can't be measured
       if (sw) { var rr = sw.getBoundingClientRect(); swX = rr.left + rr.width / 2 - cr.left; swY = rr.top + rr.height / 2 - cr.top; }
       var YEL = cssVar('--yellow', '#FED12E'), OFF = '#6E7681';         // lit vs dead-bulb grey
-      var speedWalk = 132, speedRun = 264, stopX = swX;
+      var speedWalk = 104, speedRun = 150, stopX = swX;   // slower run so the feet don't slide during the box swap
       var pose = null, carryBox = false, boxRise = 0, swOn = e.lgLit, flip = e.lgFace < 0;
 
       if (e.lightWave > 0 && e.lp !== 'out') {
@@ -605,6 +627,263 @@
       drawFig(ctx, e.hpX, baseY + hpYoff, S, hpFlip, hpPose, { color: colB, rot: hpRot });
     }
 
+    // ── procedural DOG for the fetch scene ──────────────────────────────────
+    //    Side-view pup drawn with the same thick round-capped capsules as the
+    //    leremy figures. `st` selects the pose; `tt` drives gait + tail wag.
+    //    Faces right by default; `face < 0` flips him. Body ~22px at the shoulder
+    //    so he reads a touch shorter than the ~36px Bobits beside him.
+    var DOG_SH = 22, DOG_BL = 32;
+    function drawDog(ctx, x, groundY, face, color, st, tt, opts) {
+      opts = opts || {};
+      ctx.save();
+      ctx.translate(x, groundY);
+      ctx.scale(face < 0 ? -1 : 1, 1);
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      var TONGUE = '#E8607A';
+      function seg(ax, ay, bx, by, wd) { ctx.lineWidth = wd; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); }
+      // two-segment leg with a knee kicked out perpendicular to the bone (bend sign = knee dir)
+      function leg(ax, ay, fx, fy, bend, wd) {
+        var mx = (ax + fx) / 2, my = (ay + fy) / 2, dx = fx - ax, dy = fy - ay, l = Math.hypot(dx, dy) || 1;
+        var kx = mx + (-dy / l) * bend, ky = my + (dx / l) * bend;
+        seg(ax, ay, kx, ky, wd); seg(kx, ky, fx, fy, wd);
+      }
+      // head + snout + floppy ear; returns the muzzle tip (where a carried ball sits)
+      function head(hx, hy, earWag, tongue) {
+        ctx.beginPath(); ctx.arc(hx, hy, 8, 0, Math.PI * 2); ctx.fill();
+        var snX = hx + 11, snY = hy + 3;
+        seg(hx + 2, hy + 1, snX, snY, 6);                 // muzzle
+        seg(hx - 4, hy - 5, hx - 7, hy + 6 + earWag, 5);  // floppy ear
+        if (tongue) { ctx.strokeStyle = TONGUE; seg(snX - 1, snY + 1, snX - 1, snY + 8, 3); ctx.strokeStyle = color; ctx.fillStyle = color; }
+        return { x: snX, y: snY };
+      }
+      // upright body (stand / run / carry / pickup / drag / sit share this)
+      function upright(c) {
+        var cx = 0, cy = -DOG_SH - (c.lift || 0), tilt = c.tilt || 0;
+        var ca = Math.cos(tilt), sa = Math.sin(tilt), half = DOG_BL / 2;
+        var shX = cx + ca * half, shY = cy - sa * half, hpX = cx - ca * half, hpY = cy + sa * half;
+        var ph = tt * (c.speed || 0) * Math.PI * 2 + (c.ph || 0);
+        var fs = Math.sin(ph), bs = Math.sin(ph + Math.PI);
+        var sw = c.swing || 0, ll = c.legLift || 0;
+        var ffX = shX + fs * sw, ffY = -Math.max(0, fs) * ll;
+        var bfX = hpX + bs * sw, bfY = -Math.max(0, bs) * ll;
+        leg(shX + 3, shY, ffX + 3, ffY, 6, 4);            // far front leg (behind the body)
+        leg(hpX - 3, hpY, bfX - 3, bfY, -6, 4);           // far back leg
+        seg(hpX, hpY, shX, shY, 11);                      // body
+        leg(shX, shY, ffX, ffY, 6, 5);                    // near front (elbow back)
+        leg(hpX, hpY, bfX, bfY, -6, 5);                   // near back (stifle forward)
+        var hx = shX + (c.hdx != null ? c.hdx : 12), hy = shY + (c.hdy != null ? c.hdy : -12);
+        seg(shX, shY, hx, hy, 7);                         // neck
+        var mouth = head(hx, hy, Math.sin(tt * (c.speed ? 9 : 2)) * 2, c.tongue);
+        var wag = Math.sin(tt * (c.tailSpd || 5)) * (c.tailAmp || 6);
+        ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(hpX, hpY);
+        ctx.quadraticCurveTo(hpX - 10, hpY - 9, hpX - 16, hpY - 14 + wag); ctx.stroke();
+        return mouth;
+      }
+
+      var mouth = null;
+      if (st === 'roll') {
+        // flopped on his back, belly up: spine on the ground, four paws waving in the air,
+        // head lolled back with tongue out, tail thumping the floor
+        var by = -9;
+        var a = Math.sin(tt * 8) * 4, b = Math.sin(tt * 8 + 1.7) * 4;
+        function upleg(bx, kx, px) { seg(bx, by, kx, by - 13, 5); seg(kx, by - 13, px, by - 25, 5); }  // bent leg reaching up
+        upleg(10, 13, 13 + a); upleg(5, 3, 3 + b);        // front paws up (near, far)
+        upleg(-9, -7, -7 + b); upleg(-14, -16, -16 + a);  // back paws up (near, far)
+        seg(-15, by, 15, by, 12);                         // rounded back resting on the ground
+        var hx = 20, hy = -6;
+        ctx.beginPath(); ctx.arc(hx, hy, 8, 0, Math.PI * 2); ctx.fill();
+        seg(hx + 1, hy - 2, hx + 8, hy - 5, 6);           // muzzle tipped up (he's upside-down & delighted)
+        ctx.strokeStyle = TONGUE; seg(hx + 7, hy - 4, hx + 12, hy - 1, 3); ctx.strokeStyle = color; ctx.fillStyle = color;
+        seg(hx - 3, hy + 3, hx - 9, hy + 6, 5);           // ear flopped on the floor
+        var tw = Math.sin(tt * 12) * 9;
+        ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-15, by); ctx.quadraticCurveTo(-23, by + 1, -28, by - 6 + tw); ctx.stroke();
+      } else if (st === 'sit') {
+        mouth = upright({ tilt: 0.55, speed: 0, hdx: 12, hdy: -15, tailAmp: 6, tailSpd: 5, lift: Math.sin(tt * 2) * 0.4 });
+      } else if (st === 'run') {
+        mouth = upright({ tilt: -0.08, speed: 3.2, swing: 9, legLift: 7, lift: Math.abs(Math.sin(tt * 3.2 * Math.PI)) * 3, hdx: 14, hdy: -10, tailAmp: 5, tailSpd: 9, tongue: true });
+      } else if (st === 'carry') {
+        mouth = upright({ tilt: -0.03, speed: 2.6, swing: 7, legLift: 5, lift: Math.abs(Math.sin(tt * 2.6 * Math.PI)) * 2.4, hdx: 13, hdy: -13, tailAmp: 6, tailSpd: 8 });
+      } else if (st === 'pickup') {
+        mouth = upright({ tilt: 0.05, speed: 0, hdx: 17, hdy: -2, tailAmp: 8, tailSpd: 6 });
+      } else if (st === 'drag') {
+        mouth = upright({ tilt: -0.06, speed: 1.4, swing: 4, legLift: 0, hdx: 15, hdy: -9, tongue: true, tailAmp: 2, tailSpd: 3 });
+      } else {   // stand
+        mouth = upright({ lift: Math.sin(tt * 2) * 0.6, speed: 0, hdx: 12, hdy: -12, tailAmp: 5, tailSpd: 3 });
+      }
+
+      if (mouth && opts.ball) {   // ball carried in the muzzle
+        ctx.fillStyle = opts.ballColor || figColor(2);
+        ctx.beginPath(); ctx.arc(mouth.x, mouth.y, opts.ballR || 6, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // ── DOG-FETCH scene (occasionally replaces the footer meet pair): a Bobit plays
+    //    fetch with his dog, throwing the ball to alternating sides of the map.
+    //    · hover the dog → he stops and sits
+    //    · click the dog → he drops the ball and rolls on his back, paws up, tail wagging
+    //    · click the thrower → he winds up and hurls it clean off the edge; the dog tears
+    //      after it and drags back the big red dot from the middle of the EV logo (way too
+    //      heavy), the thrower shoves it off the far side, points after it, and the dog
+    //      trots off to bring back the little yellow ball so the game can carry on. ──
+    var DOG_ROLL_SECS = 6;
+    function throwWind() { var p = Object.assign({}, R.REST); p.lean = -8; p.headTilt = -6; p.armRU = -52; p.armRF = -58; p.armLU = -22; p.armLF = -15; p.legRU = 12; p.legLU = -16; p.legLF = -9; return p; }
+    function throwRel(k) { var p = Object.assign({}, R.REST); p.lean = 6 - k * 3; p.headTilt = -10; var a = -52 + k * 150; p.armRU = a; p.armRF = a + 8; p.armLU = -20; p.armLF = -14; return p; }
+    function pushPose(t) { var p = A.stroll.frame(t); p.lean = -10; p.hunch = -14; p.armRU = 86; p.armRF = 70; p.armLU = -80; p.armLF = -64; p.headTilt = -8; return p; }
+    function drawDogFetch(e, ctx, w, h, feetY, tt, colThrower, colDog, shadow, dt, cr) {
+      var throwerX = w * 0.5, homeX = throwerX - 52, groundBallY = feetY - 7;
+      var throwerBaseY = feetY - 112 * S, smallR = 6, bigR = 20;
+      if (e.df == null) { e.df = 'ready'; e.dfT = 0; e.side = (Math.sin(w * 7.3) > 0 ? 1 : -1); e.dogX = homeX; e.dogFace = 1; e.thrX = throwerX; e.bHeld = 'thrower'; e.bX = homeX; e.bY = groundBallY; e.dogRoll = 0; e.mega = false; }
+
+      // hit-test coords (canvas is pointer-events:none → use shared pointer for hover)
+      e._dogSX = cr.left + e.dogX; e._dogSY = cr.top + feetY - 14;
+      e._thSX = cr.left + e.thrX; e._thSY = cr.top + feetY - 34;
+      var overDog = Math.abs(mx - (cr.left + e.dogX)) < 24 && my > cr.top + feetY - 34 && my < cr.top + feetY + 8;
+
+      var rolling = e.dogRoll > 0;
+      var sitting = !e.mega && !rolling && overDog && e.df !== 'chase-off';
+      if (rolling) {
+        e.dogRoll -= dt;
+        if (e.dogRoll <= 0 && e.bHeld === 'ground') { e.df = 'chase'; e.dfT = 0; }   // get up & fetch the ball he dropped
+      }
+      var paused = rolling || sitting;
+
+      // helpers -----------------------------------------------------------------
+      function dogTo(target, sp) { var d = target > e.dogX ? 1 : -1; e.dogX += d * sp * dt; if ((d > 0 && e.dogX > target) || (d < 0 && e.dogX < target)) e.dogX = target; e.dogFace = d; }
+      function thHand(pose, flip) { var j = R.computePose(pose, CFG, { x: 0, y: 0 }); return { x: e.thrX + (flip ? -S : S) * j.hR.x, y: throwerBaseY + S * j.hR.y }; }
+      var DOG_RUN = 210, DOG_TROT = 150, DOG_DRAG = 88;   // drag is slow (he's struggling) but not tedious
+
+      // ── state machine (frozen while the dog sits or rolls) ──
+      if (!paused) {
+        switch (e.df) {
+          case 'ready':
+            e.dfT += dt; if (e.dfT > 0.8) { e.df = 'windup'; e.dfT = 0; }
+            break;
+          case 'windup':
+            e.dfT += dt;
+            if (e.dfT > 0.45) { e.df = 'throw'; e.dfT = 0; e.tX = e.side > 0 ? w * 0.86 : w * 0.14; e.launch = thHand(throwRel(0.5), e.side < 0); e.bHeld = 'air'; }
+            break;
+          case 'throw': {
+            e.dfT += dt; var p = Math.min(1, e.dfT / 0.7);
+            e.bX = e.launch.x + (e.tX - e.launch.x) * p; e.bY = e.launch.y + (groundBallY - e.launch.y) * p - 70 * Math.sin(Math.PI * p);
+            dogTo(e.tX, DOG_RUN);
+            if (p >= 1) { e.bX = e.tX; e.bY = groundBallY; e.bHeld = 'ground'; e.df = 'chase'; e.dfT = 0; }
+            break;
+          }
+          case 'chase':
+            dogTo(e.bX, DOG_RUN);
+            if (Math.abs(e.dogX - e.bX) < 8) { e.df = 'pickup'; e.dfT = 0; }
+            break;
+          case 'pickup':
+            e.dfT += dt; if (e.dfT > 0.4) { e.bHeld = 'dog'; e.df = 'carryback'; e.dfT = 0; }
+            break;
+          case 'carryback':
+            dogTo(homeX, DOG_TROT);
+            if (Math.abs(e.dogX - homeX) < 8) { e.df = 'deliver'; e.dfT = 0; e.bHeld = 'ground'; e.bX = e.dogX + (throwerX > e.dogX ? 14 : -14); e.bY = groundBallY; }
+            break;
+          case 'deliver':
+            e.dfT += dt; if (e.dfT > 0.6) { e.bHeld = 'thrower'; e.side = -e.side; e.df = 'ready'; e.dfT = 0; }
+            break;
+          // ── mega gag ──
+          case 'megawind':
+            e.dfT += dt;
+            if (e.dfT > 0.6) { e.df = 'megathrow'; e.dfT = 0; e.megaSide = e.side; e.bHeld = 'air'; e.launch = thHand(throwRel(0.5), e.megaSide < 0); e.tX = e.megaSide > 0 ? w + 70 : -70; }
+            break;
+          case 'megathrow': {
+            e.dfT += dt; var mp = Math.min(1, e.dfT / 0.85);
+            e.bX = e.launch.x + (e.tX - e.launch.x) * mp; e.bY = e.launch.y + (groundBallY - e.launch.y) * mp - 120 * Math.sin(Math.PI * Math.min(1, mp * 0.9));
+            dogTo(e.megaSide > 0 ? w + 50 : -50, DOG_RUN);
+            if (mp >= 1 && (e.dogX > w + 40 || e.dogX < -40)) { e.df = 'megaoff'; e.dfT = 0; }
+            break;
+          }
+          case 'megaoff':
+            e.dfT += dt;
+            if (e.dfT > 0.7) { e.df = 'megadrag'; e.dfT = 0; e.dogX = e.megaSide > 0 ? w + 40 : -40; e.bigX = e.megaSide > 0 ? w + 62 : -62; }
+            break;
+          case 'megadrag':
+            dogTo(homeX, DOG_DRAG); e.bigX = e.dogX + (e.megaSide > 0 ? 30 : -30);
+            if (Math.abs(e.dogX - homeX) < 10) { e.df = 'megacatch'; e.dfT = 0; }
+            break;
+          case 'megacatch':
+            e.dfT += dt; if (e.dfT > 0.9) { e.df = 'megapush'; e.dfT = 0; }
+            break;
+          case 'megapush': {
+            var pd = -e.megaSide; e.bigX += pd * 104 * dt;
+            if (pd > 0 ? e.bigX > w + 62 : e.bigX < -62) { e.df = 'megapoint'; e.dfT = 0; }
+            break;
+          }
+          case 'megapoint':
+            e.dfT += dt; if (e.dfT > 1.4) { e.df = 'megareturn'; e.dfT = 0; }
+            break;
+          case 'megareturn':
+            dogTo(e.megaSide > 0 ? w + 40 : -40, DOG_RUN);
+            if (e.dogX > w + 30 || e.dogX < -30) { e.df = 'megaback'; e.dfT = 0; }
+            break;
+          case 'megaback':
+            e.dfT += dt; if (e.dfT > 0.8) { e.df = 'megacarry'; e.dfT = 0; e.dogX = e.megaSide > 0 ? w + 30 : -30; e.bHeld = 'dog'; }
+            break;
+          case 'megacarry':
+            dogTo(homeX, DOG_TROT);
+            if (Math.abs(e.dogX - homeX) < 8) { e.bHeld = 'thrower'; e.mega = false; e.side = -e.megaSide; e.df = 'ready'; e.dfT = 0; }
+            break;
+        }
+      }
+
+      // thrower position: steps to the big ball to catch, follows while shoving, else home
+      var thTarget = throwerX;
+      if (e.df === 'megacatch') thTarget = e.bigX - e.megaSide * 30;
+      else if (e.df === 'megapush') thTarget = e.bigX + e.megaSide * 24;
+      e.thrX += (thTarget - e.thrX) * Math.min(1, dt * 4);
+
+      // ── choose poses ──
+      var faceDogFlip = e.dogX < e.thrX;
+      var thP, thFlip;
+      if (sitting || rolling) { thP = A.standstill.frame(tt); thFlip = faceDogFlip; }
+      else switch (e.df) {
+        case 'ready': thP = A.standstill.frame(tt); thFlip = e.side < 0; break;
+        case 'windup': thP = throwWind(); thFlip = e.side < 0; break;
+        case 'megawind': thP = throwWind(); thFlip = e.side < 0; break;
+        case 'throw': thP = throwRel(Math.min(1, e.dfT / 0.3)); thFlip = e.side < 0; break;
+        case 'megathrow': thP = throwRel(Math.min(1, e.dfT / 0.3)); thFlip = e.megaSide < 0; break;
+        case 'megaoff': thP = A.standstill.frame(tt); thFlip = e.megaSide < 0; break;
+        case 'megacatch': thP = A.heave.frame(Math.min(1.15, e.dfT)); thFlip = e.megaSide > 0; break;
+        case 'megapush': thP = pushPose(tt); thFlip = (-e.megaSide) < 0; break;
+        case 'megapoint': thP = A.present.frame(tt); thFlip = (-e.megaSide) < 0; break;
+        case 'deliver': thP = A.heave.frame(Math.min(1.15, e.dfT)); thFlip = faceDogFlip; break;
+        default: thP = A.standstill.frame(tt); thFlip = faceDogFlip;   // watching the dog work
+      }
+
+      var dogSt, dogBall = false;
+      if (rolling) dogSt = 'roll';
+      else if (sitting) dogSt = 'sit';
+      else switch (e.df) {
+        case 'throw': case 'chase': case 'megathrow': case 'megareturn': dogSt = 'run'; break;
+        case 'pickup': dogSt = 'pickup'; break;
+        case 'carryback': case 'megacarry': dogSt = 'carry'; dogBall = true; break;
+        case 'megadrag': dogSt = 'drag'; break;
+        default: dogSt = 'stand';
+      }
+      if (sitting) e.dogFace = e.thrX > e.dogX ? 1 : -1;
+
+      // ── draw ──
+      // big red logo-dot behind the actors during the mega haul
+      if (e.df === 'megadrag' || e.df === 'megacatch' || e.df === 'megapush') {
+        R.drawShadow(ctx, e.bigX, feetY, 24, shadow);
+        ctx.fillStyle = cssVar('--coral', '#FF5740');
+        ctx.beginPath(); ctx.arc(e.bigX, feetY - bigR, bigR, 0, Math.PI * 2); ctx.fill();
+      }
+      // thrower
+      R.drawShadow(ctx, e.thrX, feetY, 16, shadow);
+      drawFig(ctx, e.thrX, throwerBaseY, S, thFlip, thP, { color: colThrower });
+      // small yellow ball when it's loose or in the thrower's hand (the dog draws it when carried)
+      if (e.bHeld === 'thrower') { var hp = thHand(thP, thFlip); ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(hp.x, hp.y, smallR, 0, Math.PI * 2); ctx.fill(); }
+      else if (e.bHeld === 'air' || e.bHeld === 'ground') { ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(e.bX, e.bY, smallR, 0, Math.PI * 2); ctx.fill(); }
+      // dog
+      R.drawShadow(ctx, e.dogX, feetY, rolling ? 20 : 15, shadow);
+      drawDog(ctx, e.dogX, feetY, e.dogFace, colDog, dogSt, tt, { ball: dogBall, ballColor: figColor(2), ballR: smallR });
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -663,6 +942,10 @@
         }
         if (spec.mode === 'cartwheel') {
           drawCartwheel(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt, cr);
+          return;
+        }
+        if (spec.mode === 'dogfetch') {
+          drawDogFetch(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : 5), shadow, dt, cr);
           return;
         }
         if (spec.mode === 'patrol') {
