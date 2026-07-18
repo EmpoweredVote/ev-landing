@@ -878,7 +878,14 @@
             break;
           case 'megacarry':
             dogTo(homeX, DOG_TROT);
-            if (Math.abs(e.dogX - homeX) < 8) { e.bHeld = 'thrower'; e.mega = false; e.side = -e.megaSide; e.df = 'ready'; e.dfT = 0; }
+            if (Math.abs(e.dogX - homeX) < 8) { e.df = 'megadeliver'; e.dfT = 0; e.dogDropped = false; }
+            break;
+          case 'megadeliver':
+            e.dfT += dt;
+            e.dogFace = throwerX > e.dogX ? 1 : -1;                 // faces the owner before setting it down
+            if (!e.dogDropped && e.dfT > 0.25) { e.dogDropped = true; e.bHeld = 'ground'; e.bX = e.dogX + e.dogFace * 18; e.bY = groundBallY; e.dogWagT = 0.0001; }
+            // ball waits on the GROUND until the owner has strolled home, then he bends to pick it up (no teleport)
+            if (e.dogDropped && Math.abs(e.thrX - throwerX) < 3) { e.mega = false; e.df = 'deliver'; e.dfT = 0; }   // deliver does the heave-pickup + side flip
             break;
         }
       }
