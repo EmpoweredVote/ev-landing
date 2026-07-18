@@ -697,7 +697,7 @@
         var hx = shX + (c.hdx != null ? c.hdx : 12), hy = shY + (c.hdy != null ? c.hdy : -12);
         seg(shX, shY, hx, hy, 7);                         // neck
         var mouth = head(hx, hy, Math.sin(tt * (c.speed ? 9 : 2)) * 2, c.tongue);
-        var wag = Math.sin(tt * (c.tailSpd || 5)) * (c.tailAmp || 6);
+        var wag = (opts.wag != null) ? opts.wag : Math.sin(tt * (c.tailSpd || 5)) * (c.tailAmp || 6);
         ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(hpX, hpY);
         ctx.quadraticCurveTo(hpX - 10, hpY - 9, hpX - 16, hpY - 14 + wag); ctx.stroke();
         return mouth;
@@ -754,6 +754,20 @@
     function throwWind() { var p = Object.assign({}, R.REST); p.lean = -8; p.headTilt = -6; p.armRU = -52; p.armRF = -58; p.armLU = -22; p.armLF = -15; p.legRU = 12; p.legLU = -16; p.legLF = -9; return p; }
     function throwRel(k) { var p = Object.assign({}, R.REST); p.lean = 6 - k * 3; p.headTilt = -10; var a = -52 + k * 150; p.armRU = a; p.armRF = a + 8; p.armLU = -20; p.armLF = -14; return p; }
     function pushPose(t) { var p = A.stroll.frame(t); p.lean = -10; p.hunch = -14; p.armRU = 86; p.armRF = 70; p.armLU = -80; p.armLF = -64; p.headTilt = -8; return p; }
+    // thrower's reaction when the dog hauls in the big red ball: hands thrown up briefly, then a double head-shake
+    function megaReact(t) {
+      var p = Object.assign({}, R.REST);
+      if (t < 0.7) {                                         // hands thrown up in the air
+        var u = Math.min(1, t / 0.22);
+        p.armRU = 40 + 132 * u; p.armRF = 30 + 148 * u; p.armLU = -40 - 132 * u; p.armLF = -30 - 148 * u;
+        p.lean = -4; p.headTilt = -16; p.bob = 1 + Math.sin(t * 12) * 1.2;
+      } else {                                               // hands to hips, shaking his head twice
+        var ht = t - 0.7;
+        p.armRU = 52; p.armRF = -128; p.armLU = -52; p.armLF = 128;
+        p.headTilt = Math.sin(ht * (2 * Math.PI) * (2 / 1.2)) * 20; p.lean = -2; p.bob = 1;
+      }
+      return p;
+    }
     function drawDogFetch(e, ctx, w, h, feetY, tt, colThrower, colDog, shadow, dt, cr) {
       var throwerX = w * 0.5, homeX = throwerX - 52, groundBallY = feetY - 7;
       var throwerBaseY = feetY - 112 * S, smallR = 6, bigR = 20;
@@ -809,10 +823,15 @@
             break;
           case 'carryback':
             dogTo(homeX, DOG_TROT);
-            if (Math.abs(e.dogX - homeX) < 8) { e.df = 'deliver'; e.dfT = 0; e.bHeld = 'ground'; e.bX = e.dogX + (throwerX > e.dogX ? 14 : -14); e.bY = groundBallY; }
+            if (Math.abs(e.dogX - homeX) < 8) { e.df = 'deliver'; e.dfT = 0; e.dogDropped = false; }   // arrives still holding it
             break;
           case 'deliver':
-            e.dfT += dt; if (e.dfT > 0.6) { e.bHeld = 'thrower'; e.side = -e.side; e.df = 'ready'; e.dfT = 0; }
+            e.dfT += dt;
+            e.dogFace = throwerX > e.dogX ? 1 : -1;                 // turn to FACE the thrower before dropping
+            if (!e.dogDropped && e.dfT > 0.25) {                    // then set it down in front of him; tail wiggles
+              e.dogDropped = true; e.bHeld = 'ground'; e.bX = e.dogX + e.dogFace * 18; e.bY = groundBallY; e.dogWagT = 0.0001;
+            }
+            if (e.dfT > 0.85) { e.bHeld = 'thrower'; e.side = -e.side; e.df = 'ready'; e.dfT = 0; }
             break;
           // ── mega gag ──
           case 'megawind':
@@ -828,9 +847,10 @@
           }
           case 'megaoff':
             e.dfT += dt;
-            if (e.dfT > 0.7) { e.df = 'megadrag'; e.dfT = 0; e.dogX = e.megaSide > 0 ? w + 40 : -40; e.bigX = e.megaSide > 0 ? w + 62 : -62; }
+            if (e.dfT > 0.7) { e.df = 'megadrag'; e.dfT = 0; e.reactT = 0; e.dogX = e.megaSide > 0 ? w + 40 : -40; e.bigX = e.megaSide > 0 ? w + 62 : -62; }
             break;
           case 'megadrag': {
+            e.reactT += dt;                                                             // thrower's see-the-big-ball reaction runs alongside the haul
             var dd = homeX > e.dogX ? 1 : -1; e.dogX += dd * DOG_DRAG * dt;             // shuffles BACKWARD toward home
             if ((dd > 0 && e.dogX > homeX) || (dd < 0 && e.dogX < homeX)) e.dogX = homeX;
             e.dogFace = e.megaSide > 0 ? 1 : -1;                                         // faces the ball, so he's walking backward
@@ -881,6 +901,7 @@
         case 'throw': thP = throwRel(Math.min(1, e.dfT / 0.3)); thFlip = e.side < 0; break;
         case 'megathrow': thP = throwRel(Math.min(1, e.dfT / 0.3)); thFlip = e.megaSide < 0; break;
         case 'megaoff': thP = A.standstill.frame(tt); thFlip = e.megaSide < 0; break;
+        case 'megadrag': thP = (e.reactT < 1.9) ? megaReact(e.reactT) : A.standstill.frame(tt); thFlip = e.megaSide < 0; break;   // hands up + head-shake, then waits for the dog
         case 'megacatch': thP = A.heave.frame(Math.min(1.15, e.dfT)); thFlip = e.megaSide > 0; break;
         case 'megapush': thP = pushPose(tt); thFlip = (-e.megaSide) < 0; break;
         case 'megapoint': thP = A.present.frame(tt); thFlip = (-e.megaSide) < 0; break;
@@ -901,6 +922,8 @@
         default: dogSt = 'stand';
       }
       if (sitting) e.dogFace = e.thrX > e.dogX ? 1 : -1;
+      if (e.dogWagT > 0) { e.dogWagT += dt; if (e.dogWagT > 0.55) e.dogWagT = 0; }   // fast double tail-wiggle right after he drops the ball
+      var wagBurst = (e.dogWagT > 0) ? Math.sin(e.dogWagT * 2 * Math.PI * 3.6) * 12 : null;
 
       // ── draw ──
       // big red logo-dot behind the actors during the mega haul
@@ -917,7 +940,7 @@
       else if (e.bHeld === 'air' || e.bHeld === 'ground') { ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(e.bX, e.bY, smallR, 0, Math.PI * 2); ctx.fill(); }
       // dog
       R.drawShadow(ctx, e.dogX, feetY, rolling ? 15 : 11, shadow);
-      drawDog(ctx, e.dogX, feetY, e.dogFace, colDog, dogSt, tt, { ball: dogBall, ballColor: figColor(2), ballR: smallR });
+      drawDog(ctx, e.dogX, feetY, e.dogFace, colDog, dogSt, tt, { ball: dogBall, ballColor: figColor(2), ballR: smallR, wag: wagBurst });
     }
 
     var t = 0, last = performance.now();
