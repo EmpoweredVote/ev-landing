@@ -48,6 +48,10 @@
         if (e.spec.mode === 'beam' && e.scene === 'light' && e._lgSX != null && !(e.lightWave > 0)) {
           if (Math.abs(ev.clientX - e._lgSX) < 42 && Math.abs(ev.clientY - e._lgSY) < 72) { e.lightWave = 1.4; return; }
         }
+        // cartwheeler: tap him mid-practice → he crumples into a heap
+        if (e.spec.mode === 'cartwheel' && e._cwSX != null && (e.cw === 'cwheel' || e.cw === 'stand' || e.cw === 'headshake')) {
+          if (Math.abs(ev.clientX - e._cwSX) < 40 && Math.abs(ev.clientY - e._cwSY) < 84) { e.cw = 'heap'; e.cwT = 0; return; }
+        }
         // paddleball pair: click a player mid-rally → he stops, waves, drops the ball
         if (e.spec.mode === 'paddlepair' && e._ppSY != null && e.rl !== 'miss' && e.rl !== 'retrieve') {
           var pHitL = Math.abs(ev.clientX - e._ppSXL) < 34 && Math.abs(ev.clientY - e._ppSY) < 74;
@@ -186,9 +190,14 @@
       else { pk.anim = pick(IDLES); }                             // idle (hover: wave). Only the footer stander jumps.
       add(pk);
       if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid .watch-card:nth-of-type(3) .watch-thumb', tone: takeTone() });
-      // footer pair — always present so the meet-and-greet keeps happening
-      add(walker('footer', { tone: 0 }));
-      add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
+      // footer — usually the meet-and-greet pair; occasionally a cartwheel practicer + a
+      // corner Bobit who plays medic (the walker & the lower-left stander, combined on one canvas)
+      if (chance(0.28)) {
+        add({ mode: 'cartwheel', anchor: 'footer', edge: 'top', tone: 0, tone2: 1 });
+      } else {
+        add(walker('footer', { tone: 0 }));
+        add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
+      }
       return out;
     }
 
@@ -285,6 +294,13 @@
           e.c.style.top = (edgeYPP - (FIG_H - 6)) + 'px';
           return;
         }
+        if (spec.mode === 'cartwheel') {
+          var hCW = 180, wCW = Math.max(360, r.width); sizeCanvas(e, wCW, hCW);   // full-width + headroom for the spin
+          var edgeYCW = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
+          e.c.style.left = (r.left + sx) + 'px';
+          e.c.style.top = (edgeYCW - (hCW - 6)) + 'px';
+          return;
+        }
         if (spec.mode === 'seat') {
           // taller canvas + seat line 42px above the bottom so dangling shins clear the edge
           var hSe = 180;
@@ -307,6 +323,7 @@
     function drawFig(ctx, x, y, s, flip, pose, opts) {
       ctx.save();
       ctx.translate(x, y);
+      if (opts && opts.rot) ctx.rotate(opts.rot);   // whole-figure spin (cartwheels) / tip-over (heap)
       ctx.scale(flip ? -s : s, s);
       var j = R.computePose(pose, CFG, { x: 0, y: 0 });
       R.draw(ctx, j, CFG, opts);
@@ -518,6 +535,91 @@
       e._ballX = ballX; e._ballY = ballY;   // remembered so a click drops the ball from here
     }
 
+    // ── CARTWHEEL scene (occasionally replaces the footer meet pair): one Bobit practices
+    //    cartwheels; tap him mid-wheel → he crumples into a heap and wriggles ~30s, then gets
+    //    up, shakes it off, and resumes. On a spill, the corner Bobit runs over and kneels by
+    //    him; rises when he rises; and when he starts wheeling again, throws up his hands and
+    //    trudges back to his corner. ──
+    var HEAP_SECS = 30;
+    function cwStar() { var p = A.standstill.frame(0); p.hunch = 0; p.bob = 0; p.headTilt = 0; p.armRU = 142; p.armRF = 150; p.armLU = -142; p.armLF = -150; p.legRU = 30; p.legRF = 26; p.legLU = -30; p.legLF = -26; return p; }
+    function cwHeap(t) { var p = A.standstill.frame(0); var wr = Math.sin(t * 7) * 4, wr2 = Math.sin(t * 5.3 + 1) * 5; p.hunch = -46 + wr; p.bob = 10; p.lean = 6 + wr2; p.headTilt = -22 + wr; p.legRU = 66 + Math.sin(t * 6) * 12; p.legRF = -38; p.legLU = 58 + wr2; p.legLF = -32; p.armRU = 52 + Math.sin(t * 8) * 14; p.armRF = 40; p.armLU = -56; p.armLF = -38 + wr; return p; }
+    function cwKneel(t) { var p = A.standstill.frame(0); p.hunch = -56; p.lean = 8; p.bob = 22 + Math.sin(t * 2) * 1.5; p.headTilt = -8; p.legRU = 104; p.legRF = 96; p.legLU = 96; p.legLF = 88; p.armRU = 66; p.armRF = 112; p.armLU = -66; p.armLF = -112; return p; }
+    function cwFrust(t) { var p = A.standstill.frame(0); p.armRU = 166; p.armRF = 172; p.armLU = -166; p.armLF = -172; p.headTilt = Math.sin(t * 9) * 7; p.lean = -3; p.bob = Math.sin(t * 4) * 2; return p; }
+    function drawCartwheel(e, ctx, w, h, feetY, tt, colA, colB, shadow, dt, cr) {
+      var baseY = feetY - 112 * S, cornerX = 46, roamL = 128, roamR = w - 74;
+      var lieRot = 80 * Math.PI / 180, lieY = (feetY - 14) - baseY;
+      if (e.cw == null) { e.cw = 'stand'; e.cwT = 0; e.cwX = w * 0.5; e.cwDir = -1; e.cwX0 = e.cwX; e.hp = 'corner'; e.hpX = cornerX; e.hpT = 0; }
+      e._cwSX = cr.left + e.cwX; e._cwSY = cr.top + feetY - 24;
+
+      // ---- cartwheeler ----
+      var cwPose, cwRot = 0, cwYoff = 0, cwFlip = e.cwDir < 0;
+      switch (e.cw) {
+        case 'stand':
+          e.cwT += dt; cwPose = A.standstill.frame(tt);
+          if (e.cwT > 0.7) { if (e.cwX <= roamL) e.cwDir = 1; else if (e.cwX >= roamR) e.cwDir = -1; else if (Math.sin(e.cwX * 12.9) > 0.6) e.cwDir = -e.cwDir; e.cw = 'cwheel'; e.cwT = 0; e.cwX0 = e.cwX; }
+          break;
+        case 'cwheel': {
+          e.cwT += dt; var pc = Math.min(1, e.cwT / 0.95);
+          e.cwX = e.cwX0 + e.cwDir * 96 * pc; cwRot = e.cwDir * -2 * Math.PI * pc; cwPose = cwStar();
+          if (pc >= 1) { e.cw = 'stand'; e.cwT = 0; }
+          break;
+        }
+        case 'heap':
+          e.cwT += dt; cwPose = cwHeap(e.cwT); cwRot = lieRot + Math.sin(e.cwT * 6) * 0.12; cwYoff = lieY;
+          if (e.cwT > HEAP_SECS) { e.cw = 'getup'; e.cwT = 0; }
+          break;
+        case 'getup': {
+          e.cwT += dt; var gp = smooth01(e.cwT / 1.2); cwRot = lieRot * (1 - gp); cwYoff = lieY * (1 - gp); cwPose = lerpPose(cwHeap(0), A.standstill.frame(0), gp);
+          if (gp >= 1) { e.cw = 'headshake'; e.cwT = 0; }
+          break;
+        }
+        case 'headshake':
+          e.cwT += dt; cwPose = A.standstill.frame(tt); cwPose.headTilt = Math.sin(e.cwT * 11) * 20;
+          if (e.cwT > 1.3) { e.cw = 'stand'; e.cwT = 0; }
+          break;
+      }
+      R.drawShadow(ctx, e.cwX, feetY, 15, shadow);
+      drawFig(ctx, e.cwX, baseY + cwYoff, S, cwFlip, cwPose, { color: colA, rot: cwRot });
+
+      // ---- helper (corner Bobit) ----
+      var hpPose, hpFlip = false, hpRot = 0, hpYoff = 0;
+      switch (e.hp) {
+        case 'corner':
+          hpPose = A.standstill.frame(tt + 1.1); e.hpX = cornerX;
+          if (e.cw === 'heap') { e.hp = 'runto'; }
+          break;
+        case 'runto': {
+          var tgt = e.cwX - 30, d = tgt > e.hpX ? 1 : -1; e.hpX += d * 196 * dt; hpFlip = d < 0; hpPose = A.scurry.frame(tt);
+          if ((d > 0 && e.hpX >= tgt) || (d < 0 && e.hpX <= tgt)) { e.hpX = tgt; e.hp = 'kneel'; e.hpT = 0; }
+          break;
+        }
+        case 'kneel':
+          e.hpT += dt; hpPose = cwKneel(e.hpT); hpFlip = e.cwX < e.hpX;
+          if (e.cw === 'getup' || e.cw === 'headshake' || e.cw === 'stand') { e.hp = 'helperup'; e.hpT = 0; }
+          break;
+        case 'helperup': {
+          e.hpT += dt; var up = smooth01(e.hpT / 1.0); hpPose = lerpPose(cwKneel(0), A.standstill.frame(0), up); hpFlip = e.cwX < e.hpX;
+          if (up >= 1) { e.hp = 'watch'; }
+          break;
+        }
+        case 'watch':
+          hpPose = A.standstill.frame(tt); hpFlip = e.cwX < e.hpX;
+          if (e.cw === 'cwheel') { e.hp = 'frustrated'; e.hpT = 0; }
+          break;
+        case 'frustrated':
+          e.hpT += dt; hpPose = cwFrust(e.hpT); hpFlip = e.cwX < e.hpX;
+          if (e.hpT > 1.2) { e.hp = 'runback'; }
+          break;
+        case 'runback': {
+          var db = cornerX < e.hpX ? -1 : 1; e.hpX += db * 130 * dt; hpFlip = db < 0; hpPose = A.trudge.frame(tt);
+          if (Math.abs(e.hpX - cornerX) < 6) { e.hpX = cornerX; e.hp = 'corner'; }
+          break;
+        }
+      }
+      R.drawShadow(ctx, e.hpX, feetY, 14, shadow);
+      drawFig(ctx, e.hpX, baseY + hpYoff, S, hpFlip, hpPose, { color: colB, rot: hpRot });
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -572,6 +674,10 @@
         var figX = w / 2;
         if (spec.mode === 'paddlepair') {
           drawPaddlePair(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt, cr);
+          return;
+        }
+        if (spec.mode === 'cartwheel') {
+          drawCartwheel(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt, cr);
           return;
         }
         if (spec.mode === 'patrol') {
