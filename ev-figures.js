@@ -322,7 +322,7 @@
           return;
         }
         if (spec.mode === 'kite') {
-          var wKt = 300, hKt = 350; sizeCanvas(e, wKt, hKt);   // tall + wide so the kite has plenty of sky up-and-downwind
+          var wKt = 340, hKt = 350; sizeCanvas(e, wKt, hKt);   // tall + wide so the kite has plenty of sky up-and-downwind
           var edgeYKt = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
           var leftKt = r.left + sx + r.width * spec.x - 70;                    // flyer (gx0=70) sits at spec.x; kite reaches up-right
           var maxLeftKt = sx + document.documentElement.clientWidth - wKt - 4; // never past the viewport (no h-scroll)
@@ -981,7 +981,7 @@
     function kiteHold(t) { var p = Object.assign({}, R.REST); p.lean = -3; p.headTilt = -20; p.armRU = 150; p.armRF = 150; p.armLU = -16; p.armLF = -12; p.bob = Math.sin(t * 0.7) * 1.4; p.legRU = 8; p.legLU = -10; return p; }
     function kiteWave(t) { var p = kiteHold(t); var wv = Math.min(1, t / 0.3); p.armLU = -15 - 140 * wv; p.armLF = -11 - 150 * wv + Math.sin(t * 11) * 22; p.headTilt = -14; return p; }
     function drawKite(e, ctx, w, h, feetY, tt, colGuy, colKite, shadow, dt, cr) {
-      var gx0 = 70, guyBaseY = feetY - 112 * S, khX = 222, khY = 52, groundKiteY = feetY - 12;   // kite flies high + well downwind (long string)
+      var gx0 = 70, guyBaseY = feetY - 112 * S, khX = 262, khY = 86, groundKiteY = feetY - 12;   // kite rides well downwind (long string), hovering a touch lower
       if (e.kt == null) { e.kt = 'fly'; e.ktT = 0; e.gxCur = gx0; e.kwave = 0; e.kx = khX; e.ky = khY; e.kang = 0.28; }
       e.ktT += dt;
 
