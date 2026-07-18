@@ -48,9 +48,9 @@
         if (e.spec.mode === 'beam' && e.scene === 'light' && e._lgSX != null && !(e.lightWave > 0)) {
           if (Math.abs(ev.clientX - e._lgSX) < 42 && Math.abs(ev.clientY - e._lgSY) < 72) { e.lightWave = 1.4; return; }
         }
-        // cartwheeler: tap him mid-practice → he crumples into a heap
-        if (e.spec.mode === 'cartwheel' && e._cwSX != null && (e.cw === 'cwheel' || e.cw === 'stand' || e.cw === 'headshake')) {
-          if (Math.abs(ev.clientX - e._cwSX) < 40 && Math.abs(ev.clientY - e._cwSY) < 84) { e.cw = 'heap'; e.cwT = 0; return; }
+        // cartwheeler: click him → flag him; at the END of his next cartwheel he falls into a heap
+        if (e.spec.mode === 'cartwheel' && e._cwSX != null && !e.cwHurt && (e.cw === 'walk' || e.cw === 'cwheel' || e.cw === 'stand' || e.cw === 'headshake')) {
+          if (Math.abs(ev.clientX - e._cwSX) < 40 && Math.abs(ev.clientY - e._cwSY) < 84) { e.cwHurt = true; return; }
         }
         // dog-fetch: click the dog → he drops the ball & rolls over; click the owner → the mega throw
         if (e.spec.mode === 'dogfetch' && e._dogSX != null && !e.mega && !e.megaPending && !(e.dogRoll > 0)) {
@@ -467,7 +467,7 @@
         var missCol = isL ? colA : colB, otherCol = isL ? colB : colA, otherFlip = isL;
         // the OTHER player reacts to the drop: lowers his paddle and throws his far hand out to
         // the side ("what's up?"), then eases back to a ready paddle as his partner fetches it
-        var wu = Object.assign({}, R.REST); wu.armRU = 40; wu.armRF = 26; wu.armLU = -98; wu.armLF = -94; wu.hunch = -6; wu.headTilt = -12 + Math.sin(e.missT * 3) * 2; wu.lean = -2; wu.bob = 1;
+        var wu = Object.assign({}, R.REST); wu.armRU = 40; wu.armRF = 26; wu.armLU = -56; wu.armLF = -50; wu.hunch = -6; wu.headTilt = -12 + Math.sin(e.missT * 3) * 2; wu.lean = -2; wu.bob = 1;
         var otherPose;
         if (e.rl === 'miss') { e.owT = 0; otherPose = wu; }
         else { e.owT = (e.owT || 0) + dt; otherPose = lerpPose(wu, A.paddleball.frame(0.34), Math.min(1, e.owT / 0.4)); }
@@ -546,12 +546,12 @@
       e._ballX = ballX; e._ballY = ballY;   // remembered so a hover-drop starts from here
     }
 
-    // ── CARTWHEEL scene (occasionally replaces the footer meet pair): one Bobit practices
-    //    cartwheels; tap him mid-wheel → he crumples into a heap and wriggles ~30s, then gets
-    //    up, shakes it off, and resumes. On a spill, the corner Bobit runs over and kneels by
-    //    him; rises when he rises; and when he starts wheeling again, throws up his hands and
-    //    trudges back to his corner. ──
-    var HEAP_SECS = 30;
+    // ── CARTWHEEL scene (occasionally replaces the footer meet pair): one Bobit walks around
+    //    and throws in the odd cartwheel; click him → he's flagged, and at the END of his next
+    //    cartwheel he collapses into a heap (~10s wriggle), then gets up and shakes it off. On
+    //    the spill the corner Bobit runs over and kneels by him; rises when he rises; and when
+    //    he starts wheeling again, throws up his hands and trudges back to his corner. ──
+    var HEAP_SECS = 10;
     function cwStar() { var p = A.standstill.frame(0); p.hunch = 0; p.bob = 0; p.headTilt = 0; p.armRU = 142; p.armRF = 150; p.armLU = -142; p.armLF = -150; p.legRU = 30; p.legRF = 26; p.legLU = -30; p.legLF = -26; return p; }
     function cwHeap(t) { var p = A.standstill.frame(0); var wr = Math.sin(t * 7) * 4, wr2 = Math.sin(t * 5.3 + 1) * 5; p.hunch = -46 + wr; p.bob = 10; p.lean = 6 + wr2; p.headTilt = -22 + wr; p.legRU = 66 + Math.sin(t * 6) * 12; p.legRF = -38; p.legLU = 58 + wr2; p.legLF = -32; p.armRU = 52 + Math.sin(t * 8) * 14; p.armRF = 40; p.armLU = -56; p.armLF = -38 + wr; return p; }
     // crouched over the fallen one — knelt low, one arm reaching in. Drawn with a y-offset so it sits on the ground.
@@ -578,7 +578,7 @@
           e.cwT += dt; e.cwX += e.cwDir * 50 * dt; cwFlip = e.cwDir < 0; cwPose = A.strut.frame(tt);
           if (e.cwX <= roamL) { e.cwX = roamL; e.cwDir = 1; } else if (e.cwX >= roamR) { e.cwX = roamR; e.cwDir = -1; }
           if (e.cwT > e.cwWalk) {
-            if (Math.sin(e.cwX * 7.7) > -0.3) {   // usually punctuate the walk with a single cartwheel…
+            if (e.cwHurt || Math.sin(e.cwX * 7.7) > -0.3) {   // usually punctuate the walk with a cartwheel (always, if flagged, so he can fall out of it)
               if (e.cwX + e.cwDir * 96 > roamR) e.cwDir = -1; else if (e.cwX + e.cwDir * 96 < roamL) e.cwDir = 1;   // keep the wheel in-bounds
               e.cw = 'cwheel'; e.cwT = 0; e.cwX0 = e.cwX;
             } else { e.cw = 'stand'; e.cwT = 0; }   // …otherwise just pause and turn
@@ -587,7 +587,10 @@
         case 'cwheel': {
           e.cwT += dt; var pc = Math.min(1, e.cwT / 0.95);
           e.cwX = e.cwX0 + e.cwDir * 96 * pc; cwRot = e.cwDir * 2 * Math.PI * pc; cwPose = cwStar();   // L→R clockwise, R→L counter-clockwise
-          if (pc >= 1) { e.cw = 'walk'; e.cwT = 0; e.cwWalk = 1.6 + (Math.sin(e.cwX * 5.3) + 1) * 1.1; }   // resume walking, not another spin
+          if (pc >= 1) {
+            if (e.cwHurt) { e.cwHurt = false; e.cw = 'heap'; e.cwT = 0; }   // flagged → he crumples at the END of the wheel; helper comes running
+            else { e.cw = 'walk'; e.cwT = 0; e.cwWalk = 1.6 + (Math.sin(e.cwX * 5.3) + 1) * 1.1; }   // otherwise resume walking
+          }
           break;
         }
         case 'heap':
