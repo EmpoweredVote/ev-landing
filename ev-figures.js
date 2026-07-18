@@ -64,6 +64,11 @@
             return;
           }
         }
+        // kite: click the kite → a loop; click the flyer → the kite spins & falls, then he relaunches it
+        if (e.spec.mode === 'kite' && e._kiteSX != null) {
+          if (e.kt === 'fly' && Math.abs(ev.clientX - e._kiteSX) < 26 && Math.abs(ev.clientY - e._kiteSY) < 26) { e.kt = 'loop'; e.ktT = 0; return; }
+          if ((e.kt === 'fly' || e.kt === 'loop') && Math.abs(ev.clientX - e._kgSX) < 28 && Math.abs(ev.clientY - e._kgSY) < 56) { e.kt = 'spin'; e.ktT = 0; return; }
+        }
         if (e.spec.mode !== 'rope' || !e.w || e._ropeSX == null) return;
         if (Math.abs(ev.clientX - e._ropeSX) > 55 || Math.abs(ev.clientY - e._ropeSY) > 82) return;
         if (e.rphase === 'sit') { e.rphase = 'break'; e.breakT = 0; return; }   // frame breaks out from under him
@@ -176,7 +181,9 @@
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' });       // fixed (content)
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
-      add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));  // Note 1 always hosts a Bobit (moved off Note 2)
+      // Note 1 always hosts a Bobit; occasionally the right spot is a kite-flyer instead
+      if (chance(0.25)) { var kg = takeTone(), kk = takeTone(); if (kk === kg) kk = (kk + 2) % 6; add({ mode: 'kite', anchor: '.note.n-alpha', edge: 'top', x: 0.72, tone: kg, tone2: kk }); }
+      else add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));
       add(noteSlot('.note.n-ai', {}));                                       // Note 2 (n-team) intentionally left clear
       add(noteSlot('.note.n-money', {}));
       // watch top (the 02/How-we-work ↔ 03/Talks split) — was getting crowded with samey walkers;
@@ -307,6 +314,13 @@
           var edgeYDF = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
           e.c.style.left = (r.left + sx) + 'px';
           e.c.style.top = (edgeYDF - (hDF - 6)) + 'px';
+          return;
+        }
+        if (spec.mode === 'kite') {
+          var wKt = 200, hKt = 210; sizeCanvas(e, wKt, hKt);   // tall + wide so the kite has sky up-and-downwind
+          var edgeYKt = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
+          e.c.style.left = (r.left + sx + r.width * spec.x - wKt / 2) + 'px';
+          e.c.style.top = (edgeYKt - (hKt - 6)) + 'px';
           return;
         }
         if (spec.mode === 'seat') {
@@ -950,6 +964,117 @@
       drawDog(ctx, e.dogX, feetY, e.dogFace, colDog, dogSt, tt, { ball: dogBall, ballColor: figColor(2), ballR: smallR, wag: wagBurst });
     }
 
+    // ── KITE scene (occasionally on the right of Note 01's top edge): a Bobit flies a kite in a
+    //    left→right wind — the kite floats up-and-downwind on a string, with a little fluttering
+    //    tail. Click the KITE → it does a loop (tail trailing). Hover the GUY → he waves with his
+    //    free hand. Click the GUY → the kite spins, falls, and he trots over, picks it up, and
+    //    tosses it back up as he runs home. ──
+    function kiteHold(t) { var p = Object.assign({}, R.REST); p.lean = -3; p.headTilt = -20; p.armRU = 150; p.armRF = 150; p.armLU = -16; p.armLF = -12; p.bob = Math.sin(t * 0.7) * 1.4; p.legRU = 8; p.legLU = -10; return p; }
+    function kiteWave(t) { var p = kiteHold(t); var wv = Math.min(1, t / 0.3); p.armLU = -15 - 140 * wv; p.armLF = -11 - 150 * wv + Math.sin(t * 11) * 22; p.headTilt = -14; return p; }
+    function drawKite(e, ctx, w, h, feetY, tt, colGuy, colKite, shadow, dt, cr) {
+      var gx0 = 74, guyBaseY = feetY - 112 * S, khX = 150, khY = 58, groundKiteY = feetY - 12;
+      if (e.kt == null) { e.kt = 'fly'; e.ktT = 0; e.gxCur = gx0; e.kwave = 0; e.kx = khX; e.ky = khY; e.kang = 0.28; }
+      e.ktT += dt;
+
+      function guyHandOf(pose, flip) { var j = R.computePose(pose, CFG, { x: 0, y: 0 }); return { x: e.gxCur + (flip ? -S : S) * j.hR.x, y: guyBaseY + S * j.hR.y }; }
+      function bottomPt(kx, ky, ang) { return { x: kx + Math.sin(ang) * 17, y: ky + Math.cos(ang) * 17 }; }
+      function kiteDiamond(kx, ky, ang) {
+        ctx.save(); ctx.translate(kx, ky); ctx.rotate(ang);
+        ctx.fillStyle = colKite; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(11, 0); ctx.lineTo(0, 17); ctx.lineTo(-11, 0); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = colGuy; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(0, 17); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.stroke();
+        ctx.restore();
+      }
+      function kiteTail(kx, ky, ang, ph) {
+        var bp = bottomPt(kx, ky, ang);
+        ctx.strokeStyle = colKite; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(bp.x, bp.y);
+        var px, py;
+        for (var i = 1; i <= 6; i++) { var f = Math.sin(ph * 5 + i * 0.8) * 5; px = bp.x + i * 3 + f; py = bp.y + i * 7; ctx.lineTo(px, py); }
+        ctx.stroke();
+        ctx.fillStyle = colGuy;
+        for (var b = 2; b <= 6; b += 2) { var fb = Math.sin(ph * 5 + b * 0.8) * 5; ctx.beginPath(); ctx.arc(bp.x + b * 3 + fb, bp.y + b * 7, 2.3, 0, Math.PI * 2); ctx.fill(); }
+      }
+      function kiteString(hand, kx, ky, ang, slack) {
+        var bp = bottomPt(kx, ky, ang);
+        ctx.strokeStyle = cssVar('--border', '#B0AEA6'); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.quadraticCurveTo((hand.x + bp.x) / 2, (hand.y + bp.y) / 2 + (slack || 6), bp.x, bp.y); ctx.stroke();
+      }
+
+      // hover the guy → wave with his free hand (while the kite is up)
+      var overGuy = Math.abs(mx - (cr.left + e.gxCur)) < 22 && my > cr.top + feetY - 92 && my < cr.top + feetY + 6;
+      var flying = (e.kt === 'fly' || e.kt === 'loop');
+      if (flying && overGuy) { if (!e.kwave) e.kwave = 0.0001; e.kwLinger = 1.3; }
+      else if (e.kwave) { e.kwLinger -= dt; if (e.kwLinger <= 0) e.kwave = 0; }
+      if (e.kwave) e.kwave += dt;
+
+      e._kiteSX = cr.left + e.kx; e._kiteSY = cr.top + e.ky;
+      e._kgSX = cr.left + e.gxCur; e._kgSY = cr.top + feetY - 40;
+
+      var guyPose, guyFlip = false, kx = e.kx, ky = e.ky, ang = e.kang, slack = 6, kiteInHand = false, kiteGround = false;
+      switch (e.kt) {
+        case 'fly': {
+          var sway = Math.sin(e.ktT * 1.1), bobK = Math.sin(e.ktT * 1.6);
+          kx = khX + sway * 12; ky = khY + bobK * 9; ang = 0.28 + sway * 0.14;
+          guyPose = kiteHold(e.ktT);
+          break;
+        }
+        case 'loop': {
+          var lp = Math.min(1, e.ktT / 1.2), a2 = -Math.PI / 2 + lp * 2 * Math.PI;
+          kx = khX + Math.cos(a2) * 26; ky = (khY - 22) + Math.sin(a2) * 26; ang = 0.28 + lp * 2 * Math.PI;
+          guyPose = kiteHold(e.ktT);
+          if (lp >= 1) { e.kt = 'fly'; e.ktT = 0; }
+          break;
+        }
+        case 'spin': {
+          kx = khX; ky = khY; ang = 0.28 + e.ktT * 22; slack = 6 + e.ktT * 26;   // spins in place, string goes slack
+          guyPose = kiteHold(e.ktT);
+          if (e.ktT > 0.6) { e.kt = 'fall'; e.ktT = 0; e.kvy = -20; }
+          break;
+        }
+        case 'fall': {
+          e.kvy = (e.kvy || 0) + 470 * dt; e.ky += e.kvy * dt; e.kx += 26 * dt;    // gravity + downwind drift
+          kx = e.kx; ky = e.ky; ang = 0.28 + Math.sin(e.ktT * 9) * 0.7;
+          guyPose = A.standstill.frame(tt); guyPose.headTilt = 16;                 // watches it come down
+          if (e.ky >= groundKiteY) { e.ky = groundKiteY; e.kt = 'fetch'; e.ktT = 0; }
+          break;
+        }
+        case 'fetch': {
+          var tgt = e.kx - 16, d = tgt > e.gxCur ? 1 : -1; e.gxCur += d * 74 * dt; guyFlip = d < 0;
+          kx = e.kx; ky = groundKiteY; ang = 1.5; kiteGround = true;
+          guyPose = A.stroll.frame(tt);
+          if (Math.abs(e.gxCur - tgt) < 3) { e.gxCur = tgt; e.kt = 'pickup'; e.ktT = 0; }
+          break;
+        }
+        case 'pickup': {
+          guyPose = A.heave.frame(Math.min(1.15, e.ktT));
+          if (e.ktT < 0.8) { kx = e.kx; ky = groundKiteY; ang = 1.5; kiteGround = true; } else { kiteInHand = true; }
+          if (e.ktT > 1.05) { e.kt = 'relaunch'; e.ktT = 0; }
+          break;
+        }
+        case 'relaunch': {
+          var dd = gx0 > e.gxCur ? 1 : -1; e.gxCur += dd * 96 * dt; guyFlip = dd < 0;
+          var dist = Math.abs(e.gxCur - gx0);
+          guyPose = A.scurry.frame(tt);
+          if (dist > 54) { kiteInHand = true; }                                    // carries it low as he runs
+          else { var lf = 1 - dist / 54, hand = guyHandOf(guyPose, guyFlip); kx = hand.x + (khX - hand.x) * lf; ky = hand.y + (khY - hand.y) * lf; ang = 0.9 - 0.62 * lf; }   // tosses it up as he arrives
+          if (dist < 3) { e.gxCur = gx0; e.kt = 'fly'; e.ktT = 0; }
+          break;
+        }
+      }
+      if (e.kwave && flying) guyPose = kiteWave(e.kwave);
+      e.kx = kx; e.ky = ky; e.kang = ang;
+
+      // ── draw ──
+      R.drawShadow(ctx, e.gxCur, feetY, 15, shadow);
+      if (kiteGround) R.drawShadow(ctx, kx, feetY, 11, shadow);
+      drawFig(ctx, e.gxCur, guyBaseY, S, guyFlip, guyPose, { color: colGuy });
+      if (kiteInHand) { var hnd = guyHandOf(guyPose, guyFlip); kx = hnd.x; ky = hnd.y - 6; ang = guyFlip ? -0.7 : 0.7; e.kx = kx; e.ky = ky; e.kang = ang; }
+      if (e.kt === 'fly' || e.kt === 'loop' || e.kt === 'spin') kiteString(guyHandOf(kiteHold(e.ktT), false), kx, ky, ang, slack);
+      kiteTail(kx, ky, ang, e.ktT);
+      kiteDiamond(kx, ky, ang);
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -1012,6 +1137,10 @@
         }
         if (spec.mode === 'dogfetch') {
           drawDogFetch(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : 5), shadow, dt, cr);
+          return;
+        }
+        if (spec.mode === 'kite') {
+          drawKite(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : (spec.tone + 2) % 6), shadow, dt, cr);
           return;
         }
         if (spec.mode === 'patrol') {
@@ -1234,6 +1363,15 @@
                 frontX = e.gF - gdir * (52 * ct + 24 * ct * ct) * smooth01(ct / 0.5);   // ramp speed up from a standstill
                 frontPose = lerpPose(pain, A.scurry.frame(gt), k);
                 frontFlip = gdir > 0;
+                // limp for the first few steps: favor the yanked (right) foot — stiffer knee + a hitch when it bears weight
+                var limp = Math.max(0, 1 - ct / 1.6);
+                if (limp > 0) {
+                  var plant = Math.max(0, -Math.sin(gt * 4.6 * Math.PI));   // injured (right) foot bearing weight
+                  frontPose.legRF += limp * 26;                            // injured knee stays straighter
+                  frontPose.legRU -= limp * 6;                             // shorter step on that leg
+                  frontPose.bob += limp * plant * 5;                       // hitches down onto it each stride
+                  frontPose.headTilt += limp * 5;
+                }
               }
             }
             // back guy: keeps carrying, then TORN (looks friend<->ball), then chases once the ball is halfway to the edge
