@@ -53,14 +53,14 @@
           if (Math.abs(ev.clientX - e._cwSX) < 40 && Math.abs(ev.clientY - e._cwSY) < 84) { e.cw = 'heap'; e.cwT = 0; return; }
         }
         // dog-fetch: click the dog → he drops the ball & rolls over; click the owner → the mega throw
-        if (e.spec.mode === 'dogfetch' && e._dogSX != null && !e.mega && !(e.dogRoll > 0)) {
-          if (Math.abs(ev.clientX - e._dogSX) < 28 && Math.abs(ev.clientY - e._dogSY) < 40) {
+        if (e.spec.mode === 'dogfetch' && e._dogSX != null && !e.mega && !e.megaPending && !(e.dogRoll > 0)) {
+          if (Math.abs(ev.clientX - e._dogSX) < 24 && Math.abs(ev.clientY - e._dogSY) < 34) {
             e.dogRoll = DOG_ROLL_SECS;
             if (e.bHeld === 'dog') { e.bHeld = 'ground'; e.bX = e.dogX; e.bY = e.h - 6 - 7; }   // drop what he was carrying
             return;
           }
           if (Math.abs(ev.clientX - e._thSX) < 34 && Math.abs(ev.clientY - e._thSY) < 72) {
-            e.mega = true; e.df = 'megawind'; e.dfT = 0; e.bHeld = 'thrower';
+            e.megaPending = true;   // he waits for the dog to bring the ball back, THEN hurls it off-screen
             return;
           }
         }
@@ -465,7 +465,13 @@
         var isL = e.missSide === 'L';
         var homeX = isL ? xL : xR, otherX = isL ? xR : xL;
         var missCol = isL ? colA : colB, otherCol = isL ? colB : colA, otherFlip = isL;
-        var otherPose = A.paddleball.frame(0.34), oHand = handAt(otherPose, otherX, otherFlip);
+        // the OTHER player reacts to the drop: lowers his paddle and throws his far hand out to
+        // the side ("what's up?"), then eases back to a ready paddle as his partner fetches it
+        var wu = Object.assign({}, R.REST); wu.armRU = 40; wu.armRF = 26; wu.armLU = -98; wu.armLF = -94; wu.hunch = -6; wu.headTilt = -12 + Math.sin(e.missT * 3) * 2; wu.lean = -2; wu.bob = 1;
+        var otherPose;
+        if (e.rl === 'miss') { e.owT = 0; otherPose = wu; }
+        else { e.owT = (e.owT || 0) + dt; otherPose = lerpPose(wu, A.paddleball.frame(0.34), Math.min(1, e.owT / 0.4)); }
+        var oHand = handAt(otherPose, otherX, otherFlip);
         var drawOther = function () { R.drawShadow(ctx, otherX, feetY, 14, shadow); drawFig(ctx, otherX, baseY, S, otherFlip, otherPose, { color: otherCol }); drawPaddle(oHand.x, oHand.y, otherCol); };
 
         if (e.rl === 'miss') {
@@ -645,12 +651,12 @@
     //    leremy figures. `st` selects the pose; `tt` drives gait + tail wag.
     //    Faces right by default; `face < 0` flips him. Body ~22px at the shoulder
     //    so he reads a touch shorter than the ~36px Bobits beside him.
-    var DOG_SH = 22, DOG_BL = 32;
+    var DOG_SH = 22, DOG_BL = 32, DOG_SCALE = 0.67;   // ~2/3 size so he reads smaller beside the Bobits
     function drawDog(ctx, x, groundY, face, color, st, tt, opts) {
       opts = opts || {};
       ctx.save();
       ctx.translate(x, groundY);
-      ctx.scale(face < 0 ? -1 : 1, 1);
+      ctx.scale((face < 0 ? -1 : 1) * DOG_SCALE, DOG_SCALE);
       ctx.strokeStyle = color; ctx.fillStyle = color;
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       var TONGUE = '#E8607A';
@@ -718,16 +724,17 @@
       } else if (st === 'carry') {
         mouth = upright({ tilt: -0.03, speed: 2.6, swing: 7, legLift: 5, lift: Math.abs(Math.sin(tt * 2.6 * Math.PI)) * 2.4, hdx: 13, hdy: -13, tailAmp: 6, tailSpd: 8 });
       } else if (st === 'pickup') {
-        mouth = upright({ tilt: 0.05, speed: 0, hdx: 17, hdy: -2, tailAmp: 8, tailSpd: 6 });
+        mouth = upright({ tilt: 0.04, speed: 0, hdx: 12, hdy: 8, tailAmp: 8, tailSpd: 6 });   // nose dips down to the ball
       } else if (st === 'drag') {
-        mouth = upright({ tilt: -0.06, speed: 1.4, swing: 4, legLift: 0, hdx: 15, hdy: -9, tongue: true, tailAmp: 2, tailSpd: 3 });
+        // faces the ball and hauls it BACKWARD: braced back, nose reaching toward the ball
+        mouth = upright({ tilt: -0.10, speed: 1.3, swing: -3, legLift: 1, hdx: 16, hdy: -4, tongue: true, tailAmp: 2, tailSpd: 3 });
       } else {   // stand
         mouth = upright({ lift: Math.sin(tt * 2) * 0.6, speed: 0, hdx: 12, hdy: -12, tailAmp: 5, tailSpd: 3 });
       }
 
-      if (mouth && opts.ball) {   // ball carried in the muzzle
+      if (mouth && opts.ball) {   // ball carried in the muzzle (radius undone so it matches the loose ball)
         ctx.fillStyle = opts.ballColor || figColor(2);
-        ctx.beginPath(); ctx.arc(mouth.x, mouth.y, opts.ballR || 6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(mouth.x, mouth.y, (opts.ballR || 6) / DOG_SCALE, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
@@ -740,7 +747,7 @@
     //      after it and drags back the big red dot from the middle of the EV logo (way too
     //      heavy), the thrower shoves it off the far side, points after it, and the dog
     //      trots off to bring back the little yellow ball so the game can carry on. ──
-    var DOG_ROLL_SECS = 6;
+    var DOG_ROLL_SECS = 1.4;   // short base roll; a hover holds him down, and he pops up fast once you move on
     function throwWind() { var p = Object.assign({}, R.REST); p.lean = -8; p.headTilt = -6; p.armRU = -52; p.armRF = -58; p.armLU = -22; p.armLF = -15; p.legRU = 12; p.legLU = -16; p.legLF = -9; return p; }
     function throwRel(k) { var p = Object.assign({}, R.REST); p.lean = 6 - k * 3; p.headTilt = -10; var a = -52 + k * 150; p.armRU = a; p.armRF = a + 8; p.armLU = -20; p.armLF = -14; return p; }
     function pushPose(t) { var p = A.stroll.frame(t); p.lean = -10; p.hunch = -14; p.armRU = 86; p.armRF = 70; p.armLU = -80; p.armLF = -64; p.headTilt = -8; return p; }
@@ -750,28 +757,31 @@
       if (e.df == null) { e.df = 'ready'; e.dfT = 0; e.side = (Math.sin(w * 7.3) > 0 ? 1 : -1); e.dogX = homeX; e.dogFace = 1; e.thrX = throwerX; e.bHeld = 'thrower'; e.bX = homeX; e.bY = groundBallY; e.dogRoll = 0; e.mega = false; }
 
       // hit-test coords (canvas is pointer-events:none → use shared pointer for hover)
-      e._dogSX = cr.left + e.dogX; e._dogSY = cr.top + feetY - 14;
+      e._dogSX = cr.left + e.dogX; e._dogSY = cr.top + feetY - 12;
       e._thSX = cr.left + e.thrX; e._thSY = cr.top + feetY - 34;
-      var overDog = Math.abs(mx - (cr.left + e.dogX)) < 24 && my > cr.top + feetY - 34 && my < cr.top + feetY + 8;
+      var overDog = Math.abs(mx - (cr.left + e.dogX)) < 20 && my > cr.top + feetY - 28 && my < cr.top + feetY + 8;
 
       var rolling = e.dogRoll > 0;
-      var sitting = !e.mega && !rolling && overDog && e.df !== 'chase-off';
+      var sitting = !e.mega && !rolling && overDog;
+      var dogFrozen = rolling || sitting;   // his own motion stops, but the thrown ball & the owner keep going
       if (rolling) {
+        if (overDog) e.dogRoll = Math.max(e.dogRoll, 0.7);   // keeps enjoying the belly rub while you hover
         e.dogRoll -= dt;
-        if (e.dogRoll <= 0 && e.bHeld === 'ground') { e.df = 'chase'; e.dfT = 0; }   // get up & fetch the ball he dropped
+        if (e.dogRoll <= 0 && e.bHeld === 'ground') { e.df = 'chase'; e.dfT = 0; }   // gets up & fetches the ball he dropped
       }
-      var paused = rolling || sitting;
 
       // helpers -----------------------------------------------------------------
-      function dogTo(target, sp) { var d = target > e.dogX ? 1 : -1; e.dogX += d * sp * dt; if ((d > 0 && e.dogX > target) || (d < 0 && e.dogX < target)) e.dogX = target; e.dogFace = d; }
+      function dogTo(target, sp) { if (dogFrozen) return; var d = target > e.dogX ? 1 : -1; e.dogX += d * sp * dt; if ((d > 0 && e.dogX > target) || (d < 0 && e.dogX < target)) e.dogX = target; e.dogFace = d; }
       function thHand(pose, flip) { var j = R.computePose(pose, CFG, { x: 0, y: 0 }); return { x: e.thrX + (flip ? -S : S) * j.hR.x, y: throwerBaseY + S * j.hR.y }; }
-      var DOG_RUN = 210, DOG_TROT = 150, DOG_DRAG = 88;   // drag is slow (he's struggling) but not tedious
+      var DOG_RUN = 210, DOG_TROT = 150, DOG_DRAG = 88, DOG_MZ = 24;   // DOG_MZ = muzzle reach, so his nose (not chest) meets the ball
 
-      // ── state machine (frozen while the dog sits or rolls) ──
-      if (!paused) {
+      // ── state machine: always runs so a thrown ball keeps flying/rolling even while you pet
+      //    the dog; only the dog's own movement freezes (dogTo() no-ops while frozen) ──
+      {
         switch (e.df) {
           case 'ready':
-            e.dfT += dt; if (e.dfT > 0.8) { e.df = 'windup'; e.dfT = 0; }
+            e.dfT += dt;
+            if (e.dfT > 0.8) { e.dfT = 0; if (e.megaPending) { e.megaPending = false; e.mega = true; e.df = 'megawind'; } else e.df = 'windup'; }   // clicked owner waits for the ball, THEN mega-throws
             break;
           case 'windup':
             e.dfT += dt;
@@ -781,13 +791,16 @@
             e.dfT += dt; var p = Math.min(1, e.dfT / 0.7);
             e.bX = e.launch.x + (e.tX - e.launch.x) * p; e.bY = e.launch.y + (groundBallY - e.launch.y) * p - 70 * Math.sin(Math.PI * p);
             dogTo(e.tX, DOG_RUN);
-            if (p >= 1) { e.bX = e.tX; e.bY = groundBallY; e.bHeld = 'ground'; e.df = 'chase'; e.dfT = 0; }
+            if (p >= 1) { e.bX = e.tX; e.bY = groundBallY; e.bHeld = 'ground'; e.bVX = e.side * 95; e.df = 'chase'; e.dfT = 0; }   // lands & keeps rolling gently
             break;
           }
-          case 'chase':
-            dogTo(e.bX, DOG_RUN);
-            if (Math.abs(e.dogX - e.bX) < 8) { e.df = 'pickup'; e.dfT = 0; }
+          case 'chase': {
+            if (e.bVX) { e.bX += e.bVX * dt; var dec = e.side * 150 * dt; if (Math.abs(dec) >= Math.abs(e.bVX)) e.bVX = 0; else e.bVX -= dec; e.bX = Math.max(18, Math.min(w - 18, e.bX)); }
+            var pdir = e.bX >= e.dogX ? 1 : -1, pickupX = e.bX - pdir * DOG_MZ;   // stop where his muzzle (not chest) reaches the ball
+            dogTo(pickupX, DOG_RUN);
+            if (Math.abs(e.dogX - pickupX) < 6) { e.df = 'pickup'; e.dfT = 0; e.bVX = 0; }
             break;
+          }
           case 'pickup':
             e.dfT += dt; if (e.dfT > 0.4) { e.bHeld = 'dog'; e.df = 'carryback'; e.dfT = 0; }
             break;
@@ -814,10 +827,14 @@
             e.dfT += dt;
             if (e.dfT > 0.7) { e.df = 'megadrag'; e.dfT = 0; e.dogX = e.megaSide > 0 ? w + 40 : -40; e.bigX = e.megaSide > 0 ? w + 62 : -62; }
             break;
-          case 'megadrag':
-            dogTo(homeX, DOG_DRAG); e.bigX = e.dogX + (e.megaSide > 0 ? 30 : -30);
+          case 'megadrag': {
+            var dd = homeX > e.dogX ? 1 : -1; e.dogX += dd * DOG_DRAG * dt;             // shuffles BACKWARD toward home
+            if ((dd > 0 && e.dogX > homeX) || (dd < 0 && e.dogX < homeX)) e.dogX = homeX;
+            e.dogFace = e.megaSide > 0 ? 1 : -1;                                         // faces the ball, so he's walking backward
+            e.bigX = e.dogX + e.megaSide * (bigR + 6);                                   // ball right at his nose, on the edge side
             if (Math.abs(e.dogX - homeX) < 10) { e.df = 'megacatch'; e.dfT = 0; }
             break;
+          }
           case 'megacatch':
             e.dfT += dt; if (e.dfT > 0.9) { e.df = 'megapush'; e.dfT = 0; }
             break;
@@ -843,17 +860,18 @@
         }
       }
 
-      // thrower position: steps to the big ball to catch, follows while shoving, else home
-      var thTarget = throwerX;
-      if (e.df === 'megacatch') thTarget = e.bigX - e.megaSide * 30;
-      else if (e.df === 'megapush') thTarget = e.bigX + e.megaSide * 24;
-      e.thrX += (thTarget - e.thrX) * Math.min(1, dt * 4);
+      // thrower position: steps in to catch, follows the shove (but stays on-screen), holds
+      // while pointing, and otherwise STROLLS back to his spot at a normal pace (no sprint)
+      e.thrWalk = false;
+      if (e.df === 'megacatch') { e.thrX += (e.bigX - e.megaSide * 30 - e.thrX) * Math.min(1, dt * 4); }
+      else if (e.df === 'megapush') { var tgt = Math.max(44, Math.min(w - 44, e.bigX + e.megaSide * 24)); e.thrX += (tgt - e.thrX) * Math.min(1, dt * 4); }
+      else if (e.df === 'megapoint') { /* holds his ground, pointing after it */ }
+      else { var dth = throwerX - e.thrX; if (Math.abs(dth) > 1.5) { e.thrX += (dth > 0 ? 1 : -1) * Math.min(Math.abs(dth), 64 * dt); e.thrWalk = true; } else e.thrX = throwerX; }
 
       // ── choose poses ──
       var faceDogFlip = e.dogX < e.thrX;
       var thP, thFlip;
-      if (sitting || rolling) { thP = A.standstill.frame(tt); thFlip = faceDogFlip; }
-      else switch (e.df) {
+      switch (e.df) {
         case 'ready': thP = A.standstill.frame(tt); thFlip = e.side < 0; break;
         case 'windup': thP = throwWind(); thFlip = e.side < 0; break;
         case 'megawind': thP = throwWind(); thFlip = e.side < 0; break;
@@ -866,14 +884,16 @@
         case 'deliver': thP = A.heave.frame(Math.min(1.15, e.dfT)); thFlip = faceDogFlip; break;
         default: thP = A.standstill.frame(tt); thFlip = faceDogFlip;   // watching the dog work
       }
+      if (e.thrWalk) { thP = A.stroll.frame(tt); thFlip = throwerX < e.thrX; }   // strolling back to his throwing spot
 
-      var dogSt, dogBall = false;
+      var dogBall = e.bHeld === 'dog';   // ball shows in his muzzle whenever he holds it (incl. while sitting)
+      var dogSt;
       if (rolling) dogSt = 'roll';
       else if (sitting) dogSt = 'sit';
       else switch (e.df) {
         case 'throw': case 'chase': case 'megathrow': case 'megareturn': dogSt = 'run'; break;
         case 'pickup': dogSt = 'pickup'; break;
-        case 'carryback': case 'megacarry': dogSt = 'carry'; dogBall = true; break;
+        case 'carryback': case 'megacarry': dogSt = 'carry'; break;
         case 'megadrag': dogSt = 'drag'; break;
         default: dogSt = 'stand';
       }
@@ -893,7 +913,7 @@
       if (e.bHeld === 'thrower') { var hp = thHand(thP, thFlip); ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(hp.x, hp.y, smallR, 0, Math.PI * 2); ctx.fill(); }
       else if (e.bHeld === 'air' || e.bHeld === 'ground') { ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(e.bX, e.bY, smallR, 0, Math.PI * 2); ctx.fill(); }
       // dog
-      R.drawShadow(ctx, e.dogX, feetY, rolling ? 20 : 15, shadow);
+      R.drawShadow(ctx, e.dogX, feetY, rolling ? 15 : 11, shadow);
       drawDog(ctx, e.dogX, feetY, e.dogFace, colDog, dogSt, tt, { ball: dogBall, ballColor: figColor(2), ballR: smallR });
     }
 

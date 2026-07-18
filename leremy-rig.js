@@ -568,13 +568,13 @@ const ANIMATIONS = {
     },
   },
   // ── gait explorer: lateral walks, pitched FORWARD (negative hunch = toward travel) ──
-  stroll:  makeGait({ label: "Stroll", mood: "just moseying…", speed: 2.0, stride: 24, hunch: -12, knee: 30, arm: 14, bob: 3, head: -5 }),
-  shuffle: makeGait({ label: "Shuffle", mood: "five more minutes…", speed: 1.5, stride: 10, hunch: -20, knee: 12, arm: 5, bob: 1.5, head: -9 }),
-  strut:   makeGait({ label: "Strut", mood: "yeah, I own this ledge.", speed: 2.2, stride: 30, hunch: -8, knee: 34, arm: 26, bob: 4, head: -6 }),
-  scurry:  makeGait({ label: "Scurry", mood: "late late late late", speed: 4.6, stride: 15, hunch: -24, knee: 26, arm: 8, bob: 2, head: -7 }),
+  stroll:  makeGait({ label: "Stroll", mood: "just moseying…", speed: 2.0, stride: 24, hunch: -7, knee: 30, arm: 14, bob: 3, head: -5 }),
+  shuffle: makeGait({ label: "Shuffle", mood: "five more minutes…", speed: 1.5, stride: 10, hunch: -12, knee: 12, arm: 5, bob: 1.5, head: -9 }),
+  strut:   makeGait({ label: "Strut", mood: "yeah, I own this ledge.", speed: 2.2, stride: 30, hunch: -5, knee: 34, arm: 26, bob: 4, head: -6 }),
+  scurry:  makeGait({ label: "Scurry", mood: "late late late late", speed: 4.6, stride: 15, hunch: -16, knee: 26, arm: 8, bob: 2, head: -7 }),
   march:   makeGait({ label: "March", mood: "hup, two, three, four", speed: 2.4, stride: 34, hunch: -2, knee: 6, arm: 30, bob: 5, head: 0 }),
-  sneak:   makeGait({ label: "Sneak", mood: "shhh… nobody saw that", speed: 1.3, stride: 22, hunch: -32, knee: 52, arm: 10, bob: 6, head: -11 }),
-  trudge:  makeGait({ label: "Trudge", mood: "why is this site SO long", speed: 1.1, stride: 13, hunch: -26, knee: 16, arm: 6, bob: 5, head: -15 }),
+  sneak:   makeGait({ label: "Sneak", mood: "shhh… nobody saw that", speed: 1.3, stride: 22, hunch: -22, knee: 52, arm: 10, bob: 6, head: -11 }),
+  trudge:  makeGait({ label: "Trudge", mood: "why is this site SO long", speed: 1.1, stride: 13, hunch: -16, knee: 16, arm: 6, bob: 5, head: -15 }),
   carry: (() => {
     const g = makeGait({ label: "Carrying", mood: "beam coming through!", speed: 1.8, stride: 18, hunch: -14, knee: 22, arm: 0, bob: 2.5, head: -6 });
     const base = g.frame;
