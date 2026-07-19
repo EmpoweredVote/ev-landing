@@ -69,6 +69,14 @@
           if (e.kt === 'fly' && Math.abs(ev.clientX - e._kiteSX) < 26 && Math.abs(ev.clientY - e._kiteSY) < 26) { e.kt = 'loop'; e.ktT = 0; return; }
           if ((e.kt === 'fly' || e.kt === 'loop') && Math.abs(ev.clientX - e._kgSX) < 28 && Math.abs(ev.clientY - e._kgSY) < 56) { e.kt = 'spin'; e.ktT = 0; return; }
         }
+        // phone-sitter: click him → pocket the phone (hang out); click again → take it back out
+        if (e.spec.mode === 'seat' && e.spec.phone && e._phSX != null) {
+          if (Math.abs(ev.clientX - e._phSX) < 40 && ev.clientY > e._phFY - 104 && ev.clientY < e._phFY + 8) {
+            if (e.ph === 'absorbed') { e.ph = 'pocket'; e.phT = 0; }
+            else if (e.ph === 'hangout') { e.ph = 'draw'; e.phT = 0; }
+            return;   // ignore clicks landing mid-transition
+          }
+        }
         if (e.spec.mode !== 'rope' || !e.w || e._ropeSX == null) return;
         if (Math.abs(ev.clientX - e._ropeSX) > 55 || Math.abs(ev.clientY - e._ropeSY) > 82) return;
         if (e.rphase === 'sit') { e.rphase = 'break'; e.breakT = 0; return; }   // frame breaks out from under him
@@ -163,7 +171,11 @@
     // one figure (or none) for a note-card top edge — biased toward readers/sitters for a calmer, more varied cast
     function noteSlot(anchor, opt) {
       opt = opt || {};
-      var seat = function () { return { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : takeTone()) }; };
+      var seat = function () {
+        var s = { mode: 'seat', anchor: anchor, edge: 'top', x: pick([0.14, 0.5, 0.82]), anim: pick(SEATS), tone: (opt.seatTone != null ? opt.seatTone : takeTone()) };
+        if (chance(0.4)) { s.phone = true; s.anim = 'sit'; }   // ~some sitters are glued to a phone (click to pocket / re-absorb)
+        return s;
+      };
       var r = Math.random();
       if (r < 0.12 && !_pairCast) { _pairCast = true; return { mode: 'paddlepair', anchor: anchor, edge: 'top', x: pick([0.32, 0.5, 0.68]), tone: takeTone(), tone2: takeTone() }; }  // one couple per page, max
       if (r < 0.54) return seat();                       // most common: a reader or sitter
@@ -999,10 +1011,10 @@
         ctx.strokeStyle = colKite; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         ctx.beginPath(); ctx.moveTo(bp.x, bp.y);
         var px, py;
-        for (var i = 1; i <= 6; i++) { var f = Math.sin(ph * 5 + i * 0.8) * 5; px = bp.x + i * 3 + f; py = bp.y + i * 7; ctx.lineTo(px, py); }
+        for (var i = 1; i <= 11; i++) { var f = Math.sin(ph * 5 + i * 0.8) * 5; px = bp.x + i * 3 + f; py = bp.y + i * 7; ctx.lineTo(px, py); }
         ctx.stroke();
         ctx.fillStyle = colGuy;
-        for (var b = 2; b <= 6; b += 2) { var fb = Math.sin(ph * 5 + b * 0.8) * 5; ctx.beginPath(); ctx.arc(bp.x + b * 3 + fb, bp.y + b * 7, 2.3, 0, Math.PI * 2); ctx.fill(); }
+        for (var b = 2; b <= 10; b += 2) { var fb = Math.sin(ph * 5 + b * 0.8) * 5; ctx.beginPath(); ctx.arc(bp.x + b * 3 + fb, bp.y + b * 7, 2.3, 0, Math.PI * 2); ctx.fill(); }
       }
       function kiteString(hand, kx, ky, ang, slack) {
         var bp = bottomPt(kx, ky, ang);
@@ -1084,6 +1096,55 @@
       kiteDiamond(kx, ky, ang);
     }
 
+    // ── PHONE-SITTER (a seated Bobit glued to a phone): click him → he pockets the phone and just
+    //    hangs out; click again → he fishes it back out, bends over, and gets re-absorbed. ──
+    var POSE_KEYS = ['lean', 'headTilt', 'bob', 'hunch', 'armRU', 'armRF', 'armLU', 'armLF', 'legRU', 'legRF', 'legLU', 'legLF'];
+    function lerpPose(a, b, u) {
+      var p = {};
+      for (var i = 0; i < POSE_KEYS.length; i++) { var k = POSE_KEYS[i]; var av = a[k] || 0, bv = b[k] || 0; p[k] = av + (bv - av) * u; }
+      return p;
+    }
+    function easeInOut(u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
+    function phoneAbsorbed(t) {
+      var p = Object.assign({}, R.REST);
+      var br = Math.sin(t * 0.28 * Math.PI * 2);   // slow breathing
+      var thumb = Math.sin(t * 6) * 3;             // thumb-typing twitch
+      p.lean = 6;
+      p.hunch = -(30 + br * 2);                     // curled hard over the screen
+      p.bob = br * 1.2;
+      p.headTilt = -(24 + br * 2);                  // face buried in the phone
+      p.armRU = 54 + br;  p.armRF = 126 + thumb;    // both hands cupped low and central
+      p.armLU = 42 - br;  p.armLF = 116 - thumb;
+      p.legRU = 80; p.legRF = 10;                   // seated, shins dangling
+      p.legLU = 72; p.legLF = 4;
+      return p;
+    }
+    function drawPhoneSeat(e, ctx, w, h, tt, col, dt) {
+      if (e.ph == null) { e.ph = 'absorbed'; e.phT = 0; }   // start doomscrolling
+      e.phT += dt;
+      var seatY = h - 42, TRANS = 0.6;
+      var absorbed = phoneAbsorbed(tt), hangout = A.sit.frame(tt);
+      var pose, showPhone = true, phoneRot = -0.16, u;
+      if (e.ph === 'absorbed') { pose = absorbed; }
+      else if (e.ph === 'hangout') { pose = hangout; showPhone = false; }
+      else if (e.ph === 'pocket') {                          // absorbed → hangout
+        u = easeInOut(Math.min(1, e.phT / TRANS));
+        pose = lerpPose(absorbed, hangout, u);
+        showPhone = e.phT < TRANS * 0.55;                    // slides down to the lap, then it's pocketed
+        phoneRot = -0.16 + u * 0.6;
+        if (e.phT >= TRANS) { e.ph = 'hangout'; e.phT = 0; }
+      } else {                                               // 'draw': hangout → absorbed
+        u = easeInOut(Math.min(1, e.phT / TRANS));
+        pose = lerpPose(hangout, absorbed, u);
+        showPhone = e.phT > TRANS * 0.4;                     // fishes it back out, then bends over it
+        phoneRot = 0.44 - u * 0.6;
+        if (e.phT >= TRANS) { e.ph = 'absorbed'; e.phT = 0; }
+      }
+      drawFig(ctx, w / 2, seatY, S, e.spec.x > 0.5, pose, { color: col, phone: showPhone, phoneRot: phoneRot });
+      var cr = e.c.getBoundingClientRect();
+      e._phSX = cr.left + w / 2; e._phFY = cr.top + h;       // click hitbox anchor (screen coords)
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -1128,7 +1189,7 @@
         ctx.clearRect(0, 0, w, h);
         var feetY = h - 6;
         var col = figColor(spec.tone != null ? spec.tone : e.ci);
-        var hoverable = spec.mode === 'stand' || spec.mode === 'patrol' || spec.mode === 'seat';
+        var hoverable = spec.mode === 'stand' || spec.mode === 'patrol' || (spec.mode === 'seat' && !spec.phone);
         // per-entry clock freezes while greeting, so patrols resume where they stopped
         if (e.greet) e.greet += dt;
         if (e._fall > 0) e._fall = Math.max(0, e._fall - dt);
@@ -1276,6 +1337,7 @@
           return;
         }
         if (spec.mode === 'seat') {
+          if (spec.phone) { drawPhoneSeat(e, ctx, w, h, tt, col, dt); return; }
           var animSe = e.greet ? A.greetseat : A[spec.anim];
           var ptSe = e.greet ? e.greet : tt;
           var seatY = h - 42;   // matches the seat line set in reposition(); leaves room for dangling legs

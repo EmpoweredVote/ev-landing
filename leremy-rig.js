@@ -129,6 +129,12 @@ function draw(ctx, j, cfg = CFG, opts = {}) {
     drawBook(ctx, mx, my, color, -0.24);
   }
 
+  // smartphone cupped low in both hands (doomscrolling)
+  if (opts.phone) {
+    const mx = (j.hR.x + j.hL.x) / 2, my = (j.hR.y + j.hL.y) / 2;
+    drawPhone(ctx, mx, my, color, opts.phoneRot != null ? opts.phoneRot : -0.16);
+  }
+
   // Charlie Brown exhaustion swirl over the head
   if (opts.swirl) drawSwirl(ctx, j.H, cfg.R, color, opts.time || 0);
 
@@ -305,6 +311,19 @@ function drawBook(ctx, x, y, color, rot) {
   ctx.moveTo(0, -2); ctx.lineTo(-21, -12); ctx.lineTo(-21, 4); ctx.lineTo(0, 13); ctx.closePath();
   ctx.moveTo(0, -2); ctx.lineTo(27, -9); ctx.lineTo(27, 8); ctx.lineTo(0, 13); ctx.closePath();
   ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawPhone(ctx, x, y, color, rot) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot || 0);
+  // slim body — coloured bezel
+  ctx.fillStyle = color;
+  ctx.fillRect(-7.5, -11.5, 15, 23);
+  // lit screen
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(-5.5, -9, 11, 18);
   ctx.restore();
 }
 
