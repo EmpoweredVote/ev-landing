@@ -141,7 +141,7 @@
     function chance(p) { return Math.random() < p; }
     var GAITS = ['stroll', 'strut', 'sneak', 'trudge', 'shuffle'];   // no stiff march / frantic scurry in the rotation
     var GSPEED = { stroll: 32, strut: 40, scurry: 62, march: 34, sneak: 22, trudge: 16, shuffle: 20 };
-    var IDLES = ['bored', 'sassy', 'confused', 'standstill', 'present', 'paddleball'];
+    var IDLES = ['bored', 'standstill', 'present', 'paddleball'];
     var SEATS = ['sit', 'read'];
     var TONES = [0, 1, 2, 3, 4, 5];   // full palette (teal/coral/gold/green/purple/orange)
     // ── colour-diversity safeguard: hand out tones from a shuffled bag rather than i.i.d. random,
@@ -223,7 +223,7 @@
         add({ mode: 'dogfetch', anchor: 'footer', edge: 'top', tone: 0, tone2: 5 });   // teal owner, orange pup
       } else {
         add(walker('footer', { tone: 0 }));
-        add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored', 'sassy']), hover: 'jump', tone: 1 });
+        add({ mode: 'stand', anchor: 'footer', edge: 'top', x: 0.06, anim: pick(['standstill', 'bored']), hover: 'jump', tone: 1 });
       }
       return out;
     }
