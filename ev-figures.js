@@ -69,8 +69,8 @@
           if (e.kt === 'fly' && Math.abs(ev.clientX - e._kiteSX) < 26 && Math.abs(ev.clientY - e._kiteSY) < 26) { e.kt = 'loop'; e.ktT = 0; return; }
           if ((e.kt === 'fly' || e.kt === 'loop') && Math.abs(ev.clientX - e._kgSX) < 28 && Math.abs(ev.clientY - e._kgSY) < 56) { e.kt = 'spin'; e.ktT = 0; return; }
         }
-        // letter carriers: click the v-carrier → v drops over his eyes; click the e-carrier → sets it down, waves, rolls it off
-        if (e.spec.mode === 'letters' && e._lFY != null) {
+        // letter carriers (a beam-crew pass): click the v-carrier → v drops over his eyes; click the e-carrier → sets it down, waves, rolls it off
+        if (e.spec.mode === 'beam' && e.scene === 'letters' && e._lFY != null) {
           if (e.vSt === 'walk' && Math.abs(ev.clientX - e._vSX) < 36 && ev.clientY > e._lFY - 104 && ev.clientY < e._lFY + 8) { e.vSt = 'fall'; e.vT = 0; return; }
           if (e.eSt === 'walk' && Math.abs(ev.clientX - e._eSX) < 36 && ev.clientY > e._lFY - 84 && ev.clientY < e._lFY + 8) { e.eSt = 'drop'; e.eT = 0; return; }
         }
@@ -222,11 +222,9 @@
       // footer — usually the meet-and-greet pair; occasionally a cartwheel practicer + a
       // corner Bobit medic, or a Bobit playing fetch with his dog (each a wide combined canvas)
       var fr = Math.random();
-      if (fr < 0.22) {
-        add({ mode: 'letters', anchor: 'footer', edge: 'top' });   // two carriers hauling the logo's 'e' and 'v'
-      } else if (fr < 0.42) {
+      if (fr < 0.26) {
         add({ mode: 'cartwheel', anchor: 'footer', edge: 'top', tone: 0, tone2: 1 });
-      } else if (fr < 0.62) {
+      } else if (fr < 0.50) {
         add({ mode: 'dogfetch', anchor: 'footer', edge: 'top', tone: 0, tone2: 5 });   // teal owner, orange pup
       } else {
         add(walker('footer', { tone: 0 }));
@@ -340,13 +338,6 @@
           var edgeYDF = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
           e.c.style.left = (r.left + sx) + 'px';
           e.c.style.top = (edgeYDF - (hDF - 6)) + 'px';
-          return;
-        }
-        if (spec.mode === 'letters') {
-          var hLt = 180, wLt = Math.max(360, r.width); sizeCanvas(e, wLt, hLt);   // full-width strip for the two carriers to cross
-          var edgeYLt = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
-          e.c.style.left = (r.left + sx) + 'px';
-          e.c.style.top = (edgeYLt - (hLt - 6)) + 'px';
           return;
         }
         if (spec.mode === 'kite') {
@@ -1276,15 +1267,17 @@
       p.headTilt = 8; p.hunch = -4;
       return p;
     }
-    function drawLetters(e, ctx, w, h, feetY, tt, colE, colV, shadow, dt, cr) {
+    // one letter-carrying pass in the beam crew's rotation: set up two solo carriers entering from `dir`
+    function startLetters(e, w, dir) {
+      e.scene = 'letters'; e.dir = dir;
+      var sX = dir > 0 ? -80 : w + 80;
+      e.vX = sX + dir * 130; e.eX = sX;                 // v-carrier leads, e-carrier trails
+      e.vSt = 'walk'; e.vT = 0; e.vDrop = 0; e.vAnchor = 0;
+      e.eSt = 'walk'; e.eT = 0; e.eRoll = 0; e.eLX = 0;
+    }
+    function runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr) {
       var SP = 34, letterR = 15, groundLY = feetY - 13, oy = feetY - 112 * S;
-      if (e.lInit == null) {
-        e.lInit = true; e.dir = pick([1, -1]);
-        var sX = e.dir > 0 ? -80 : w + 80;
-        e.vX = sX + e.dir * 130; e.eX = sX;             // v-carrier leads, e-carrier trails
-        e.vSt = 'walk'; e.vT = 0; e.vDrop = 0; e.vAnchor = 0;
-        e.eSt = 'walk'; e.eT = 0; e.eRoll = 0; e.eLX = 0;
-      }
+      var colE = figColor(0), colV = figColor(1);       // teal 'e', coral 'v' — both theme-adaptive
       var flip = e.dir < 0;
       var off = function (x) { return e.dir > 0 ? x > w + 90 : x < -90; };
 
@@ -1334,10 +1327,21 @@
       // click hitboxes (screen coords)
       e._vSX = cr.left + e.vX; e._eSX = cr.left + e.eX; e._lFY = cr.top + feetY;
 
-      // respawn once BOTH have finished their business and walked off
+      // once BOTH have finished their business and walked off, hand back to the two-carry rotation
       var vGone = e.vSt === 'walk' && off(e.vX);
       var eGone = (e.eSt === 'walk' && off(e.eX)) || (e.eSt === 'roll' && off(e.eX) && off(e.eLX));
-      if (vGone && eGone) e.lInit = null;
+      if (vGone && eGone) {
+        e.scene = 'carry';
+        e.bx = e.dir > 0 ? -110 : w + 110;              // pair re-enters from the trailing edge
+        e.dwell = 0.9; e.load = pick(BEAM_LOADS);
+      }
+    }
+    // at each off-screen turn the crew picks its next pass: the light gag, a letter-carry, or another load
+    function beamTurn(e, w) {
+      var r = Math.random();
+      if (r < 0.30) startLight(e, w);
+      else if (r < 0.58) startLetters(e, w, e.dir);
+      else { e.load = nextLoad(e.load); e.dwell = 1.1; }
     }
 
     var t = 0, last = performance.now();
@@ -1406,10 +1410,6 @@
         }
         if (spec.mode === 'kite') {
           drawKite(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : (spec.tone + 2) % 6), shadow, dt, cr);
-          return;
-        }
-        if (spec.mode === 'letters') {
-          drawLetters(e, ctx, w, h, feetY, tt, figColor(0), figColor(1), shadow, dt, cr);   // teal 'e', coral 'v' (both theme-adaptive)
           return;
         }
         if (spec.mode === 'patrol') {
@@ -1595,9 +1595,10 @@
           // Start load is randomized so the line shows up right away ~half the time
           // (otherwise you'd wait a full ~28s off-screen traverse to see it swap).
           var speedB = 30, halfGap = 24, endMargin = 110;
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.dwell = 0; e.scene = 'carry'; if (chance(0.3)) startLight(e, w); }
-          // some passes run the "light went out" solo gag instead of the two-carry
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.dwell = 0; e.scene = 'carry'; var r0 = Math.random(); if (r0 < 0.3) startLight(e, w); else if (r0 < 0.55) startLetters(e, w, 1); }
+          // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
           if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
+          if (e.scene === 'letters') { runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
           var fx = e.bx + e.dir * halfGap;      // front (leading) carrier
           var bx2 = e.bx - e.dir * halfGap;     // back carrier
           // hover: a carrier drops his end (line only) and waves; partner holds, annoyed
@@ -1683,8 +1684,8 @@
             if (e.dwell > 0) e.dwell -= dt;
             else {
               e.bx += e.dir * speedB * dt;
-              if (e.bx > w + endMargin) { e.dir = -1; if (chance(0.45)) startLight(e, w); else { e.load = nextLoad(e.load); e.dwell = 1.1; } }
-              else if (e.bx < -endMargin) { e.dir = 1; if (chance(0.45)) startLight(e, w); else { e.load = nextLoad(e.load); e.dwell = 1.1; } }
+              if (e.bx > w + endMargin) { e.dir = -1; beamTurn(e, w); }
+              else if (e.bx < -endMargin) { e.dir = 1; beamTurn(e, w); }
             }
             fx = e.bx + e.dir * halfGap; bx2 = e.bx - e.dir * halfGap;
           }
