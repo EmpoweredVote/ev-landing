@@ -69,6 +69,11 @@
           if (e.kt === 'fly' && Math.abs(ev.clientX - e._kiteSX) < 26 && Math.abs(ev.clientY - e._kiteSY) < 26) { e.kt = 'loop'; e.ktT = 0; return; }
           if ((e.kt === 'fly' || e.kt === 'loop') && Math.abs(ev.clientX - e._kgSX) < 28 && Math.abs(ev.clientY - e._kgSY) < 56) { e.kt = 'spin'; e.ktT = 0; return; }
         }
+        // letter carriers: click the v-carrier → v drops over his eyes; click the e-carrier → sets it down, waves, rolls it off
+        if (e.spec.mode === 'letters' && e._lFY != null) {
+          if (e.vSt === 'walk' && Math.abs(ev.clientX - e._vSX) < 36 && ev.clientY > e._lFY - 104 && ev.clientY < e._lFY + 8) { e.vSt = 'fall'; e.vT = 0; return; }
+          if (e.eSt === 'walk' && Math.abs(ev.clientX - e._eSX) < 36 && ev.clientY > e._lFY - 84 && ev.clientY < e._lFY + 8) { e.eSt = 'drop'; e.eT = 0; return; }
+        }
         // phone-sitter: click him → pocket the phone (hang out); click again → take it back out
         if (e.spec.mode === 'seat' && e.spec.phone && e._phSX != null) {
           if (Math.abs(ev.clientX - e._phSX) < 40 && ev.clientY > e._phFY - 104 && ev.clientY < e._phFY + 8) {
@@ -217,9 +222,11 @@
       // footer — usually the meet-and-greet pair; occasionally a cartwheel practicer + a
       // corner Bobit medic, or a Bobit playing fetch with his dog (each a wide combined canvas)
       var fr = Math.random();
-      if (fr < 0.26) {
+      if (fr < 0.22) {
+        add({ mode: 'letters', anchor: 'footer', edge: 'top' });   // two carriers hauling the logo's 'e' and 'v'
+      } else if (fr < 0.42) {
         add({ mode: 'cartwheel', anchor: 'footer', edge: 'top', tone: 0, tone2: 1 });
-      } else if (fr < 0.50) {
+      } else if (fr < 0.62) {
         add({ mode: 'dogfetch', anchor: 'footer', edge: 'top', tone: 0, tone2: 5 });   // teal owner, orange pup
       } else {
         add(walker('footer', { tone: 0 }));
@@ -333,6 +340,13 @@
           var edgeYDF = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
           e.c.style.left = (r.left + sx) + 'px';
           e.c.style.top = (edgeYDF - (hDF - 6)) + 'px';
+          return;
+        }
+        if (spec.mode === 'letters') {
+          var hLt = 180, wLt = Math.max(360, r.width); sizeCanvas(e, wLt, hLt);   // full-width strip for the two carriers to cross
+          var edgeYLt = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
+          e.c.style.left = (r.left + sx) + 'px';
+          e.c.style.top = (edgeYLt - (hLt - 6)) + 'px';
           return;
         }
         if (spec.mode === 'kite') {
@@ -1218,6 +1232,114 @@
       drawFig(ctx, w / 2, e.balY, S, false, e.balPose, { color: col });
     }
 
+    // ── LETTER CARRIERS: two Bobits haul pieces of the logo across a strip. One struggles with the
+    //    upside-down teal 'e' (from "empowered"); the other holds the upside-down coral 'v' (from
+    //    ".vote") over his head. Click the v-carrier → the v drops down over his eyes and he wanders
+    //    blindly, hands out, until he lifts it back up and walks on. Click the e-carrier → he sets the
+    //    e down in front of you, waves once, then rolls it off (it bumps along, not being round). ──
+    function drawLetterE(ctx, cx, cy, R, color, rot) {
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot || 0);
+      ctx.strokeStyle = color; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.arc(0, 0, R, 0.30 * Math.PI, 2 * Math.PI, false); ctx.stroke();  // bowl with a mouth gap at lower-right
+      ctx.beginPath(); ctx.moveTo(-R + 1, 0); ctx.lineTo(R - 3, 0); ctx.stroke();           // crossbar
+      ctx.restore();
+    }
+    function drawLetterV(ctx, cx, cy, halfW, height, color, rot) {
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot || 0);
+      ctx.strokeStyle = color; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(-halfW, height / 2); ctx.lineTo(0, -height / 2); ctx.lineTo(halfW, height / 2); ctx.stroke();  // apex up (upside-down v)
+      ctx.restore();
+    }
+    function letterCarryE(t) {                          // struggling: hunched, both hands gripping the e in front
+      var p = A.stroll.frame(t);
+      p.hunch = -16; p.lean = -3; p.headTilt = 3;
+      p.bob = (p.bob || 0) + Math.sin(t * 3) * 1;       // labored little stagger
+      p.armRU = 58; p.armRF = 60; p.armLU = -58; p.armLF = -60;
+      return p;
+    }
+    function letterSetDownE(t, u) {                     // crouch to set the e on the ground
+      var p = A.stroll.frame(0);
+      p.hunch = -20 * u; p.bob = 14 * u; p.headTilt = -14 * u;
+      p.armRU = 58 + 34 * u; p.armRF = 60 + 22 * u; p.armLU = -58 - 34 * u; p.armLF = -60 - 22 * u;
+      p.legRF = 4 - 12 * u; p.legLF = -4 - 12 * u;
+      return p;
+    }
+    function letterOverheadV(t) {                       // both arms straight up, holding the v aloft
+      var p = A.stroll.frame(t);
+      p.hunch = 0; p.lean = 0; p.headTilt = 0;
+      p.armRU = 148; p.armRF = 150; p.armLU = -148; p.armLF = -150;
+      return p;
+    }
+    function letterBlindV(t) {                          // can't see: arms groping out front, uncertain steps
+      var p = A.shuffle.frame(t);
+      p.armRU = 86; p.armRF = 80; p.armLU = -86; p.armLF = -80;
+      p.headTilt = 8; p.hunch = -4;
+      return p;
+    }
+    function drawLetters(e, ctx, w, h, feetY, tt, colE, colV, shadow, dt, cr) {
+      var SP = 34, letterR = 15, groundLY = feetY - 13, oy = feetY - 112 * S;
+      if (e.lInit == null) {
+        e.lInit = true; e.dir = pick([1, -1]);
+        var sX = e.dir > 0 ? -80 : w + 80;
+        e.vX = sX + e.dir * 130; e.eX = sX;             // v-carrier leads, e-carrier trails
+        e.vSt = 'walk'; e.vT = 0; e.vDrop = 0; e.vAnchor = 0;
+        e.eSt = 'walk'; e.eT = 0; e.eRoll = 0; e.eLX = 0;
+      }
+      var flip = e.dir < 0;
+      var off = function (x) { return e.dir > 0 ? x > w + 90 : x < -90; };
+
+      // ── V-carrier ──
+      switch (e.vSt) {
+        case 'walk': e.vX += e.dir * SP * dt; break;
+        case 'fall': e.vT += dt; e.vDrop = Math.min(1, e.vT / 0.5); if (e.vT >= 0.6) { e.vSt = 'blind'; e.vT = 0; e.vAnchor = e.vX; } break;
+        case 'blind': e.vT += dt; e.vX = e.vAnchor + Math.sin(e.vT * 1.5) * 26; if (e.vT >= 3.6) { e.vSt = 'lift'; e.vT = 0; } break;
+        case 'lift': e.vT += dt; e.vDrop = Math.max(0, 1 - e.vT / 0.6); if (e.vT >= 0.7) { e.vSt = 'walk'; e.vT = 0; e.vDrop = 0; } break;
+      }
+      var vPose = (e.vSt === 'blind') ? letterBlindV(tt) : letterOverheadV(tt);
+      var vj = R.computePose(vPose, CFG, { x: 0, y: 0 });
+      var sgn = flip ? -1 : 1;
+      var vHandX = e.vX + ((vj.hR.x + vj.hL.x) / 2) * S * sgn, vHandY = oy + ((vj.hR.y + vj.hL.y) / 2) * S;
+      var vHeadX = e.vX + vj.H.x * S * sgn, vHeadY = oy + vj.H.y * S;
+      var vLX = vHandX + (vHeadX - vHandX) * e.vDrop;
+      var vLY = (vHandY - 6) + ((vHeadY + 2) - (vHandY - 6)) * e.vDrop;   // slides from aloft down over the eyes
+      R.drawShadow(ctx, e.vX, feetY, 14, shadow);
+      drawFig(ctx, e.vX, oy, S, flip, vPose, { color: figColor(4) });     // purple guy, distinct from the coral v
+      drawLetterV(ctx, vLX, vLY, 16, 30, colV, 0);
+
+      // ── E-carrier ──
+      switch (e.eSt) {
+        case 'walk': e.eX += e.dir * SP * dt; break;
+        case 'drop': e.eT += dt; if (e.eT >= 0.55) { e.eSt = 'wave'; e.eT = 0; } break;
+        case 'wave': e.eT += dt; if (e.eT >= 1.3) { e.eSt = 'roll'; e.eT = 0; e.eRoll = 0; e.eLX = e.eX + e.dir * 26; } break;
+        case 'roll': { e.eT += dt; var rs = 66; e.eLX += e.dir * rs * dt; e.eRoll += e.dir * (rs / letterR) * dt; e.eX = e.eLX - e.dir * 40; break; }
+      }
+      var ePose, eFlip = flip;
+      if (e.eSt === 'walk') ePose = letterCarryE(tt);
+      else if (e.eSt === 'drop') { ePose = letterSetDownE(tt, Math.min(1, e.eT / 0.55)); eFlip = false; }
+      else if (e.eSt === 'wave') { ePose = A.greet.frame(e.eT, { hand: 'R', hz: 1.6 }); eFlip = false; }
+      else ePose = A.stroll.frame(tt);
+      var ej = R.computePose(ePose, CFG, { x: 0, y: 0 });
+      var esgn = eFlip ? -1 : 1;
+      var eHandX = e.eX + ((ej.hR.x + ej.hL.x) / 2) * S * esgn, eHandY = oy + ((ej.hR.y + ej.hL.y) / 2) * S;
+      var eLX, eLY, eRot = Math.PI;                       // carried & rolled upside-down
+      if (e.eSt === 'walk') { eLX = eHandX; eLY = eHandY; }
+      else if (e.eSt === 'drop') { var u = Math.min(1, e.eT / 0.55); eLX = e.eX + e.dir * 26; eLY = eHandY + (groundLY - eHandY) * u; }
+      else if (e.eSt === 'wave') { eLX = e.eX + e.dir * 26; eLY = groundLY; }
+      else { eLX = e.eLX; eLY = groundLY - Math.abs(Math.sin(e.eRoll * 1.5)) * 3; eRot = Math.PI + e.eRoll; }  // non-round → little bump
+      R.drawShadow(ctx, e.eX, feetY, 14, shadow);
+      if (e.eSt !== 'walk') R.drawShadow(ctx, eLX, feetY, 12, shadow);
+      drawFig(ctx, e.eX, oy, S, eFlip, ePose, { color: figColor(3) });    // green guy, distinct from the teal e
+      drawLetterE(ctx, eLX, eLY, letterR, colE, eRot);
+
+      // click hitboxes (screen coords)
+      e._vSX = cr.left + e.vX; e._eSX = cr.left + e.eX; e._lFY = cr.top + feetY;
+
+      // respawn once BOTH have finished their business and walked off
+      var vGone = e.vSt === 'walk' && off(e.vX);
+      var eGone = (e.eSt === 'walk' && off(e.eX)) || (e.eSt === 'roll' && off(e.eX) && off(e.eLX));
+      if (vGone && eGone) e.lInit = null;
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -1284,6 +1406,10 @@
         }
         if (spec.mode === 'kite') {
           drawKite(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : (spec.tone + 2) % 6), shadow, dt, cr);
+          return;
+        }
+        if (spec.mode === 'letters') {
+          drawLetters(e, ctx, w, h, feetY, tt, figColor(0), figColor(1), shadow, dt, cr);   // teal 'e', coral 'v' (both theme-adaptive)
           return;
         }
         if (spec.mode === 'patrol') {
