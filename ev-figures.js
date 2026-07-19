@@ -201,7 +201,9 @@
         var kk = pool[Math.floor(Math.random() * pool.length)];                       // kite: a distinctly different colour
         add({ mode: 'kite', anchor: '.note.n-alpha', edge: 'top', x: 0.72, tone: kg, tone2: kk });
       } else add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));
-      add(noteSlot('.note.n-ai', {}));                                       // Note 2 (n-team) intentionally left clear
+      add(noteSlot('.note.n-ai', {}));
+      // Note 2 (n-team): the one-foot balancer — hover him for the wave → windmill → collapse routine
+      add({ mode: 'stand', anchor: '.note.n-team', edge: 'top', x: 0.5, balance: true, tone: takeTone() });
       add(noteSlot('.note.n-money', {}));
       // watch top (the 02/How-we-work ↔ 03/Talks split) — was getting crowded with samey walkers;
       // keep only the distinctive elder here, and often leave the split clear
@@ -1145,6 +1147,77 @@
       e._phSX = cr.left + w / 2; e._phFY = cr.top + h;       // click hitbox anchor (screen coords)
     }
 
+    // ── BALANCER (a stand Bobit balancing on one foot): teeters on his right foot, flinging an arm
+    //    up to steady himself. Hover him → he waves back one-handed (still on one foot), windmills
+    //    both arms once, loses it and collapses, then climbs back up and rebalances. Every pose is
+    //    reached by easing the displayed pose toward the target, so nothing snaps or teleports. ──
+    function balanceIdle(t) {
+      var p = Object.assign({}, R.REST);
+      var teeter = Math.sin(t * 1.05);
+      p.lean = 2 + teeter * 5;                                  // sways side to side
+      p.bob = Math.sin(t * 0.5) * 1.5;
+      p.headTilt = -teeter * 4;
+      p.armRU = 30 + Math.max(0, teeter) * 80;                  // fling the arm up on whichever side he tips toward
+      p.armRF = 18 + Math.max(0, teeter) * 30;
+      p.armLU = -30 - Math.max(0, -teeter) * 80;
+      p.armLF = -18 - Math.max(0, -teeter) * 30;
+      p.legRU = 6; p.legRF = 2;                                 // right leg planted straight down
+      p.legLU = 40 + Math.sin(t * 0.9) * 4; p.legLF = -66;      // left leg lifted, shin tucked
+      return p;
+    }
+    function balanceWave(t) {
+      var p = balanceIdle(t);
+      p.armRU = 150; p.armRF = 150 + Math.sin(t * 10) * 24;     // right hand waving hello
+      p.armLU = -78; p.armLF = -42;                             // left arm flung wide to stay up
+      p.headTilt = -14;
+      p.lean = 5 + Math.sin(t * 1.4) * 4;                       // wobblier — waving on one foot is hard
+      return p;
+    }
+    function balanceWindmill(t, u) {
+      var p = balanceIdle(t);
+      var ang = u * 360;                                        // exactly one revolution, continuing from the wave
+      p.armRU = 150 + ang; p.armRF = 8;                         // straight arms sweeping all the way around
+      p.armLU = -78 - ang; p.armLF = -8;
+      p.lean = Math.sin(u * Math.PI * 2) * 9;                   // reeling
+      p.headTilt = -6;
+      p.legLU = 42; p.legLF = -62;
+      return p;
+    }
+    function balanceCollapse(t) {
+      var p = Object.assign({}, R.REST);
+      var br = Math.sin(t * 2) * 1.2;
+      p.lean = 10; p.hunch = -42; p.headTilt = -20 + br;        // crumpled forward heap
+      p.bob = 6;
+      p.armRU = 44; p.armRF = 24; p.armLU = -44; p.armLF = -24; // arms sprawled
+      p.legRU = 96; p.legRF = -92; p.legLU = 80; p.legLF = -84; // both knees folded under him
+      return p;
+    }
+    function drawBalancer(e, ctx, w, h, feetY, tt, col, shadow, dt) {
+      var oyS = feetY - 112 * S, groundY = feetY - 14;          // pelvis: standing height vs. crumpled on the ground
+      var cr = e.c.getBoundingClientRect();
+      var hovering = Math.abs(mx - (cr.left + w / 2)) < 40 && my > cr.top + h - 96 && my < cr.top + h + 6;
+      if (e.balPh == null) { e.balPh = 'idle'; e.balT = 0; e.balPose = balanceIdle(tt); e.balY = oyS; }
+      // edge-triggered: only kick off the routine from a settled idle, once per hover-in
+      if (hovering && !e._balHov && e.balPh === 'idle') { e.balPh = 'wave'; e.balT = 0; }
+      e._balHov = hovering;
+      e.balT += dt;
+      var target, targetY = oyS, D;
+      switch (e.balPh) {
+        case 'wave':     D = 1.5; target = balanceWave(tt); if (e.balT >= D) { e.balPh = 'windmill'; e.balT = 0; } break;
+        case 'windmill': D = 1.0; target = balanceWindmill(tt, Math.min(1, e.balT / D)); if (e.balT >= D) { e.balPh = 'collapse'; e.balT = 0; } break;
+        case 'collapse': D = 0.55; target = balanceCollapse(tt); targetY = groundY; if (e.balT >= D) { e.balPh = 'down'; e.balT = 0; } break;
+        case 'down':     D = 0.5; target = balanceCollapse(tt); targetY = groundY; if (e.balT >= D) { e.balPh = 'standup'; e.balT = 0; } break;
+        case 'standup':  D = 0.75; target = balanceIdle(tt); if (e.balT >= D) { e.balPh = 'idle'; e.balT = 0; } break;
+        default:         target = balanceIdle(tt);
+      }
+      // ease the DISPLAYED pose toward the target every frame → seamless flow between every phase
+      var k = Math.min(1, dt * 13);
+      for (var i = 0; i < POSE_KEYS.length; i++) { var key = POSE_KEYS[i]; var cur = e.balPose[key] || 0; e.balPose[key] = cur + ((target[key] || 0) - cur) * k; }
+      e.balY += (targetY - e.balY) * Math.min(1, dt * 10);
+      R.drawShadow(ctx, w / 2, feetY, 16, shadow);
+      drawFig(ctx, w / 2, e.balY, S, false, e.balPose, { color: col });
+    }
+
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
@@ -1189,7 +1262,7 @@
         ctx.clearRect(0, 0, w, h);
         var feetY = h - 6;
         var col = figColor(spec.tone != null ? spec.tone : e.ci);
-        var hoverable = spec.mode === 'stand' || spec.mode === 'patrol' || (spec.mode === 'seat' && !spec.phone);
+        var hoverable = (spec.mode === 'stand' && !spec.balance) || spec.mode === 'patrol' || (spec.mode === 'seat' && !spec.phone);
         // per-entry clock freezes while greeting, so patrols resume where they stopped
         if (e.greet) e.greet += dt;
         if (e._fall > 0) e._fall = Math.max(0, e._fall - dt);
@@ -1306,6 +1379,7 @@
           return;
         }
         if (spec.mode === 'stand') {
+          if (spec.balance) { drawBalancer(e, ctx, w, h, feetY, tt, col, shadow, dt); return; }
           var oyS = feetY - 112 * S;
           if (spec.presenter) {
             R.drawShadow(ctx, w / 2, feetY, 16, shadow);
