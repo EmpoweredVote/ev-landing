@@ -1124,20 +1124,20 @@
       e.phT += dt;
       var seatY = h - 42, TRANS = 0.6;
       var absorbed = phoneAbsorbed(tt), hangout = A.sit.frame(tt);
-      var pose, showPhone = true, phoneRot = -0.16, u;
+      var pose, showPhone = true, phoneRot = -0.08, u;   // held nearly upright (portrait)
       if (e.ph === 'absorbed') { pose = absorbed; }
       else if (e.ph === 'hangout') { pose = hangout; showPhone = false; }
       else if (e.ph === 'pocket') {                          // absorbed → hangout
         u = easeInOut(Math.min(1, e.phT / TRANS));
         pose = lerpPose(absorbed, hangout, u);
         showPhone = e.phT < TRANS * 0.55;                    // slides down to the lap, then it's pocketed
-        phoneRot = -0.16 + u * 0.6;
+        phoneRot = -0.08 + u * 0.5;
         if (e.phT >= TRANS) { e.ph = 'hangout'; e.phT = 0; }
       } else {                                               // 'draw': hangout → absorbed
         u = easeInOut(Math.min(1, e.phT / TRANS));
         pose = lerpPose(hangout, absorbed, u);
         showPhone = e.phT > TRANS * 0.4;                     // fishes it back out, then bends over it
-        phoneRot = 0.44 - u * 0.6;
+        phoneRot = 0.42 - u * 0.5;
         if (e.phT >= TRANS) { e.ph = 'absorbed'; e.phT = 0; }
       }
       drawFig(ctx, w / 2, seatY, S, e.spec.x > 0.5, pose, { color: col, phone: showPhone, phoneRot: phoneRot });

@@ -318,12 +318,12 @@ function drawPhone(ctx, x, y, color, rot) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rot || 0);
-  // slim body — coloured bezel
+  // slim portrait body — coloured bezel (50% larger, held upright)
   ctx.fillStyle = color;
-  ctx.fillRect(-7.5, -11.5, 15, 23);
+  ctx.fillRect(-11.25, -17.25, 22.5, 34.5);
   // lit screen
   ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(-5.5, -9, 11, 18);
+  ctx.fillRect(-8.25, -13.5, 16.5, 27);
   ctx.restore();
 }
 
