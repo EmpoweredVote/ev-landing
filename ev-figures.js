@@ -1156,8 +1156,8 @@
       return p;
     }
     function drawYoyo(e, ctx, w, h, feetY, tt, colGuy, colYoyo, shadow, dt, cr) {
-      var gx0 = 70, guyBaseY = feetY - 112 * S, rY = 6.5;
-      var normalBotY = feetY - 16, groundBotY = feetY - rY - 1;   // spins just above the floor vs. sits ON it (walk-the-dog)
+      var gx0 = 70, guyBaseY = feetY - 112 * S, rY = 4.3;         // yo-yo ~1/3 smaller
+      var normalBotY = feetY - 11, groundBotY = feetY - rY - 1;   // normal throw dips lower (closer to the floor) vs. sits ON it (walk-the-dog)
       if (e.yo == null) { e.yo = 'throw'; e.yoT = 0; e.yoSpin = 0; }
       e.yoT += dt;
 
@@ -1165,7 +1165,7 @@
 
       var pose = yoyoHold(tt);
       var dropFrac = 0, pop = 0, rollX = 0, botY = normalBotY, spinRate = 3;
-      var rollDist = Math.min(96, w - gx0 - 34);
+      var rollDist = Math.min(58, w - gx0 - 34);   // "walk the dog" doesn't wander so far out
 
       if (e.yo === 'throw') {
         var P = 1.25, thr = 0.62;                     // one throw-and-catch, then a short beat resting in the hand
@@ -1220,7 +1220,7 @@
       ctx.fillStyle = colYoyo; ctx.beginPath(); ctx.arc(0, 0, rY, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = colGuy; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(-rY + 1.6, 0); ctx.lineTo(rY - 1.6, 0); ctx.stroke();
-      ctx.fillStyle = cssVar('--bg', '#fff'); ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = cssVar('--bg', '#fff'); ctx.beginPath(); ctx.arc(0, 0, 1.2, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
 
