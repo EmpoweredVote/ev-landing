@@ -1385,14 +1385,17 @@
     // so no action ever repeats back-to-back.
     function beamPick(e, w) {
       var lastWasSpecial = (e.lastAction === 'light' || e.lastAction === 'letters');
+      // after a special always carry; after a carry usually go special, but ~30% of the time run ONE
+      // more carry (the other load) — capped at 2 carries in a row so specials still come around often.
+      var goCarry = lastWasSpecial || ((e.carryRun || 0) < 2 && chance(0.3));
       var a;
-      if (lastWasSpecial) {
-        a = (e.lastLoad === 'circle') ? 'line' : 'circle';       // next: a carry with the other load
-        e.lastLoad = a;
+      if (goCarry) {
+        a = (e.lastLoad === 'circle') ? 'line' : 'circle';       // the other load (never repeats)
+        e.lastLoad = a; e.carryRun = lastWasSpecial ? 1 : (e.carryRun || 0) + 1;
         e.scene = 'carry'; e.load = a; e.dwell = 1.1; e.bx = e.dir > 0 ? -110 : w + 110;
       } else {
-        a = (e.lastSpecial === 'light') ? 'letters' : 'light';   // next: the other special
-        e.lastSpecial = a;
+        a = (e.lastSpecial === 'light') ? 'letters' : 'light';   // the other special
+        e.lastSpecial = a; e.carryRun = 0;
         if (a === 'light') startLight(e, w); else startLetters(e, w, e.dir);
       }
       e.lastAction = a;
@@ -1695,7 +1698,7 @@
           // Start load is randomized so the line shows up right away ~half the time
           // (otherwise you'd wait a full ~28s off-screen traverse to see it swap).
           var speedB = 30, halfGap = 24, endMargin = 110;
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = pick(['light', 'letters']); e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows at the first turn
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = pick(['light', 'letters']); e.carryRun = 1; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows soon
           // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
           if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
           if (e.scene === 'letters') { runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
