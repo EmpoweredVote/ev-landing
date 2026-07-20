@@ -1452,7 +1452,10 @@
             APP_HOSTS.forEach(function (host) {
                 document.querySelectorAll('a[href*="' + host + '.empowered.vote"]').forEach(function (a) {
                     a.addEventListener('click', function () {
-                        posthog.capture('landing_app_link_clicked', { app: host, href: a.href });
+                        // `target_app`, not `app`: `app` is the reserved super-property
+                        // (registered as 'landing'); a property named `app` here would
+                        // clobber it and mis-attribute the click to the destination.
+                        posthog.capture('landing_app_link_clicked', { target_app: host, href: a.href });
                     });
                 });
             });
