@@ -1411,8 +1411,9 @@
       var trig = false;
       for (var i = 0; i < lookBeacons.length; i++) {
         var b = lookBeacons[i];
-        if (b.kind === 'commotion') { if (b.y > pkFeetY + 4) trig = true; }   // a loud commotion below — he hears it from anywhere and leans to look
-        else if (Math.abs(b.x - pkX) < 135 && b.y > pkFeetY + 4 && b.y < pkFeetY + 580) trig = true;   // a passer/collapse must be near his column
+        var below = b.y > pkFeetY + 4;
+        if (b.kind === 'commotion' || b.kind === 'collapse') { if (below) trig = true; }   // a crash/commotion below — he always hears it and looks
+        else if (below && Math.abs(b.x - pkX) < 140) trig = true;                          // a walker passing under his ledge (any depth below)
       }
       if (!trig && mx > -9000 && Math.abs(mx - pkX) < 120 && my > pkFeetY + 4 && my < pkFeetY + 320) trig = true;
       if (e.pkSt === 'stand' && e.pkCool <= 0 && trig) { e.pkSt = 'look'; e.pkT = 0; }
