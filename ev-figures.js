@@ -64,6 +64,10 @@
             return;
           }
         }
+        // yo-yo: click the player → "walk the dog" (lets it to the floor, it rolls, then snaps back up)
+        if (e.spec.mode === 'yoyo' && e._yoSX != null && e.yo === 'throw') {
+          if (Math.abs(ev.clientX - e._yoSX) < 28 && Math.abs(ev.clientY - e._yoSY) < 60) { e.yo = 'wd_down'; e.yoT = 0; return; }
+        }
         // kite: click the kite → a loop; click the flyer → the kite spins & falls, then he relaunches it
         if (e.spec.mode === 'kite' && e._kiteSX != null) {
           if (e.kt === 'fly' && Math.abs(ev.clientX - e._kiteSX) < 26 && Math.abs(ev.clientY - e._kiteSY) < 26) { e.kt = 'loop'; e.ktT = 0; return; }
@@ -154,6 +158,13 @@
     //    on refill we avoid repeating the last tone across the seam. ──
     var _toneBag = [], _lastTone = null;
     var _pairCast = false;   // at most one paddleball couple per page
+    var _yoyoCast = false;   // at most one yo-yo player per page
+    // pick a tone that's distinctly different in hue from `base` (for props that must read as a separate colour)
+    var _nearHue = { 0: [0, 3], 1: [1, 5], 2: [2, 5], 3: [3, 0], 4: [4], 5: [5, 1, 2] };
+    function contrastTone(base) {
+      var pool = TONES.filter(function (x) { return (_nearHue[base] || [base]).indexOf(x) < 0; });
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
     function takeTone() {
       if (!_toneBag.length) {
         var t = TONES.slice();
@@ -183,6 +194,7 @@
       };
       var r = Math.random();
       if (r < 0.12 && !_pairCast) { _pairCast = true; return { mode: 'paddlepair', anchor: anchor, edge: 'top', x: pick([0.32, 0.5, 0.68]), tone: takeTone(), tone2: takeTone() }; }  // one couple per page, max
+      if (r < 0.20 && !_yoyoCast) { _yoyoCast = true; var yb = takeTone(); return { mode: 'yoyo', anchor: anchor, edge: 'top', x: pick([0.24, 0.5, 0.76]), tone: yb, tone2: contrastTone(yb) }; }  // one yo-yo player per page, max
       if (r < 0.54) return seat();                       // most common: a reader or sitter
       if (r < 0.82) return walker(anchor, opt);
       if (r < 0.92) return { mode: 'stand', anchor: anchor, edge: 'top', x: pick([0.2, 0.5, 0.8]), anim: pick(IDLES), tone: takeTone() };
@@ -191,7 +203,7 @@
 
     function buildCast() {
       var out = [];
-      _pairCast = false;
+      _pairCast = false; _yoyoCast = false;
       var add = function (s) { if (s) out.push(s); };
       add({ mode: 'beam', anchor: '.hero', edge: 'bottom', tone: 0 });                                    // hero crew — always
       add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.9, anim: 'present', tone: 4, presenter: true });  // proud host under the logo — purple, so he's distinct from the blue beam crew
@@ -201,9 +213,7 @@
       // Note 1 always hosts a Bobit; occasionally the right spot is a kite-flyer instead
       if (chance(0.25)) {
         var kg = takeTone();                                                          // flyer's colour
-        var nearHue = { 0: [0, 3], 1: [1, 5], 2: [2, 5], 3: [3, 0], 4: [4], 5: [5, 1, 2] };   // avoid same/similar hues for the kite
-        var pool = TONES.filter(function (x) { return (nearHue[kg] || [kg]).indexOf(x) < 0; });
-        var kk = pool[Math.floor(Math.random() * pool.length)];                       // kite: a distinctly different colour
+        var kk = contrastTone(kg);                                                     // kite: a distinctly different colour
         add({ mode: 'kite', anchor: '.note.n-alpha', edge: 'top', x: 0.72, tone: kg, tone2: kk });
       } else add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));
       add(noteSlot('.note.n-ai', {}));
@@ -348,6 +358,17 @@
           if (leftKt < sx + 4) leftKt = sx + 4;
           e.c.style.left = leftKt + 'px';
           e.c.style.top = (edgeYKt - (hKt - 6)) + 'px';
+          return;
+        }
+        if (spec.mode === 'yoyo') {
+          var wYo = 210; sizeCanvas(e, wYo, FIG_H);                            // extra width so the "walk the dog" roll has floor to travel
+          var edgeYYo = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
+          var leftYo = r.left + sx + r.width * spec.x - 70;                    // player (gx0=70) sits at spec.x; yo-yo rolls to his right
+          var maxLeftYo = sx + document.documentElement.clientWidth - wYo - 4; // never past the viewport (no h-scroll)
+          if (leftYo > maxLeftYo) leftYo = maxLeftYo;
+          if (leftYo < sx + 4) leftYo = sx + 4;
+          e.c.style.left = leftYo + 'px';
+          e.c.style.top = (edgeYYo - (FIG_H - 6)) + 'px';
           return;
         }
         if (spec.mode === 'seat') {
@@ -1120,6 +1141,89 @@
       kiteDiamond(kx, ky, ang);
     }
 
+    // ── YO-YO player: throws it down, it bounces back up, the hand pops up slightly at the catch,
+    //    repeat. The yo-yo is always a contrasting hue to the player (cast via contrastTone).
+    //    Click him → "walk the dog": he lets it all the way to the floor, it rolls along the ground,
+    //    then snaps back up the string into his hand. ──
+    function yoyoHold(t) {
+      var p = Object.assign({}, R.REST);
+      p.lean = 2;
+      p.bob = Math.sin(t * 0.7) * 1.2;
+      p.headTilt = -6;                    // glancing down at the toy
+      p.armRU = 44; p.armRF = 16;         // throwing hand held out in front, about waist height
+      p.armLU = -14; p.armLF = -12;       // off hand relaxed at his side
+      p.legRU = 6; p.legLU = -8;
+      return p;
+    }
+    function drawYoyo(e, ctx, w, h, feetY, tt, colGuy, colYoyo, shadow, dt, cr) {
+      var gx0 = 70, guyBaseY = feetY - 112 * S, rY = 6.5;
+      var normalBotY = feetY - 16, groundBotY = feetY - rY - 1;   // spins just above the floor vs. sits ON it (walk-the-dog)
+      if (e.yo == null) { e.yo = 'throw'; e.yoT = 0; e.yoSpin = 0; }
+      e.yoT += dt;
+
+      function handOf(pose) { var j = R.computePose(pose, CFG, { x: 0, y: 0 }); return { x: gx0 + S * j.hR.x, y: guyBaseY + S * j.hR.y }; }
+
+      var pose = yoyoHold(tt);
+      var dropFrac = 0, pop = 0, rollX = 0, botY = normalBotY, spinRate = 3;
+      var rollDist = Math.min(96, w - gx0 - 34);
+
+      if (e.yo === 'throw') {
+        var P = 1.25, thr = 0.62;                     // one throw-and-catch, then a short beat resting in the hand
+        var u = (e.yoT % P) / P;
+        if (u < thr) {
+          var s = u / thr;
+          dropFrac = Math.sin(Math.PI * s);           // down to the bottom (s=0.5) and back up into the hand
+          pop = -Math.sin(2 * Math.PI * s);           // hand dips on the downstroke, pops UP as it climbs back to the catch
+          spinRate = 6 + dropFrac * 12;
+          pose.headTilt = -6 - dropFrac * 10;          // follows it down
+        } else { spinRate = 2; }
+      } else if (e.yo === 'wd_down') {                 // walk the dog: let it all the way to the floor
+        var d = Math.min(1, e.yoT / 0.4);
+        dropFrac = d; botY = groundBotY; spinRate = 6 + d * 12;
+        pose.lean = 2 + d * 7; pose.hunch = -6 * d; pose.headTilt = -6 - 16 * d;
+        pose.armRU = 44 + d * 12; pose.armRF = 16 + d * 8;
+        if (e.yoT >= 0.4) { e.yo = 'wd_roll'; e.yoT = 0; }
+      } else if (e.yo === 'wd_roll') {                 // it rolls along the ground while he leans and watches it go
+        var rr = Math.min(1, e.yoT / 1.5);
+        dropFrac = 1; botY = groundBotY; rollX = rollDist * easeInOut(rr); spinRate = 18;
+        pose.lean = 9; pose.hunch = -6; pose.headTilt = -22;
+        pose.armRU = 58 + rr * 10; pose.armRF = 26;   // arm reaches out after it
+        if (e.yoT >= 1.5) { e.yo = 'wd_back'; e.yoT = 0; }
+      } else {                                         // wd_back: rolls home, then snaps up the string into his hand
+        var bk = Math.min(1, e.yoT / 0.55);
+        rollX = rollDist * (1 - easeInOut(Math.min(1, bk * 1.5)));
+        dropFrac = 1 - easeInOut(Math.max(0, (bk - 0.55) / 0.45));
+        botY = groundBotY; spinRate = 16;
+        pose.lean = 8 - bk * 6; pose.hunch = -4 * (1 - bk); pose.headTilt = -18 + bk * 12;
+        pop = dropFrac < 0.5 ? (1 - dropFrac * 2) : 0;  // hand pops up as it lands home
+        if (e.yoT >= 0.55) { e.yo = 'throw'; e.yoT = 0.62 * 1.25; }   // resume mid-rest so it doesn't instantly re-throw
+      }
+
+      // hand pop at the catch
+      pose.armRU += pop * 11; pose.armRF -= pop * 4; pose.bob += pop * 2;
+
+      e.yoSpin += dt * spinRate;
+      var hand = handOf(pose);
+      var yoX = hand.x + rollX, yoY = hand.y + (botY - hand.y) * dropFrac;
+
+      e._yoSX = cr.left + gx0; e._yoSY = cr.top + feetY - 40;
+
+      // ── draw ──
+      R.drawShadow(ctx, gx0, feetY, 15, shadow);
+      if (dropFrac > 0.92 && botY >= groundBotY - 0.5) R.drawShadow(ctx, yoX, feetY, 8, shadow);   // the yo-yo's own shadow when it's on the floor
+      drawFig(ctx, gx0, guyBaseY, S, false, pose, { color: colGuy });
+      // string from the hand down to the yo-yo
+      ctx.strokeStyle = cssVar('--border', '#B0AEA6'); ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.lineTo(yoX, yoY); ctx.stroke();
+      // the yo-yo — a spinning disc; a streak + hub sell the spin
+      ctx.save(); ctx.translate(yoX, yoY); ctx.rotate(e.yoSpin);
+      ctx.fillStyle = colYoyo; ctx.beginPath(); ctx.arc(0, 0, rY, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = colGuy; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-rY + 1.6, 0); ctx.lineTo(rY - 1.6, 0); ctx.stroke();
+      ctx.fillStyle = cssVar('--bg', '#fff'); ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
     // ── PHONE-SITTER (a seated Bobit glued to a phone): click him → he pockets the phone and just
     //    hangs out; click again → he fishes it back out, bends over, and gets re-absorbed. ──
     var POSE_KEYS = ['lean', 'headTilt', 'bob', 'hunch', 'armRU', 'armRF', 'armLU', 'armLF', 'legRU', 'legRF', 'legLU', 'legLF'];
@@ -1510,6 +1614,10 @@
         }
         if (spec.mode === 'kite') {
           drawKite(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : (spec.tone + 2) % 6), shadow, dt, cr);
+          return;
+        }
+        if (spec.mode === 'yoyo') {
+          drawYoyo(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : (spec.tone + 2) % 6), shadow, dt, cr);
           return;
         }
         if (spec.mode === 'patrol') {
