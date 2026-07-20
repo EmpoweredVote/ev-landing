@@ -1434,7 +1434,7 @@
       var vLX = vHandX + (vHeadX - vHandX) * e.vDrop;
       var vLY = (vHandY - 6) + ((vHeadY + 2) - (vHandY - 6)) * e.vDrop;   // slides from aloft down over the eyes
       R.drawShadow(ctx, e.vX, feetY, 14, shadow);
-      drawFig(ctx, e.vX, oy, S, flip, vPose, { color: figColor(4) });     // purple guy, distinct from the coral v
+      drawFig(ctx, e.vX, oy, S, flip, vPose, { color: figColor(2) });     // yellow/gold guy carrying the v
       drawLetterV(ctx, vLX, vLY, 16, 30, colV, 0);
 
       // ── E-carrier ──
@@ -1471,7 +1471,7 @@
       else { eLX = e.eLX; eLY = groundLY - Math.abs(Math.sin(e.eRoll * 1.5)) * 3 * Math.min(1, (e.eLV || 0) / 40); eRot = Math.PI + e.eRoll; }  // non-round → little bump while moving, flat when stopped
       R.drawShadow(ctx, e.eX, feetY, 14, shadow);
       if (e.eSt !== 'walk') R.drawShadow(ctx, eLX, feetY, 12, shadow);
-      drawFig(ctx, e.eX, oy, S, eFlip, ePose, { color: figColor(3) });    // green guy, distinct from the teal e
+      drawFig(ctx, e.eX, oy, S, eFlip, ePose, { color: figColor(5) });    // orange guy carrying the e
       drawLetterE(ctx, eLX, eLY, letterR, colE, eRot);
 
       // click hitboxes (screen coords)
