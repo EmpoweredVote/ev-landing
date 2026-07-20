@@ -1,4 +1,28 @@
 <title>Empowered Vote · Purpose</title>
+<script>
+// Inherit the shared Empowered Vote colour-scheme preference (same key the main
+// site's banner toggle writes), falling back to the OS setting. Runs before the
+// stylesheet parses so there's no flash. The header ☾/☀ button flips it.
+(function () {
+  var KEY = 'ev:color-scheme';
+  function resolve() {
+    try { var s = localStorage.getItem(KEY); if (s === 'dark' || s === 'light') return s; } catch (e) {}
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  function apply(t) { document.documentElement.dataset.theme = t; }
+  apply(resolve());
+  function wire() {
+    var btn = document.getElementById('themebtn');
+    if (btn) btn.addEventListener('click', function () {
+      var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+      apply(next);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+  window.addEventListener('storage', function (e) { if (e.key === KEY) apply(resolve()); });
+})();
+</script>
 <style>
 @font-face {
   font-family: 'Figtree';
@@ -124,15 +148,27 @@ body {
   .node.enter { animation: none; }
 }
 
-/* A node that carries an explainer page gets a soft accent halo so it reads as clickable. */
+/* A node that carries an explainer page softly PULSES a glow (in its own accent colour)
+   so it reads as clickable — these are the "glowing nodes" the hint/help text refers to. */
 .node.hasx {
   box-shadow: 0 1px 3px rgba(var(--shadow), 0.12),
               0 0 0 2px color-mix(in srgb, var(--bc, var(--ink)) 26%, transparent);
+  animation: hasxGlow 2.6s ease-in-out infinite;
+}
+@keyframes hasxGlow {
+  0%, 100% { box-shadow: 0 1px 3px rgba(var(--shadow), 0.12),
+                         0 0 0 2px color-mix(in srgb, var(--bc, var(--ink)) 24%, transparent),
+                         0 0 5px 1px color-mix(in srgb, var(--bc, var(--ink)) 16%, transparent); }
+  50%      { box-shadow: 0 1px 3px rgba(var(--shadow), 0.12),
+                         0 0 0 3px color-mix(in srgb, var(--bc, var(--ink)) 48%, transparent),
+                         0 0 16px 5px color-mix(in srgb, var(--bc, var(--ink)) 48%, transparent); }
 }
 .node.hasx:hover {
+  animation: none;   /* settle the pulse on hover, show a crisp ring */
   box-shadow: 0 3px 12px rgba(var(--shadow), 0.22),
               0 0 0 3px color-mix(in srgb, var(--bc, var(--ink)) 42%, transparent);
 }
+@media (prefers-reduced-motion: reduce) { .node.hasx { animation: none; } }
 .node.hasx::after {
   content: "";
   position: absolute;
@@ -290,6 +326,10 @@ body {
   outline: 2px solid var(--b4); outline-offset: 2px;
 }
 .hud button.icon { width: 32px; padding: 7px 0; text-align: center; font-size: 15px; font-weight: 500; }
+/* theme toggle: show the mode you'll switch TO (moon in light, sun in dark) */
+#themebtn::before { content: "\263E"; }
+:root[data-theme="dark"] #themebtn::before { content: "\2600"; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #themebtn::before { content: "\2600"; } }
 
 /* Bottom-center: pillar legend + control hint (map sits on the right, panel on the left) */
 #botleft { bottom: 14px; left: 50%; transform: translateX(-50%); flex-direction: column; gap: 8px; align-items: center; }
@@ -443,12 +483,13 @@ body {
 
 <div class="hud" id="toolbar">
   <input id="search" type="search" placeholder="Search topics&hellip;" aria-label="Search topics">
-  <button id="expandall">Expand all</button>
-  <button id="collapseall">Collapse</button>
-  <button class="icon" id="zoomout" aria-label="Zoom out">&#8722;</button>
-  <button class="icon" id="zoomin" aria-label="Zoom in">+</button>
-  <button class="icon" id="fit" aria-label="Fit to screen">&#8982;</button>
-  <button class="icon" id="helpbtn" aria-label="Help">?</button>
+  <button id="expandall" title="Expand every branch">Expand all</button>
+  <button id="collapseall" title="Collapse back to the main branches">Collapse</button>
+  <button class="icon" id="zoomout" aria-label="Zoom out" title="Zoom out">&#8722;</button>
+  <button class="icon" id="zoomin" aria-label="Zoom in" title="Zoom in">+</button>
+  <button class="icon" id="fit" aria-label="Fit to screen" title="Fit the whole map to the screen">&#8982;</button>
+  <button class="icon" id="helpbtn" aria-label="Help" title="How this map works">?</button>
+  <button class="icon" id="themebtn" aria-label="Toggle light or dark mode" title="Toggle light / dark mode"></button>
 </div>
 
 <div class="hud" id="botleft">
@@ -627,6 +668,12 @@ function draw(ctx, j, cfg = CFG, opts = {}) {
     drawBook(ctx, mx, my, color, -0.24);
   }
 
+  // smartphone cupped low in both hands (doomscrolling)
+  if (opts.phone) {
+    const mx = (j.hR.x + j.hL.x) / 2, my = (j.hR.y + j.hL.y) / 2;
+    drawPhone(ctx, mx, my, color, opts.phoneRot != null ? opts.phoneRot : -0.16);
+  }
+
   // Charlie Brown exhaustion swirl over the head
   if (opts.swirl) drawSwirl(ctx, j.H, cfg.R, color, opts.time || 0);
 
@@ -638,6 +685,31 @@ function draw(ctx, j, cfg = CFG, opts = {}) {
 
   // walking cane in the right hand
   if (opts.cane) drawCane(ctx, j, color);
+  if (opts.paddle) drawPaddleball(ctx, j, color, opts.time || 0);
+}
+
+// paddleball toy in the right hand: a flat paddle held face-up, with a small ball
+// bouncing on a string above it — synced to the `paddleball` animation via opts.time.
+function drawPaddleball(ctx, j, color, time) {
+  const h = j.hR, e = j.eR;
+  const dx = h.x - e.x, dy = h.y - e.y, len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;              // forearm direction (hand points this way)
+  const cx = h.x + ux * 6, cy = h.y + uy * 6;      // paddle face just past the grip
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = "round";
+  // short handle from the hand to the paddle face
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(h.x, h.y); ctx.lineTo(cx, cy); ctx.stroke();
+  // paddle face — a flat horizontal oval (seen edge-on)
+  ctx.beginPath(); ctx.ellipse(cx, cy - 2, 16, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  // ball bounces above the paddle: d = 0 at each tap, up to A between taps
+  const f = 1.5, A = 34;
+  const d = A * Math.abs(Math.sin(time * f * Math.PI));
+  const bx = cx, by = cy - 6 - d;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(cx, cy - 6); ctx.lineTo(bx, by); ctx.stroke();   // string
+  ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI * 2); ctx.fill();             // ball
+  ctx.restore();
 }
 
 // rigid cane from the right hand, extended along the forearm direction:
@@ -778,6 +850,19 @@ function drawBook(ctx, x, y, color, rot) {
   ctx.moveTo(0, -2); ctx.lineTo(-21, -12); ctx.lineTo(-21, 4); ctx.lineTo(0, 13); ctx.closePath();
   ctx.moveTo(0, -2); ctx.lineTo(27, -9); ctx.lineTo(27, 8); ctx.lineTo(0, 13); ctx.closePath();
   ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawPhone(ctx, x, y, color, rot) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot || 0);
+  // slim portrait body — coloured bezel (50% larger, held upright)
+  ctx.fillStyle = color;
+  ctx.fillRect(-11.25, -17.25, 22.5, 34.5);
+  // lit screen
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(-8.25, -13.5, 16.5, 27);
   ctx.restore();
 }
 
@@ -1041,13 +1126,13 @@ const ANIMATIONS = {
     },
   },
   // ── gait explorer: lateral walks, pitched FORWARD (negative hunch = toward travel) ──
-  stroll:  makeGait({ label: "Stroll", mood: "just moseying…", speed: 2.0, stride: 24, hunch: -12, knee: 30, arm: 14, bob: 3, head: -5 }),
-  shuffle: makeGait({ label: "Shuffle", mood: "five more minutes…", speed: 1.5, stride: 10, hunch: -20, knee: 12, arm: 5, bob: 1.5, head: -9 }),
-  strut:   makeGait({ label: "Strut", mood: "yeah, I own this ledge.", speed: 2.2, stride: 30, hunch: -8, knee: 34, arm: 26, bob: 4, head: -6 }),
-  scurry:  makeGait({ label: "Scurry", mood: "late late late late", speed: 4.6, stride: 15, hunch: -24, knee: 26, arm: 8, bob: 2, head: -7 }),
+  stroll:  makeGait({ label: "Stroll", mood: "just moseying…", speed: 2.0, stride: 24, hunch: -7, knee: 30, arm: 14, bob: 3, head: -5 }),
+  shuffle: makeGait({ label: "Shuffle", mood: "five more minutes…", speed: 1.5, stride: 10, hunch: -12, knee: 12, arm: 5, bob: 1.5, head: -9 }),
+  strut:   makeGait({ label: "Strut", mood: "yeah, I own this ledge.", speed: 2.2, stride: 30, hunch: -5, knee: 34, arm: 26, bob: 4, head: -6 }),
+  scurry:  makeGait({ label: "Scurry", mood: "late late late late", speed: 4.6, stride: 15, hunch: -16, knee: 26, arm: 8, bob: 2, head: -7 }),
   march:   makeGait({ label: "March", mood: "hup, two, three, four", speed: 2.4, stride: 34, hunch: -2, knee: 6, arm: 30, bob: 5, head: 0 }),
-  sneak:   makeGait({ label: "Sneak", mood: "shhh… nobody saw that", speed: 1.3, stride: 22, hunch: -32, knee: 52, arm: 10, bob: 6, head: -11 }),
-  trudge:  makeGait({ label: "Trudge", mood: "why is this site SO long", speed: 1.1, stride: 13, hunch: -26, knee: 16, arm: 6, bob: 5, head: -15 }),
+  sneak:   makeGait({ label: "Sneak", mood: "shhh… nobody saw that", speed: 1.3, stride: 22, hunch: -22, knee: 52, arm: 10, bob: 6, head: -11 }),
+  trudge:  makeGait({ label: "Trudge", mood: "why is this site SO long", speed: 1.1, stride: 13, hunch: -16, knee: 16, arm: 6, bob: 5, head: -15 }),
   carry: (() => {
     const g = makeGait({ label: "Carrying", mood: "beam coming through!", speed: 1.8, stride: 18, hunch: -14, knee: 22, arm: 0, bob: 2.5, head: -6 });
     const base = g.frame;
@@ -1255,6 +1340,23 @@ const ANIMATIONS = {
       return p;
     },
   },
+  paddleball: {
+    label: "Paddleball", mood: "boing\u2026 boing\u2026 boing", paddle: true,
+    // the ball's bounce (drawPaddleball) uses the SAME t, so the taps line up
+    frame(t) {
+      const p = clone(REST);
+      const tap = Math.abs(Math.sin(t * 1.5 * Math.PI));   // 0 at each tap, 1 between
+      const hit = 1 - tap;                                  // spikes to 1 on the tap
+      p.lean = 3;
+      p.bob = 1 + hit * 2;                                  // tiny dip on each tap
+      p.headTilt = -6 - hit * 4;                            // watching the ball, nods on the tap
+      // right arm holds the paddle out in front, giving little upward taps
+      p.armRU = 92 - hit * 8; p.armRF = 44 - hit * 10;
+      // left arm relaxed at the side
+      p.armLU = -14; p.armLF = -12;
+      return p;
+    },
+  },
   toddle: {
     label: "Toddle", mood: "wobble wobble!",
     frame(t) {
@@ -1392,14 +1494,31 @@ const ANIMATIONS = {
   },
   heave: {
     label: "Pick it up", mood: "…annd, lift.",
-    frame(t) {   // t = elapsed of the ~1.2s pickup: bend down to grab, then straighten
+    frame(t) {   // straight-back hinge: folds deep at the hips so the HEAD drops toward the line
       const p = clone(REST);
       const bend = Math.sin(Math.min(1, t / 1.2) * Math.PI);  // 0 -> 1 (crouch) -> 0
-      p.hunch = -22 * bend;                 // bend forward toward the line
-      p.bob = 12 * bend;                    // crouch down
+      p.hunch = -42 * bend;                 // deep forward fold — the head bobs well down
+      p.bob = 10 * bend;
+      p.headTilt = -18 * bend;
+      p.legRU = 10 * bend; p.legRF = 8 * bend;      // legs stay nearly straight & PLANTED (shins ~down, 0°=down)
+      p.legLU = -10 * bend; p.legLF = -8 * bend;
+      p.armRU = 16 + 44 * bend; p.armRF = 6 + 34 * bend;     // reach down to the line, then lift back to carry
+      p.armLU = -16 - 44 * bend; p.armLF = -6 - 34 * bend;
+      return p;
+    },
+  },
+  heave2: {
+    label: "Pick it up (squat)", mood: "…annd, lift.",
+    frame(t) {   // knee-bending SQUAT: pelvis sinks, but shins stay near-vertical so the feet stay down
+      const p = clone(REST);
+      const bend = Math.sin(Math.min(1, t / 1.2) * Math.PI);  // 0 -> 1 (squat) -> 0
+      p.hunch = -14 * bend;                 // back fairly upright
+      p.bob = 22 * bend;                    // pelvis drops into the squat
       p.headTilt = -12 * bend;
-      p.armRU = 16 + 34 * bend; p.armRF = 6 + 22 * bend;      // reach down, then lift back to carry
-      p.armLU = -16 - 34 * bend; p.armLF = -6 - 22 * bend;
+      p.legRU = 38 * bend; p.legRF = 10 * bend;     // knee juts forward, shin stays ~down → foot PLANTED
+      p.legLU = -38 * bend; p.legLF = -10 * bend;   // (staggered lifting stance)
+      p.armRU = 30 * bend; p.armRF = 18 + 26 * bend;
+      p.armLU = -30 * bend; p.armLF = -18 - 26 * bend;
       return p;
     },
   },
@@ -1407,14 +1526,20 @@ const ANIMATIONS = {
     label: "Ow, my foot", mood: "OW ow ow!",
     frame(t) {
       const p = clone(REST);
-      const hop = Math.abs(Math.sin(t * 3.5 * Math.PI));   // hops on the good foot
-      p.bob = -hop * 12 + 2;
-      p.lean = 8; p.hunch = -6;
-      p.headTilt = -22;                    // looking down at the hurt foot
-      p.legRU = 46; p.legRF = -82;         // hurt foot yanked up
-      p.legLU = -6; p.legLF = -3;          // good leg hops
-      p.armRU = 40; p.armRF = 98;          // both hands clutch the raised foot
-      p.armLU = -40; p.armLF = -98;
+      // hop height varies: a slow envelope plus the odd extra-big hop, so it isn't a metronome
+      const hop = Math.abs(Math.sin(t * 3.5 * Math.PI));
+      const env = 0.68 + 0.32 * Math.sin(t * 0.9 + 0.5);          // slow rise/fall in bounciness
+      const bigHop = Math.pow(Math.max(0, Math.sin(t * 0.6)), 4); // occasional exaggerated leap
+      const h = hop * env + bigHop * 0.55;
+      p.bob = -h * 14 + 2;
+      p.lean = 8 + Math.sin(t * 2.3) * 5;                         // lurches side to side as he hops
+      p.hunch = -6 + Math.sin(t * 1.7) * 3;
+      p.headTilt = -22 + Math.sin(t * 3.1) * 9;                   // head winces/bobs, sometimes glancing up
+      const wig = Math.sin(t * 5.5) * 5;                          // the clutched foot jiggles
+      p.legRU = 46 + Math.sin(t * 2.1) * 6; p.legRF = -82 + wig;  // hurt foot yanked up
+      p.legLU = -6 + h * 4; p.legLF = -3;                         // good leg pumps with each hop
+      p.armRU = 40 + wig * 0.6; p.armRF = 98;                     // hands clutch the foot, jostling
+      p.armLU = -40 - wig * 0.6; p.armLF = -98;
       return p;
     },
   },
@@ -1443,7 +1568,7 @@ function makeGait(g) {
 }
 ANIMATIONS.walk = ANIMATIONS.stroll;   // scene walker + old references
 
-const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "sit", "read"];
+const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "paddleball", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "sit", "read"];
 
 // ── singleton animation controller ─────────────────────────
 // Owns its own rAF + state so it is immune to React re-mounts.
