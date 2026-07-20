@@ -92,7 +92,7 @@
   .fbar.b4{background:var(--teal);color:#0C1C1A}
   .fcap{font-size:12.5px;color:var(--dim);margin:14px 0 0;max-width:52ch}
   .eco{display:flex;flex-direction:column;gap:9px;margin-top:14px}
-  .ecorow{display:grid;grid-template-columns:128px 1fr 34px;align-items:center;gap:10px;font-size:13px}
+  .ecorow{display:grid;grid-template-columns:120px 1fr 40px 40px;align-items:center;gap:10px;font-size:13px}
   .ecorow .ehost{color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ecorow .eval{color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
   .etrack{height:15px;background:var(--line);border-radius:2px;overflow:hidden}
@@ -100,6 +100,16 @@
   .ecorow.me .ehost{color:var(--gold);font-weight:700}
   .ecorow.me .ebar{background:var(--gold)}
   .ecorow.me .eval{color:var(--gold);font-weight:700}
+  /* 30d/90d two-column headers for the funnel + visitor cards */
+  .fhead{display:flex;justify-content:flex-end;gap:10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+  .fcol{width:46px;text-align:right;font-variant-numeric:tabular-nums}
+  .fstep .frow .fcount{display:flex;gap:10px}
+  .fstep .fcount .fcol{flex:none}
+  .fstep .fcount .f30{color:var(--dim)}
+  .fstep .fcount .f90{color:var(--text);font-weight:700}
+  .ecohead{display:grid;grid-template-columns:120px 1fr 40px 40px;gap:10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+  .ecohead .eh{text-align:right}
+  .eval.e30{color:var(--dim);font-weight:400}
 </style>
 <div class="wrap">
 
@@ -343,22 +353,23 @@
 <div class="cols" style="margin-top:18px">
   <div class="card">
     <h3 class="serif">Once someone arrives</h3>
-    <p>The Compass funnel, measured against everyone who landed on it.</p>
+    <p>The Compass funnel, measured against everyone who landed on it.  Bars show the 90-day rate; counts show the last 30 days and the full quarter.</p>
     <div class="funnel">
+      <div class="fhead"><span class="fcol">30d</span><span class="fcol">90d</span></div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount">62 people</span></div>
+        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount"><span class="fcol f30">44</span><span class="fcol f90">62</span></span></div>
         <div class="ftrack"><div class="fbar b1" style="width:100%">100%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount">56 people</span></div>
+        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount"><span class="fcol f30">36</span><span class="fcol f90">56</span></span></div>
         <div class="ftrack"><div class="fbar b2" style="width:90%">90%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount">26 people</span></div>
+        <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount"><span class="fcol f30">15</span><span class="fcol f90">26</span></span></div>
         <div class="ftrack"><div class="fbar b3" style="width:42%">42%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Compared to a politician</span><span class="fcount">10 people</span></div>
+        <div class="frow"><span class="flabel">Compared to a politician</span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">10</span></span></div>
         <div class="ftrack"><div class="fbar b4" style="width:16%">16%</div></div>
       </div>
     </div>
@@ -366,14 +377,15 @@
   </div>
   <div class="card">
     <h3 class="serif">How many arrive</h3>
-    <p>Unique visitors per app across the empowered.vote ecosystem, same 90 days.</p>
+    <p>Unique visitors per app across the empowered.vote ecosystem, last 30 days and the full quarter.  Bars scale to the 90-day count.</p>
     <div class="eco">
-      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval">165</span></div>
-      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:58%"></span></span><span class="eval">96</span></div>
-      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:49%"></span></span><span class="eval">81</span></div>
-      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:38%"></span></span><span class="eval">62</span></div>
-      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:26%"></span></span><span class="eval">43</span></div>
-      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:21%"></span></span><span class="eval">34</span></div>
+      <div class="ecohead"><span></span><span></span><span class="eh">30d</span><span class="eh">90d</span></div>
+      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">120</span><span class="eval">165</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:58%"></span></span><span class="eval e30">56</span><span class="eval">96</span></div>
+      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:49%"></span></span><span class="eval e30">52</span><span class="eval">81</span></div>
+      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:38%"></span></span><span class="eval e30">44</span><span class="eval">62</span></div>
+      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:26%"></span></span><span class="eval e30">21</span><span class="eval">43</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:21%"></span></span><span class="eval e30">34</span><span class="eval">34</span></div>
     </div>
     <p class="fcap">One new Compass visitor roughly every 35 hours.  The audience already exists on the platform; the gap is the hand-off into the Compass, not the Compass itself.</p>
   </div>
