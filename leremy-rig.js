@@ -966,6 +966,21 @@ const ANIMATIONS = {
       return p;
     },
   },
+  heave2: {
+    label: "Pick it up (squat)", mood: "…annd, lift.",
+    frame(t) {   // a knee-bending SQUAT lift — visually distinct from heave's straight-back hinge
+      const p = clone(REST);
+      const bend = Math.sin(Math.min(1, t / 1.2) * Math.PI);  // 0 -> 1 (squat) -> 0
+      p.hunch = -10 * bend;                 // back stays fairly upright
+      p.bob = 15 * bend;                    // drops low
+      p.headTilt = -9 * bend;
+      p.legRU = 30 * bend; p.legRF = -62 * bend;   // knees fold out into the squat
+      p.legLU = -30 * bend; p.legLF = 62 * bend;
+      p.armRU = 30 * bend; p.armRF = 18 + 26 * bend;   // reach straight down between the knees
+      p.armLU = -30 * bend; p.armLF = -18 - 26 * bend;
+      return p;
+    },
+  },
   painhop: {
     label: "Ow, my foot", mood: "OW ow ow!",
     frame(t) {

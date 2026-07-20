@@ -215,7 +215,7 @@
       if (chance(0.4)) add({ mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: takeTone(), hoverAnim: 'elderangry' });
       // watch thumbnail corner — peeker, idler, or hover-jumper
       var pr = Math.random(), pk = { mode: 'stand', anchor: '.watch-grid .watch-card:nth-of-type(2) .watch-thumb', edge: 'top', x: 0.96, tone: takeTone() };
-      if (pr < 0.6) { pk.anim = 'peek'; pk.hoverAnim = 'shrug'; }  // peek (hover: shrug)
+      if (pr < 0.6) { pk.peeker = true; pk.anim = 'standstill'; }  // stands straight; looks over the edge only when something passes/collapses below
       else { pk.anim = pick(IDLES); }                             // idle (hover: wave). Only the footer stander jumps.
       add(pk);
       if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid .watch-card:nth-of-type(3) .watch-thumb', tone: takeTone() });
@@ -273,8 +273,7 @@
       for (var kb in b) if (!(kb in out)) out[kb] = b[kb];
       return out;
     }
-    var BEAM_LOADS = ['circle', 'line'];   // crew alternates the ball and the yellow line (no notched triangle)
-    function nextLoad(cur) { var o = BEAM_LOADS.filter(function (x) { return x !== cur; }); return o.length ? o[Math.floor(Math.random() * o.length)] : cur; }
+    var BEAM_LOADS = ['circle', 'line'];   // the ball and the yellow line (no notched triangle); beamPick avoids repeats
 
     function sizeCanvas(e, w, h) {
       if (e.w !== w || e.h !== h) {
@@ -446,10 +445,9 @@
           case 'walkoff': {
             e.lgX += e.lgDir * speedWalk * dt; e.lgFace = e.lgDir; flip = e.lgDir < 0; pose = A.stroll.frame(tt); swOn = true;
             var gone = e.lgDir > 0 ? (e.lgX > w + 46) : (e.lgX < -46);
-            if (gone) {                                                           // done — hand back to the carry rotation
+            if (gone) {                                                           // done — hand back; next pass is anything but the light again
               if (sw) sw.style.background = YEL;
-              e.scene = 'carry'; e.dir = e.lgDir; e.bx = e.lgDir > 0 ? -110 : w + 110; e.dwell = 0.9;
-              e.load = BEAM_LOADS[Math.floor(Math.random() * BEAM_LOADS.length)];
+              e.dir = e.lgDir; beamPick(e, w);
               return;
             }
             break;
@@ -637,6 +635,7 @@
         }
         case 'heap':
           e.cwT += dt; cwPose = cwHeap(e.cwT); cwRot = lieRot + Math.sin(e.cwT * 6) * 0.12; cwYoff = lieY;
+          pushBeacon(cr.left + e.cwX, cr.top + feetY, 'collapse');   // someone crashed down below
           if (e.cwT > HEAP_SECS) { e.cw = 'getup'; e.cwT = 0; }
           break;
         case 'getup': {
@@ -825,6 +824,7 @@
       var dogFrozen = rolling || sitting;   // his own motion stops, but the thrown ball & the owner keep going
       if (rolling) {
         if (overDog) e.dogRoll = Math.max(e.dogRoll, 0.7);   // keeps enjoying the belly rub while you hover
+        pushBeacon(cr.left + e.dogX, cr.top + feetY, 'collapse');   // dog flops down below
         e.dogRoll -= dt;
         if (e.dogRoll <= 0 && e.bHeld === 'ground') { e.df = 'chase'; e.dfT = 0; }   // gets up & fetches the ball he dropped
       }
@@ -1267,6 +1267,14 @@
       p.headTilt = 8; p.hunch = -4;
       return p;
     }
+    function letterKickE(t) {                            // boots the stalled 'e' onward
+      var p = A.stroll.frame(t);
+      p.legRU = 52; p.legRF = 6;                         // front leg swings out into the kick
+      p.legLU = -8; p.legLF = -4;
+      p.lean = -7; p.hunch = -6;
+      p.armRU = 44; p.armLU = -34;
+      return p;
+    }
     // one letter-carrying pass in the beam crew's rotation: set up two solo carriers entering from `dir`
     function startLetters(e, w, dir) {
       e.scene = 'letters'; e.dir = dir;
@@ -1303,14 +1311,26 @@
       switch (e.eSt) {
         case 'walk': e.eX += e.dir * SP * dt; break;
         case 'drop': e.eT += dt; if (e.eT >= 0.55) { e.eSt = 'wave'; e.eT = 0; } break;
-        case 'wave': e.eT += dt; if (e.eT >= 1.3) { e.eSt = 'roll'; e.eT = 0; e.eRoll = 0; e.eLX = e.eX + e.dir * 26; } break;
-        case 'roll': { e.eT += dt; var rs = 66; e.eLX += e.dir * rs * dt; e.eRoll += e.dir * (rs / letterR) * dt; e.eX = e.eLX - e.dir * 40; break; }
+        case 'wave': e.eT += dt; if (e.eT >= 1.3) { e.eSt = 'roll'; e.eT = 0; e.eRoll = 0; e.eLX = e.eX + e.dir * 28; e.eLV = 135; e.eKickHitch = 0; } break;   // give it a first shove
+        case 'roll': {
+          e.eT += dt;
+          var FR = 95;                                   // friction: the 'e' coasts a cycle or two, then stalls
+          e.eLV = Math.max(0, (e.eLV || 0) - FR * dt);
+          e.eLX += e.dir * e.eLV * dt;
+          e.eRoll += e.dir * (e.eLV / letterR) * dt;     // spin tracks roll → it stops turning when it stops
+          if (e.eKickHitch > 0) { e.eKickHitch -= dt; }  // brief pause on the kick itself
+          else { e.eX += e.dir * 52 * dt; }              // otherwise he keeps walking after it
+          var behind = e.dir > 0 ? (e.eLX - e.eX) : (e.eX - e.eLX);
+          if (behind < 22) e.eX = e.eLX - e.dir * 22;    // don't overtake the 'e'
+          if (behind < 26 && e.eLV < 24) { e.eLV = 145; e.eKickHitch = 0.2; }   // caught the stalled 'e' → boot it on
+          break;
+        }
       }
       var ePose, eFlip = flip;
       if (e.eSt === 'walk') ePose = letterCarryE(tt);
       else if (e.eSt === 'drop') { ePose = letterSetDownE(tt, Math.min(1, e.eT / 0.55)); eFlip = false; }
       else if (e.eSt === 'wave') { ePose = A.greet.frame(e.eT, { hand: 'R', hz: 1.6 }); eFlip = false; }
-      else ePose = A.stroll.frame(tt);
+      else ePose = (e.eKickHitch > 0) ? letterKickE(tt) : A.stroll.frame(tt);   // roll: kick hitch, else walking
       var ej = R.computePose(ePose, CFG, { x: 0, y: 0 });
       var esgn = eFlip ? -1 : 1;
       var eHandX = e.eX + ((ej.hR.x + ej.hL.x) / 2) * S * esgn, eHandY = oy + ((ej.hR.y + ej.hL.y) / 2) * S;
@@ -1318,7 +1338,7 @@
       if (e.eSt === 'walk') { eLX = eHandX; eLY = eHandY; }
       else if (e.eSt === 'drop') { var u = Math.min(1, e.eT / 0.55); eLX = e.eX + e.dir * 26; eLY = eHandY + (groundLY - eHandY) * u; }
       else if (e.eSt === 'wave') { eLX = e.eX + e.dir * 26; eLY = groundLY; }
-      else { eLX = e.eLX; eLY = groundLY - Math.abs(Math.sin(e.eRoll * 1.5)) * 3; eRot = Math.PI + e.eRoll; }  // non-round → little bump
+      else { eLX = e.eLX; eLY = groundLY - Math.abs(Math.sin(e.eRoll * 1.5)) * 3 * Math.min(1, (e.eLV || 0) / 40); eRot = Math.PI + e.eRoll; }  // non-round → little bump while moving, flat when stopped
       R.drawShadow(ctx, e.eX, feetY, 14, shadow);
       if (e.eSt !== 'walk') R.drawShadow(ctx, eLX, feetY, 12, shadow);
       drawFig(ctx, e.eX, oy, S, eFlip, ePose, { color: figColor(3) });    // green guy, distinct from the teal e
@@ -1330,19 +1350,59 @@
       // once BOTH have finished their business and walked off, hand back to the two-carry rotation
       var vGone = e.vSt === 'walk' && off(e.vX);
       var eGone = (e.eSt === 'walk' && off(e.eX)) || (e.eSt === 'roll' && off(e.eX) && off(e.eLX));
-      if (vGone && eGone) {
-        e.scene = 'carry';
-        e.bx = e.dir > 0 ? -110 : w + 110;              // pair re-enters from the trailing edge
-        e.dwell = 0.9; e.load = pick(BEAM_LOADS);
-      }
+      if (vGone && eGone) beamPick(e, w);                // hand back; next pass is anything but the letters again
     }
     // at each off-screen turn the crew picks its next pass: the light gag, a letter-carry, or another load
-    function beamTurn(e, w) {
-      var r = Math.random();
-      if (r < 0.30) startLight(e, w);
-      else if (r < 0.58) startLetters(e, w, e.dir);
-      else { e.load = nextLoad(e.load); e.dwell = 1.1; }
+    // pick the crew's next pass — NEVER the same action twice running (no circle→circle, light→light, …)
+    function beamPick(e, w) {
+      var opts = ['light', 'letters', 'circle', 'line'];
+      if (e.lastAction) opts = opts.filter(function (a) { return a !== e.lastAction; });
+      var a = opts[Math.floor(Math.random() * opts.length)];
+      e.lastAction = a;
+      if (a === 'light') startLight(e, w);
+      else if (a === 'letters') startLetters(e, w, e.dir);
+      else { e.scene = 'carry'; e.load = a; e.dwell = 1.1; e.bx = e.dir > 0 ? -110 : w + 110; }
     }
+
+    // ── LEDGE PEEKER: stands straight on the card edge; when something passes (or crashes) below him
+    //    he leans out, watches curiously for a beat, shrugs, and stands back up. All eased, no snap. ──
+    function peekLook(t) {
+      var p = Object.assign({}, R.REST);
+      p.hunch = -32;                             // cranes forward over the edge
+      p.headTilt = -22 + Math.sin(t * 3) * 4;    // peering down, curious little wobble
+      p.bob = 1 + Math.sin(t * 2) * 1;
+      p.armRU = -26; p.armRF = -20;              // arms trail back to counterbalance the lean
+      p.armLU = -34; p.armLF = -26;
+      p.legRU = 12; p.legRF = 6; p.legLU = -14; p.legLF = -6;   // front foot toes the edge
+      return p;
+    }
+    function drawPeeker(e, ctx, w, h, feetY, tt, col, shadow, dt, cr) {
+      var oy = feetY - 112 * S, flip = e.spec.x > 0.5;
+      var pkX = cr.left + w / 2, pkFeetY = cr.top + feetY;
+      if (e.pkSt == null) { e.pkSt = 'stand'; e.pkT = 0; e.pkCool = 0; e.pkPose = A.standstill.frame(tt); }
+      e.pkT += dt; if (e.pkCool > 0) e.pkCool -= dt;
+      // activity below & near: a fresh beacon under his ledge, or the cursor passing in the band below him
+      var trig = false;
+      for (var i = 0; i < lookBeacons.length; i++) {
+        var b = lookBeacons[i];
+        if (Math.abs(b.x - pkX) < 135 && b.y > pkFeetY + 4 && b.y < pkFeetY + 580) trig = true;
+      }
+      if (!trig && mx > -9000 && Math.abs(mx - pkX) < 120 && my > pkFeetY + 4 && my < pkFeetY + 320) trig = true;
+      if (e.pkSt === 'stand' && e.pkCool <= 0 && trig) { e.pkSt = 'look'; e.pkT = 0; }
+      var target;
+      if (e.pkSt === 'look') { target = peekLook(tt); if (e.pkT > (trig ? 3.0 : 1.5)) { e.pkSt = 'shrug'; e.pkT = 0; } }   // keep watching while it lasts, else hold a beat
+      else if (e.pkSt === 'shrug') { target = A.shrug.frame(e.pkT); if (e.pkT > 1.5) { e.pkSt = 'stand'; e.pkT = 0; e.pkCool = 1.5; } }
+      else target = A.standstill.frame(tt);
+      var k = Math.min(1, dt * 12);              // ease displayed pose toward target → smooth look-down & return
+      for (var j = 0; j < POSE_KEYS.length; j++) { var key = POSE_KEYS[j]; var cur = e.pkPose[key] || 0; e.pkPose[key] = cur + ((target[key] || 0) - cur) * k; }
+      R.drawShadow(ctx, w / 2, feetY, 16, shadow);
+      drawFig(ctx, w / 2, oy, S, flip, e.pkPose, { color: col });
+    }
+
+    // ── "activity below" beacons: movers/collapsers publish their screen-space foot position so the
+    //    ledge-peeker can notice someone passing under him (or crashing down below) and look over. ──
+    var lookBeacons = [];
+    function pushBeacon(x, y, kind) { lookBeacons.push({ x: x, y: y, t: t, kind: kind }); }
 
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
@@ -1354,6 +1414,7 @@
       if ((inkTick += dt) > 0.5) { inkTick = 0; inkCache = cssVar('--heading', '#1C1C1C'); }
       var ink = inkCache;
       var shadow = 'rgba(127,127,127,0.18)';
+      lookBeacons = lookBeacons.filter(function (b) { return t - b.t < 0.5; });   // keep only fresh activity
 
       // ── footer meet-and-greet: a call-and-response, not a synchronized wave ──
       // Stage 1: the stander spots the walker coming and waves FIRST (walker still moving).
@@ -1388,7 +1449,7 @@
         ctx.clearRect(0, 0, w, h);
         var feetY = h - 6;
         var col = figColor(spec.tone != null ? spec.tone : e.ci);
-        var hoverable = (spec.mode === 'stand' && !spec.balance) || spec.mode === 'patrol' || (spec.mode === 'seat' && !spec.phone);
+        var hoverable = (spec.mode === 'stand' && !spec.balance && !spec.peeker) || spec.mode === 'patrol' || (spec.mode === 'seat' && !spec.phone);
         // per-entry clock freezes while greeting, so patrols resume where they stopped
         if (e.greet) e.greet += dt;
         if (e._fall > 0) e._fall = Math.max(0, e._fall - dt);
@@ -1506,6 +1567,7 @@
         }
         if (spec.mode === 'stand') {
           if (spec.balance) { drawBalancer(e, ctx, w, h, feetY, tt, col, shadow, dt); return; }
+          if (spec.peeker) { drawPeeker(e, ctx, w, h, feetY, tt, col, shadow, dt, cr); return; }
           var oyS = feetY - 112 * S;
           if (spec.presenter) {
             R.drawShadow(ctx, w / 2, feetY, 16, shadow);
@@ -1553,6 +1615,7 @@
             e._toff = (e._toff == null) ? tTgt : e._toff + (tTgt - e._toff) * Math.min(1, dt * 5);
             var toddX = figX + e._toff;
             e._toddSX = cr.left + toddX; e._toddSY = cr.top + feetY - 26;   // for click hit-testing
+            pushBeacon(cr.left + toddX, cr.top + feetY, e._fall > 0 ? 'collapse' : 'walk');   // toddler toddling/tumbling below
             var totCol = figColor(spec.toddlerTone != null ? spec.toddlerTone : 1);
             var standYtot = feetY - 112 * TS, groundYtot = feetY - 8 * TS;
             R.drawShadow(ctx, toddX, feetY, 10, shadow);
@@ -1587,6 +1650,7 @@
             pPose.armRU = Math.max(pPose.armRU, 44); pPose.armLU = Math.min(pPose.armLU, -44);   // catch-ready
           }
           drawFig(ctx, parentX, feetY - 112 * S, S, flipP, pPose, { color: col, cane: animP.cane });
+          pushBeacon(cr.left + parentX, cr.top + feetY, 'walk');   // a walker passing below the peeker
           return;
         }
         if (spec.mode === 'beam') {
@@ -1595,7 +1659,7 @@
           // Start load is randomized so the line shows up right away ~half the time
           // (otherwise you'd wait a full ~28s off-screen traverse to see it swap).
           var speedB = 30, halfGap = 24, endMargin = 110;
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.dwell = 0; e.scene = 'carry'; var r0 = Math.random(); if (r0 < 0.3) startLight(e, w); else if (r0 < 0.55) startLetters(e, w, 1); }
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastAction = e.load; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; variety comes at each turn
           // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
           if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
           if (e.scene === 'letters') { runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
@@ -1684,8 +1748,8 @@
             if (e.dwell > 0) e.dwell -= dt;
             else {
               e.bx += e.dir * speedB * dt;
-              if (e.bx > w + endMargin) { e.dir = -1; beamTurn(e, w); }
-              else if (e.bx < -endMargin) { e.dir = 1; beamTurn(e, w); }
+              if (e.bx > w + endMargin) { e.dir = -1; beamPick(e, w); }
+              else if (e.bx < -endMargin) { e.dir = 1; beamPick(e, w); }
             }
             fx = e.bx + e.dir * halfGap; bx2 = e.bx - e.dir * halfGap;
           }
@@ -1716,10 +1780,12 @@
             ctx.strokeStyle = figColor(2);   // legible gold on light, bright yellow on dark
             ctx.lineWidth = 5; ctx.lineCap = 'round';
             if (e._pickup > 0) {
-              // being picked up: line lifts off the ground as they straighten
-              var pe = 1.2 - e._pickup, lift = pe < 0.6 ? 0 : (pe - 0.6) / 0.6;
-              var yPick = groundY + (carryY - groundY) * smooth01(lift);
-              ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yPick); ctx.lineTo(bx2 - e.dir * 12, yPick); ctx.stroke();
+              // being picked up: front lifts first, back hitches a beat behind → the line tilts as it rises
+              var peF = 1.2 - e._pickup, liftF = peF < 0.6 ? 0 : (peF - 0.6) / 0.6;
+              var peB2 = Math.max(0, peF - 0.2), liftB = peB2 < 0.6 ? 0 : (peB2 - 0.6) / 0.6;
+              var yLF = groundY + (carryY - groundY) * smooth01(liftF);
+              var yLB = groundY + (carryY - groundY) * smooth01(liftB);
+              ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yLF); ctx.lineTo(bx2 - e.dir * 12, yLB); ctx.stroke();
             } else {
               var yF = carryY + (groundY - carryY) * e.dF;
               var yB = carryY + (groundY - carryY) * e.dB;
@@ -1730,9 +1796,9 @@
           R.drawShadow(ctx, bx2, feetY, 15, shadow);
           var poseF, poseB, flipF = !goingR, flipB = !goingR;
           if (e._pickup > 0) {
-            // both crouch to grab the dropped line and lift it together
+            // they crouch differently and lift out of sync: front hinges & lifts, back squats a hitch behind
             var peP = 1.2 - e._pickup;
-            poseF = A.heave.frame(peP); poseB = A.heave.frame(peP);
+            poseF = A.heave.frame(peP); poseB = A.heave2.frame(Math.max(0, peP - 0.2));
           } else if (e.greet) {
             var holdPose = A.holdannoyed.frame(e.greet);
             poseF = e.wF ? A.greet.frame(e.greet, { hand: 'R', hz: 1.5 }) : holdPose;
