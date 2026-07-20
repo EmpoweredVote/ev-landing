@@ -1501,7 +1501,7 @@
             function startPreview(tool) {
                 if (activeTool === tool) return;
                 cancelLoads();
-                clearInterval(timer);
+                clearTimeout(timer);
                 clearInterval(restTimer);
                 activeTool = tool;
                 activeIdx  = 0;
@@ -1532,10 +1532,17 @@
                 crossfadeTo(frames[0]);
 
                 if (frames.length > 1) {
-                    timer = setInterval(function () {
-                        activeIdx = (activeIdx + 1) % frames.length;
-                        crossfadeTo(frames[activeIdx]);
-                    }, 1500);
+                    // self-scheduling so individual frames can dwell longer. The compass cycle's
+                    // last frame (the calibrated-Essentials shot) holds twice as long before looping.
+                    var schedule = function () {
+                        var dwell = (tool === 'compass' && activeIdx === frames.length - 1) ? 3000 : 1500;
+                        timer = setTimeout(function () {
+                            activeIdx = (activeIdx + 1) % frames.length;
+                            crossfadeTo(frames[activeIdx]);
+                            schedule();
+                        }, dwell);
+                    };
+                    schedule();
                 }
 
                 // Behind the screenshots, rotate the resting figure while a preview is up.
@@ -1546,7 +1553,7 @@
 
             function clearPreview() {
                 cancelLoads();
-                clearInterval(timer);
+                clearTimeout(timer);
                 clearInterval(restTimer);   // stop swapping; leave the last pose to be revealed
                 activeTool = null;
                 wrap.classList.remove('is-active');

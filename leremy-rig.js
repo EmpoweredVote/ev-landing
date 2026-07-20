@@ -958,11 +958,13 @@ const ANIMATIONS = {
     frame(t) {   // t = elapsed of the ~1.2s pickup: bend down to grab, then straighten
       const p = clone(REST);
       const bend = Math.sin(Math.min(1, t / 1.2) * Math.PI);  // 0 -> 1 (crouch) -> 0
-      p.hunch = -22 * bend;                 // bend forward toward the line
-      p.bob = 12 * bend;                    // crouch down
-      p.headTilt = -12 * bend;
-      p.armRU = 16 + 34 * bend; p.armRF = 6 + 22 * bend;      // reach down, then lift back to carry
-      p.armLU = -16 - 34 * bend; p.armLF = -6 - 22 * bend;
+      p.hunch = -34 * bend;                 // deep forward fold — the head drops well down
+      p.bob = 24 * bend;                    // sink lower into the crouch
+      p.headTilt = -18 * bend;
+      p.legRU = 26 * bend; p.legRF = -50 * bend;   // knees bend so the feet stay planted as he sinks
+      p.legLU = -26 * bend; p.legLF = 50 * bend;
+      p.armRU = 16 + 40 * bend; p.armRF = 6 + 30 * bend;      // reach down, then lift back to carry
+      p.armLU = -16 - 40 * bend; p.armLF = -6 - 30 * bend;
       return p;
     },
   },
@@ -971,11 +973,11 @@ const ANIMATIONS = {
     frame(t) {   // a knee-bending SQUAT lift — visually distinct from heave's straight-back hinge
       const p = clone(REST);
       const bend = Math.sin(Math.min(1, t / 1.2) * Math.PI);  // 0 -> 1 (squat) -> 0
-      p.hunch = -10 * bend;                 // back stays fairly upright
-      p.bob = 15 * bend;                    // drops low
-      p.headTilt = -9 * bend;
-      p.legRU = 30 * bend; p.legRF = -62 * bend;   // knees fold out into the squat
-      p.legLU = -30 * bend; p.legLF = 62 * bend;
+      p.hunch = -14 * bend;                 // back stays fairly upright
+      p.bob = 30 * bend;                    // drops deep into a full squat
+      p.headTilt = -12 * bend;
+      p.legRU = 46 * bend; p.legRF = -92 * bend;   // knees fold out hard, keeping the feet down
+      p.legLU = -46 * bend; p.legLF = 92 * bend;
       p.armRU = 30 * bend; p.armRF = 18 + 26 * bend;   // reach straight down between the knees
       p.armLU = -30 * bend; p.armLF = -18 - 26 * bend;
       return p;
@@ -985,14 +987,20 @@ const ANIMATIONS = {
     label: "Ow, my foot", mood: "OW ow ow!",
     frame(t) {
       const p = clone(REST);
-      const hop = Math.abs(Math.sin(t * 3.5 * Math.PI));   // hops on the good foot
-      p.bob = -hop * 12 + 2;
-      p.lean = 8; p.hunch = -6;
-      p.headTilt = -22;                    // looking down at the hurt foot
-      p.legRU = 46; p.legRF = -82;         // hurt foot yanked up
-      p.legLU = -6; p.legLF = -3;          // good leg hops
-      p.armRU = 40; p.armRF = 98;          // both hands clutch the raised foot
-      p.armLU = -40; p.armLF = -98;
+      // hop height varies: a slow envelope plus the odd extra-big hop, so it isn't a metronome
+      const hop = Math.abs(Math.sin(t * 3.5 * Math.PI));
+      const env = 0.68 + 0.32 * Math.sin(t * 0.9 + 0.5);          // slow rise/fall in bounciness
+      const bigHop = Math.pow(Math.max(0, Math.sin(t * 0.6)), 4); // occasional exaggerated leap
+      const h = hop * env + bigHop * 0.55;
+      p.bob = -h * 14 + 2;
+      p.lean = 8 + Math.sin(t * 2.3) * 5;                         // lurches side to side as he hops
+      p.hunch = -6 + Math.sin(t * 1.7) * 3;
+      p.headTilt = -22 + Math.sin(t * 3.1) * 9;                   // head winces/bobs, sometimes glancing up
+      const wig = Math.sin(t * 5.5) * 5;                          // the clutched foot jiggles
+      p.legRU = 46 + Math.sin(t * 2.1) * 6; p.legRF = -82 + wig;  // hurt foot yanked up
+      p.legLU = -6 + h * 4; p.legLF = -3;                         // good leg pumps with each hop
+      p.armRU = 40 + wig * 0.6; p.armRF = 98;                     // hands clutch the foot, jostling
+      p.armLU = -40 - wig * 0.6; p.armLF = -98;
       return p;
     },
   },

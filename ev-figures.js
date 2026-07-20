@@ -416,10 +416,24 @@
             e.lgX += e.lgDir * speedWalk * dt; e.lgFace = e.lgDir; flip = e.lgDir < 0; pose = A.stroll.frame(tt);
             if ((e.lgDir > 0 && e.lgX >= stopX) || (e.lgDir < 0 && e.lgX <= stopX)) { e.lgX = stopX; e.lp = 'notice'; e.lt2 = 0; }
             break;
-          case 'notice':
-            e.lt2 += dt; pose = A.presentup.frame(e.lt2); flip = e.lgFace < 0;    // points up at the dead light
-            if (e.lt2 > 1.1) { e.lp = 'runoff'; e.lt2 = 0; }
+          case 'notice': {
+            e.lt2 += dt; flip = e.lgFace < 0; var nt = e.lt2;
+            if (nt < 0.9) {                                                        // stops and notices the dead light
+              pose = A.presentup.frame(nt);
+            } else if (nt < 1.7) {                                                 // leans in to inspect it
+              var li = smooth01((nt - 0.9) / 0.55);
+              pose = Object.assign({}, R.REST);
+              pose.lean = -12 * li; pose.hunch = -16 * li; pose.headTilt = -20 * li;
+              pose.armRU = 28 + 16 * li; pose.armRF = 18; pose.armLU = -18; pose.armLF = -10;
+            } else if (nt < 2.7) {                                                 // shakes his head — no good
+              var st = nt - 1.7;
+              pose = Object.assign({}, R.REST);
+              pose.lean = -4; pose.hunch = -6;
+              pose.headTilt = Math.sin(st * 2 * Math.PI * (2 / 1.0)) * 18;         // ~2 slow shakes
+              pose.armRU = 16; pose.armRF = 8; pose.armLU = -16; pose.armLF = -8;
+            } else { e.lp = 'runoff'; e.lt2 = 0; }
             break;
+          }
           case 'runoff': {
             e.lgX -= e.lgDir * speedRun * dt; e.lgFace = -e.lgDir; flip = -e.lgDir < 0; pose = A.scurry.frame(tt);
             var off = e.lgDir > 0 ? (e.lgX < -46) : (e.lgX > w + 46);
@@ -940,6 +954,9 @@
       else if (e.df === 'megapoint') { /* holds his ground, pointing after it */ }
       else { var dth = throwerX - e.thrX; if (Math.abs(dth) > 1.5) { e.thrX += (dth > 0 ? 1 : -1) * Math.min(Math.abs(dth), 64 * dt); e.thrWalk = true; } else e.thrX = throwerX; }
 
+      // when he throws his hands up at the incoming mega-ball, it's a commotion the ledge-peeker can hear
+      if (e.df === 'megadrag' && e.reactT < 2.0) pushBeacon(cr.left + e.thrX, cr.top + feetY, 'commotion');
+
       // ── choose poses ──
       var faceDogFlip = e.dogX < e.thrX;
       var thP, thFlip;
@@ -1235,10 +1252,19 @@
       ctx.beginPath(); ctx.moveTo(-R + 1, 0); ctx.lineTo(R - 3, 0); ctx.stroke();           // crossbar
       ctx.restore();
     }
+    // the exact lowercase 'v' from the empowered.vote wordmark (coral glyph path from EVLogo.svg),
+    // so the carried letter reads as the real logo 'v'. Native bbox ~x[242.3,281.9] y[75.2,110.0].
+    var V_PATH = new Path2D('M262.892 98.8742H262.764L253.945 75.2178H242.326L256.745 110.043H268.139L281.882 75.2178H271.067L262.892 98.8742Z');
+    var V_CX = 262.104, V_CY = 92.63, V_W = 39.556, V_H = 34.825;
     function drawLetterV(ctx, cx, cy, halfW, height, color, rot) {
-      ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot || 0);
-      ctx.strokeStyle = color; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(-halfW, height / 2); ctx.lineTo(0, -height / 2); ctx.lineTo(halfW, height / 2); ctx.stroke();  // apex up (upside-down v)
+      var s = Math.min((halfW * 2) / V_W, height / V_H);   // fit the box, keep the glyph's real proportions
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate((rot || 0) + Math.PI);                    // turned upside-down (logo 'v' → apex up)
+      ctx.scale(s, s);
+      ctx.translate(-V_CX, -V_CY);
+      ctx.fillStyle = color;
+      ctx.fill(V_PATH);
       ctx.restore();
     }
     function letterCarryE(t) {                          // struggling: hunched, both hands gripping the e in front
@@ -1385,7 +1411,8 @@
       var trig = false;
       for (var i = 0; i < lookBeacons.length; i++) {
         var b = lookBeacons[i];
-        if (Math.abs(b.x - pkX) < 135 && b.y > pkFeetY + 4 && b.y < pkFeetY + 580) trig = true;
+        if (b.kind === 'commotion') { if (b.y > pkFeetY + 4) trig = true; }   // a loud commotion below — he hears it from anywhere and leans to look
+        else if (Math.abs(b.x - pkX) < 135 && b.y > pkFeetY + 4 && b.y < pkFeetY + 580) trig = true;   // a passer/collapse must be near his column
       }
       if (!trig && mx > -9000 && Math.abs(mx - pkX) < 120 && my > pkFeetY + 4 && my < pkFeetY + 320) trig = true;
       if (e.pkSt === 'stand' && e.pkCool <= 0 && trig) { e.pkSt = 'look'; e.pkT = 0; }
