@@ -1379,15 +1379,23 @@
       if (vGone && eGone) beamPick(e, w);                // hand back; next pass is anything but the letters again
     }
     // at each off-screen turn the crew picks its next pass: the light gag, a letter-carry, or another load
-    // pick the crew's next pass — NEVER the same action twice running (no circle→circle, light→light, …)
+    // pick the crew's next pass. ALTERNATE carry <-> special every pass so the light gag and the
+    // letter carriers show up regularly (turns are ~30-50s apart, so a random pick made specials feel
+    // like they never happened). Loads (circle/line) and specials (light/letters) each alternate too,
+    // so no action ever repeats back-to-back.
     function beamPick(e, w) {
-      var opts = ['light', 'letters', 'circle', 'line'];
-      if (e.lastAction) opts = opts.filter(function (a) { return a !== e.lastAction; });
-      var a = opts[Math.floor(Math.random() * opts.length)];
+      var lastWasSpecial = (e.lastAction === 'light' || e.lastAction === 'letters');
+      var a;
+      if (lastWasSpecial) {
+        a = (e.lastLoad === 'circle') ? 'line' : 'circle';       // next: a carry with the other load
+        e.lastLoad = a;
+        e.scene = 'carry'; e.load = a; e.dwell = 1.1; e.bx = e.dir > 0 ? -110 : w + 110;
+      } else {
+        a = (e.lastSpecial === 'light') ? 'letters' : 'light';   // next: the other special
+        e.lastSpecial = a;
+        if (a === 'light') startLight(e, w); else startLetters(e, w, e.dir);
+      }
       e.lastAction = a;
-      if (a === 'light') startLight(e, w);
-      else if (a === 'letters') startLetters(e, w, e.dir);
-      else { e.scene = 'carry'; e.load = a; e.dwell = 1.1; e.bx = e.dir > 0 ? -110 : w + 110; }
     }
 
     // ── LEDGE PEEKER: stands straight on the card edge; when something passes (or crashes) below him
@@ -1687,7 +1695,7 @@
           // Start load is randomized so the line shows up right away ~half the time
           // (otherwise you'd wait a full ~28s off-screen traverse to see it swap).
           var speedB = 30, halfGap = 24, endMargin = 110;
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastAction = e.load; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; variety comes at each turn
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = pick(['light', 'letters']); e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows at the first turn
           // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
           if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
           if (e.scene === 'letters') { runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
