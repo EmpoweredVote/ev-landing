@@ -799,7 +799,7 @@
         }
         .how-signup-form .btn { white-space: nowrap; }
 
-        /* Shared "not switched on yet" notice */
+        /* Sign-up status notice (info/success = teal, error = coral) */
         .signup-note {
             flex-basis: 100%; width: 100%;
             font-size: 0.88rem; line-height: 1.4;
@@ -808,6 +808,12 @@
             background: color-mix(in srgb, var(--teal) 12%, transparent);
             border: 1px solid var(--teal);
         }
+        .signup-note.is-error {
+            background: color-mix(in srgb, var(--coral) 14%, transparent);
+            border-color: var(--coral);
+        }
+        /* Honeypot — off-screen field real people never fill; catches bots */
+        .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
         /* Footer "Newsletter" link + horizontal slide-in form */
         footer .links { align-items: center; flex-wrap: wrap; }
@@ -1357,6 +1363,7 @@
                                 <label class="sr-only" for="ev-email">Email address</label>
                                 <input id="ev-email" name="email" type="email" required
                                        autocomplete="email" placeholder="you@example.com" />
+                                <div class="hp" aria-hidden="true"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
                                 <button type="submit" class="btn btn-primary">Keep me posted <span class="arr">→</span></button>
                             </form>
                             <p class="signup-note" id="ev-signup-note" role="status" aria-live="polite" hidden></p>
@@ -1433,6 +1440,7 @@
                     <label class="sr-only" for="ev-footer-email">Email address</label>
                     <input id="ev-footer-email" name="email" type="email" required
                            autocomplete="email" placeholder="you@example.com" tabindex="-1" />
+                    <div class="hp" aria-hidden="true"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
                     <button type="submit" class="btn btn-primary" tabindex="-1">Subscribe</button>
                 </form>
                 <p class="footer-note" id="ev-footer-note" role="status" aria-live="polite" hidden></p>
@@ -1440,19 +1448,60 @@
         </div>
     </footer>
 
-    <!-- PLACEHOLDER: delete this block once the sign-up forms are wired to GiveButter (see the note in the "how" section). -->
+    <!-- Newsletter sign-up — posts to our AWS Lambda relay, which adds the contact in Givebutter. -->
     <script>
         (function () {
+            // AWS Lambda relay that adds the contact in Givebutter (key stays server-side).
+            var SIGNUP_ENDPOINT = 'https://gq2nohazl3447rhtau34o6yqs40vpude.lambda-url.us-east-1.on.aws/';
+
+            function setNote(note, msg, kind) {
+                if (!note) return;
+                note.hidden = false;
+                note.textContent = msg;
+                note.classList.remove('is-error');
+                if (kind === 'error') note.classList.add('is-error');
+            }
+
             function wire(formId, noteId) {
                 var form = document.getElementById(formId);
                 var note = document.getElementById(noteId);
-                if (!form || !note) return;
+                if (!form) return;
                 form.addEventListener('submit', function (e) {
                     e.preventDefault();
-                    var email = form.querySelector('input[type="email"]');
-                    if (email && !email.checkValidity()) { email.reportValidity(); return; }
-                    note.hidden = false;
-                    note.textContent = 'Thanks! Sign-ups aren’t switched on just yet — we’re connecting our email tool. Check back very soon.';
+                    var emailInput = form.querySelector('input[type="email"]');
+                    if (emailInput && !emailInput.checkValidity()) { emailInput.reportValidity(); return; }
+                    var submitBtn = form.querySelector('button[type="submit"]');
+                    var payload = {
+                        email: emailInput ? emailInput.value.trim() : '',
+                        company: (form.querySelector('input[name="company"]') || {}).value || '' // honeypot
+                    };
+
+                    if (!SIGNUP_ENDPOINT || SIGNUP_ENDPOINT.indexOf('PASTE') === 0) {
+                        setNote(note, 'Almost there — sign-ups go live once we connect the form.', 'error');
+                        return;
+                    }
+
+                    if (submitBtn) submitBtn.disabled = true;
+                    setNote(note, 'Adding you…', null);
+
+                    fetch(SIGNUP_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }).then(function (r) {
+                        return r.json().catch(function () { return { ok: r.ok }; });
+                    }).then(function (data) {
+                        if (data && data.ok) {
+                            form.reset();
+                            setNote(note, 'You’re on the list — thanks for following the build. 🎉', 'ok');
+                        } else {
+                            setNote(note, (data && data.error) || 'Something went wrong. Please try again.', 'error');
+                        }
+                    }).catch(function () {
+                        setNote(note, 'Couldn’t reach us just now. Please try again in a moment.', 'error');
+                    }).then(function () {
+                        if (submitBtn) submitBtn.disabled = false;
+                    });
                 });
             }
             wire('ev-signup', 'ev-signup-note');
@@ -1462,7 +1511,7 @@
             var toggle = document.getElementById('newsletter-toggle');
             var fform = document.getElementById('ev-footer-signup');
             if (toggle && fform) {
-                var fields = fform.querySelectorAll('input, button');
+                var fields = fform.querySelectorAll('input[type="email"], button'); // exclude the honeypot
                 toggle.addEventListener('click', function () {
                     var open = fform.classList.toggle('open');
                     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
