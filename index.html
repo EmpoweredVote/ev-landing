@@ -856,10 +856,26 @@
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 20%, transparent);
         }
         .footer-form .btn { padding: 9px 18px; font-size: 0.88rem; white-space: nowrap; }
-        .footer-note { flex-basis: 100%; text-align: right; font-size: 0.82rem; margin: 12px 0 0; color: var(--heading); }
+
+        /* Sign-up confirmation — fixed toast (popup); never affects page layout */
+        .signup-toast {
+            position: fixed; left: 50%; bottom: 24px;
+            transform: translateX(-50%) translateY(10px);
+            max-width: calc(100vw - 32px);
+            background: var(--card); color: var(--heading);
+            border: 1px solid var(--teal); border-left: 4px solid var(--teal);
+            border-radius: 12px; padding: 12px 18px;
+            font-size: 0.9rem; line-height: 1.35;
+            box-shadow: 0 10px 34px -12px rgba(0, 0, 0, 0.45);
+            opacity: 0; pointer-events: none; z-index: 1000;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .signup-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .signup-toast.is-error { border-color: var(--coral); border-left-color: var(--coral); }
 
         @media (prefers-reduced-motion: reduce) {
             .footer-form { transition: opacity 0.2s ease; }
+            .signup-toast { transition: opacity 0.2s ease; }
             footer .link-btn .caret { transition: none; }
         }
         @media (max-width: 480px) {
@@ -867,7 +883,6 @@
             .how-signup-form .btn { width: 100%; justify-content: center; }
             .footer-form.open { flex-basis: 100%; max-width: 100%; margin-left: 0; }
             .footer-form.open input { flex: 1; width: auto; }
-            .footer-note { text-align: left; }
         }
 
         @media (max-width: 640px) {
@@ -1443,10 +1458,12 @@
                     <div class="hp" aria-hidden="true"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
                     <button type="submit" class="btn btn-primary" tabindex="-1">Subscribe</button>
                 </form>
-                <p class="footer-note" id="ev-footer-note" role="status" aria-live="polite" hidden></p>
             </span>
         </div>
     </footer>
+
+    <!-- Footer sign-up confirmation (fixed toast, announced to screen readers) -->
+    <div id="signup-toast" class="signup-toast" role="status" aria-live="polite"></div>
 
     <!-- Newsletter sign-up — posts to our AWS Lambda relay, which adds the contact in Givebutter. -->
     <script>
@@ -1454,73 +1471,101 @@
             // AWS Lambda relay that adds the contact in Givebutter (key stays server-side).
             var SIGNUP_ENDPOINT = 'https://gq2nohazl3447rhtau34o6yqs40vpude.lambda-url.us-east-1.on.aws/';
 
+            var SUCCESS_MSG = 'You’re on the list — thanks for following the build. 🎉';
+
+            // Inline note (used by the in-section "Follow the build" form)
             function setNote(note, msg, kind) {
                 if (!note) return;
                 note.hidden = false;
                 note.textContent = msg;
-                note.classList.remove('is-error');
-                if (kind === 'error') note.classList.add('is-error');
+                note.classList.toggle('is-error', kind === 'error');
             }
 
-            function wire(formId, noteId) {
-                var form = document.getElementById(formId);
-                var note = document.getElementById(noteId);
-                if (!form) return;
-                form.addEventListener('submit', function (e) {
+            // Fixed toast popup (used by the footer form)
+            var toast = document.getElementById('signup-toast');
+            var toastTimer;
+            function showToast(msg, isError) {
+                if (!toast) return;
+                toast.textContent = msg;
+                toast.classList.toggle('is-error', !!isError);
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(function () { toast.classList.remove('show'); }, isError ? 6000 : 4500);
+            }
+
+            // Shared submit: validates, posts to the relay, calls back with (ok, message).
+            // ok === null means "pending".
+            function submitEmail(form, onResult) {
+                var emailInput = form.querySelector('input[type="email"]');
+                if (emailInput && !emailInput.checkValidity()) { emailInput.reportValidity(); return; }
+                var submitBtn = form.querySelector('button[type="submit"]');
+                var payload = {
+                    email: emailInput ? emailInput.value.trim() : '',
+                    company: (form.querySelector('input[name="company"]') || {}).value || '' // honeypot
+                };
+                if (!SIGNUP_ENDPOINT || SIGNUP_ENDPOINT.indexOf('PASTE') === 0) {
+                    onResult(false, 'Almost there — sign-ups go live once we connect the form.');
+                    return;
+                }
+                if (submitBtn) submitBtn.disabled = true;
+                onResult(null, 'Adding you…');
+                fetch(SIGNUP_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(function (r) {
+                    return r.json().catch(function () { return { ok: r.ok }; });
+                }).then(function (data) {
+                    if (data && data.ok) { form.reset(); onResult(true, SUCCESS_MSG); }
+                    else { onResult(false, (data && data.error) || 'Something went wrong. Please try again.'); }
+                }).catch(function () {
+                    onResult(false, 'Couldn’t reach us just now. Please try again in a moment.');
+                }).then(function () {
+                    if (submitBtn) submitBtn.disabled = false;
+                });
+            }
+
+            // In-section form → inline note in the card
+            var sectionForm = document.getElementById('ev-signup');
+            var sectionNote = document.getElementById('ev-signup-note');
+            if (sectionForm) {
+                sectionForm.addEventListener('submit', function (e) {
                     e.preventDefault();
-                    var emailInput = form.querySelector('input[type="email"]');
-                    if (emailInput && !emailInput.checkValidity()) { emailInput.reportValidity(); return; }
-                    var submitBtn = form.querySelector('button[type="submit"]');
-                    var payload = {
-                        email: emailInput ? emailInput.value.trim() : '',
-                        company: (form.querySelector('input[name="company"]') || {}).value || '' // honeypot
-                    };
-
-                    if (!SIGNUP_ENDPOINT || SIGNUP_ENDPOINT.indexOf('PASTE') === 0) {
-                        setNote(note, 'Almost there — sign-ups go live once we connect the form.', 'error');
-                        return;
-                    }
-
-                    if (submitBtn) submitBtn.disabled = true;
-                    setNote(note, 'Adding you…', null);
-
-                    fetch(SIGNUP_ENDPOINT, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    }).then(function (r) {
-                        return r.json().catch(function () { return { ok: r.ok }; });
-                    }).then(function (data) {
-                        if (data && data.ok) {
-                            form.reset();
-                            setNote(note, 'You’re on the list — thanks for following the build. 🎉', 'ok');
-                        } else {
-                            setNote(note, (data && data.error) || 'Something went wrong. Please try again.', 'error');
-                        }
-                    }).catch(function () {
-                        setNote(note, 'Couldn’t reach us just now. Please try again in a moment.', 'error');
-                    }).then(function () {
-                        if (submitBtn) submitBtn.disabled = false;
+                    submitEmail(sectionForm, function (ok, msg) {
+                        setNote(sectionNote, msg, ok === false ? 'error' : null);
                     });
                 });
             }
-            wire('ev-signup', 'ev-signup-note');
-            wire('ev-footer-signup', 'ev-footer-note');
 
             // Footer "Newsletter" — slide the sign-up form in / out horizontally
             var toggle = document.getElementById('newsletter-toggle');
             var fform = document.getElementById('ev-footer-signup');
+            function setFooterOpen(open) {
+                if (!fform) return;
+                fform.classList.toggle('open', open);
+                if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                fform.setAttribute('aria-hidden', open ? 'false' : 'true');
+                fform.querySelectorAll('input[type="email"], button').forEach(function (el) {
+                    el.tabIndex = open ? 0 : -1; // honeypot stays untabbable
+                });
+            }
             if (toggle && fform) {
-                var fields = fform.querySelectorAll('input[type="email"], button'); // exclude the honeypot
                 toggle.addEventListener('click', function () {
-                    var open = fform.classList.toggle('open');
-                    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-                    fform.setAttribute('aria-hidden', open ? 'false' : 'true');
-                    fields.forEach(function (el) { el.tabIndex = open ? 0 : -1; });
+                    var open = !fform.classList.contains('open');
+                    setFooterOpen(open);
                     if (open) {
                         var input = fform.querySelector('input[type="email"]');
                         if (input) { setTimeout(function () { input.focus(); }, 260); }
                     }
+                });
+                // On submit: success → toast + slide closed (reverse animation); error → toast, stay open.
+                fform.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    submitEmail(fform, function (ok, msg) {
+                        if (ok === null) return;          // skip the "Adding you…" flash for the footer
+                        if (ok) { setFooterOpen(false); showToast(msg, false); }
+                        else { showToast(msg, true); }
+                    });
                 });
             }
         })();
