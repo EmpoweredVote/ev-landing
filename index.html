@@ -756,6 +756,120 @@
         footer a:hover { color: var(--heading); }
         footer .links { display: inline-flex; gap: 18px; }
 
+        /* ---------------- NEWSLETTER SIGN-UP ---------------- */
+        .sr-only {
+            position: absolute; width: 1px; height: 1px;
+            padding: 0; margin: -1px; overflow: hidden;
+            clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+        }
+
+        /* Note 04 "Follow the build" — newsletter sign-up styled as a note card */
+        .note.n-follow {
+            grid-column: span 12;
+            border-left: 4px solid var(--coral);
+            background: var(--coral-soft);
+        }
+        .note.n-follow .marker { color: var(--body); } /* darker than default muted for AA contrast on the coral tint */
+        .note.n-follow .marker .glyph { background: var(--coral); color: #fff; }
+        .follow-note-body {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px 40px;
+            align-items: center;
+        }
+        @media (min-width: 720px) {
+            .follow-note-body { grid-template-columns: 1fr 1fr; }
+        }
+        .follow-note-body h3 { margin-bottom: 8px; }
+        .follow-note-body > div > p { color: var(--body); font-size: 0.98rem; max-width: 46ch; }
+        .how-signup-form { display: flex; gap: 8px; min-width: 0; }
+        .how-signup-form input {
+            flex: 1; min-width: 0;
+            font-family: inherit; font-size: 0.98rem;
+            color: var(--heading); background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-pill);
+            padding: 12px 18px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .how-signup-form input::placeholder { color: var(--muted); }
+        .how-signup-form input:focus {
+            outline: 2px solid transparent; outline-offset: 1px; border-color: var(--teal);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 20%, transparent);
+        }
+        .how-signup-form .btn { white-space: nowrap; }
+
+        /* Sign-up status notice (info/success = teal, error = coral) */
+        .signup-note {
+            flex-basis: 100%; width: 100%;
+            font-size: 0.88rem; line-height: 1.4;
+            margin: 6px 0 0; padding: 11px 14px;
+            border-radius: 10px; color: var(--heading);
+            background: color-mix(in srgb, var(--teal) 12%, transparent);
+            border: 1px solid var(--teal);
+        }
+        .signup-note.is-error {
+            background: color-mix(in srgb, var(--coral) 14%, transparent);
+            border-color: var(--coral);
+        }
+        /* Honeypot — off-screen field real people never fill; catches bots */
+        .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+        /* Footer "Newsletter" link + horizontal slide-in form */
+        footer .links { align-items: center; flex-wrap: wrap; }
+        footer .link-btn {
+            font: inherit; color: var(--muted);
+            background: none; border: none; padding: 0; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
+            transition: color 0.15s ease;
+        }
+        footer .link-btn:hover,
+        footer .link-btn[aria-expanded="true"] { color: var(--heading); }
+        footer .link-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; border-radius: 4px; }
+        footer .link-btn .caret {
+            font-size: 0.7em; display: inline-block;
+            transition: transform 0.25s ease;
+        }
+        footer .link-btn[aria-expanded="true"] .caret { transform: rotate(90deg); }
+
+        /* Collapsed by default; slides open to the right, pushing the links left.
+           margin-left cancels the parent flex gap so there is no phantom slot when closed. */
+        .footer-form {
+            display: flex; align-items: center; gap: 8px;
+            max-width: 0; opacity: 0; margin-left: -18px;
+            overflow: hidden; pointer-events: none;
+            transition: max-width 0.4s cubic-bezier(.4, 0, .2, 1), opacity 0.3s ease, margin-left 0.4s ease;
+        }
+        .footer-form.open { max-width: 360px; opacity: 1; margin-left: 0; pointer-events: auto; }
+        .footer-form input {
+            width: 188px; flex: 0 0 auto; min-width: 0;
+            font-family: inherit; font-size: 0.9rem;
+            color: var(--heading); background: var(--card);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-pill);
+            padding: 9px 15px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .footer-form input::placeholder { color: var(--muted); }
+        .footer-form input:focus {
+            outline: 2px solid transparent; outline-offset: 1px; border-color: var(--teal);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 20%, transparent);
+        }
+        .footer-form .btn { padding: 9px 18px; font-size: 0.88rem; white-space: nowrap; }
+        .footer-note { flex-basis: 100%; text-align: right; font-size: 0.82rem; margin: 12px 0 0; color: var(--heading); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .footer-form { transition: opacity 0.2s ease; }
+            footer .link-btn .caret { transition: none; }
+        }
+        @media (max-width: 480px) {
+            .how-signup-form { flex-wrap: wrap; }
+            .how-signup-form .btn { width: 100%; justify-content: center; }
+            .footer-form.open { flex-basis: 100%; max-width: 100%; margin-left: 0; }
+            .footer-form.open input { flex: 1; width: auto; }
+            .footer-note { text-align: left; }
+        }
+
         @media (max-width: 640px) {
             .wrap { padding: 0 20px; }
             .hero { padding: 80px 0 56px; }
@@ -1224,8 +1338,41 @@
                     </div>
                 </article>
 
+                <!--
+                  NEWSLETTER SIGN-UP — NOT YET CONNECTED TO GIVEBUTTER.
+                  To go live (~15 min): in GiveButter create a Sign-up form with an
+                  Email field (tag new contacts e.g. "newsletter"), copy the embed,
+                  and either replace the <form> below with it or point this form's
+                  handler at your GiveButter form. Then delete the placeholder
+                  <script> block near </footer>. Until then, submitting shows a
+                  friendly "not switched on yet" note — no visitor is told they subscribed.
+                -->
+                <article class="note n-follow">
+                    <span class="marker"><span class="glyph">&#9993;&#65038;</span> Note 04 — Newsletter</span>
+                    <div class="follow-note-body">
+                        <div>
+                            <h3>Follow the build</h3>
+                            <p>
+                                We're adding new cities and states as we go. Get a short, honest
+                                note about once a month — what we shipped, what broke, and where
+                                we're expanding next.
+                            </p>
+                        </div>
+                        <div class="follow-note-signup">
+                            <form class="how-signup-form" id="ev-signup" method="post" novalidate>
+                                <label class="sr-only" for="ev-email">Email address</label>
+                                <input id="ev-email" name="email" type="email" required
+                                       autocomplete="email" placeholder="you@example.com" />
+                                <div class="hp" aria-hidden="true"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
+                                <button type="submit" class="btn btn-primary">Keep me posted <span class="arr">→</span></button>
+                            </form>
+                            <p class="signup-note" id="ev-signup-note" role="status" aria-live="polite" hidden></p>
+                        </div>
+                    </div>
+                </article>
+
                 <article class="note n-money">
-                    <span class="marker"><span class="glyph">$</span> Note 04 — Money</span>
+                    <span class="marker"><span class="glyph">$</span> Note 05 — Money</span>
                     <h3>Where the money goes</h3>
                     <p>
                         We try to keep finances open. See our current funding and spend at
@@ -1286,9 +1433,98 @@
                 <a href="/maps/purpose-map.html">Mind Map</a>
                 <a href="/briefing">Briefing</a>
                 <a href="https://financials.empowered.vote" target="_blank" rel="noopener">Financials</a>
+                <button type="button" class="link-btn" id="newsletter-toggle"
+                        aria-expanded="false" aria-controls="ev-footer-signup">Newsletter <span class="caret" aria-hidden="true">▸</span></button>
+                <!-- Slides in to the right when "Newsletter" is clicked. Wire to GiveButter (see the note in the "how" section). -->
+                <form class="footer-form" id="ev-footer-signup" method="post" novalidate aria-hidden="true">
+                    <label class="sr-only" for="ev-footer-email">Email address</label>
+                    <input id="ev-footer-email" name="email" type="email" required
+                           autocomplete="email" placeholder="you@example.com" tabindex="-1" />
+                    <div class="hp" aria-hidden="true"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
+                    <button type="submit" class="btn btn-primary" tabindex="-1">Subscribe</button>
+                </form>
+                <p class="footer-note" id="ev-footer-note" role="status" aria-live="polite" hidden></p>
             </span>
         </div>
     </footer>
+
+    <!-- Newsletter sign-up — posts to our AWS Lambda relay, which adds the contact in Givebutter. -->
+    <script>
+        (function () {
+            // AWS Lambda relay that adds the contact in Givebutter (key stays server-side).
+            var SIGNUP_ENDPOINT = 'https://gq2nohazl3447rhtau34o6yqs40vpude.lambda-url.us-east-1.on.aws/';
+
+            function setNote(note, msg, kind) {
+                if (!note) return;
+                note.hidden = false;
+                note.textContent = msg;
+                note.classList.remove('is-error');
+                if (kind === 'error') note.classList.add('is-error');
+            }
+
+            function wire(formId, noteId) {
+                var form = document.getElementById(formId);
+                var note = document.getElementById(noteId);
+                if (!form) return;
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var emailInput = form.querySelector('input[type="email"]');
+                    if (emailInput && !emailInput.checkValidity()) { emailInput.reportValidity(); return; }
+                    var submitBtn = form.querySelector('button[type="submit"]');
+                    var payload = {
+                        email: emailInput ? emailInput.value.trim() : '',
+                        company: (form.querySelector('input[name="company"]') || {}).value || '' // honeypot
+                    };
+
+                    if (!SIGNUP_ENDPOINT || SIGNUP_ENDPOINT.indexOf('PASTE') === 0) {
+                        setNote(note, 'Almost there — sign-ups go live once we connect the form.', 'error');
+                        return;
+                    }
+
+                    if (submitBtn) submitBtn.disabled = true;
+                    setNote(note, 'Adding you…', null);
+
+                    fetch(SIGNUP_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }).then(function (r) {
+                        return r.json().catch(function () { return { ok: r.ok }; });
+                    }).then(function (data) {
+                        if (data && data.ok) {
+                            form.reset();
+                            setNote(note, 'You’re on the list — thanks for following the build. 🎉', 'ok');
+                        } else {
+                            setNote(note, (data && data.error) || 'Something went wrong. Please try again.', 'error');
+                        }
+                    }).catch(function () {
+                        setNote(note, 'Couldn’t reach us just now. Please try again in a moment.', 'error');
+                    }).then(function () {
+                        if (submitBtn) submitBtn.disabled = false;
+                    });
+                });
+            }
+            wire('ev-signup', 'ev-signup-note');
+            wire('ev-footer-signup', 'ev-footer-note');
+
+            // Footer "Newsletter" — slide the sign-up form in / out horizontally
+            var toggle = document.getElementById('newsletter-toggle');
+            var fform = document.getElementById('ev-footer-signup');
+            if (toggle && fform) {
+                var fields = fform.querySelectorAll('input[type="email"], button'); // exclude the honeypot
+                toggle.addEventListener('click', function () {
+                    var open = fform.classList.toggle('open');
+                    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    fform.setAttribute('aria-hidden', open ? 'false' : 'true');
+                    fields.forEach(function (el) { el.tabIndex = open ? 0 : -1; });
+                    if (open) {
+                        var input = fform.querySelector('input[type="email"]');
+                        if (input) { setTimeout(function () { input.focus(); }, 260); }
+                    }
+                });
+            }
+        })();
+    </script>
 
     <!-- Stick-figure poses for the tool preview, auto-generated from icons/Sticks/
          by tools/gen-sticks.mjs. Sets window.EV_STICKS. -->
