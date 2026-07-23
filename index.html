@@ -857,21 +857,32 @@
         }
         .footer-form .btn { padding: 9px 18px; font-size: 0.88rem; white-space: nowrap; }
 
-        /* Sign-up confirmation — fixed toast (popup); never affects page layout */
+        /* Sign-up confirmation — fixed toast (popup); never affects page layout.
+           Auto-hides (~6s), pauses on hover, and has an ✕ to dismiss. */
         .signup-toast {
             position: fixed; left: 50%; bottom: 24px;
             transform: translateX(-50%) translateY(10px);
             max-width: calc(100vw - 32px);
+            display: flex; align-items: center; gap: 12px;
             background: var(--card); color: var(--heading);
             border: 1px solid var(--teal); border-left: 4px solid var(--teal);
-            border-radius: 12px; padding: 12px 18px;
+            border-radius: 12px; padding: 11px 12px 11px 18px;
             font-size: 0.9rem; line-height: 1.35;
             box-shadow: 0 10px 34px -12px rgba(0, 0, 0, 0.45);
             opacity: 0; pointer-events: none; z-index: 1000;
             transition: opacity 0.3s ease, transform 0.3s ease;
         }
-        .signup-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .signup-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
         .signup-toast.is-error { border-color: var(--coral); border-left-color: var(--coral); }
+        .signup-toast__close {
+            flex: none; width: 26px; height: 26px; border-radius: 6px;
+            border: none; background: transparent; color: var(--muted);
+            font-size: 1.15rem; line-height: 1; cursor: pointer;
+            display: grid; place-items: center;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .signup-toast__close:hover { background: color-mix(in srgb, var(--teal) 14%, transparent); color: var(--heading); }
+        .signup-toast.is-error .signup-toast__close:hover { background: color-mix(in srgb, var(--coral) 14%, transparent); }
 
         @media (prefers-reduced-motion: reduce) {
             .footer-form { transition: opacity 0.2s ease; }
@@ -1462,8 +1473,11 @@
         </div>
     </footer>
 
-    <!-- Footer sign-up confirmation (fixed toast, announced to screen readers) -->
-    <div id="signup-toast" class="signup-toast" role="status" aria-live="polite"></div>
+    <!-- Footer sign-up confirmation (fixed toast; message is the live region, ✕ dismisses it) -->
+    <div id="signup-toast" class="signup-toast">
+        <span class="signup-toast__msg" role="status" aria-live="polite"></span>
+        <button type="button" class="signup-toast__close" aria-label="Dismiss">&times;</button>
+    </div>
 
     <!-- Newsletter sign-up — posts to our AWS Lambda relay, which adds the contact in Givebutter. -->
     <script>
@@ -1483,14 +1497,28 @@
 
             // Fixed toast popup (used by the footer form)
             var toast = document.getElementById('signup-toast');
+            var toastMsg = toast ? toast.querySelector('.signup-toast__msg') : null;
+            var toastClose = toast ? toast.querySelector('.signup-toast__close') : null;
             var toastTimer;
+            var toastDelay = 6000;
+            function hideToast() { clearTimeout(toastTimer); if (toast) toast.classList.remove('show'); }
             function showToast(msg, isError) {
                 if (!toast) return;
-                toast.textContent = msg;
+                if (toastMsg) toastMsg.textContent = msg;
                 toast.classList.toggle('is-error', !!isError);
                 toast.classList.add('show');
+                toastDelay = isError ? 8000 : 6000;
                 clearTimeout(toastTimer);
-                toastTimer = setTimeout(function () { toast.classList.remove('show'); }, isError ? 6000 : 4500);
+                toastTimer = setTimeout(hideToast, toastDelay);
+            }
+            if (toastClose) toastClose.addEventListener('click', hideToast);
+            if (toast) {
+                // Pause the auto-hide while the pointer is over the toast.
+                toast.addEventListener('mouseenter', function () { clearTimeout(toastTimer); });
+                toast.addEventListener('mouseleave', function () {
+                    clearTimeout(toastTimer);
+                    toastTimer = setTimeout(hideToast, 2500);
+                });
             }
 
             // Shared submit: validates, posts to the relay, calls back with (ok, message).
