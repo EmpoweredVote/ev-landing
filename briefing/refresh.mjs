@@ -27,6 +27,10 @@ if (!process.env.DATABASE_URL) {
 
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();
+// The server default is 30s, which the campaign-finance aggregate (tens of millions of
+// rows) blows through.  Without this the finance query fails, gets swallowed by its
+// try/catch, and the page keeps publishing whatever numbers were last written by hand.
+await client.query(`SET statement_timeout = '15min'`);
 const one = async (sql) => (await client.query(sql)).rows[0];
 const all = async (sql) => (await client.query(sql)).rows;
 
@@ -87,7 +91,11 @@ try {
     min(election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_min_cycle,
     max(election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_max_cycle
     FROM transparent_motivations.contributions`);
-} catch { /* finance schema unavailable; leave existing values */ }
+} catch (e) {
+  // Leave the existing values rather than publishing a wrong number — but say so loudly,
+  // because a silent skip here is indistinguishable from "already up to date".
+  console.warn(`WARNING: campaign-finance query failed, leaving those figures untouched: ${e.message}`);
+}
 
 await client.end();
 

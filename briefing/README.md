@@ -21,7 +21,9 @@ platform database — they are product-analytics figures from PostHog, and
 **Compass — Top of Funnel** dashboard so the page never drifts from the source:
 <https://us.posthog.com/project/444996/dashboard/1840760> (funnel 30d/90d +
 unique visitors by app).  Update the funnel steps, the visitor bars, and the
-"90 days ending …" date in the section and the footer by hand.
+"90 days ending …" date in the section and the footer by hand.  Visitor bar
+widths are a percentage of the largest 90-day count (empowered.vote), not of
+100 visitors — recompute them when the top row moves.
 
 ## How to refresh
 
@@ -41,5 +43,12 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 - Map tiers: Deep = 100+ researched state/local officials, Growing = 10 to 99,
   Seeded = 1 to 9.  DC stays special-cased until it has stance rows.
 - If the database is unreachable the script exits without touching the page.
+- The script raises `statement_timeout` to 15 min on connect.  The server default
+  is 30s and the campaign-finance aggregate needs about 4 minutes; without the
+  bump it failed, got swallowed by its own try/catch, and the page kept
+  publishing stale finance figures.  A failure there now prints a WARNING.
+- The stance total can go **down** when a research audit retires unsupported
+  rows.  That is working as intended — explain it in the narrative rather than
+  hiding it.
 - Update narrative sections in a strategy session (or by hand) whenever the
   story changes, not just the numbers.
