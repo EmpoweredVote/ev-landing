@@ -39,6 +39,7 @@
 
     // click to shove a rope Bobit / tip over a toddler
     document.addEventListener('click', function (ev) {
+      var hitQuote = false;
       entries.forEach(function (e) {
         // toddler: click him and he falls; the adult turns and throws up an arm
         if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
@@ -86,6 +87,21 @@
             return;   // ignore clicks landing mid-transition
           }
         }
+        // seated reader: click → he looks up and his bubble opens; click again → back to his
+        // book. No quote reached him → an apologetic shrug instead.
+        if (e.spec.mode === 'seat' && e.spec.anim === 'read' && !e.spec.phone && e._qSX != null) {
+          if (Math.abs(ev.clientX - e._qSX) < 40 && ev.clientY > e._qFY - 104 && ev.clientY < e._qFY + 8) {
+            hitQuote = true;
+            if (e.qs === 'read') {
+              if (e.spec.quote) { e.qs = 'lookup'; e.qsT = 0; }
+              else { e.qs = 'shrug'; e.qsT = 0; }
+            } else if (e.qs === 'hold') {
+              if (e.qh) { window.EVQuotes.close(e.qh); e.qh = null; }
+              e.qs = 'resume'; e.qsT = 0;
+            }
+            return;   // mid-transition clicks are ignored
+          }
+        }
         if (e.spec.mode !== 'rope' || !e.w || e._ropeSX == null) return;
         if (Math.abs(ev.clientX - e._ropeSX) > 55 || Math.abs(ev.clientY - e._ropeSY) > 82) return;
         if (e.rphase === 'sit') { e.rphase = 'break'; e.breakT = 0; return; }   // frame breaks out from under him
@@ -95,7 +111,26 @@
           e.scramble = 1;                                 // startled — scrambles like he might fall
         }
       });
+      // NB: the `return`s above only exit the forEach callback, so dismissal has to happen
+      // out here. Clicking anywhere that isn't a reader (or a bubble, which stops
+      // propagation) closes every open quote and sends those readers back to their books.
+      if (!hitQuote && window.EVQuotes && window.EVQuotes.openCount()) {
+        window.EVQuotes.closeAll();
+        entries.forEach(function (e) {
+          if (e.qh) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
+        });
+      }
     }, { passive: true });
+
+    // Esc dismisses every open quote bubble
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape') return;
+      if (!window.EVQuotes || !window.EVQuotes.openCount()) return;
+      window.EVQuotes.closeAll();
+      entries.forEach(function (e) {
+        if (e.qh) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
+      });
+    });
 
     function cssVar(name, fallback) {
       var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -244,6 +279,44 @@
     }
 
     var SPECS = buildCast();
+
+    // ── Hand out the presidential quotes. A cast can legitimately contain no readers
+    //    (seats split between 'sit' and 'read', and ~40% of sitters get a phone), which
+    //    would make the feature invisible on that load — so if the pool has something to
+    //    say and nobody is reading, promote one sitter to a reader. This biases the cast
+    //    very slightly toward readers, which is the intended trade. ──
+    (function dealQuotes() {
+      if (!window.EVQuotes || !window.EVQuotes.QUOTES.length) return;   // module missing: readers just read
+      function readers() {
+        return SPECS.filter(function (s) {
+          return s.mode === 'seat' && s.anim === 'read' && !s.phone;
+        });
+      }
+      var rs = readers();
+      if (!rs.length) {
+        // 1. a sitter is the cheapest promotion — same figure, different pose
+        var sitter = SPECS.filter(function (s) { return s.mode === 'seat' && !s.phone; })[0];
+        if (sitter) { sitter.anim = 'read'; }
+        else {
+          // 2. no seats at all this load. Recast one note-card figure as a reader, keeping
+          //    its anchor, position and colour so the population stays the same size.
+          var i = -1, j;
+          for (j = 0; j < SPECS.length; j++) {
+            if (SPECS[j].anchor && SPECS[j].anchor.indexOf('.note') === 0) { i = j; break; }
+          }
+          var seat = {
+            mode: 'seat', edge: 'top', anim: 'read',
+            anchor: i >= 0 ? SPECS[i].anchor : '.note.n-alpha',
+            x: i >= 0 && SPECS[i].x != null ? SPECS[i].x : 0.5,
+            tone: i >= 0 && SPECS[i].tone != null ? SPECS[i].tone : takeTone()
+          };
+          // 3. nothing note-anchored either → add one rather than ship the feature invisible
+          if (i >= 0) SPECS[i] = seat; else SPECS.push(seat);
+        }
+        rs = readers();
+      }
+      if (rs.length) window.EVQuotes.deal(rs);
+    })();
 
     var entries = [];
     var ci = 0;
@@ -1300,8 +1373,11 @@
       p.hunch = -(4 + br * 2);
       p.bob = br * 1.2;
       p.headTilt = 9 + Math.sin(t * 0.32 * Math.PI * 2) * 3;
-      p.armRU = 70 + br;  p.armRF = 92 + br * 3;   // hands low and central: the book
-      p.armLU = 52 - br;  p.armLF = 78 + br * 2;   // rides the hand midpoint into his lap
+      // 0deg points straight DOWN, 90 is horizontal: so the upper arms hang low and the
+      // forearms come forward, putting the hands over his thighs. The book draws at the
+      // hand midpoint, so that is what drops it into his lap.
+      p.armRU = 30 + br;  p.armRF = 88 + br * 3;
+      p.armLU = 22 - br;  p.armLF = 80 + br * 2;
       p.legRU = 78; p.legRF = 11;
       p.legLU = 70; p.legLF = 5;
       return p;
@@ -1701,7 +1777,9 @@
         ctx.clearRect(0, 0, w, h);
         var feetY = h - 6;
         var col = figColor(spec.tone != null ? spec.tone : e.ci);
-        var hoverable = (spec.mode === 'stand' && !spec.balance && !spec.peeker) || spec.mode === 'patrol' || (spec.mode === 'seat' && !spec.phone);
+        // 'read' seats are excluded: drawReader owns reader hover (the glance when he has a
+        // quote, the wave when he hasn't), so e.greet must never be set for one
+        var hoverable = (spec.mode === 'stand' && !spec.balance && !spec.peeker) || spec.mode === 'patrol' || (spec.mode === 'seat' && !spec.phone && spec.anim !== 'read');
         // per-entry clock freezes while greeting, so patrols resume where they stopped
         if (e.greet) e.greet += dt;
         if (e._fall > 0) e._fall = Math.max(0, e._fall - dt);
@@ -2146,6 +2224,18 @@
           return;
         }
       });
+
+      // Expire any quote bubble whose 12s ran out and send that reader back to his book.
+      // Driven from this loop rather than a second timer of its own. (window.EVQuotes.tick
+      // is the bubble clock — not this function, which happens to share the name.)
+      if (window.EVQuotes) {
+        var expired = window.EVQuotes.tick(dt);
+        if (expired.length) {
+          entries.forEach(function (e) {
+            if (e.qh && expired.indexOf(e.qh) >= 0) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
+          });
+        }
+      }
     }
 
     reposition();
