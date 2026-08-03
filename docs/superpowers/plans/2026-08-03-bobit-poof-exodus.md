@@ -863,26 +863,43 @@ cd /c/ev-landing/ev-landing-main && NODE_PATH="C:/Users/Chris/AppData/Local/npm-
 
 Expected: FAIL — `stunned figures must not advance ANY clock`.
 
-- [ ] **Step 3: Freeze `dt` inside the draw loop**
+- [ ] **Step 3: Rename the frame-level delta to `dtFrame`**
 
-In `tick()`, immediately before the `entries.forEach(function (e) {` that starts the draw loop (line 1786), capture the frame delta under a different name:
+The draw loop's callback needs its own `dt` that the stun can zero. Rather than shadow the outer
+variable — which reads as an accident and is a fair thing for a reviewer to flag — rename the
+frame-level one so no `dt` exists at that scope at all. There are exactly **four** uses outside the
+draw-loop callback, versus 31 inside it, so renaming the outer is by far the smaller edit.
+
+In `tick()`, rename **only these four**, all of which sit before the draw loop:
+
+- line 1755: `var dt = Math.min(0.1, (now - last) / 1000); last = now;` → `var dtFrame = Math.min(0.1, (now - last) / 1000); last = now;`
+- line 1756: `t += dt;` → `t += dtFrame;`
+- line 1757: `if ((inkTick += dt) > 0.5) {` → `if ((inkTick += dtFrame) > 0.5) {`
+- line 1766: `footWalk._cool = Math.max(0, (footWalk._cool || 0) - dt);` → `… - dtFrame);`
+
+Also update the two calls this plan added earlier, which are outside the callback:
+`poofTick(dt)` → `poofTick(dtFrame)` (Task 2) and `window.EVQuotes.tick(dt)` → `window.EVQuotes.tick(dtFrame)`.
+
+**Do not touch any `dt` inside the `entries.forEach` callback.** All 31 of those must keep the name —
+they will bind to the local declared in Step 4.
+
+- [ ] **Step 4: Declare the per-figure `dt` in the draw loop**
+
+As the first line inside the draw-loop callback after `var spec = e.spec, ctx = e.ctx, w = e.w, h = e.h;`
+and the `e.gone` guard:
 
 ```js
-      var dtFrame = dt;   // the per-entry `dt` below is shadowed so the stun can zero it
-```
-
-Then as the first lines inside that callback, after `var spec = e.spec, ctx = e.ctx, w = e.w, h = e.h;` and the `e.gone` guard:
-
-```js
-        // Stunned: zero this figure's dt. Shadowing the outer `dt` freezes the gait clock AND
-        // every scene machine at once (they all advance off dt: e.dfT, e.cwT, e.ktT, e.qsT),
-        // which extending the e.lt gate would not do.
+        // Stunned: this figure's dt is zero. One local, and both layers freeze — the gait clock
+        // (via e.lt) and every scene machine, which all advance straight off dt: e.dfT, e.cwT,
+        // e.ktT, e.qsT. Extending the existing `e.lt += dt * (...)` gate would freeze only the
+        // gaits and leave the dog still fetching while everyone else stood still.
         var dt = (POOF.phase === 'stunned') ? 0 : dtFrame;
 ```
 
-**Note for the implementer:** `var dt` here deliberately shadows the outer `dt` for the whole callback — that is the mechanism, not an accident. Every existing `dt` reference inside the callback picks up the local automatically. Do not rename the existing references.
+Verify with `grep -c '\bdt\b' ev-figures.js` before and after: the count must be unchanged, since this
+is a rename plus one new declaration, not a change in usage.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 5: Run the test to verify it passes**
 
 ```bash
 cd /c/ev-landing/ev-landing-main && NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" node tests/poof/04-stun.cjs
@@ -890,7 +907,7 @@ cd /c/ev-landing/ev-landing-main && NODE_PATH="C:/Users/Chris/AppData/Local/npm-
 
 Expected: `04-stun: PASS`
 
-- [ ] **Step 5: Check nothing else regressed**
+- [ ] **Step 6: Check nothing else regressed**
 
 ```bash
 cd /c/ev-landing/ev-landing-main && for t in tests/quotes/*.cjs tests/layout/*.cjs; do NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" node $t 2>&1 | tail -1; done
@@ -898,7 +915,7 @@ cd /c/ev-landing/ev-landing-main && for t in tests/quotes/*.cjs tests/layout/*.c
 
 Expected: every line `PASS`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add ev-figures.js tests/poof/04-stun.cjs
@@ -1075,9 +1092,6 @@ Insert before `function poofTick`:
       e.flT += dt;
       if (e.fl === 'run') {
         e.flX += FLEE_SPEED * e.flDir * dt;
-        if (e.flDir > 0 ? (e.flX > e.flLedgeR) : (e.flX < e.flLedgeL)) {
-          // ran out of ledge — task 6 turns this into a drop
-        }
       }
       R.drawShadow(ctx, e.flX, e.flFloor + e.flYOff, 15, 'rgba(127,127,127,0.18)');
       drawFig(ctx, e.flX, e.flFloor + e.flYOff, S, e.flDir < 0, fleePose(e.flT, e.flSeed), { color: col });
