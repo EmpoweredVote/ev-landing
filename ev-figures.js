@@ -1911,10 +1911,10 @@
 
     function tick() {
       var now = performance.now();
-      var dt = Math.min(0.1, (now - last) / 1000); last = now;
-      poofTick(dt);
-      t += dt;
-      if ((inkTick += dt) > 0.5) { inkTick = 0; inkCache = cssVar('--heading', '#1C1C1C'); }
+      var dtFrame = Math.min(0.1, (now - last) / 1000); last = now;
+      poofTick(dtFrame);
+      t += dtFrame;
+      if ((inkTick += dtFrame) > 0.5) { inkTick = 0; inkCache = cssVar('--heading', '#1C1C1C'); }
       var ink = inkCache;
       var shadow = 'rgba(127,127,127,0.18)';
       lookBeacons = lookBeacons.filter(function (b) { return t - b.t < 0.5; });   // keep only fresh activity
@@ -1923,7 +1923,7 @@
       // Stage 1: the stander spots the walker coming and waves FIRST (walker still moving).
       // Stage 2: the walker arrives, stops, and returns the wave ~0.9s later (overlaps, not in sync).
       if (footWalk && footWalk.w && footStand && footStand.w) {
-        footWalk._cool = Math.max(0, (footWalk._cool || 0) - dt);
+        footWalk._cool = Math.max(0, (footWalk._cool || 0) - dtFrame);
         var fwr = footWalk.c.getBoundingClientRect();
         if (fwr.top < window.innerHeight && fwr.bottom > 0) {          // only when the footer is on screen
           var padF = 70, spanF = footWalk.w - padF * 2;
@@ -1946,6 +1946,11 @@
       entries.forEach(function (e) {
         var spec = e.spec, ctx = e.ctx, w = e.w, h = e.h;
         if (e.gone) return;
+        // Stunned: this figure's dt is zero. One local, and both layers freeze — the gait clock
+        // (via e.lt) and every scene machine, which all advance straight off dt: e.dfT, e.cwT,
+        // e.ktT, e.qsT. Extending the existing `e.lt += dt * (...)` gate would freeze only the
+        // gaits and leave the dog still fetching while everyone else stood still.
+        var dt = (POOF.phase === 'stunned') ? 0 : dtFrame;
         if (!w) return;
         // skip offscreen canvases
         var cr = e.c.getBoundingClientRect();
@@ -2407,7 +2412,7 @@
       // Driven from this loop rather than a second timer of its own. (window.EVQuotes.tick
       // is the bubble clock — not this function, which happens to share the name.)
       if (window.EVQuotes) {
-        var expired = window.EVQuotes.tick(dt);
+        var expired = window.EVQuotes.tick(dtFrame);
         if (expired.length) {
           entries.forEach(function (e) {
             if (e.qh && expired.indexOf(e.qh) >= 0) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
