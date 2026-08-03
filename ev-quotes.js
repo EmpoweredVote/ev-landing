@@ -76,6 +76,7 @@
   }
 
   var live = [];   // open bubble handles
+  var LIFE = 12;   // seconds a bubble survives untouched
 
   function place(h) {
     var el = h.el;
@@ -170,8 +171,24 @@
 
   function openCount() { return live.length; }
 
+  // Advance every open bubble's clock. Returns the handles that expired, so the caller
+  // can send those readers back to their books.
+  function tick(dt) {
+    var closed = [], i, h, paused;
+    for (i = live.length - 1; i >= 0; i--) {
+      h = live[i];
+      // any of these means the reader is still reading: over the bubble, over the
+      // Bobit (the figure code's job, via setHeld), or tabbed into the link
+      paused = h.held || h.pointerIn || h.focusIn;
+      if (paused) continue;
+      h.life += dt;
+      if (h.life >= LIFE) { closed.push(h); close(h); }
+    }
+    return closed;
+  }
+
   window.EVQuotes = {
-    QUOTES: QUOTES, deal: deal,
-    open: open, close: close, closeAll: closeAll, openCount: openCount
+    QUOTES: QUOTES, deal: deal, LIFE: LIFE,
+    open: open, close: close, closeAll: closeAll, openCount: openCount, tick: tick
   };
 })();
