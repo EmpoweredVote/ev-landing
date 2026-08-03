@@ -327,26 +327,36 @@
       // resize the old ink is gone. (Two-figure scenes: the ink spans both, so the midpoint
       // lands between them — accepted, one runner per entry by design.)
       var figScreenX = cr.left + e.w / 2;                // fallback if no ink is found
+      var inkFloor = -1;                                 // ditto: -1 means "no ink, use h - 6"
       try {
         var scanW = e.c.width, scanH = e.c.height;
         var img = e.ctx.getImageData(0, 0, scanW, scanH).data;
-        var minX = -1, maxX = -1;
+        var minX = -1, maxX = -1, maxY = -1;
         for (var yy = 0; yy < scanH; yy++) {
           var rowBase = yy * scanW * 4;
           for (var xx = 0; xx < scanW; xx++) {
             if (img[rowBase + xx * 4 + 3] > 8) {
               if (minX < 0) minX = xx;
-              maxX = xx;
+              if (xx < minX) minX = xx;
+              if (xx > maxX) maxX = xx;
+              if (yy > maxY) maxY = yy;
             }
           }
         }
         if (minX >= 0) {
           var ratio = scanW / e.w;                       // device px per css px
           figScreenX = cr.left + (minX + maxX) / 2 / ratio;
+          inkFloor = maxY / (scanH / e.h);               // lowest painted pixel = where he actually stands
         }
       } catch (err) { /* fall back to the canvas-centre estimate */ }
 
-      var oldFloor = e.h - 6;                            // his floor, in the OLD canvas's local coords — capture before sizeCanvas overwrites e.h
+      // His floor, in the OLD canvas's local coords — captured before sizeCanvas overwrites e.h.
+      // `e.h - 6` is only his floor for modes that draw at feetY = h - 6. A seated reader is drawn
+      // at h - 42 with his shins dangling, and the rope Bobit hangs in mid-air, so assuming h - 6
+      // TELEPORTED them: they popped to a different height and ran off through empty space instead
+      // of along the base they were standing on. The ink's bottom edge is where he visibly is,
+      // whatever his mode does — same ask-the-pixels approach as the x above.
+      var oldFloor = (inkFloor >= 0) ? inkFloor : (e.h - 6);
       var newW = fitW(document.documentElement.clientWidth);
       var newH = e.h + FLEE_DROP + 40;                   // room to fall below the ledge
       sizeCanvas(e, newW, newH);
