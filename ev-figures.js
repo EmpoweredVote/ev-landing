@@ -217,6 +217,53 @@
     document.addEventListener('touchend', poofCancel);
     document.addEventListener('touchcancel', poofCancel);
 
+    // One fixed full-viewport canvas for all smoke. Not the victim's own canvas: most mode
+    // branches return early so there is no clean post-figure hook, and a 190px canvas would
+    // clip the burst. Fixed positioning means we work in screen coords, which is what the
+    // victim's rect gives us anyway.
+    var _poofC = null;
+    function poofOverlay() {
+      if (!_poofC) {
+        _poofC = document.createElement('canvas');
+        _poofC.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:61;';
+        document.body.appendChild(_poofC);
+      }
+      var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      if (_poofC.__w !== vw || _poofC.__h !== vh) {
+        _poofC.__w = vw; _poofC.__h = vh;
+        _poofC.width = Math.round(vw * DPR); _poofC.height = Math.round(vh * DPR);
+        _poofC.style.width = vw + 'px'; _poofC.style.height = vh + 'px';
+      }
+      return _poofC;
+    }
+
+    function poofDrawSmoke() {
+      if (!_poofC && POOF.phase !== 'holding' && POOF.phase !== 'poof' && POOF.phase !== 'fizzle') return;
+      var c = poofOverlay(), g = c.getContext('2d');
+      g.setTransform(DPR, 0, 0, DPR, 0, 0);
+      g.clearRect(0, 0, c.__w, c.__h);
+
+      // follow the victim while he is still there, then hold his last spot
+      if (POOF.victim && POOF.victim.c.parentNode) {
+        var r = POOF.victim.c.getBoundingClientRect();
+        POOF.vx = r.left + r.width / 2;
+        POOF.vy = r.bottom - 8;
+      }
+      if (POOF.vx == null) return;
+
+      var seed = 11;
+      if (POOF.phase === 'holding') {
+        var k = Math.min(1, POOF.t / POOF_HOLD);
+        R.drawSmoke(g, POOF.vx, POOF.vy, 12 + k * k * 46, 0.12 + k * 0.7, seed, POOF.t);
+      } else if (POOF.phase === 'fizzle') {
+        var f = Math.max(0, 1 - POOF.t / 0.4);
+        R.drawSmoke(g, POOF.vx, POOF.vy, 20 * f, 0.5 * f, seed, POOF.t);
+      } else if (POOF.phase === 'poof') {
+        var b = Math.min(1, POOF.t / POOF_BURST);
+        R.drawSmoke(g, POOF.vx, POOF.vy - 10, 58 + b * 70, 1 - b, seed, POOF.t);
+      }
+    }
+
     // Advance the phase machine. Called once per frame from tick(); the visual consequences are
     // added in later tasks, this only moves the phases along.
     function poofTick(dt) {
@@ -226,6 +273,12 @@
         if (POOF.t >= POOF_HOLD) {
           POOF.phase = 'poof'; POOF.t = 0;
           document.body.classList.remove('ev-poofing');
+          // freeze his last position for the burst, then take him off the page
+          var vr = POOF.victim.c.getBoundingClientRect();
+          POOF.vx = vr.left + vr.width / 2; POOF.vy = vr.bottom - 8;
+          POOF.victim.gone = true;
+          if (POOF.victim.c.parentNode) POOF.victim.c.parentNode.removeChild(POOF.victim.c);
+          if (window.EVQuotes) window.EVQuotes.closeAll();
         }
       } else if (POOF.phase === 'fizzle') {
         if (POOF.t >= 0.4) { POOF.phase = 'idle'; POOF.t = 0; POOF.victim = null; }
@@ -496,6 +549,7 @@
       var sy = window.scrollY || window.pageYOffset;
       var sx = window.scrollX || window.pageXOffset;
       entries.forEach(function (e) {
+        if (e.gone) return;
         var spec = e.spec;
         if (spec.mode === 'why') { sizeCanvas(e, 190, 215); return; }
         if (spec.mode === 'banner') { sizeCanvas(e, 120, 96); return; }
@@ -1891,6 +1945,7 @@
 
       entries.forEach(function (e) {
         var spec = e.spec, ctx = e.ctx, w = e.w, h = e.h;
+        if (e.gone) return;
         if (!w) return;
         // skip offscreen canvases
         var cr = e.c.getBoundingClientRect();
@@ -2346,6 +2401,8 @@
         }
       });
 
+      poofDrawSmoke();
+
       // Expire any quote bubble whose 12s ran out and send that reader back to his book.
       // Driven from this loop rather than a second timer of its own. (window.EVQuotes.tick
       // is the bubble clock — not this function, which happens to share the name.)
@@ -2368,7 +2425,7 @@
     if (location.hash === '#figdebug') window.__evFigDebug = {
       entries: entries, footWalk: footWalk, footStand: footStand,
       quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
-      poof: POOF, bobitAt: bobitAt
+      poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay
     };
   });
 })();
