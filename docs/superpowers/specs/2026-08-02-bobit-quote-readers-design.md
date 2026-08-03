@@ -6,10 +6,9 @@
 
 ## Summary
 
-Click a reading Bobit on the landing page. He turns to face the side you clicked from, sits up out of
-the reading curl, lowers his book to his lap, and a speech bubble fades in carrying a quote from a
-president or founder on the danger of party spirit. Clicking the speaker's name opens the primary
-source.
+Click a reading Bobit on the landing page. He sits up out of the reading curl, lowers his book to his
+lap and raises his eyes off the page, and a speech bubble fades in carrying a quote from a president or
+founder on the danger of party spirit. Clicking the speaker's name opens the primary source.
 
 The point is not decoration. Every quote is a founder or president arguing the case Empowered Vote
 exists to make, sourced to a document the reader can open and check — which is the same standard the
@@ -95,7 +94,7 @@ helpers; nothing snaps.
 | State | Duration | Pose |
 |---|---|---|
 | `read` | resting | `A.read`, unchanged from today |
-| `turn` | 0.50s | two stages, see below |
+| `lookup` | 0.50s | single eased lerp `A.read` → `hold` |
 | `hold` | until dismissed | sat up, book in lap, head up and out |
 | `resume` | 0.50s | lerp back to `A.read` |
 | `shrug` | 2.6s | seated shrug, quote-less readers only |
@@ -105,23 +104,23 @@ helpers; nothing snaps.
 a `0..1` value that rises while hovered and falls when not — so it reverses cleanly mid-transition
 instead of latching. A reader without a quote keeps today's `A.greetseat` wave.
 
-**The turn, in two stages,** because `flip` is a boolean and flipping mid-pose would pop:
+**He does not turn.** One eased 0.5s lerp from `A.read` into `hold`: the spine uncurls, the book comes
+down to the lap, the head comes up. `flip` is never touched, so he keeps whichever way he was already
+facing and is never spun away from the card he is sitting on. The bubble opens on arrival.
 
-1. `0 → 0.22s` — lerp from the reading curl into `mid`, a deliberately **mirror-symmetric** seated
-   pose (spine near-upright, arms low and even, both legs identical). Flip is unchanged.
-2. `at 0.22s` — flip the boolean. Because `mid` is symmetric, the swap is invisible.
-3. `0.22 → 0.50s` — lerp from `mid` into `hold`, facing the new direction. Bubble opens on arrival.
-
-The target facing comes from the click: `targetFlip = clickX < canvasCentreX`. This is the same
-technique the beam ball-gag already uses when the front carrier turns to watch the ball escape.
+This was reconsidered mid-design. An earlier version turned him toward the side the click came from,
+which needed a two-stage lerp through a deliberately mirror-symmetric midpoint to hide the boolean
+`flip` swap. Looking up alone reads as "you got his attention" just as well, needs none of that
+machinery, and never leaves a reader facing off the edge of his own card. There is no symmetric
+midpoint pose and no `targetFlip` in the implementation — if either appears, it is left over from the
+abandoned approach.
 
 **The book needs no special handling.** `drawBook` renders at the midpoint of the two hands, so moving
 his hands to his lap takes the book with them. Keep `book:true` throughout `read`/`turn`/`hold`; drop
 it for the wave and the shrug, where the hands are doing something else.
 
-**On resume he keeps the facing he turned to.** Flipping back would mean a second trip through the
-symmetric midpoint for no narrative gain, and reads as him losing interest rather than going back to
-his book.
+**Resume is symmetrical:** the same 0.5s lerp back into `A.read`. Since nothing flipped, there is
+nothing to restore.
 
 ## The bubble
 
@@ -192,8 +191,8 @@ Playwright against the static site, per the project's verification setup, drivin
 2. A cast with no readers promotes a sitter; a reader always exists when the pool is non-empty.
 3. Hover a quotable reader → `headTilt` rises; mouse-out → it returns. Hover a quote-less reader →
    he waves.
-4. Click → he flips to face the click side, and the bubble's text and `href` match the dealt quote
-   exactly, `æ` ligature intact.
+4. Click → he lerps to the hold pose **without** `flip` changing, and the bubble's text and `href`
+   match the dealt quote exactly, `æ` ligature intact.
 5. The 12s timer expires and the bubble closes; hovering the bubble pauses it; hovering the **figure**
    pauses it.
 6. Esc closes; outside-click closes; a second click closes and he returns to `A.read`.

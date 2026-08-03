@@ -154,16 +154,26 @@ wholsome discretion"; the text above is the standard modernized reading.
 
 ### Thomas Jefferson — Letter to Edward Carrington
 
-> "The way to prevent these irregular interpositions of the people is to give them full information
-> of their affairs thro' the channel of the public papers, and to contrive that those papers should
-> penetrate the whole mass of the people."
+> "Cherish therefore the spirit of our people, and keep alive their attention. Do not be too severe
+> upon their errors, but reclaim them by enlightening them. If once they become inattentive to the
+> public affairs, you and I, and Congress, and Assemblies, judges and governors shall all become
+> wolves."
+
+**Context:** The sentence immediately before this one is "This is a true picture of Europe" — Jefferson
+has just described European society as divided into "wolves and sheep," and is warning that an
+inattentive public turns its own officials, himself included, into the wolves.
 
 **Source:** To Edward Carrington, Paris, January 16, 1787. *Papers of Thomas Jefferson*, ed. Julian P.
 Boyd et al. (Princeton University Press), vol. 11. Reprinted in *The Founders' Constitution*
 (University of Chicago Press), Amendment I, Speech and Press, doc. 8.
 **Link:** https://press-pubs.uchicago.edu/founders/documents/amendI_speechs8.html
-**Status:** ✅ Verified at source. This is the Carrington letter, not Madison — the earlier
-misattribution note has been resolved and removed.
+**Status:** ✅ Verified at source, word for word. This is the Carrington letter, not Madison — the
+earlier misattribution note has been resolved and removed.
+
+> **Also in this letter,** if a second Carrington quote is ever wanted: "The way to prevent these
+> irregular interpositions of the people is to give them full information of their affairs thro' the
+> channel of the public papers, and to contrive that those papers should penetrate the whole mass of
+> the people." Same link, earlier in the text. Verified.
 
 ---
 
