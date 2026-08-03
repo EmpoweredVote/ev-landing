@@ -27,13 +27,17 @@ from it. Seven entries at launch:
 | Jefferson | to Edward Carrington, 16 Jan 1787 | ✅ read at source (UChicago) |
 | Jefferson | to George Wythe, 13 Aug 1786 | ✅ read at source (Monticello) |
 | Jefferson | to William C. Jarvis, 28 Sep 1820 | ✅ read at source (Monticello) |
-| Kennedy | Loyola College Alumni Banquet, 18 Feb 1958 | ⚠️ real page, Cloudflare-blocked, needs a click |
+| Kennedy | Loyola College Alumni Banquet, 18 Feb 1958 | ✅ read at source (Wayback capture) |
 
-**Blocking on launch:** the Kennedy URL must be opened in a browser and confirmed before this ships. A
-quote feature whose whole promise is "click through and check" cannot ship with an unconfirmed link.
-Its attribution was also corrected from the 1962 State of the Union on the strength of agreeing
-secondary sources rather than a reading of the JFK Library page itself, so that page is the one thing
-here that has not been seen directly.
+**Launch blocker cleared (2026-08-02).** The Kennedy link was confirmed working, and its text was then
+read from a Wayback Machine capture — `https://web.archive.org/web/2024id_/<url>` reaches pages whose
+host blocks direct fetching, which jfklibrary.org does via Cloudflare. That reading corrected the
+punctuation (an en dash, not the em dash carried from a reprint) and confirmed the Senate Files, Box 899
+citation. **All seven sources have now been read directly.**
+
+The Kennedy quote is deliberately limited to his own two sentences. The line before it ("Let us not
+despair but act") and the poet's verse he closes on were both tried and cut: the verse is another
+author's words, and a bubble attributes everything inside it to the named speaker.
 
 Each entry carries `text`, `who`, `where` (the document and date), and `href`.
 

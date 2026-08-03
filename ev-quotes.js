@@ -47,7 +47,11 @@
       href: "https://tjrs.monticello.org/letter/382"
     },
     {
-      text: "Let us not despair but act. Let us not seek the Republican answer or the Democratic answer but the right answer. Let us not seek to fix the blame for the past — let us accept our own responsibility for the future.",
+      // Punctuation follows the JFK Library text exactly: no comma after "Democratic
+      // answer", and an EN dash before "let us accept" (reprints substitute an em dash or a
+      // full stop). He closes on a poet's verse — deliberately NOT included, since those are
+      // another author's words and the bubble attributes everything in it to the speaker.
+      text: "Let us not seek the Republican answer or the Democratic answer but the right answer. Let us not seek to fix the blame for the past – let us accept our own responsibility for the future.",
       who: "John F. Kennedy",
       where: "Loyola College Alumni Banquet, Baltimore, 18 February 1958",
       href: "https://www.jfklibrary.org/archives/other-resources/john-f-kennedy-speeches/baltimore-md-19580218"

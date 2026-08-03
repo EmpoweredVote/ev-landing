@@ -29,10 +29,26 @@ const path = require('path');
   // the special characters must survive the file round-trip
   const chars = await page.evaluate(function () {
     var all = window.EVQuotes.QUOTES.map(function (q) { return q.text; }).join(' ');
-    return { aeligature: all.indexOf('dæmon') >= 0, emdash: all.indexOf('—') >= 0 };
+    var jfk = window.EVQuotes.QUOTES.filter(function (q) { return q.who.indexOf('Kennedy') >= 0; })[0];
+    return {
+      aeligature: all.indexOf('dæmon') >= 0,
+      jfkEnDash: jfk.text.indexOf('for the past – let us accept') >= 0,
+      jfkNoEmDash: jfk.text.indexOf('—') < 0,
+      jfkNoComma: jfk.text.indexOf('Democratic answer but the right') >= 0,
+      jfkStarts: jfk.text.indexOf('Let us not seek the Republican') === 0,
+      jfkOwnWordsOnly: jfk.text.indexOf('faction') < 0 && jfk.text.indexOf('poet') < 0
+    };
   });
   assert.ok(chars.aeligature, 'the Washington quote must keep its ae ligature');
-  assert.ok(chars.emdash, 'the Kennedy quote must keep its em dash');
+  // the JFK Library text uses an EN dash here; popular reprints substitute an em dash or a
+  // full stop, and this quote had drifted to the em-dash version once already
+  assert.ok(chars.jfkEnDash, 'the Kennedy quote must use an en dash before "let us accept"');
+  assert.ok(chars.jfkNoEmDash, 'the Kennedy quote must not reintroduce an em dash');
+  assert.ok(chars.jfkNoComma, 'no comma after "the Democratic answer" — the source has none');
+  assert.ok(chars.jfkStarts, 'the Kennedy quote must begin at "Let us not seek the Republican"');
+  // he closes the speech on a poet's verse; it must stay out, because everything in a bubble
+  // is attributed to the named speaker and those are another author's words
+  assert.ok(chars.jfkOwnWordsOnly, 'the Kennedy quote must contain only his own words');
 
   // dealing: fewer readers than quotes -> every reader served, all distinct
   const four = await page.evaluate(function () {

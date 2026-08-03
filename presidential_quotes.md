@@ -16,6 +16,10 @@ speech, not the 1962 State of the Union, and the "dæmon of party spirit" passag
 to Rhode Island's governor, not the Farewell Address. The Charles Yancey quote has been removed —
 ungarbled, it is much less compelling than the misquotation that was circulating.
 
+**All seven live quotes have now been read at their source.** Where a host blocks automated fetching,
+a Wayback Machine capture (`https://web.archive.org/web/2024id_/<url>`) served instead — that is how
+the Kennedy page was finally read.
+
 ---
 
 ## On the danger of parties and faction
@@ -97,23 +101,39 @@ transcribed in the Adams Papers, which is what the link shows.
 
 ### John F. Kennedy — Loyola College Alumni Banquet
 
-> "Let us not despair but act. Let us not seek the Republican answer or the Democratic answer but the
-> right answer. Let us not seek to fix the blame for the past — let us accept our own responsibility
-> for the future."
+> "Let us not seek the Republican answer or the Democratic answer but the right answer. Let us not
+> seek to fix the blame for the past – let us accept our own responsibility for the future."
 
-Punctuation follows the source: no comma after "the Democratic answer," and an em dash rather than a
-full stop before "let us accept." Popular reprints add the comma and split the last sentence.
+**Do not extend this quote.** The words either side of it are tempting and both were tried and
+rejected. It is preceded by "Let us not despair but act," and followed by a verse Kennedy quotes from
+a poet — "Now has come the time for action, Clear away all thought of faction, Out from vacillating
+shame – Every man no lie contain, Let him answer to his name – Call the roll." That verse is on-message
+almost to a fault, which is exactly the trap: **they are another author's words**, and the site's
+bubble attributes everything inside it to the named speaker. `tests/quotes/01-deal.cjs` asserts the
+verse stays out.
+
+**Punctuation follows the JFK Library text exactly:** no comma after "the Democratic answer," and an
+**en** dash — not an em dash and not a full stop — before "let us accept." Popular reprints get both
+wrong, and this entry had already drifted to the em-dash version once; `tests/quotes/01-deal.cjs`
+now asserts the en dash so it cannot drift back.
+
+The sentence immediately before the quote is "…if you and I and all of us demand a better education
+for all – for politicians as well as scientists – for diplomats as well as engineers – for all
+citizens in all occupations – then we may face the future with hope and with confidence."
 
 **Source:** Remarks of Senator John F. Kennedy at the Loyola College Annual Alumni Banquet,
 Baltimore, Maryland, February 18, 1958. Papers of John F. Kennedy, Pre-Presidential Papers, Senate
 Files, Box 899 (JFK Presidential Library).
 **Link:** https://www.jfklibrary.org/archives/other-resources/john-f-kennedy-speeches/baltimore-md-19580218
-**Status:** ⚠️ Attribution corrected; link needs one browser click. This was previously filed as the
-January 11, 1962 State of the Union — a very common misattribution. The phrase does not appear in the
-1962 address. Kennedy said it as a **senator**, nearly three years before he took office, which is
-worth knowing before the site calls him "President" alongside the quote. jfklibrary.org sits behind
-bot protection, so the page could not be opened automatically; the URL is a real JFK Library speech
-page with a matching title.
+**Status:** ✅ Verified — link confirmed working by Chris (2026-08-02), and the page text read from a
+Wayback Machine capture (jfklibrary.org itself sits behind a Cloudflare challenge, so it cannot be
+fetched directly; `https://web.archive.org/web/2024id_/<url>` works). The archived page also confirms
+the Senate Files, Box 899 citation above.
+
+Attribution was corrected: this was previously filed as the January 11, 1962 State of the Union — a
+very common misattribution. The phrase does not appear in the 1962 address. Kennedy said it as a
+**senator**, nearly three years before he took office, which is worth knowing before the site calls
+him "President" alongside the quote.
 
 ---
 

@@ -1444,11 +1444,8 @@ git commit -m "feat(quotes): wire quote readers into the cast, clicks, Esc and t
 
 ## Before this ships
 
-- [ ] **Open the Kennedy link in a browser and confirm it carries the quote.**
-      https://www.jfklibrary.org/archives/other-resources/john-f-kennedy-speeches/baltimore-md-19580218
-      This is the one source in the pool that was never read directly — jfklibrary.org sits behind a
-      Cloudflare challenge. Its attribution was corrected away from the 1962 State of the Union on the
-      strength of agreeing secondary sources, not a reading of the page. A feature whose whole promise
-      is "click through and check the source" must not ship with an unconfirmed link. If the page does
-      not carry the text, remove the entry rather than guess at a replacement citation.
-- [ ] Merge `feat/bobit-quote-readers` into `main` only after that check. `main` auto-deploys to Render.
+- [x] **Kennedy link confirmed (2026-08-02).** Chris opened it; the text was then read from a Wayback
+      capture (`https://web.archive.org/web/2024id_/<url>` gets past the Cloudflare challenge that
+      blocks direct fetching). This corrected the dash to an en dash and confirmed the Box 899
+      citation. All seven sources have now been read at source.
+- [x] Merge `feat/bobit-quote-readers` into `main`. `main` auto-deploys to Render.
