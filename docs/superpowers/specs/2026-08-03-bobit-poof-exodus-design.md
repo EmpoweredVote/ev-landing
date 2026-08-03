@@ -106,10 +106,19 @@ Everything in the cast **except the three `why` figures** (`.why-grid .why-item 
 draws them in its place, so if they fled the section would be left with three empty holes. They are
 excluded completely — they do not flee, and right-clicking one does nothing at all.
 
-Multi-figure scenes flee as individuals, so the beam pair, the paddleball pair, the cartwheeler and his
-helper, and the dog-fetch owner all scatter separately. **The dog goes too**, running with the rest
-rather than being left alone on an empty page. Scene props (the beam's carried line, the kite, the
-yo-yo, the ball) simply stop being drawn when their owner leaves; nothing is animated for them.
+**Each entry sends one runner.** A two-figure scene — the beam pair, the paddleball pair, the
+cartwheeler and his helper — leaves as a single fleeing figure rather than scattering separately. An
+entry is one canvas with one state bag, and locating the *second* figure means per-mode knowledge
+(`e.gA`/`e.gB`, `e._ppSXL`/`e._ppSXR`, `e.hp`) — the same reach-into-every-mode coupling this design
+avoids in the hit-test. The generic alternative of clustering the canvas's ink breaks on props: the kite
+would become a "runner" and sprint off on human legs. If pairs leaving as one reads badly, per-mode
+runner seeding is a contained follow-up, to be judged against the real thing.
+
+**The dog is the exception and does get his own escape**, because he already has a `run` pose in
+`drawDog` and can leave as himself rather than as a stick figure. He runs slightly faster than his owner.
+
+Scene props (the beam's carried line, the kite, the yo-yo, the ball) simply stop being drawn when their
+owner leaves; nothing is animated for them.
 
 `banner` and `crosser` modes exist in the code but are never cast, so they need no handling.
 
