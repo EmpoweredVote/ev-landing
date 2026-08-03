@@ -132,6 +132,111 @@
       });
     });
 
+    // ══ POOF & EXODUS ═══════════════════════════════════════════════════════════════════
+    // Hold the right mouse button (or one finger) on any Bobit for 3s: smoke gathers, he
+    // vanishes, everyone else freezes for a beat and then bolts off-screen. The page stays
+    // empty until reload.
+    var POOF_HOLD = 3.0, POOF_BURST = 0.6, POOF_STUN = 1.0;
+    var POOF = { phase: 'idle', t: 0, victim: null, armed: false, sx: 0, sy: 0 };
+
+    // Which Bobit is under this point? The canvases are pointer-events:none and only two modes
+    // bother to store a hitbox, so rather than add one to all fourteen we ask the pixels:
+    // convert the point into canvas space and read its alpha. Non-zero means the pointer is on
+    // painted ink — an actual figure, not the empty box around him — and any mode added later
+    // inherits this for free. These canvases draw vectors only, so they are never tainted.
+    function bobitAt(px, py) {
+      for (var i = entries.length - 1; i >= 0; i--) {          // topmost first
+        var e = entries[i];
+        if (!e.w || e.spec.mode === 'why') continue;           // why figures are content, not inhabitants
+        var r = e.c.getBoundingClientRect();
+        if (px < r.left || px > r.right || py < r.top || py > r.bottom) continue;
+        var kx = e.c.width / r.width, ky = e.c.height / r.height;
+        var pad = Math.max(2, Math.round(6 * kx));             // a few px of slop around thin limbs
+        var x0 = Math.max(0, Math.round((px - r.left) * kx) - pad);
+        var y0 = Math.max(0, Math.round((py - r.top) * ky) - pad);
+        var bw = Math.min(e.c.width - x0, pad * 2 + 1);
+        var bh = Math.min(e.c.height - y0, pad * 2 + 1);
+        if (bw <= 0 || bh <= 0) continue;
+        var d;
+        try { d = e.ctx.getImageData(x0, y0, bw, bh).data; } catch (err) { continue; }
+        for (var k = 3; k < d.length; k += 4) if (d[k] > 8) return e;
+      }
+      return null;
+    }
+
+    function poofStart(e) {
+      if (POOF.phase !== 'idle' || !e) return;
+      POOF.phase = 'holding'; POOF.t = 0; POOF.victim = e;
+      document.body.classList.add('ev-poofing');   // suppresses the touch callout while holding
+    }
+    function poofCancel() {
+      if (POOF.phase !== 'holding') return;
+      POOF.phase = 'fizzle'; POOF.t = 0;           // smoke thins out, nobody vanishes
+      document.body.classList.remove('ev-poofing');
+    }
+
+    // ── mouse ──
+    document.addEventListener('mousedown', function (ev) {
+      if (ev.button !== 2) { POOF.armed = false; return; }
+      var e = bobitAt(ev.clientX, ev.clientY);
+      POOF.armed = !!e;                            // gates contextmenu suppression
+      if (e) poofStart(e);
+    }, true);
+    // Firefox fires contextmenu on mousedown (mid-hold), Chrome on mouseup (as the gag lands),
+    // so suppression is keyed off `armed` rather than the phase. Cleared here so a later
+    // right-click on ordinary page content still gets its menu.
+    document.addEventListener('contextmenu', function (ev) {
+      if (!POOF.armed) return;
+      ev.preventDefault();
+      POOF.armed = false;
+    });
+    document.addEventListener('mouseup', function (ev) { if (ev.button === 2) poofCancel(); });
+    document.addEventListener('mousemove', function (ev) {
+      if (POOF.phase !== 'holding') return;
+      if (bobitAt(ev.clientX, ev.clientY) !== POOF.victim) poofCancel();
+    }, { passive: true });
+    window.addEventListener('blur', poofCancel);
+    document.addEventListener('mouseleave', poofCancel);
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') poofCancel(); });
+
+    // ── touch: a 3s hold does the same. No preventDefault on touchstart, so a scroll that
+    //    happens to begin on a Bobit still scrolls — a >10px move cancels instead. ──
+    document.addEventListener('touchstart', function (ev) {
+      if (ev.touches.length !== 1) { poofCancel(); return; }
+      var t = ev.touches[0];
+      var e = bobitAt(t.clientX, t.clientY);
+      POOF.armed = !!e;
+      POOF.sx = t.clientX; POOF.sy = t.clientY;
+      if (e) poofStart(e);
+    }, { passive: true });
+    document.addEventListener('touchmove', function (ev) {
+      if (POOF.phase !== 'holding' || !ev.touches.length) return;
+      var t = ev.touches[0];
+      if (Math.abs(t.clientX - POOF.sx) > 10 || Math.abs(t.clientY - POOF.sy) > 10) poofCancel();
+    }, { passive: true });
+    document.addEventListener('touchend', poofCancel);
+    document.addEventListener('touchcancel', poofCancel);
+
+    // Advance the phase machine. Called once per frame from tick(); the visual consequences are
+    // added in later tasks, this only moves the phases along.
+    function poofTick(dt) {
+      if (POOF.phase === 'idle' || POOF.phase === 'cleared') return;
+      POOF.t += dt;
+      if (POOF.phase === 'holding') {
+        if (POOF.t >= POOF_HOLD) {
+          POOF.phase = 'poof'; POOF.t = 0;
+          document.body.classList.remove('ev-poofing');
+        }
+      } else if (POOF.phase === 'fizzle') {
+        if (POOF.t >= 0.4) { POOF.phase = 'idle'; POOF.t = 0; POOF.victim = null; }
+      } else if (POOF.phase === 'poof') {
+        if (POOF.t >= POOF_BURST) { POOF.phase = 'stunned'; POOF.t = 0; }
+      } else if (POOF.phase === 'stunned') {
+        if (POOF.t >= POOF_STUN) { POOF.phase = 'fleeing'; POOF.t = 0; }
+      }
+    }
+    // ══ end POOF ════════════════════════════════════════════════════════════════════════
+
     function cssVar(name, fallback) {
       var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
       return v || fallback;
@@ -1753,6 +1858,7 @@
     function tick() {
       var now = performance.now();
       var dt = Math.min(0.1, (now - last) / 1000); last = now;
+      poofTick(dt);
       t += dt;
       if ((inkTick += dt) > 0.5) { inkTick = 0; inkCache = cssVar('--heading', '#1C1C1C'); }
       var ink = inkCache;
@@ -2261,7 +2367,8 @@
     // opt-in debug handle (no effect unless the page is loaded with #figdebug)
     if (location.hash === '#figdebug') window.__evFigDebug = {
       entries: entries, footWalk: footWalk, footStand: footStand,
-      quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat
+      quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
+      poof: POOF, bobitAt: bobitAt
     };
   });
 })();
