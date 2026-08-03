@@ -93,32 +93,16 @@ transcribed in the Adams Papers, which is what the link shows.
 
 ---
 
-### Thomas Jefferson — Letter to Francis Hopkinson
-
-> "I never submitted the whole system of my opinions to the creed of any party of men whatever, in
-> religion, in philosophy, in politics, or in anything else where I was capable of thinking for
-> myself. Such an addiction is the last degradation of a free and moral agent. If I could not go to
-> heaven but with a party, I would not go there at all."
-
-**Context:** Hopkinson had written to say Jefferson was being "dished up" as an anti-federalist.
-This is his answer; the full passage continues "Therefore I protest to you I am not of the party of
-federalists. But I am much farther from that of the Antifederalists."
-
-**Source:** To Francis Hopkinson, Paris, March 13, 1789. *Papers of Thomas Jefferson*, vol. 14.
-**Link:** https://founders.archives.gov/documents/Jefferson/01-14-02-0402
-**Status:** ⚠️ Canonical. Permalink title, date and quoted text all confirmed, but the page itself
-could not be opened from the verifying environment. **Worth one click in a browser to confirm.**
-
----
-
 ## On seeking the right answer over the partisan one
 
 ### John F. Kennedy — Loyola College Alumni Banquet
 
-> "Let us not seek the Republican answer or the Democratic answer, but the right answer. Let us not
-> seek to fix the blame for the past. Let us accept our own responsibility for the future."
+> "Let us not despair but act. Let us not seek the Republican answer or the Democratic answer but the
+> right answer. Let us not seek to fix the blame for the past — let us accept our own responsibility
+> for the future."
 
-The line immediately before it is "Let us not despair but act."
+Punctuation follows the source: no comma after "the Democratic answer," and an em dash rather than a
+full stop before "let us accept." Popular reprints add the comma and split the last sentence.
 
 **Source:** Remarks of Senator John F. Kennedy at the Loyola College Annual Alumni Banquet,
 Baltimore, Maryland, February 18, 1958. Papers of John F. Kennedy, Pre-Presidential Papers, Senate
@@ -193,6 +177,23 @@ used above.
 ---
 
 ## Removed
+
+### Thomas Jefferson — Letter to Francis Hopkinson *(removed August 2, 2026)*
+
+> "I never submitted the whole system of my opinions to the creed of any party of men whatever, in
+> religion, in philosophy, in politics, or in anything else where I was capable of thinking for
+> myself. Such an addiction is the last degradation of a free and moral agent. If I could not go to
+> heaven but with a party, I would not go there at all."
+
+Cut to keep the rotation tight — not for any problem with the quote. It is accurate: Hopkinson had
+written to say Jefferson was being "dished up" as an anti-federalist, and this is his answer.
+
+To Francis Hopkinson, Paris, March 13, 1789. *Papers of Thomas Jefferson*, vol. 14 —
+https://founders.archives.gov/documents/Jefferson/01-14-02-0402. Note if it is ever restored: the
+permalink's title, date and text were confirmed but the page itself was never opened, so it still
+needs one browser click before it goes on the site.
+
+---
 
 ### Thomas Jefferson — Letter to Charles Yancey *(removed August 2, 2026)*
 

@@ -17,22 +17,23 @@ rest of the site holds itself to.
 ## Content
 
 Quotes live in `presidential_quotes.md` (verified 2026-08-02); the shipped pool is a JS table derived
-from it. Eight entries at launch:
+from it. Seven entries at launch:
 
 | Speaker | Document | Link verified |
 |---|---|---|
 | Washington | to Gov. Arthur Fenner, 4 Jun 1790 | ✅ read at source (LoC, page-anchored) |
 | Washington | Farewell Address, 19 Sep 1796 | ✅ read at source (govinfo, S.Doc. 105-22) |
 | Adams | to Jonathan Jackson, 2 Oct 1780 | ✅ read at source (MassHist) |
-| Jefferson | to Francis Hopkinson, 13 Mar 1789 | ⚠️ canonical permalink, needs a browser click |
 | Jefferson | to Edward Carrington, 16 Jan 1787 | ✅ read at source (UChicago) |
 | Jefferson | to George Wythe, 13 Aug 1786 | ✅ read at source (Monticello) |
 | Jefferson | to William C. Jarvis, 28 Sep 1820 | ✅ read at source (Monticello) |
 | Kennedy | Loyola College Alumni Banquet, 18 Feb 1958 | ⚠️ real page, Cloudflare-blocked, needs a click |
 
-**Blocking on launch:** the Hopkinson and Kennedy URLs must be opened in a browser and confirmed
-before this ships. A quote feature whose whole promise is "click through and check" cannot ship with
-an unconfirmed link.
+**Blocking on launch:** the Kennedy URL must be opened in a browser and confirmed before this ships. A
+quote feature whose whole promise is "click through and check" cannot ship with an unconfirmed link.
+Its attribution was also corrected from the 1962 State of the Union on the strength of agreeing
+secondary sources rather than a reading of the JFK Library page itself, so that page is the one thing
+here that has not been seen directly.
 
 Each entry carries `text`, `who`, `where` (the document and date), and `href`.
 
@@ -72,8 +73,8 @@ bubble *positioning* is set inline from JS, matching how the figure canvases alr
 
 After `buildCast()`, collect the readers — specs with `mode:'seat'`, `anim:'read'`, no `phone` — and
 deal to them in random order until the pool runs out (the pool is the full quote table, so
-`poolSize` is 8 at launch). Assignment happens once, at cast time, so a figure keeps its quote across
-repeat clicks.
+`poolSize` is 7 at launch — read it from the table's length, never hardcode it). Assignment happens
+once, at cast time, so a figure keeps its quote across repeat clicks.
 
 **Zero-reader guarantee.** A cast can legitimately produce no readers (~15–20% of loads: seats split
 between `sit` and `read`, and 40% of sitters get phones). When that happens and the pool is non-empty,
