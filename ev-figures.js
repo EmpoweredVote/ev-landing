@@ -147,7 +147,7 @@
     function bobitAt(px, py) {
       for (var i = entries.length - 1; i >= 0; i--) {          // topmost first
         var e = entries[i];
-        if (!e.w || e.spec.mode === 'why') continue;           // why figures are content, not inhabitants
+        if (!e.w || e.gone || e.spec.mode === 'why') continue; // why figures are content, not inhabitants
         var r = e.c.getBoundingClientRect();
         if (px < r.left || px > r.right || py < r.top || py > r.bottom) continue;
         var kx = e.c.width / r.width, ky = e.c.height / r.height;
@@ -264,6 +264,74 @@
       }
     }
 
+    var FLEE_SPEED = 190, FLEE_DROP = 50;
+
+    // Arms straight overhead, flailing. Legs come from scurry so the run reads as a proper
+    // panicked sprint. Remember 0deg is straight DOWN in this rig and 90 is horizontal, so
+    // overhead is ~±170. Two non-harmonic frequencies plus a per-figure seed keep the group
+    // from flailing in unison.
+    function fleePose(t, seed) {
+      var p = A.scurry.frame(t);
+      var f1 = Math.sin(t * 11 + seed), f2 = Math.sin(t * 7.3 + seed * 2.1);
+      p.armRU = 168 + f1 * 16; p.armRF = 150 + f2 * 30;
+      p.armLU = -168 + f2 * 16; p.armLF = -150 + f1 * 30;
+      p.headTilt = 8 + f2 * 7;
+      p.hunch = -6 + f1 * 3;
+      return p;
+    }
+
+    // Widen this figure's canvas to the viewport so he can actually reach a screen edge — on
+    // his own ~190px canvas he would vanish at an invisible box edge mid-screen. Transparent
+    // and pointer-events:none, so the extra area costs nothing and captures nothing. Width
+    // goes through fitW/fitLeft or a widened canvas reintroduces the phone h-scroll bug.
+    function poofArmFlee(e) {
+      var cr = e.c.getBoundingClientRect();
+      // already scrolled out of sight: the draw loop culls it, so it would never tick and the
+      // page would never finish clearing. Nobody is watching — just take it away.
+      if (cr.bottom < -40 || cr.top > window.innerHeight + 40) {
+        e.gone = true;
+        if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
+        return;
+      }
+      var sx = window.scrollX || window.pageXOffset || 0;
+      var sy = window.scrollY || window.pageYOffset || 0;
+      var floorDoc = cr.bottom + sy - 6;                 // keep his feet where they were
+      var ar = e.el.getBoundingClientRect();             // his perch
+      var figScreenX = cr.left + e.w / 2;
+
+      var newW = fitW(document.documentElement.clientWidth);
+      var newH = e.h + FLEE_DROP + 40;                   // room to fall below the ledge
+      sizeCanvas(e, newW, newH);
+      var newLeft = fitLeft(sx, e.w, sx);
+      e.c.style.left = newLeft + 'px';
+      e.c.style.top = (floorDoc - (newH - 6)) + 'px';   // floor line stays exactly where it was
+
+      e.fl = 'run'; e.flT = 0;
+      e.flX = figScreenX - newLeft + sx;                 // canvas-local x
+      e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
+      e.flFloor = newH - 6;                              // canvas-local floor line
+      e.flLedgeL = ar.left + sx - newLeft;               // perch ends, canvas-local
+      e.flLedgeR = ar.right + sx - newLeft;
+      e.flSeed = (e.ci % 7) + 1;
+      e.flYOff = 0;
+    }
+
+    // Draw one fleeing figure. `run` is all this task needs; task 6 adds the pratfall.
+    function drawFlee(e, ctx, w, h, tt, col, dt) {
+      e.flT += dt;
+      if (e.fl === 'run') {
+        e.flX += FLEE_SPEED * e.flDir * dt;
+      }
+      R.drawShadow(ctx, e.flX, e.flFloor + e.flYOff, 15, 'rgba(127,127,127,0.18)');
+      drawFig(ctx, e.flX, e.flFloor + e.flYOff, S, e.flDir < 0, fleePose(e.flT, e.flSeed), { color: col });
+      // gone once he is clear of the canvas, which spans the viewport. 60px comfortably
+      // exceeds the widest figure (~36px at S=0.32) so nobody is culled mid-stride.
+      if (e.flX < -60 || e.flX > w + 60) {
+        e.gone = true;
+        if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
+      }
+    }
+
     // Advance the phase machine. Called once per frame from tick(); the visual consequences are
     // added in later tasks, this only moves the phases along.
     function poofTick(dt) {
@@ -285,7 +353,20 @@
       } else if (POOF.phase === 'poof') {
         if (POOF.t >= POOF_BURST) { POOF.phase = 'stunned'; POOF.t = 0; }
       } else if (POOF.phase === 'stunned') {
-        if (POOF.t >= POOF_STUN) { POOF.phase = 'fleeing'; POOF.t = 0; }
+        if (POOF.t >= POOF_STUN) {
+          POOF.phase = 'fleeing'; POOF.t = 0;
+          entries.forEach(function (e) {
+            if (e.gone || e.spec.mode === 'why') return;
+            poofArmFlee(e);
+          });
+        }
+      } else if (POOF.phase === 'fleeing') {
+        var left = 0;
+        entries.forEach(function (e) {
+          if (e.spec.mode === 'why') return;
+          if (!e.gone) left++;
+        });
+        if (!left) { POOF.phase = 'cleared'; POOF.t = 0; }
       }
     }
     // ══ end POOF ════════════════════════════════════════════════════════════════════════
@@ -1951,6 +2032,11 @@
         // e.ktT, e.qsT. Extending the existing `e.lt += dt * (...)` gate would freeze only the
         // gaits and leave the dog still fetching while everyone else stood still.
         var dt = (POOF.phase === 'stunned') ? 0 : dtFrame;
+        if (e.fl && spec.mode !== 'why') {
+          ctx.clearRect(0, 0, w, h);
+          drawFlee(e, ctx, w, h, e.lt + e.phase, figColor(spec.tone != null ? spec.tone : e.ci), dt);
+          return;
+        }
         if (!w) return;
         // skip offscreen canvases
         var cr = e.c.getBoundingClientRect();
