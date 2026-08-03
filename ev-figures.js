@@ -322,17 +322,18 @@
         }
       } catch (err) { /* fall back to the canvas-centre estimate */ }
 
+      var oldFloor = e.h - 6;                            // his floor, in the OLD canvas's local coords — capture before sizeCanvas overwrites e.h
       var newW = fitW(document.documentElement.clientWidth);
       var newH = e.h + FLEE_DROP + 40;                   // room to fall below the ledge
       sizeCanvas(e, newW, newH);
       var newLeft = fitLeft(sx, e.w, sx);
       e.c.style.left = newLeft + 'px';
-      e.c.style.top = (floorDoc - (newH - 6)) + 'px';   // floor line stays exactly where it was
+      e.c.style.top = (floorDoc - oldFloor) + 'px';     // floor line stays exactly where it was; headroom above it is unchanged, so all of FLEE_DROP+40 lands below it
 
       e.fl = 'run'; e.flT = 0;
       e.flX = figScreenX - newLeft + sx;                 // canvas-local x
       e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
-      e.flFloor = newH - 6;                              // canvas-local floor line
+      e.flFloor = oldFloor;                              // canvas-local floor line
       e.flLedgeL = ar.left + sx - newLeft;               // perch ends, canvas-local
       e.flLedgeR = ar.right + sx - newLeft;
       e.flSeed = (e.ci % 7) + 1;
