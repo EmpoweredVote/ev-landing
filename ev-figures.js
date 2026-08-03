@@ -373,7 +373,15 @@
       e.c.style.position = 'fixed';
       var newLeft = fitLeft(0, e.w, 0);                  // viewport coords now, so sx drops out
       e.c.style.left = newLeft + 'px';
-      e.c.style.top = (cr.bottom - 6 - oldFloor) + 'px'; // floor line stays exactly where it was on screen; headroom above it is unchanged, so all of FLEE_DROP+40 lands below it
+      // Leave the top edge exactly where it was. sizeCanvas only ever grows this canvas DOWNWARD
+      // (newH = e.h + FLEE_DROP + 40, and local y is measured from the top edge), so a canvas that
+      // does not move keeps every local y — including oldFloor — pointing at the same screen row it
+      // did before the resize, and all of the new headroom lands below him to fall into.
+      // This used to read `cr.bottom - 6 - oldFloor`, which is only `cr.top` while oldFloor is
+      // `e.h - 6`. Once oldFloor became the measured ink bottom the two h-6 assumptions cancelled
+      // exactly and the floor still landed on the h-6 line: a seated reader dropped 12px and a
+      // rope-hanger dropped 225px into mid-air. Fixing the scan without fixing this line is a no-op.
+      e.c.style.top = cr.top + 'px';
 
       e.fl = 'run'; e.flT = 0;
       e.flX = figScreenX - newLeft;                      // canvas-local x
@@ -393,9 +401,10 @@
       }
     }
 
-    // HEAP_YOFF exists because drawFig's `rot` pivots about the figure's FEET, so tipping him
-    // ~83deg would swing him around that point rather than lay him down. The cartwheel gag
-    // solves the same problem with its `lieY`; this is the equivalent nudge.
+    // HEAP_YOFF exists because drawFig's `rot` pivots about the point handed to drawFig — the
+    // figure's PELVIS, since computePose builds outward from there — so tipping him ~83deg swings
+    // him about his middle and leaves him lying a leg's length above the ground rather than on it.
+    // The cartwheel gag solves the same problem with its `lieY`; this is the equivalent nudge.
     var HEAP_HOLD = 1.0, DROP_SECS = 0.45, GETUP_SECS = 0.9, HEAP_YOFF = 14;
 
     // He limps off favouring his right leg — same trick as the beam ball-gag's foot-drop: a
@@ -454,7 +463,13 @@
       e.flYOff = yOff;
       var groundY = e.flFloor + yOff;
       R.drawShadow(ctx, e.flX, groundY, 15, 'rgba(127,127,127,0.18)');
-      drawFig(ctx, e.flX, groundY, S, e.flDir < 0, pose, { color: col, rot: rot });
+      // drawFig's y is the PELVIS, not the floor: computePose builds outward from the pelvis and
+      // the legs reach 112 rig-units (112 * S ~= 36px) below it, which is why every other caller
+      // in this file passes `feetY - 112 * S`. drawFlee alone passed the ground line straight
+      // through, so every runner was drawn 36px into the floor with his own shadow hovering above
+      // his head — measured, not guessed: a stander's floor line sat at screen y 734 and his ink
+      // bottom at 770. Same class of mistake as the flee floor above, one call lower down.
+      drawFig(ctx, e.flX, groundY - 112 * S, S, e.flDir < 0, pose, { color: col, rot: rot });
 
       if (e.flDog) {
         e.flDog.x += FLEE_SPEED * 1.25 * e.flDog.dir * dt;
