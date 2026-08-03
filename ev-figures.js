@@ -291,7 +291,7 @@
       }
     }
 
-    var FLEE_SPEED = 190, FLEE_DROP = 50;
+    var FLEE_SPEED = 190, FLEE_DROP = 50, RAISE_SECS = 0.45;
 
     // Arms straight overhead, flailing. Legs come from scurry so the run reads as a proper
     // panicked sprint. Remember 0deg is straight DOWN in this rig and 90 is horizontal, so
@@ -304,6 +304,36 @@
       p.armLU = -168 + f2 * 16; p.armLF = -150 + f1 * 30;
       p.headTilt = 8 + f2 * 7;
       p.hunch = -6 + f1 * 3;
+      return p;
+    }
+
+    // The pose the hands-up raise lands on, before the run takes over. Starts from the un-flailed
+    // centre of fleePose — seed 0 at t 0 zeroes both flail terms, which also leaves both legs
+    // straight underneath him via makeGait's sin(t) stride — then deliberately breaks the symmetry
+    // that leaves behind.
+    // Held still at this 0.32 scale, a symmetric pair of arms straight overhead (fleePose's own
+    // armRU 168 / armRF 150, i.e. 12deg and 30deg off vertical) merges into the head-and-torso line
+    // and the figure reads as one vertical stick — the hands-up doesn't land at all. The RUNNING
+    // figures read fine on the same numbers only because fleePose mixes its two flail terms
+    // differently into each arm, so one arm is always up while the other is out. This bakes that
+    // asymmetry in: one arm straight up and out, the other bent. The angles land near the edges of
+    // the flail's own range (armRU 152..184, armRF 120..180) rather than inside it, so the handoff
+    // into the run costs a few degrees in a single frame — less than the change between any two
+    // consecutive running frames.
+    function raisePose() {
+      var p = fleePose(0, 0);
+      // armRF/armLF are ABSOLUTE directions, not angles relative to the upper arm, so keeping each
+      // forearm near its own upper arm is what makes the arm read as one straight limb. The
+      // up-and-out pair is cwStar's (142/150), which already reads as arms-up elsewhere in the file.
+      // Both arms have to clear the head: anything inside ~30deg of vertical disappears behind it at
+      // this scale, which is why one arm is straight and the other bends outward rather than one
+      // simply being thrown higher.
+      p.armRU = 142; p.armRF = 150;      // straight up and out
+      p.armLU = -148; p.armLF = -130;    // bent at the elbow, hand swinging wide of the head
+      // A hair of stance, because fleePose's legs at t=0 are both at exactly 0 and overlap into a
+      // single thick line — fine for a running figure whose legs are moving, but a figure standing
+      // still on one apparent leg reads as a stick rather than a person.
+      p.legRU = 7; p.legRF = 5; p.legLU = -7; p.legLF = -5;
       return p;
     }
 
@@ -383,7 +413,7 @@
       // rope-hanger dropped 225px into mid-air. Fixing the scan without fixing this line is a no-op.
       e.c.style.top = cr.top + 'px';
 
-      e.fl = 'run'; e.flT = 0;
+      e.fl = 'raise'; e.flT = 0;                         // hands up first, then 'run' takes over
       e.flX = figScreenX - newLeft;                      // canvas-local x
       e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
       e.flFloor = oldFloor;                              // canvas-local floor line
@@ -423,13 +453,27 @@
       return p;
     }
 
-    // Draw one fleeing figure. Sub-machine: run -> (drop -> heap -> getup -> limp) if his perch
-    // runs out before he reaches a screen edge.
+    // Draw one fleeing figure. Sub-machine: raise -> run -> (drop -> heap -> getup -> limp) if his
+    // perch runs out before he reaches a screen edge.
     function drawFlee(e, ctx, w, col, dt) {
       e.flT += dt;
       var pose, rot = 0, yOff = e.flYOff || 0;
 
-      if (e.fl === 'run') {
+      if (e.fl === 'raise') {
+        // The hands go up before the legs go: a beat of standing panic, then the sprint. flX is
+        // untouched here, so he throws his arms up on the spot he was occupying.
+        // He rises to raisePose() rather than to his own seeded fleePose: at t=0 the two flail terms
+        // are the constants sin(seed) and sin(2.1 * seed), and for some seeds they push the upper arm
+        // past vertical AND straighten the forearm, so the arms fold onto the torso and he reads as
+        // one vertical stick at the exact frame the hands-up is meant to land. Handing off to a run
+        // that starts flailing from t=0 costs a few degrees of arm angle in one frame — less than the
+        // change between any two consecutive running frames, and invisible next to the legs starting
+        // to move. The per-figure flail still de-synchronises the group the instant they run, which
+        // is where it earns its keep; here the whole room reacting on the same beat is the joke.
+        var rz = smooth01(Math.min(1, e.flT / RAISE_SECS));
+        pose = lerpPose(A.standstill.frame(0), raisePose(), rz);
+        if (e.flT >= RAISE_SECS) { e.fl = 'run'; e.flT = 0; }
+      } else if (e.fl === 'run') {
         e.flX += FLEE_SPEED * e.flDir * dt;
         pose = fleePose(e.flT, e.flSeed);
         // ran off the end of his perch? then there is nothing under him

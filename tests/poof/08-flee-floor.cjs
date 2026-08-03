@@ -154,8 +154,9 @@ function check(res) {
 
     // 2. and the ink that actually got painted is there too. drawFlee lays a shadow ellipse
     //    (ry ~2.4px) on the floor line, so the painted bottom sits a couple of px below it.
-    //    Only figures still in 'run' with no drop offset are comparable.
-    if (a.fl === 'run' && a.yOff === 0 && a.inkScreen != null) {
+    //    Only figures still standing on their floor are comparable: 'raise' (hands going up on
+    //    the spot) or 'run', with no drop offset yet.
+    if ((a.fl === 'raise' || a.fl === 'run') && a.yOff === 0 && a.inkScreen != null) {
       assert.ok(Math.abs(a.inkScreen - p.inkScreen) <= 6,
         label + ': first flee frame painted its lowest ink at screen y ' + a.inkScreen.toFixed(1) +
         ', ' + (a.inkScreen - p.inkScreen).toFixed(1) + 'px from where he was standing (' +
