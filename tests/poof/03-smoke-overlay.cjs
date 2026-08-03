@@ -126,12 +126,31 @@ async function pressOnInkAt(page, idx, minOffset) {
 // The smoke must gather on the figure the user grabbed. Regression guard for the rect-centre
 // anchor: `stand`/`seat` draw at their canvas centre, but patrol, cartwheel, kite, paddlepair,
 // yoyo and dogfetch do not, so the cloud built over blank page for most of the cast.
+//
+// The cast is re-randomized on every page load, and on roughly one load in three none of the
+// non-centred modes happen to be sitting >=150px from their own canvas centre (measured:
+// dogfetch 18px, paddlepair 53px, beam 51px, rope 58px — all short of the gate). That is a
+// property of the random cast, not of the code being tested, so a miss is retried against a
+// fresh load rather than failing the run: reloading redraws a new random cast, and a patrol
+// walker in particular will be at a different point in his stroll each time. The 150px gate
+// itself is never loosened — that's what guarantees a qualifying candidate would actually have
+// tripped the old rect-centre bug.
 async function centroidRun(browser) {
-  const page = await load(browser);
   const MIN_OFFSET = 150;
-  const p = await pressOffCentre(page, MIN_OFFSET);
-  assert.ok(p, 'no painted off-centre Bobit found for the smoke-anchor check (needed one at least ' +
-    MIN_OFFSET + 'px from his canvas centre)');
+  const MAX_LOAD_ATTEMPTS = 8;
+  let page = null, p = null;
+  for (let attempt = 1; attempt <= MAX_LOAD_ATTEMPTS && !p; attempt++) {
+    page = await load(browser);
+    p = await pressOffCentre(page, MIN_OFFSET);
+    if (!p) {
+      console.log('   centroid check: load ' + attempt + '/' + MAX_LOAD_ATTEMPTS +
+        ' had nobody painted >= ' + MIN_OFFSET + 'px off his own canvas centre — reloading for a fresh cast');
+      await page.close();
+      page = null;
+    }
+  }
+  assert.ok(p, 'no painted off-centre Bobit found for the smoke-anchor check after ' + MAX_LOAD_ATTEMPTS +
+    ' reloads (needed one at least ' + MIN_OFFSET + 'px from his canvas centre)');
   assert.strictEqual(await page.evaluate(function () { return window.__evFigDebug.poof.phase; }), 'holding',
     'the right-press must have started a hold');
 
