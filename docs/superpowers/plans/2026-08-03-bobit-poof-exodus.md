@@ -575,15 +575,18 @@ const assert = require('assert');
 
 const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
 
-// alpha coverage of the smoke overlay
-const SMOKE = `(function () {
+// alpha coverage of the smoke overlay.
+// NOTE: pass this as a FUNCTION to page.evaluate, never as a template-literal string.
+// Playwright eval's a string expression raw and does not invoke it with args, so the string
+// form silently returns the function object instead of the pixel count. (Task 1 hit this.)
+function smokeCoverage() {
   var c = window.__evFigDebug.poofOverlay();
   var g = c.getContext('2d');
   var d = g.getImageData(0, 0, c.width, c.height).data;
   var n = 0;
   for (var i = 3; i < d.length; i += 4) if (d[i] > 8) n++;
   return n;
-})`;
+}
 
 (async function () {
   const browser = await chromium.launch();
@@ -606,7 +609,7 @@ const SMOKE = `(function () {
   assert.ok(ok);
   await page.waitForTimeout(400);
 
-  const before = await page.evaluate(SMOKE);
+  const before = await page.evaluate(smokeCoverage);
   assert.strictEqual(before, 0, 'no smoke before a hold starts');
 
   await page.evaluate(function () {
@@ -616,16 +619,16 @@ const SMOKE = `(function () {
   });
 
   await page.waitForTimeout(900);
-  const early = await page.evaluate(SMOKE);
+  const early = await page.evaluate(smokeCoverage);
   await page.waitForTimeout(1400);
-  const later = await page.evaluate(SMOKE);
+  const later = await page.evaluate(smokeCoverage);
   assert.ok(early > 0, 'smoke should be visible early in the hold');
   assert.ok(later > early * 1.4,
     'smoke must thicken over the hold (' + early + ' -> ' + later + ')');
 
   // let it complete: the burst should be bigger still, then clear away
   await page.waitForFunction(function () { return window.__evFigDebug.poof.phase !== 'holding'; }, { timeout: 4000 });
-  const burst = await page.evaluate(SMOKE);
+  const burst = await page.evaluate(smokeCoverage);
   assert.ok(burst > later, 'the burst must be larger than the build-up (' + later + ' -> ' + burst + ')');
 
   // the victim is gone
@@ -641,7 +644,7 @@ const SMOKE = `(function () {
 
   // and the smoke eventually clears
   await page.waitForTimeout(1200);
-  assert.strictEqual(await page.evaluate(SMOKE), 0, 'smoke must clear after the burst');
+  assert.strictEqual(await page.evaluate(smokeCoverage), 0, 'smoke must clear after the burst');
 
   console.log('03-smoke-overlay: PASS');
   await browser.close();
