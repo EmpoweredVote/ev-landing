@@ -2,6 +2,24 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **STATUS: all 5 tasks implemented and verified 2026-08-02** on `feat/bobit-quote-readers`.
+> All five test scripts pass; light and dark screenshots captured in `screenshots/`.
+> **Not merged** — see "Before this ships" at the bottom: the Kennedy link still needs a
+> browser check, and `main` auto-deploys to Render.
+>
+> Deviations from the plan as written, all committed:
+> - The zero-reader guarantee needed three tiers, not one. Promoting a sitter fails on casts
+>   that contain no seats at all, which is what the first test run hit. It now promotes a
+>   sitter, else recasts a note-card figure as a reader, else appends one.
+> - `quoteHold`'s arm angles were retuned after looking at the render. 0° is straight DOWN in
+>   this rig and 90° is horizontal, so the planned `armRU 70` (and a first "fix" at 88) held
+>   the book out in front rather than in his lap. Low upper arms with forward forearms
+>   (`armRU 30 / armRF 88`) is what actually drops it.
+> - Two test assertions were wrong as written, not the code: the bubble position must be
+>   measured after `.in` lands (before that it still carries its `translateY(4px)` start
+>   offset), and `index.html` already overflows horizontally at 360px on its own, so the
+>   overflow test compares against a baseline instead of asserting an absolute width.
+
 **Goal:** Clicking a reading Bobit makes him sit up, lower his book and open a speech bubble carrying a verified presidential quote, with the speaker's name linking to the primary source.
 
 **Architecture:** A new `ev-quotes.js` owns the quote pool and the bubble as real DOM (the figure canvases are `pointer-events:none`, so a canvas-drawn bubble could not hold a clickable link). `ev-figures.js` gains a `drawReader` pose state machine modelled on the existing `drawPhoneSeat`, and decides who speaks and when. Bubble theming lives in `index.html`'s `<style>` block with the rest of the design tokens; positioning is set inline from JS, exactly as the figure canvases already work.
