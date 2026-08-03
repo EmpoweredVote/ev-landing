@@ -20,6 +20,35 @@ ungarbled, it is much less compelling than the misquotation that was circulating
 a Wayback Machine capture (`https://web.archive.org/web/2024id_/<url>`) served instead — that is how
 the Kennedy page was finally read.
 
+> **Second pass — August 3, 2026: twelve quotes added, pool now 19.** Two more Washington passages
+> from the Farewell Address, two Jefferson, one Madison, two Roosevelt, two Truman, one Eisenhower,
+> one Kennedy, one Reagan. Every link returns HTTP 200 and ten of the twelve were read on the linked
+> page. The same rule was applied throughout: **the entry says what the linked page says**, even where
+> that reads oddly to a modern eye.
+>
+> **Six of the twelve arrived misquoted** — these were supplied in their circulating form and
+> corrected against the source:
+>
+> | Circulating | Source | Where |
+> |---|---|---|
+> | "the interest and duty of a wise people" | "the interest **and the** duty" | Washington, Farewell |
+> | "**Whenever** the people are **well-informed**" | "**Wherever** the people are **well informed**" | Jefferson to Price |
+> | "leads to **inquiry**, and **inquiry** to truth" | "leads to **enquiry**, and **enquiry** to truth" | Jefferson to Wendover |
+> | "govern ignorance**;** … their own **governors**" | "govern ignorance**:** … their own **Governors**" | Madison to Barry |
+> | "has a **moral duty** to try" | "has a duty—**a moral duty**—to try" | Truman, Citizenship |
+> | "they **may** be solved by man" | "they **can** be solved by man" | Kennedy, American University |
+>
+> Three more were supplied truncated in ways that removed the substance rather than trimming it, and
+> have been restored to the full sentence — see the individual entries for **Roosevelt at Marietta**
+> (the elision deleted the list of officials who are *not* the ultimate rulers), **Eisenhower** (the
+> truncation dropped the entire qualifying clause) and **Reagan** ("Freedom is a fragile thing and
+> it's" is where the image lives).
+>
+> **Two provenance notes that change how an entry may be cited:** the Jefferson "enquiry to truth"
+> passage is from a draft he decided **not to send** and annotated as such, so its `where` says so;
+> and the Reagan line was said as **Governor of California in 1967**, not as President — flagged the
+> same way the 1958 Kennedy entry is.
+
 ---
 
 ## On the danger of parties and faction
@@ -72,6 +101,46 @@ Philadelphia. Never delivered orally. Text as printed in Senate Document No. 105
 **Also:** https://founders.archives.gov/documents/Washington/05-20-02-0440-0002
 **Status:** ✅ Verified at source. Wording follows the Senate edition: "ill founded" is unhyphenated
 there, and the clauses are separated by commas rather than the semicolons in some popular reprints.
+
+---
+
+### George Washington — Farewell Address *(alternate domination)*
+
+> "The alternate domination of one faction over another, sharpened by the spirit of revenge natural to
+> party dissension, which in different ages and countries has perpetrated the most horrid enormities,
+> is itself a frightful despotism."
+
+Short form for display:
+
+> "The alternate domination of one faction over another, sharpened by the spirit of revenge natural to
+> party dissension… is itself a frightful despotism."
+
+**Context:** Immediately follows the warning that the spirit of party leads a people to "seek security
+and repose in the absolute power of an individual." Washington's point is narrower and sharper than
+the usual paraphrase: the *taking of turns* is itself the tyranny, not a safeguard against it.
+
+**Source:** Farewell Address, September 19, 1796. Senate Document 105-22.
+**Link:** https://www.govinfo.gov/content/pkg/CDOC-105sdoc22/html/CDOC-105sdoc22.htm
+**Status:** ✅ Verified at source. The ellipsis replaces a complete clause, so it is marked; the
+circulating short form elides the same words without saying so.
+
+---
+
+### George Washington — Farewell Address *(common and continual mischiefs)*
+
+> "Without looking forward to an extremity of this kind (which nevertheless ought not to be entirely
+> out of sight) the common and continual mischiefs of the spirit of party are sufficient to make it the
+> interest and the duty of a wise people to discourage and restrain it."
+
+Short form for display:
+
+> "The common and continual mischiefs of the spirit of party are sufficient to make it the interest and
+> the duty of a wise people to discourage and restrain it."
+
+**Source:** Farewell Address, September 19, 1796. Senate Document 105-22.
+**Link:** https://www.govinfo.gov/content/pkg/CDOC-105sdoc22/html/CDOC-105sdoc22.htm
+**Status:** ✅ Verified at source. **"the interest and the duty"** — the second article is in the
+Senate edition and is dropped in nearly every reproduction, including the one this was supplied from.
 
 ---
 
@@ -137,6 +206,23 @@ him "President" alongside the quote.
 
 ---
 
+### Harry S. Truman — National Conference on Citizenship *(moral duty)*
+
+> "But in a democracy, everyone engaged in politics has a duty—a moral duty—to try to keep public
+> debate reasonable and based on a fair discussion of the issues."
+
+**Context:** He is drawing a line between hard campaigning, which he defends at length, and debate
+conducted in bad faith. The sentence before concedes that politics "is a rough game."
+
+**Source:** Address Before the National Conference on Citizenship, September 17, 1952. *Public Papers
+of the Presidents.*
+**Link:** https://www.presidency.ucsb.edu/documents/address-before-the-national-conference-citizenship
+**Status:** ✅ Verified at source. The circulating version reads "has a moral duty to try", which
+flattens away the self-correction Truman makes mid-sentence — he says "a duty", then upgrades it. The
+Public Papers set those dashes as `--`; the entry uses em dashes, which is typography, not wording.
+
+---
+
 ## On an informed citizenry
 
 ### Thomas Jefferson — Letter to William Charles Jarvis
@@ -193,6 +279,204 @@ earlier misattribution note has been resolved and removed.
 **Status:** ✅ Verified at source. Note the comma after "devised" and before "and happiness" — that is
 how the letter reads. Jefferson spells it "knowlege" in the manuscript; the modernized spelling is
 used above.
+
+---
+
+### Thomas Jefferson — Letter to Richard Price
+
+> "wherever the people are well informed they can be trusted with their own government; that whenever
+> things get so far wrong as to attract their notice, they may be relied on to set them to rights."
+
+Short form for display (initial capital is ours — the extract runs on from a preceding clause):
+
+> "Wherever the people are well informed they can be trusted with their own government."
+
+**Context:** Written from Paris to the dissenting minister Richard Price, on the reception of the new
+Constitution in America.
+
+**Source:** To Richard Price, Paris, January 8, 1789.
+**Link:** https://tjrs.monticello.org/letter/118
+**Also:** https://founders.archives.gov/documents/Jefferson/01-14-02-0196
+**Status:** ✅ Verified at source. **Two corrections:** it is "**wherever**", not "whenever" — a
+conditional about place, not time — and "**well informed**" is unhyphenated. The "whenever … 
+well-informed" form is what circulates and it is wrong on both counts.
+
+---
+
+### Thomas Jefferson — Draft letter to Peter H. Wendover *(not sent)*
+
+> "difference of opinion leads to enquiry, and enquiry to truth; and that, I am sure, is the ultimate
+> and sincere object of us both."
+
+**Context and caveat:** Wendover, a New York congressman Jefferson had never corresponded with, sent
+him a sermon. Jefferson drafted a frank reply about clergy discussing public affairs from the pulpit,
+then thought better of it and noted at the foot of the draft: *"On further consideration, this letter
+was not sent, mr Wendover's character & calling being entirely unknown."* The much milder letter he
+actually sent does not contain this passage. **This must therefore never be cited as a letter to
+Wendover** — the `where` field reads "draft letter to Peter H. Wendover, 13 March 1815 (not sent)".
+
+**Source:** Thomas Jefferson to Peter H. Wendover (Draft), 13 March 1815. *Papers of Thomas Jefferson,
+Retirement Series.*
+**Link:** https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0002
+**Also:** https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0001 (editorial note),
+https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0003 (the version actually sent)
+**Status:** ⚠️ **Canonical, not read at source** — the weakest entry in this file. Founders Online
+answers automated requests with a bot challenge (HTTP 202, empty body), so the page could not be
+opened; the wording, the document title and Jefferson's foot-note were each returned identically by
+two independent searches of that page. Same category as the pre-existing Canonical entries, but worth
+opening in a browser and confirming by eye before anyone leans on it. Note Jefferson's spelling
+**"enquiry"** both times — the modernized "inquiry" is what circulates.
+
+---
+
+### James Madison — Letter to W. T. Barry
+
+> "A popular Government, without popular information, or the means of acquiring it, is but a Prologue
+> to a Farce or a Tragedy; or, perhaps both. Knowledge will forever govern ignorance: And a people who
+> mean to be their own Governors, must arm themselves with the power which knowledge gives."
+
+Short form for display:
+
+> "Knowledge will forever govern ignorance: And a people who mean to be their own Governors, must arm
+> themselves with the power which knowledge gives."
+
+**Context:** Barry was Kentucky's lieutenant governor, writing as head of a commission on a state
+education system; Madison's reply leans heavily on Jefferson's Bill for the General Diffusion of
+Knowledge. The famous "Prologue to a Farce or a Tragedy" sentence immediately precedes the quote and
+is what it is arguing from.
+
+**Source:** To W. T. Barry, August 4, 1822. *The Writings of James Madison*, vol. 9, pp. 103–109;
+reprinted in *The Founders' Constitution*, vol. 1, ch. 18, doc. 35.
+**Link:** https://press-pubs.uchicago.edu/founders/documents/v1ch18s35.html
+**Status:** ✅ Verified at source. Note the **colon** after "ignorance" (not a semicolon) and Madison's
+capital **G** in "Governors" — the circulating version changes both. Madison's capitalization is kept
+as he wrote it, the same choice made for the Adams entry above.
+
+---
+
+### Franklin D. Roosevelt — Message for American Education Week
+
+> "Democracy cannot succeed unless those who express their choice are prepared to choose wisely. The
+> real safeguard of democracy, therefore, is education."
+
+**Context:** A short public message for American Education Week, and the two sentences are a single
+argument — the first is a complaint, the second is the claim. Both are kept for that reason.
+
+**Source:** Message for American Education Week, September 27, 1938. *Public Papers and Addresses of
+Franklin D. Roosevelt.*
+**Link:** https://www.presidency.ucsb.edu/documents/message-for-american-education-week
+**Status:** ✅ Verified at source.
+
+---
+
+### Harry S. Truman — National Conference on Citizenship *(the point of voting)*
+
+> "The point of voting is to exercise an intelligent choice. This means that every citizen must try to
+> inform himself on the great problems of the day, to get the facts and debate them."
+
+**Source:** Address Before the National Conference on Citizenship, September 17, 1952. *Public Papers
+of the Presidents.*
+**Link:** https://www.presidency.ucsb.edu/documents/address-before-the-national-conference-citizenship
+**Status:** ✅ Verified at source, word for word — the only one of the twelve that arrived needing no
+correction at all. Second passage from this same address; the other is under "seeking the right answer"
+above. Two entries sharing a citation is why `tests/quotes/01-deal.cjs` now keys quote identity on the
+text rather than on `where`.
+
+---
+
+## On the citizen's own share of the work
+
+### Franklin D. Roosevelt — Address at Marietta, Ohio
+
+> "Let us not be afraid to help each other—let us never forget that government is ourselves and not an
+> alien power over us. The ultimate rulers of our democracy are not a President and Senators and
+> Congressmen and Government officials but the voters of this country."
+
+Short form for display (drops only the opening clause):
+
+> "Let us never forget that government is ourselves and not an alien power over us. The ultimate rulers
+> of our democracy are not a President and Senators and Congressmen and Government officials but the
+> voters of this country."
+
+**Context:** Spoken at Marietta on the 150th anniversary of the settlement of the Northwest Territory.
+
+**Source:** Address at Marietta, Ohio, July 8, 1938. *Public Papers and Addresses of Franklin D.
+Roosevelt.*
+**Link:** https://www.presidency.ucsb.edu/documents/address-marietta-ohio
+**Status:** ✅ Verified at source. **Do not use the circulating short form** — "The ultimate rulers of
+our democracy… are the voters of this country" ellipsises away the list of officials who are *not* the
+ultimate rulers, which is the entire contrast the sentence is built on. Also note this is sometimes
+filed to his June 30, 1938 address to the National Education Association; the words are at Marietta.
+
+---
+
+### Dwight D. Eisenhower — Republican Lincoln Day Dinners
+
+> "For politics ought to be the part-time profession of every citizen who would protect the rights and
+> privileges of free people and who would preserve what is good and fruitful in our national heritage."
+
+Short form for display (drops the opening conjunction only):
+
+> "Politics ought to be the part-time profession of every citizen who would protect the rights and
+> privileges of free people and who would preserve what is good and fruitful in our national heritage."
+
+**Context:** A speech filmed for the Republican National Committee and distributed to state and local
+committees to be played at Lincoln Day dinners — so it is a party audience, urging participation.
+
+**Source:** Address Recorded for the Republican Lincoln Day Dinners, January 28, 1954. *Public Papers
+of the Presidents.*
+**Link:** https://www.presidency.ucsb.edu/documents/address-recorded-for-the-republican-lincoln-day-dinners
+**Status:** ✅ Verified at source. The famous truncation stops at "every citizen", which drops the
+whole qualifying clause — i.e. most of the sentence and all of its content. Kept in full. Dropping the
+leading "For" needs no ellipsis.
+
+---
+
+### Ronald Reagan — Inaugural Address as Governor of California
+
+> "Freedom is a fragile thing and it's never more than one generation away from extinction. It is not
+> ours by way of inheritance; it must be fought for and defended constantly by each generation, for it
+> comes only once to a people."
+
+**Source:** Inaugural Address (Public Ceremony), Sacramento, January 5, 1967. Ronald Reagan
+Presidential Library.
+**Link:** https://www.reaganlibrary.gov/archives/speech/january-5-1967-inaugural-address-public-ceremony
+**Status:** ✅ Verified at source. **Two things to know.** The line usually circulates as "Freedom is
+never more than one generation away from extinction," which cuts "is a fragile thing and it's" — the
+half of the sentence carrying the image. And he said it as **Governor of California**, fourteen years
+before the presidency, so `where` names that office; the site otherwise risks captioning a
+gubernatorial inaugural as a presidential one. Same handling as the 1958 Kennedy entry.
+
+---
+
+## On problems being solvable
+
+### John F. Kennedy — Commencement Address at American University
+
+> "We need not accept that view. Our problems are manmade--therefore, they can be solved by man. And
+> man can be as big as he wants. No problem of human destiny is beyond human beings. Man's reason and
+> spirit have often solved the seemingly unsolvable--and we believe they can do it again."
+
+Short form for display:
+
+> "Our problems are manmade—therefore, they can be solved by man… No problem of human destiny is beyond
+> human beings."
+
+**Context:** The "peace speech", delivered five weeks before the Limited Test Ban Treaty negotiations.
+"That view" is the fatalism he has just quoted — that war is inevitable and mankind doomed.
+
+**Source:** Commencement Address at American University in Washington, June 10, 1963. *Public Papers
+of the Presidents.*
+**Link:** https://www.presidency.ucsb.edu/documents/commencement-address-american-university-washington
+**Also:** https://www.jfklibrary.org/archives/other-resources/john-f-kennedy-speeches/american-university-19630610
+(canonical, but Cloudflare-challenged like the other JFK page)
+**Status:** ✅ Verified at source. **"they can be solved by man"** — the widely-quoted "they *may* be
+solved" softens a flat statement into a possibility, and that was the form this arrived in.
+**A spelling split worth knowing:** the Public Papers print **"manmade"** as one word, which is what
+the link above shows and therefore what the entry says; the JFK Library transcript hyphenates it
+("man-made; therefore"). Both agree on "can". The rule in this file is that the text matches its link,
+so "manmade" stands — it is not a typo, and it should not be "fixed". The ellipsis replaces "And man
+can be as big as he wants."
 
 ---
 

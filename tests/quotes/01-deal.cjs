@@ -21,7 +21,7 @@ const path = require('path');
       })
     };
   });
-  assert.strictEqual(shape.count, 7, 'pool should hold 7 quotes');
+  assert.strictEqual(shape.count, 19, 'pool should hold 19 quotes');
   assert.deepStrictEqual(shape.keys, ['href', 'text', 'where', 'who']);
   assert.ok(shape.allHttps, 'every href must be https');
   assert.ok(shape.allFilled, 'every field must be populated');
@@ -29,7 +29,10 @@ const path = require('path');
   // the special characters must survive the file round-trip
   const chars = await page.evaluate(function () {
     var all = window.EVQuotes.QUOTES.map(function (q) { return q.text; }).join(' ');
-    var jfk = window.EVQuotes.QUOTES.filter(function (q) { return q.who.indexOf('Kennedy') >= 0; })[0];
+    // pick the 1958 Loyola quote by its citation, not by being the first Kennedy in the array —
+    // there is a second Kennedy entry now (American University, 1963) and [0] would silently
+    // start checking the wrong quote's punctuation if the order ever changed
+    var jfk = window.EVQuotes.QUOTES.filter(function (q) { return q.where.indexOf('Loyola') >= 0; })[0];
     return {
       aeligature: all.indexOf('dæmon') >= 0,
       jfkEnDash: jfk.text.indexOf('for the past – let us accept') >= 0,
@@ -50,36 +53,41 @@ const path = require('path');
   // is attributed to the named speaker and those are another author's words
   assert.ok(chars.jfkOwnWordsOnly, 'the Kennedy quote must contain only his own words');
 
+  // Identity key is the TEXT, not who/where: several entries legitimately share a citation now
+  // (two passages from the Farewell Address, two from Truman's 1952 citizenship address), so
+  // keying on `where` would read two genuinely different quotes as one repeat.
   // dealing: fewer readers than quotes -> every reader served, all distinct
   const four = await page.evaluate(function () {
     var readers = [{}, {}, {}, {}];
     var n = window.EVQuotes.deal(readers);
-    var got = readers.map(function (r) { return r.quote ? r.quote.who + '|' + r.quote.where : null; });
+    var got = readers.map(function (r) { return r.quote ? r.quote.text : null; });
     return { n: n, got: got, unique: new Set(got).size, served: got.filter(Boolean).length };
   });
   assert.strictEqual(four.n, 4, 'should report 4 dealt');
   assert.strictEqual(four.served, 4, 'all 4 readers should be served');
   assert.strictEqual(four.unique, 4, 'no reader may share a quote');
 
-  // more readers than quotes -> exactly pool-size served, the rest left null
-  const ten = await page.evaluate(function () {
-    var readers = []; for (var i = 0; i < 10; i++) readers.push({});
+  // more readers than quotes -> exactly pool-size served, the rest left null. Reader count has to
+  // stay ahead of the pool for this to exercise anything; it was 10 against a pool of 7.
+  const over = await page.evaluate(function () {
+    var pool = window.EVQuotes.QUOTES.length;
+    var readers = []; for (var i = 0; i < pool + 6; i++) readers.push({});
     var n = window.EVQuotes.deal(readers);
     var served = readers.filter(function (r) { return r.quote; });
-    var keys = served.map(function (r) { return r.quote.where; });
-    return { n: n, served: served.length, unique: new Set(keys).size };
+    var keys = served.map(function (r) { return r.quote.text; });
+    return { pool: pool, n: n, served: served.length, unique: new Set(keys).size };
   });
-  assert.strictEqual(ten.n, 7, 'only 7 quotes exist to deal');
-  assert.strictEqual(ten.served, 7);
-  assert.strictEqual(ten.unique, 7, 'no repeats even when readers outnumber quotes');
+  assert.strictEqual(over.n, over.pool, 'only ' + over.pool + ' quotes exist to deal');
+  assert.strictEqual(over.served, over.pool);
+  assert.strictEqual(over.unique, over.pool, 'no repeats even when readers outnumber quotes');
 
-  // dealing is randomised: the same 7 readers should not always land in the same order
+  // dealing is randomised: the same readers should not always land in the same order
   const varies = await page.evaluate(function () {
     var seen = {};
     for (var trial = 0; trial < 40; trial++) {
       var readers = []; for (var i = 0; i < 7; i++) readers.push({});
       window.EVQuotes.deal(readers);
-      seen[readers.map(function (r) { return r.quote.where; }).join('>')] = 1;
+      seen[readers.map(function (r) { return r.quote.text; }).join('>')] = 1;
     }
     return Object.keys(seen).length;
   });
