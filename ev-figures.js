@@ -1273,6 +1273,115 @@
       e._phSX = cr.left + w / 2; e._phFY = cr.top + h;       // click hitbox anchor (screen coords)
     }
 
+    // ── SEATED READER. Owns every non-phone 'read' seat, whether or not the quote pool
+    //    reached him.
+    //    With a quote: hover → he lifts his head off the page but keeps hold of the book;
+    //    click → he sits up, lowers the book into his lap and a speech bubble opens with his
+    //    quote, the speaker's name linking to the source. He does NOT turn — `flip` stays as
+    //    cast, so he is never spun round to face away from the note card he's sitting on.
+    //    Without a quote: hover → the plain hello readers have always given; click → an
+    //    apologetic seated shrug. (With 7 quotes and at most ~5 readers per load, nothing
+    //    reaches that branch in production; it exists for a trimmed pool.) ──
+    var QUOTE_TRANS = 0.5, QUOTE_SHRUG = 2.6, QUOTE_GLANCE = 0.35;
+
+    // hover: same reading hold, head raised off the page
+    function quoteGlance(t) {
+      var p = A.read.frame(t);
+      var br = Math.sin(t * 0.28 * Math.PI * 2);
+      p.hunch = -(14 + br * 2);              // partly uncurled, still leaning in
+      p.headTilt = 6 + Math.sin(t * 0.4 * Math.PI * 2) * 3;
+      return p;
+    }
+    // settled: sat up, book down in the lap, looking up and out
+    function quoteHold(t) {
+      var p = Object.assign({}, R.REST);
+      var br = Math.sin(t * 0.26 * Math.PI * 2);
+      p.lean = 2;
+      p.hunch = -(4 + br * 2);
+      p.bob = br * 1.2;
+      p.headTilt = 9 + Math.sin(t * 0.32 * Math.PI * 2) * 3;
+      p.armRU = 70 + br;  p.armRF = 92 + br * 3;   // hands low and central: the book
+      p.armLU = 52 - br;  p.armLF = 78 + br * 2;   // rides the hand midpoint into his lap
+      p.legRU = 78; p.legRF = 11;
+      p.legLU = 70; p.legLF = 5;
+      return p;
+    }
+    // "sorry, nothing here" — shrug arms and head grafted onto the seated legs
+    function quoteShrugSeat(t) {
+      var p = Object.assign({}, R.REST);
+      var c = ((t % 3.5) + 3.5) % 3.5;
+      var sh = Math.min(1, Math.max(0, c / 0.5)) * Math.min(1, Math.max(0, (2.2 - c) / 0.6));
+      p.lean = 2;
+      p.bob = 1 - sh * 3;
+      p.hunch = -6 - sh * 4;
+      p.headTilt = 4 + Math.sin(t * 0.2 * Math.PI * 2) * 4 + sh * 12;
+      p.armRU = 40 + sh * 34;  p.armRF = 36 + sh * 120;
+      p.armLU = -18 - sh * 30; p.armLF = -14 - sh * 120;
+      p.legRU = 78; p.legRF = 10;
+      p.legLU = 70; p.legLF = 4;
+      return p;
+    }
+
+    function drawReader(e, ctx, w, h, tt, col, dt, cr) {
+      if (e.qs == null) { e.qs = 'read'; e.qsT = 0; e.qGlance = 0; e.qWave = 0; e.qh = null; }
+      e.qsT += dt;
+      var seatY = h - 42, flip = e.spec.x > 0.5;
+      var pose, book = true, u;
+
+      // same hover box the generic hover-greet uses, so the feel matches the rest of the cast
+      var hovering = mx > -9000 && Math.abs(mx - (cr.left + w / 2)) < 36 &&
+                     my > cr.top + h - 92 && my < cr.top + h + 6;
+
+      if (e.qs === 'read') {
+        if (e.spec.quote) {
+          e.qWave = 0;
+          e.qGlance += (hovering ? dt : -dt) / QUOTE_GLANCE;
+          if (e.qGlance < 0) e.qGlance = 0;
+          if (e.qGlance > 1) e.qGlance = 1;
+          pose = e.qGlance > 0
+            ? lerpPose(A.read.frame(tt), quoteGlance(tt), smooth01(e.qGlance))
+            : A.read.frame(tt);
+        } else if (hovering || e.qWave > 0) {
+          // nothing to say: the plain seated hello, book down while he waves
+          e.qWave += dt;
+          if (!hovering && e.qWave > 2.2) e.qWave = 0;
+          if (e.qWave > 0) { pose = A.greetseat.frame(e.qWave, e._wave); book = false; }
+          else { pose = A.read.frame(tt); }
+        } else {
+          pose = A.read.frame(tt);
+        }
+      } else if (e.qs === 'lookup') {
+        u = smooth01(Math.min(1, e.qsT / QUOTE_TRANS));
+        pose = lerpPose(A.read.frame(tt), quoteHold(tt), u);
+        if (e.qsT >= QUOTE_TRANS) {
+          e.qs = 'hold'; e.qsT = 0;
+          var sx = window.scrollX || window.pageXOffset || 0;
+          var sy = window.scrollY || window.pageYOffset || 0;
+          // head top in DOCUMENT coords: 128px of body plus the head radius, at scale S
+          e.qh = window.EVQuotes.open({
+            headX: cr.left + sx + w / 2,
+            headY: cr.top + sy + (h - 42) - (128 + CFG.R) * S,
+            tone: col,
+            quote: e.spec.quote
+          });
+        }
+      } else if (e.qs === 'hold') {
+        pose = quoteHold(tt);
+        if (e.qh) e.qh.setHeld(hovering);   // hovering HIM pauses his bubble's timer too
+      } else if (e.qs === 'resume') {
+        u = smooth01(Math.min(1, e.qsT / QUOTE_TRANS));
+        pose = lerpPose(quoteHold(tt), A.read.frame(tt), u);
+        if (e.qsT >= QUOTE_TRANS) { e.qs = 'read'; e.qsT = 0; e.qGlance = 0; }
+      } else {                              // 'shrug'
+        pose = quoteShrugSeat(e.qsT);
+        book = false;
+        if (e.qsT >= QUOTE_SHRUG) { e.qs = 'read'; e.qsT = 0; }
+      }
+
+      drawFig(ctx, w / 2, seatY, S, flip, pose, { color: col, book: book });
+      e._qSX = cr.left + w / 2; e._qFY = cr.top + h;   // click hitbox anchor (screen coords)
+    }
+
     // ── BALANCER (a stand Bobit balancing on one foot): teeters on his right foot, flinging an arm
     //    up to steady himself. Hover him → he waves back one-handed (still on one foot), windmills
     //    both arms once, loses it and collapses, then climbs back up and rebalances. Every pose is
@@ -1747,6 +1856,7 @@
         }
         if (spec.mode === 'seat') {
           if (spec.phone) { drawPhoneSeat(e, ctx, w, h, tt, col, dt); return; }
+          if (spec.anim === 'read') { drawReader(e, ctx, w, h, tt, col, dt, cr); return; }
           var animSe = e.greet ? A.greetseat : A[spec.anim];
           var ptSe = e.greet ? e.greet : tt;
           var seatY = h - 42;   // matches the seat line set in reposition(); leaves room for dangling legs
@@ -2044,6 +2154,9 @@
     window.addEventListener('resize', reposition);
 
     // opt-in debug handle (no effect unless the page is loaded with #figdebug)
-    if (location.hash === '#figdebug') window.__evFigDebug = { entries: entries, footWalk: footWalk, footStand: footStand };
+    if (location.hash === '#figdebug') window.__evFigDebug = {
+      entries: entries, footWalk: footWalk, footStand: footStand,
+      quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat
+    };
   });
 })();
