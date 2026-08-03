@@ -137,7 +137,13 @@
     // vanishes, everyone else freezes for a beat and then bolts off-screen. The page stays
     // empty until reload.
     var POOF_HOLD = 3.0, POOF_BURST = 0.6, POOF_STUN = 1.0;
-    var POOF = { phase: 'idle', t: 0, victim: null, armed: false, sx: 0, sy: 0 };
+    // fx/fy: where the press landed, as a FRACTION of the victim's canvas rect. The smoke is
+    // re-projected through his live rect every frame, so it sits on the figure the user actually
+    // grabbed instead of the canvas centre — most modes (patrol, cartwheel, kite, paddlepair,
+    // yoyo, dogfetch) draw well off-centre, so the centre could be hundreds of px of blank page
+    // away from him. Fractions rather than pixels so a canvas resize can't strand the cloud.
+    // 0.5 / 1.0 (centre, floor) is the fallback when the phase is driven directly, e.g. by tests.
+    var POOF = { phase: 'idle', t: 0, victim: null, armed: false, sx: 0, sy: 0, fx: 0.5, fy: 1 };
 
     // Which Bobit is under this point? The canvases are pointer-events:none and only two modes
     // bother to store a hitbox, so rather than add one to all fourteen we ask the pixels:
@@ -164,9 +170,18 @@
       return null;
     }
 
-    function poofStart(e) {
+    function poofStart(e, px, py) {
       if (POOF.phase !== 'idle' || !e) return;
       POOF.phase = 'holding'; POOF.t = 0; POOF.victim = e;
+      POOF.vx = null; POOF.vy = null;
+      POOF.fx = 0.5; POOF.fy = 1;
+      if (px != null) {
+        var r = e.c.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          POOF.fx = (px - r.left) / r.width;
+          POOF.fy = (py - r.top) / r.height;
+        }
+      }
       document.body.classList.add('ev-poofing');   // suppresses the touch callout while holding
     }
     function poofCancel() {
@@ -180,7 +195,7 @@
       if (ev.button !== 2) { POOF.armed = false; return; }
       var e = bobitAt(ev.clientX, ev.clientY);
       POOF.armed = !!e;                            // gates contextmenu suppression
-      if (e) poofStart(e);
+      if (e) poofStart(e, ev.clientX, ev.clientY);
     }, true);
     // Firefox fires contextmenu on mousedown (mid-hold), Chrome on mouseup (as the gag lands),
     // so suppression is keyed off `armed` rather than the phase. Cleared here so a later
@@ -207,7 +222,7 @@
       var e = bobitAt(t.clientX, t.clientY);
       POOF.armed = !!e;
       POOF.sx = t.clientX; POOF.sy = t.clientY;
-      if (e) poofStart(e);
+      if (e) poofStart(e, t.clientX, t.clientY);
     }, { passive: true });
     document.addEventListener('touchmove', function (ev) {
       if (POOF.phase !== 'holding' || !ev.touches.length) return;
@@ -238,16 +253,28 @@
     }
 
     function poofDrawSmoke() {
-      if (!_poofC && POOF.phase !== 'holding' && POOF.phase !== 'poof' && POOF.phase !== 'fizzle') return;
+      var ph = POOF.phase;
+      if (ph !== 'holding' && ph !== 'poof' && ph !== 'fizzle') {
+        // Nothing will ever paint here again this phase: drop the overlay rather than leave a
+        // fixed full-viewport canvas in the DOM being clearRect-ed ~50x a second forever. A
+        // later hold recreates it. ("~6s cleared: nothing left painting.")
+        if (_poofC) {
+          if (_poofC.parentNode) _poofC.parentNode.removeChild(_poofC);
+          _poofC = null;
+        }
+        return;
+      }
       var c = poofOverlay(), g = c.getContext('2d');
       g.setTransform(DPR, 0, 0, DPR, 0, 0);
       g.clearRect(0, 0, c.__w, c.__h);
 
-      // follow the victim while he is still there, then hold his last spot
+      // Follow the victim while he is still there, then hold his last spot. The anchor is the
+      // press point re-projected through his LIVE rect, so it stays on him rather than on the
+      // middle of a canvas he may not be standing in the middle of.
       if (POOF.victim && POOF.victim.c.parentNode) {
         var r = POOF.victim.c.getBoundingClientRect();
-        POOF.vx = r.left + r.width / 2;
-        POOF.vy = r.bottom - 8;
+        POOF.vx = r.left + POOF.fx * r.width;
+        POOF.vy = r.top + POOF.fy * r.height;
       }
       if (POOF.vx == null) return;
 
@@ -293,9 +320,6 @@
         if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
         return;
       }
-      var sx = window.scrollX || window.pageXOffset || 0;
-      var sy = window.scrollY || window.pageYOffset || 0;
-      var floorDoc = cr.bottom + sy - 6;                 // keep his feet where they were
       var ar = e.el.getBoundingClientRect();             // his perch
       // cr.left + e.w/2 only holds for canvas-centred modes (stand/seat/...). patrol walks,
       // crosser, paddlepair, cartwheel, dogfetch, kite and yoyo all draw off-centre, so ask
@@ -326,24 +350,36 @@
       var newW = fitW(document.documentElement.clientWidth);
       var newH = e.h + FLEE_DROP + 40;                   // room to fall below the ledge
       sizeCanvas(e, newW, newH);
-      var newLeft = fitLeft(sx, e.w, sx);
+      // A fleeing canvas goes position:FIXED, i.e. viewport coordinates instead of document
+      // ones. At rest these canvases are absolute and reposition() re-fits them on every resize,
+      // but a fleeing one must be left alone (a full reposition() would yank the widened canvas
+      // out from under the run), so an absolute viewport-wide canvas survives a shrink at its old
+      // width and hands the whole PAGE a horizontal scrollbar — a phone rotating landscape ->
+      // portrait mid-exodus did exactly that. Fixed elements contribute nothing to the document's
+      // scrollable area, so the flee geometry can stay frozen and still never overflow, at any
+      // viewport, at any scroll position. Trade-off: a scroll during the ~2-6s run no longer
+      // carries the runners with it. Nobody is tracking one figure in a stampede, and they are
+      // sprinting off-screen regardless. fitW/fitLeft still apply, so he starts on-screen.
+      e.c.style.position = 'fixed';
+      var newLeft = fitLeft(0, e.w, 0);                  // viewport coords now, so sx drops out
       e.c.style.left = newLeft + 'px';
-      e.c.style.top = (floorDoc - oldFloor) + 'px';     // floor line stays exactly where it was; headroom above it is unchanged, so all of FLEE_DROP+40 lands below it
+      e.c.style.top = (cr.bottom - 6 - oldFloor) + 'px'; // floor line stays exactly where it was on screen; headroom above it is unchanged, so all of FLEE_DROP+40 lands below it
 
       e.fl = 'run'; e.flT = 0;
-      e.flX = figScreenX - newLeft + sx;                 // canvas-local x
+      e.flX = figScreenX - newLeft;                      // canvas-local x
       e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
       e.flFloor = oldFloor;                              // canvas-local floor line
-      e.flLedgeL = ar.left + sx - newLeft;               // perch ends, canvas-local
-      e.flLedgeR = ar.right + sx - newLeft;
+      e.flLedgeL = ar.left - newLeft;                    // perch ends, canvas-local
+      e.flLedgeR = ar.right - newLeft;
       e.flSeed = (e.ci % 7) + 1;
       e.flYOff = 0;
 
       // The dog bolts too, as himself rather than as a stick figure — he already has a run
       // pose. Same direction as his owner, a shade faster, which is both true to a dog and
-      // funnier. dogX is canvas-local and survives the resize since the left edge moved to sx.
+      // funnier. dogX is canvas-local, so it is re-based onto the new (wider, fixed) canvas the
+      // same way the runner's own flX is.
       if (e.spec.mode === 'dogfetch' && e.dogX != null) {
-        e.flDog = { x: e.dogX + (cr.left + sx - newLeft), dir: e.flDir };
+        e.flDog = { x: e.dogX + (cr.left - newLeft), dir: e.flDir };
       }
     }
 
@@ -370,7 +406,7 @@
 
     // Draw one fleeing figure. Sub-machine: run -> (drop -> heap -> getup -> limp) if his perch
     // runs out before he reaches a screen edge.
-    function drawFlee(e, ctx, w, h, tt, col, dt) {
+    function drawFlee(e, ctx, w, col, dt) {
       e.flT += dt;
       var pose, rot = 0, yOff = e.flYOff || 0;
 
@@ -423,8 +459,7 @@
       }
     }
 
-    // Advance the phase machine. Called once per frame from tick(); the visual consequences are
-    // added in later tasks, this only moves the phases along.
+    // Advance the phase machine. Called once per frame from tick().
     function poofTick(dt) {
       if (POOF.phase === 'idle' || POOF.phase === 'cleared') return;
       POOF.t += dt;
@@ -434,10 +469,18 @@
           document.body.classList.remove('ev-poofing');
           // freeze his last position for the burst, then take him off the page
           var vr = POOF.victim.c.getBoundingClientRect();
-          POOF.vx = vr.left + vr.width / 2; POOF.vy = vr.bottom - 8;
+          POOF.vx = vr.left + POOF.fx * vr.width;
+          POOF.vy = vr.top + POOF.fy * vr.height;
           POOF.victim.gone = true;
           if (POOF.victim.c.parentNode) POOF.victim.c.parentNode.removeChild(POOF.victim.c);
-          if (window.EVQuotes) window.EVQuotes.closeAll();
+          if (window.EVQuotes) {
+            window.EVQuotes.closeAll();
+            // same reset as the click/Escape dismiss paths: a closed bubble must not leave a
+            // dangling handle on a reader, or he never goes back to his book
+            entries.forEach(function (e) {
+              if (e.qh) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
+            });
+          }
         }
       } else if (POOF.phase === 'fizzle') {
         if (POOF.t >= 0.4) { POOF.phase = 'idle'; POOF.t = 0; POOF.victim = null; }
@@ -721,7 +764,10 @@
       var sy = window.scrollY || window.pageYOffset;
       var sx = window.scrollX || window.pageXOffset;
       entries.forEach(function (e) {
-        if (e.gone || e.fl) return;   // fleeing: leave the widened flee canvas alone, don't reset to at-rest geometry
+        // fleeing: leave the widened flee canvas alone, don't reset to at-rest geometry. Safe to
+        // skip even on a mid-exodus viewport shrink because poofArmFlee switches the canvas to
+        // position:fixed, so a canvas left wider than the new viewport adds no page overflow.
+        if (e.gone || e.fl) return;
         var spec = e.spec;
         if (spec.mode === 'why') { sizeCanvas(e, 190, 215); return; }
         if (spec.mode === 'banner') { sizeCanvas(e, 120, 96); return; }
@@ -2122,10 +2168,14 @@
         // (via e.lt) and every scene machine, which all advance straight off dt: e.dfT, e.cwT,
         // e.ktT, e.qsT. Extending the existing `e.lt += dt * (...)` gate would freeze only the
         // gaits and leave the dog still fetching while everyone else stood still.
+        // Deliberate: this is computed BEFORE the `why` branch, so the three `why` content
+        // figures freeze for the 1s stun too, even though they are excluded from the gag
+        // otherwise. The whole room going still for a beat reads better than content figures
+        // bobbing on while every inhabitant is rooted to the spot. They resume afterwards.
         var dt = (POOF.phase === 'stunned') ? 0 : dtFrame;
         if (e.fl && spec.mode !== 'why') {
           ctx.clearRect(0, 0, w, h);
-          drawFlee(e, ctx, w, h, e.lt + e.phase, figColor(spec.tone != null ? spec.tone : e.ci), dt);
+          drawFlee(e, ctx, w, figColor(spec.tone != null ? spec.tone : e.ci), dt);
           return;
         }
         if (!w) return;

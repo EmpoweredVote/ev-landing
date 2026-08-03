@@ -150,6 +150,19 @@ async function runResize(browser) {
   await page.setViewportSize({ width: 500, height: 900 });
   await page.waitForTimeout(150);
 
+  // A shrink mid-exodus must not hand the page a horizontal scrollbar. reposition() skips
+  // fleeing entries (a full re-fit would yank the widened canvas out from under the run), so a
+  // viewport-wide flee canvas outlives the shrink at its old width — 900 -> 360 measured
+  // scrollWidth 896 vs clientWidth 360. Avoiding horizontal page scroll is a hard constraint
+  // (the bug fixed on 2026-08-02), and a phone rotating landscape -> portrait mid-flee is the
+  // real trigger.
+  const shrunk = await page.evaluate(function () {
+    return { scrollW: document.documentElement.scrollWidth, clientW: document.documentElement.clientWidth };
+  });
+  assert.ok(shrunk.scrollW <= shrunk.clientW,
+    'resize mid-flee: shrinking the viewport gave the page horizontal scroll (scrollWidth ' +
+    shrunk.scrollW + ' > clientWidth ' + shrunk.clientW + ')');
+
   const after = await page.evaluate(function (idxs) {
     var d = window.__evFigDebug;
     return idxs.map(function (i) {

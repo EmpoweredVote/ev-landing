@@ -53,7 +53,7 @@ page has cleared does nothing.
 
 | t | phase | what happens |
 |---|---|---|
-| 0 → 3.0s | `holding` | smoke wisps gather at his feet and thicken until they nearly hide him. **He carries on doing whatever he was doing** — no pose change. |
+| 0 → 3.0s | `holding` | smoke wisps gather around the point he was grabbed and thicken until they nearly hide him. **He carries on doing whatever he was doing** — no pose change. |
 | 3.0s | `poof` | the cloud bursts outward and fades over 0.6s. He is gone; his canvas is removed once the cloud clears. Any open quote bubble is closed. |
 | 3.0 → 4.0s | `stunned` | every other Bobit freezes mid-pose, with one small startle jolt so it reads as shock rather than a paused animation. |
 | 4.0s → | `fleeing` | each remaining Bobit runs for whichever screen edge is nearer, arms flailing overhead. Removed as he leaves the viewport. |
@@ -104,7 +104,10 @@ landing on the ground in front of it.
 Everything in the cast **except the three `why` figures** (`.why-grid .why-item .why-icon`, animations
 `spent` / `notlistening` / `witsend`). Those are content, not inhabitants: the code hides an `<img>` and
 draws them in its place, so if they fled the section would be left with three empty holes. They are
-excluded completely — they do not flee, and right-clicking one does nothing at all.
+excluded completely — they do not flee, and right-clicking one does nothing at all. **One
+deliberate exception:** they do freeze for the 1s `stunned` beat along with everyone else, because
+the whole room going still for a moment reads better than content figures bobbing on while every
+inhabitant is rooted to the spot. They resume normally afterwards.
 
 **Each entry sends one runner.** A two-figure scene — the beam pair, the paddleball pair, the
 cartwheeler and his helper — leaves as a single fleeing figure rather than scattering separately. An
