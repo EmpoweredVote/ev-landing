@@ -338,6 +338,13 @@
       e.flLedgeR = ar.right + sx - newLeft;
       e.flSeed = (e.ci % 7) + 1;
       e.flYOff = 0;
+
+      // The dog bolts too, as himself rather than as a stick figure — he already has a run
+      // pose. Same direction as his owner, a shade faster, which is both true to a dog and
+      // funnier. dogX is canvas-local and survives the resize since the left edge moved to sx.
+      if (e.spec.mode === 'dogfetch' && e.dogX != null) {
+        e.flDog = { x: e.dogX + (cr.left + sx - newLeft), dir: e.flDir };
+      }
     }
 
     // HEAP_YOFF exists because drawFig's `rot` pivots about the figure's FEET, so tipping him
@@ -403,7 +410,14 @@
       R.drawShadow(ctx, e.flX, groundY, 15, 'rgba(127,127,127,0.18)');
       drawFig(ctx, e.flX, groundY, S, e.flDir < 0, pose, { color: col, rot: rot });
 
-      if (e.flX < -60 || e.flX > w + 60) {
+      if (e.flDog) {
+        e.flDog.x += FLEE_SPEED * 1.25 * e.flDog.dir * dt;
+        var dogCol = figColor(e.spec.tone2 != null ? e.spec.tone2 : 5);
+        drawDog(ctx, e.flDog.x, e.flFloor, e.flDog.dir, dogCol, 'run', e.flT * 1.4, {});
+        if (e.flDog.x < -80 || e.flDog.x > w + 80) e.flDog = null;
+      }
+
+      if ((e.flX < -60 || e.flX > w + 60) && !e.flDog) {
         e.gone = true;
         if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
       }
