@@ -314,6 +314,31 @@ function drawBook(ctx, x, y, color, rot) {
   ctx.restore();
 }
 
+// A puff of smoke: soft grey blobs scattered around (x, y), growing with `spread` and fading
+// with `alpha`. One function serves both the slow build-up under a doomed Bobit and the burst
+// when he goes — only spread and alpha differ. The scatter is derived from `seed` rather than
+// Math.random so a given frame is reproducible in tests; `t` (seconds) drifts the puffs so the
+// cloud churns instead of sitting still. Grey #8A8F98 reads against both themes' grounds.
+function drawSmoke(ctx, x, y, spread, alpha, seed, t) {
+  if (!(alpha > 0) || !(spread > 0)) return;
+  const N = 9;
+  ctx.save();
+  ctx.fillStyle = "#8A8F98";
+  for (let i = 0; i < N; i++) {
+    const ang = ((seed * 37 + i * 61) % 360) * D;          // deterministic angle
+    const rad = 0.35 + (((seed * 13 + i * 29) % 100) / 100) * 0.65;
+    const drift = Math.sin(t * (0.7 + i * 0.13) + i) * spread * 0.14;
+    const px = x + Math.cos(ang) * spread * rad + drift;
+    const py = y - Math.abs(Math.sin(ang)) * spread * rad * 0.85 - spread * 0.2;
+    const pr = spread * (0.26 + rad * 0.3);
+    ctx.globalAlpha = Math.min(1, alpha) * (0.4 + rad * 0.45);
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawPhone(ctx, x, y, color, rot) {
   ctx.save();
   ctx.translate(x, y);
@@ -1188,6 +1213,6 @@ function drawScene(c) {
 
 
 // ── classic-script global (loaded once via <script src>) ──
-window.LeremyRig = { CFG, REST, ANIMATIONS, ORDER, computePose, draw, drawShadow, drawSkeleton, attach, setAnim, setPlaying, setSpeed, setSkel };
+window.LeremyRig = { CFG, REST, ANIMATIONS, ORDER, computePose, draw, drawShadow, drawSmoke, drawSkeleton, attach, setAnim, setPlaying, setSpeed, setSkel };
 
 })();
