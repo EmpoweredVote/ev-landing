@@ -75,5 +75,103 @@
     return n;
   }
 
-  window.EVQuotes = { QUOTES: QUOTES, deal: deal };
+  var live = [];   // open bubble handles
+
+  function place(h) {
+    var el = h.el;
+    var w = el.offsetWidth, hh = el.offsetHeight;
+    var sx = window.scrollX || window.pageXOffset || 0;
+    var docW = document.documentElement.clientWidth;
+    var left = h.headX - w / 2;
+    var maxL = sx + docW - w - 8;
+    if (left > maxL) left = maxL;
+    if (left < sx + 8) left = sx + 8;
+    el.style.left = left + "px";
+    el.style.top = (h.headY - hh - 14) + "px";
+    // the tail slides along the bottom edge so it keeps pointing at his head even
+    // when the bubble has been clamped sideways; kept clear of the rounded corners
+    var tx = h.headX - left;
+    if (tx < 18) tx = 18;
+    if (tx > w - 18) tx = w - 18;
+    h.tail.style.left = (tx - 11) + "px";
+    h.tailIn.style.left = (tx - 8) + "px";
+  }
+
+  function open(anchor) {
+    var el = document.createElement("div");
+    el.className = "ev-quote";
+    el.setAttribute("role", "note");
+    el.style.setProperty("--tone", anchor.tone);
+
+    var q = document.createElement("q");
+    q.textContent = anchor.quote.text;
+
+    var at = document.createElement("div");
+    at.className = "attrib";
+    at.appendChild(document.createTextNode("— "));
+    var a = document.createElement("a");
+    a.href = anchor.quote.href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.title = "Open the source";
+    a.textContent = anchor.quote.who;
+    at.appendChild(a);
+    var where = document.createElement("span");
+    where.className = "where";
+    where.textContent = anchor.quote.where;
+    at.appendChild(where);
+
+    var tail = document.createElement("span"); tail.className = "tail";
+    var tailIn = document.createElement("span"); tailIn.className = "tail-in";
+
+    el.appendChild(q);
+    el.appendChild(at);
+    el.appendChild(tail);
+    el.appendChild(tailIn);
+
+    var h = {
+      el: el, tail: tail, tailIn: tailIn,
+      headX: anchor.headX, headY: anchor.headY,
+      quote: anchor.quote,
+      life: 0, held: false, pointerIn: false, focusIn: false,
+      setHeld: function (v) { h.held = !!v; }
+    };
+
+    // a click inside the bubble must not read as a click-off-to-dismiss
+    el.addEventListener("click", function (ev) { ev.stopPropagation(); });
+    el.addEventListener("mouseenter", function () { h.pointerIn = true; });
+    el.addEventListener("mouseleave", function () { h.pointerIn = false; });
+    el.addEventListener("focusin", function () { h.focusIn = true; });
+    el.addEventListener("focusout", function () { h.focusIn = false; });
+
+    document.body.appendChild(el);
+    place(h);
+    live.push(h);
+    // let layout settle so the fade actually animates from opacity 0
+    window.requestAnimationFrame(function () { el.classList.add("in"); });
+    return h;
+  }
+
+  function close(h) {
+    var i = live.indexOf(h);
+    if (i < 0) return;               // already closing; never double-remove
+    live.splice(i, 1);
+    h.el.classList.remove("in");
+    window.setTimeout(function () {
+      if (h.el.parentNode) h.el.parentNode.removeChild(h.el);
+    }, 260);
+  }
+
+  function closeAll() {
+    var all = live.slice();
+    for (var i = 0; i < all.length; i++) close(all[i]);
+    return all;
+  }
+
+  function openCount() { return live.length; }
+
+  window.EVQuotes = {
+    QUOTES: QUOTES, deal: deal,
+    open: open, close: close, closeAll: closeAll, openCount: openCount
+  };
 })();

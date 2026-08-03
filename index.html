@@ -1071,6 +1071,68 @@
             .banner-logo img { height: 26px; }
             #menu-username { max-width: 150px; }
         }
+        /* ── Quote bubbles (a reading Bobit you clicked). The figure canvases are
+           pointer-events:none, so the bubble is real DOM in order to hold a link. ── */
+        .ev-quote {
+            position: absolute;
+            z-index: 70;
+            box-sizing: border-box;
+            width: 300px;
+            max-width: calc(100vw - 16px);
+            padding: 15px 17px;
+            background: var(--card);
+            border: 2px solid var(--tone, var(--teal));
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-md);
+            color: var(--heading);
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity .18s ease, transform .18s ease;
+            pointer-events: auto;
+        }
+        .ev-quote.in { opacity: 1; transform: translateY(0); }
+        .ev-quote q {
+            display: block;
+            quotes: "\201C" "\201D";
+            font-size: 0.9rem;
+            line-height: 1.55;
+            font-style: italic;
+        }
+        .ev-quote .attrib { margin-top: 11px; font-size: 0.8rem; }
+        .ev-quote .attrib a {
+            color: var(--tone, var(--teal));
+            font-weight: 700;
+            font-style: normal;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .ev-quote .attrib .where {
+            display: block;
+            color: var(--muted);
+            font-size: 0.74rem;
+            margin-top: 2px;
+        }
+        /* tail: stacked triangles so the 2px outline reads as one continuous line */
+        .ev-quote .tail, .ev-quote .tail-in {
+            position: absolute;
+            width: 0; height: 0;
+            border-style: solid;
+            border-color: transparent;
+            border-bottom-width: 0;
+        }
+        .ev-quote .tail {
+            bottom: -14px;
+            border-width: 14px 11px 0;
+            border-top-color: var(--tone, var(--teal));
+        }
+        .ev-quote .tail-in {
+            bottom: -11px;
+            border-width: 11px 8px 0;
+            border-top-color: var(--card);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .ev-quote { transition: none; }
+        }
     </style>
     <script>
         !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Mi Ri init Vi Gi Rr Wi Ji Bi capture calculateEventProperties tn register register_once register_for_session unregister unregister_for_session an getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync un identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty nn Xi createPersonProfile setInternalOrTestUser sn Hi cn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Ki debug Lr rn getPageViewId captureTraceFeedback captureTraceMetric Di".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
@@ -2002,8 +2064,10 @@
             }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         })();
     </script>
-    <!-- Stick-figure inhabitants (procedural skeletal rig). Order matters: engine first. -->
+    <!-- Stick-figure inhabitants (procedural skeletal rig). Order matters: engine first,
+         then the quote pool the readers draw from, then the overlay that casts them. -->
     <script src="leremy-rig.js"></script>
+    <script src="ev-quotes.js"></script>
     <script src="ev-figures.js"></script>
 </body>
 </html>
