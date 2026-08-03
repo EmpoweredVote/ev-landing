@@ -339,16 +339,69 @@
       e.flYOff = 0;
     }
 
-    // Draw one fleeing figure. `run` is all this task needs; task 6 adds the pratfall.
+    // HEAP_YOFF exists because drawFig's `rot` pivots about the figure's FEET, so tipping him
+    // ~83deg would swing him around that point rather than lay him down. The cartwheel gag
+    // solves the same problem with its `lieY`; this is the equivalent nudge.
+    var HEAP_HOLD = 1.0, DROP_SECS = 0.45, GETUP_SECS = 0.9, HEAP_YOFF = 14;
+
+    // He limps off favouring his right leg — same trick as the beam ball-gag's foot-drop: a
+    // stiff knee, a shortened step and a weight-bearing hitch on the injured plant.
+    function limpPose(t, seed) {
+      var p = A.scurry.frame(t * 0.55);
+      var plant = Math.max(0, Math.sin(t * 3.4));
+      p.legRF += 40;                       // knee barely bends
+      p.legRU -= 12;                       // shorter step
+      p.bob += plant * 9;
+      p.lean += plant * 5;
+      p.headTilt = -8 + plant * 6;
+      p.armRU = 40 + Math.sin(t * 2 + seed) * 8;   // arms are down now: the panic became pain
+      p.armRF = 96;
+      p.armLU = -26; p.armLF = -18;
+      return p;
+    }
+
+    // Draw one fleeing figure. Sub-machine: run -> (drop -> heap -> getup -> limp) if his perch
+    // runs out before he reaches a screen edge.
     function drawFlee(e, ctx, w, h, tt, col, dt) {
       e.flT += dt;
+      var pose, rot = 0, yOff = e.flYOff || 0;
+
       if (e.fl === 'run') {
         e.flX += FLEE_SPEED * e.flDir * dt;
+        pose = fleePose(e.flT, e.flSeed);
+        // ran off the end of his perch? then there is nothing under him
+        if (e.flDir > 0 ? (e.flX > e.flLedgeR) : (e.flX < e.flLedgeL)) {
+          e.fl = 'drop'; e.flT = 0;
+        }
+      } else if (e.fl === 'drop') {
+        var k = Math.min(1, e.flT / DROP_SECS);
+        e.flX += FLEE_SPEED * 0.55 * e.flDir * dt;      // carries forward as he falls
+        yOff = FLEE_DROP * k * k;                        // accelerating
+        pose = A.fall.frame(e.flT * 1.6);
+        rot = e.flDir * 0.5 * k;
+        if (k >= 1) { e.fl = 'heap'; e.flT = 0; yOff = FLEE_DROP; }
+      } else if (e.fl === 'heap') {
+        yOff = FLEE_DROP + HEAP_YOFF;                    // lie ON the ground, not pivoted above it
+        pose = cwHeap(e.flT);
+        rot = e.flDir * 1.45 + Math.sin(e.flT * 6) * 0.1;   // lying over, twitching
+        if (e.flT >= HEAP_HOLD) { e.fl = 'getup'; e.flT = 0; }
+      } else if (e.fl === 'getup') {
+        var g = smooth01(Math.min(1, e.flT / GETUP_SECS));
+        yOff = FLEE_DROP + HEAP_YOFF * (1 - g);          // eases back onto his feet as he rises
+        pose = lerpPose(cwHeap(0), A.standstill.frame(0), g);
+        rot = (e.flDir * 1.45) * (1 - g);                // rotates upright, slowly
+        if (e.flT >= GETUP_SECS) { e.fl = 'limp'; e.flT = 0; }
+      } else {                                            // 'limp'
+        yOff = FLEE_DROP;
+        e.flX += FLEE_SPEED * 0.45 * e.flDir * dt;        // about half speed now
+        pose = limpPose(e.flT, e.flSeed);
       }
-      R.drawShadow(ctx, e.flX, e.flFloor + e.flYOff, 15, 'rgba(127,127,127,0.18)');
-      drawFig(ctx, e.flX, e.flFloor + e.flYOff, S, e.flDir < 0, fleePose(e.flT, e.flSeed), { color: col });
-      // gone once he is clear of the canvas, which spans the viewport. 60px comfortably
-      // exceeds the widest figure (~36px at S=0.32) so nobody is culled mid-stride.
+
+      e.flYOff = yOff;
+      var groundY = e.flFloor + yOff;
+      R.drawShadow(ctx, e.flX, groundY, 15, 'rgba(127,127,127,0.18)');
+      drawFig(ctx, e.flX, groundY, S, e.flDir < 0, pose, { color: col, rot: rot });
+
       if (e.flX < -60 || e.flX > w + 60) {
         e.gone = true;
         if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
