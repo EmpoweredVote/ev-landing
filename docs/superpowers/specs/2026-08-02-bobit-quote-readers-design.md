@@ -61,9 +61,11 @@ built. It cannot know whether the pointer is over a *figure* — that is a canva
 from its own hover test, and `tick` pauses when `setHeld(true)` **or** its own pointer/focus state says
 held. Neither module needs to know how the other decides.
 
-**`ev-figures.js` (+~120 lines)** — gains `drawQuoteSeat(e, ctx, w, h, tt, col, dt)`, the pose state
-machine, modelled directly on the existing `drawPhoneSeat`. Adds the reader hit-test to the existing
-document click listener and calls `EVQuotes.deal()` after `buildCast()`.
+**`ev-figures.js` (+~120 lines)** — gains `drawReader(e, ctx, w, h, tt, col, dt, cr)`, the pose state
+machine, modelled directly on the existing `drawPhoneSeat`. It owns **every** non-phone seated reader,
+quote or no quote, including the hover wave quote-less readers have always had — so readers come out of
+the generic `hoverable` set and there is exactly one place that decides how a reader behaves. Adds the
+reader hit-test to the existing document click listener and calls `EVQuotes.deal()` after `buildCast()`.
 
 **`index.html`** — one `<script src="ev-quotes.js">` tag after `ev-figures.js`, and the `.ev-quote`
 CSS in the existing `<style>` block. Bubble *theming* belongs in CSS with the rest of the tokens;
