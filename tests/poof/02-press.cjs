@@ -100,6 +100,8 @@ async function points(page) {
     (document.elementFromPoint(p.hit.x, p.hit.y) || document.body)
       .dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, clientX: p.hit.x, clientY: p.hit.y, bubbles: true }));
   }, pts2);
+  assert.strictEqual(await page.evaluate(function () { return window.__evFigDebug.poof.phase; }), 'holding',
+    'a right-press must start a hold before the release@2.5s cancel can be tested');
   await page.waitForTimeout(2500);
   await page.evaluate(function () {
     document.dispatchEvent(new MouseEvent('mouseup', { button: 2, bubbles: true }));
@@ -109,16 +111,60 @@ async function points(page) {
   assert.ok(afterEarly === 'idle' || afterEarly === 'fizzle',
     'releasing at 2.5s must cancel, got ' + afterEarly);
 
-  // Escape cancels too
+  // Escape cancels too — figures keep animating/repositioning while the clock runs, so re-locate
+  // painted ink now: several seconds have passed since pts2 was captured and that pixel may no
+  // longer be on him
+  pts2 = await points(page);
+  assert.ok(pts2, 'no painted Bobit found to test Escape-cancel against');
   await page.evaluate(function (p) {
     (document.elementFromPoint(p.hit.x, p.hit.y) || document.body)
       .dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, clientX: p.hit.x, clientY: p.hit.y, bubbles: true }));
   }, pts2);
+  assert.strictEqual(await page.evaluate(function () { return window.__evFigDebug.poof.phase; }), 'holding',
+    'a right-press must start a hold before the Escape cancel can be tested');
   await page.waitForTimeout(300);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(900);
   const afterEsc = await page.evaluate(function () { return window.__evFigDebug.poof.phase; });
   assert.ok(afterEsc === 'idle' || afterEsc === 'fizzle', 'Escape must cancel, got ' + afterEsc);
+
+  // window blur cancels too — re-locate again for the same reason
+  pts2 = await points(page);
+  assert.ok(pts2, 'no painted Bobit found to test blur-cancel against');
+  await page.evaluate(function (p) {
+    (document.elementFromPoint(p.hit.x, p.hit.y) || document.body)
+      .dispatchEvent(new MouseEvent('mousedown', { button: 2, buttons: 2, clientX: p.hit.x, clientY: p.hit.y, bubbles: true }));
+  }, pts2);
+  assert.strictEqual(await page.evaluate(function () { return window.__evFigDebug.poof.phase; }), 'holding',
+    'a right-press must start a hold before the window-blur cancel can be tested');
+  await page.evaluate(function () { window.dispatchEvent(new Event('blur')); });
+  await page.waitForTimeout(500);
+  const afterBlur = await page.evaluate(function () { return window.__evFigDebug.poof.phase; });
+  assert.ok(afterBlur === 'idle' || afterBlur === 'fizzle', 'window blur must cancel, got ' + afterBlur);
+
+  // touch: a >10px move cancels too — re-locate again for the same reason. Touch/TouchEvent
+  // construction is unreliable in a desktop-Chromium page without touch emulation enabled, so
+  // this dispatches a plain Event carrying a manually-attached `touches` array of plain
+  // {clientX, clientY} objects — the touchstart/touchmove handlers only ever read
+  // ev.touches.length and ev.touches[0].clientX/clientY, so this is a faithful stand-in.
+  pts2 = await points(page);
+  assert.ok(pts2, 'no painted Bobit found to test touch-move-cancel against');
+  await page.evaluate(function (p) {
+    var start = new Event('touchstart', { bubbles: true });
+    start.touches = [{ clientX: p.hit.x, clientY: p.hit.y }];
+    document.dispatchEvent(start);
+  }, pts2);
+  assert.strictEqual(await page.evaluate(function () { return window.__evFigDebug.poof.phase; }), 'holding',
+    'a touch-hold on a Bobit must start a hold before the >10px-move cancel can be tested');
+  await page.evaluate(function (p) {
+    var move = new Event('touchmove', { bubbles: true });
+    move.touches = [{ clientX: p.hit.x + 20, clientY: p.hit.y }];
+    document.dispatchEvent(move);
+  }, pts2);
+  await page.waitForTimeout(500);
+  const afterTouchMove = await page.evaluate(function () { return window.__evFigDebug.poof.phase; });
+  assert.ok(afterTouchMove === 'idle' || afterTouchMove === 'fizzle',
+    'a >10px touch move must cancel the hold, got ' + afterTouchMove);
 
   // figures keep animating/repositioning while the clock runs, so re-locate painted ink now —
   // several seconds have passed since pts2 was captured and that pixel may no longer be on him
