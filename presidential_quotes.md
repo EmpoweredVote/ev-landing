@@ -22,9 +22,10 @@ the Kennedy page was finally read.
 
 > **Second pass — August 3, 2026: twelve quotes added, pool now 19.** Two more Washington passages
 > from the Farewell Address, two Jefferson, one Madison, two Roosevelt, two Truman, one Eisenhower,
-> one Kennedy, one Reagan. Every link returns HTTP 200 and ten of the twelve were read on the linked
-> page. The same rule was applied throughout: **the entry says what the linked page says**, even where
-> that reads oddly to a modern eye.
+> one Kennedy, one Reagan. Every link returns HTTP 200 and **eleven of the twelve** were read on the
+> linked page — the Wendover draft is the sole exception, below. Eighteen of the pool's nineteen
+> entries have now been read at their source. The same rule was applied throughout: **the entry says
+> what the linked page says**, even where that reads oddly to a modern eye.
 >
 > **Six of the twelve arrived misquoted** — these were supplied in their circulating form and
 > corrected against the source:
