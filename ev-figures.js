@@ -367,6 +367,26 @@
       e.ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     }
 
+    // ── The one place that decides how wide a figure canvas may be and where its left edge
+    //    sits. These canvases are position:absolute in DOCUMENT coordinates, so a single one
+    //    placed past the right edge — or simply wider than the viewport — gives the WHOLE
+    //    PAGE a horizontal scrollbar on a phone.
+    //    This clamp used to be copy-pasted into each mode that happened to need it (vclimb,
+    //    rope, kite, yoyo), which is exactly why every mode added afterwards — stand, seat,
+    //    patrol, paddlepair, cartwheel, dogfetch — silently overflowed, and why the ones that
+    //    DID clamp still overflowed once their canvas was wider than a small phone. Every mode
+    //    goes through these two now; a new mode cannot reintroduce the bug by forgetting to.
+    function fitW(w) {
+      var vw = document.documentElement.clientWidth;
+      return Math.min(w, vw - 8);
+    }
+    function fitLeft(left, w, sx) {
+      var max = sx + document.documentElement.clientWidth - w - 4;
+      if (left > max) left = max;
+      if (left < sx + 4) left = sx + 4;
+      return left;
+    }
+
     function reposition() {
       var sy = window.scrollY || window.pageYOffset;
       var sx = window.scrollX || window.pageXOffset;
@@ -374,27 +394,22 @@
         var spec = e.spec;
         if (spec.mode === 'why') { sizeCanvas(e, 190, 215); return; }
         if (spec.mode === 'banner') { sizeCanvas(e, 120, 96); return; }
-        if (spec.mode === 'crosser') { sizeCanvas(e, window.innerWidth, 110); return; }
+        // innerWidth includes the vertical scrollbar; clientWidth does not, so fitW is what
+        // keeps a full-width canvas from being wider than the space it has
+        if (spec.mode === 'crosser') { sizeCanvas(e, fitW(window.innerWidth), 110); return; }
         var r = e.el.getBoundingClientRect();
         if (spec.mode === 'vclimb') {
           var h = Math.min(300, Math.max(200, r.height));
-          var wV = 150;
-          sizeCanvas(e, wV, h);
-          var leftV = r.right + sx - wV / 2;                                  // centered on the note's right edge
-          var maxLeftV = sx + document.documentElement.clientWidth - wV - 4;  // but never past the viewport (no h-scroll)
-          if (leftV > maxLeftV) leftV = maxLeftV;
-          e.c.style.left = leftV + 'px';
+          sizeCanvas(e, fitW(150), h);
+          var leftV = r.right + sx - e.w / 2;                                 // centered on the note's right edge
+          e.c.style.left = fitLeft(leftV, e.w, sx) + 'px';
           e.c.style.top = (r.top + sy + (r.height - h) / 2) + 'px';
           return;
         }
         if (spec.mode === 'rope') {
-          var wR = 350;                                                       // room for the frame bar + long swing
-          sizeCanvas(e, wR, 300);
+          sizeCanvas(e, fitW(350), 300);                                      // room for the frame bar + long swing
           var leftR = r.right + sx - 220;                                     // pivot (x=250) ~30px right of the video edge (over the chasm)
-          var maxLeftR = sx + document.documentElement.clientWidth - wR - 4;  // never past the viewport (no h-scroll)
-          if (leftR > maxLeftR) leftR = maxLeftR;
-          if (leftR < sx + 4) leftR = sx + 4;
-          e.c.style.left = leftR + 'px';
+          e.c.style.left = fitLeft(leftR, e.w, sx) + 'px';
           // the frame bar (canvas y=46) should hang level with the short "03 / Talks" section bar, not on the video
           if (!e._barEl) e._barEl = document.querySelector('.watch .section-num .bar');
           var barTopY = e._barEl ? (e._barEl.getBoundingClientRect().top + sy) : (r.top + sy - 44);
@@ -402,63 +417,56 @@
           return;
         }
         if (spec.mode === 'paddlepair') {
-          var wPP = 250; sizeCanvas(e, wPP, FIG_H);   // wide enough for two players + a lob between them
+          sizeCanvas(e, fitW(250), FIG_H);   // wide enough for two players + a lob between them
           var edgeYPP = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
-          e.c.style.left = (r.left + sx + r.width * spec.x - wPP / 2) + 'px';
+          e.c.style.left = fitLeft(r.left + sx + r.width * spec.x - e.w / 2, e.w, sx) + 'px';
           e.c.style.top = (edgeYPP - (FIG_H - 6)) + 'px';
           return;
         }
         if (spec.mode === 'cartwheel') {
-          var hCW = 180, wCW = Math.max(360, r.width); sizeCanvas(e, wCW, hCW);   // full-width + headroom for the spin
+          var hCW = 180; sizeCanvas(e, fitW(Math.max(360, r.width)), hCW);   // full-width + headroom for the spin
           var edgeYCW = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
-          e.c.style.left = (r.left + sx) + 'px';
+          e.c.style.left = fitLeft(r.left + sx, e.w, sx) + 'px';
           e.c.style.top = (edgeYCW - (hCW - 6)) + 'px';
           return;
         }
         if (spec.mode === 'dogfetch') {
-          var hDF = 180, wDF = Math.max(360, r.width); sizeCanvas(e, wDF, hDF);   // full-width so the throw can clear the edge
+          var hDF = 180; sizeCanvas(e, fitW(Math.max(360, r.width)), hDF);   // full-width so the throw can clear the edge
           var edgeYDF = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
-          e.c.style.left = (r.left + sx) + 'px';
+          e.c.style.left = fitLeft(r.left + sx, e.w, sx) + 'px';
           e.c.style.top = (edgeYDF - (hDF - 6)) + 'px';
           return;
         }
         if (spec.mode === 'kite') {
-          var wKt = 340, hKt = 350; sizeCanvas(e, wKt, hKt);   // tall + wide so the kite has plenty of sky up-and-downwind
+          var hKt = 350; sizeCanvas(e, fitW(340), hKt);   // tall + wide so the kite has plenty of sky up-and-downwind
           var edgeYKt = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
           var leftKt = r.left + sx + r.width * spec.x - 70;                    // flyer (gx0=70) sits at spec.x; kite reaches up-right
-          var maxLeftKt = sx + document.documentElement.clientWidth - wKt - 4; // never past the viewport (no h-scroll)
-          if (leftKt > maxLeftKt) leftKt = maxLeftKt;
-          if (leftKt < sx + 4) leftKt = sx + 4;
-          e.c.style.left = leftKt + 'px';
+          e.c.style.left = fitLeft(leftKt, e.w, sx) + 'px';
           e.c.style.top = (edgeYKt - (hKt - 6)) + 'px';
           return;
         }
         if (spec.mode === 'yoyo') {
-          var wYo = 210; sizeCanvas(e, wYo, FIG_H);                            // extra width so the "walk the dog" roll has floor to travel
+          sizeCanvas(e, fitW(210), FIG_H);                                     // extra width so the "walk the dog" roll has floor to travel
           var edgeYYo = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
           var leftYo = r.left + sx + r.width * spec.x - 70;                    // player (gx0=70) sits at spec.x; yo-yo rolls to his right
-          var maxLeftYo = sx + document.documentElement.clientWidth - wYo - 4; // never past the viewport (no h-scroll)
-          if (leftYo > maxLeftYo) leftYo = maxLeftYo;
-          if (leftYo < sx + 4) leftYo = sx + 4;
-          e.c.style.left = leftYo + 'px';
+          e.c.style.left = fitLeft(leftYo, e.w, sx) + 'px';
           e.c.style.top = (edgeYYo - (FIG_H - 6)) + 'px';
           return;
         }
         if (spec.mode === 'seat') {
           // taller canvas + seat line 42px above the bottom so dangling shins clear the edge
           var hSe = 180;
-          sizeCanvas(e, 190, hSe);
+          sizeCanvas(e, fitW(190), hSe);
           var edgeYSe = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
-          e.c.style.left = (r.left + sx + r.width * spec.x - 95) + 'px';
+          e.c.style.left = fitLeft(r.left + sx + r.width * spec.x - e.w / 2, e.w, sx) + 'px';
           e.c.style.top = (edgeYSe - (hSe - 42)) + 'px';
           return;
         }
         var full = (spec.mode === 'beam' || spec.mode === 'patrol');
-        var w = full ? Math.max(300, r.width) : 190;
-        sizeCanvas(e, w, FIG_H);
+        sizeCanvas(e, fitW(full ? Math.max(300, r.width) : 190), FIG_H);
         var edgeY = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
-        var left = full ? (r.left + sx) : (r.left + sx + r.width * spec.x - w / 2);
-        e.c.style.left = left + 'px';
+        var left = full ? (r.left + sx) : (r.left + sx + r.width * spec.x - e.w / 2);
+        e.c.style.left = fitLeft(left, e.w, sx) + 'px';
         e.c.style.top = (edgeY - (FIG_H - 6)) + 'px';
       });
     }
