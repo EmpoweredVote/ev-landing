@@ -463,11 +463,18 @@
           return;
         }
         var full = (spec.mode === 'beam' || spec.mode === 'patrol');
-        sizeCanvas(e, fitW(full ? Math.max(300, r.width) : 190), FIG_H);
+        // The beam gets a TALLER canvas than everyone else: its light-out gag reaches up to
+        // the 501(c)(3) swatch inside .meta-row, and runLightGag measures that swatch relative
+        // to the CANVAS TOP (swY = rr.top - cr.top), so a swatch above the top goes negative
+        // and the box lofts off-canvas. The hero reserves --crew-clear (92px) below the row and
+        // the row wraps to three lines on a phone, which puts the swatch ~180px above the
+        // crew's floor — well past FIG_H. Extra height is free: transparent, pointer-events:none.
+        var hEdge = (spec.mode === 'beam') ? 240 : FIG_H;
+        sizeCanvas(e, fitW(full ? Math.max(300, r.width) : 190), hEdge);
         var edgeY = (spec.edge === 'bottom' ? r.bottom : r.top) + sy;
         var left = full ? (r.left + sx) : (r.left + sx + r.width * spec.x - e.w / 2);
         e.c.style.left = fitLeft(left, e.w, sx) + 'px';
-        e.c.style.top = (edgeY - (FIG_H - 6)) + 'px';
+        e.c.style.top = (edgeY - (hEdge - 6)) + 'px';
       });
     }
 
@@ -495,7 +502,7 @@
     function runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt) {
       if (!('_swatchEl' in e)) e._swatchEl = document.querySelector('.hero .meta-row .swatch.s-yellow');
       var sw = e._swatchEl;
-      var swX = w * 0.28, swY = 63;                                     // fallback if the swatch can't be measured
+      var swX = w * 0.28, swY = h - 100;                                // fallback if the swatch can't be measured (bottom-relative, so it survives a taller canvas)
       if (sw) { var rr = sw.getBoundingClientRect(); swX = rr.left + rr.width / 2 - cr.left; swY = rr.top + rr.height / 2 - cr.top; }
       var YEL = cssVar('--yellow', '#FED12E'), OFF = '#6E7681';         // lit vs dead-bulb grey
       var speedWalk = 104, speedRun = 150, stopX = swX;   // slower run so the feet don't slide during the box swap

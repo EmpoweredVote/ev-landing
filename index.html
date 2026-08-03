@@ -42,6 +42,15 @@
             --radius-card: 14px;
             --radius-pill: 999px;
 
+            /* The hero's Bobit beam crew walks along .hero's BOTTOM edge, so the hero's
+               bottom padding is their headroom. They paint ~87px tall, so anything less
+               and they rise into the .meta-row text above them — which on a phone has
+               wrapped to three lines, putting their heads on the "Open about money" link.
+               Keep this >= 92px, and don't reduce .hero's bottom padding below it.
+               (The beam's light-out and letter gags DO reach higher, up to 150px, on
+               purpose — the bulb gag targets the yellow swatch inside that row.) */
+            --crew-clear: 92px;
+
             /* Recolor filter for pale/grey resting stick figures (light theme) */
             --fig-filter: grayscale(1) brightness(0.55);
         }
@@ -70,7 +79,7 @@
         /* ---------------- HERO ---------------- */
         .hero {
             position: relative;
-            padding: 44px 0 68px;
+            padding: 44px 0 var(--crew-clear);   /* bottom = beam crew headroom, see --crew-clear */
             overflow: hidden;
             background: var(--bg);
             border-bottom: 1px solid var(--border);
@@ -898,7 +907,9 @@
 
         @media (max-width: 640px) {
             .wrap { padding: 0 20px; }
-            .hero { padding: 80px 0 56px; }
+            /* bottom stays at --crew-clear: the row wraps to 3 lines here, so shrinking the
+               crew's headroom is exactly what put their heads on the last line */
+            .hero { padding: 80px 0 var(--crew-clear); }
             .hero h1 {
                 margin: 22px 0 18px;
                 max-width: 100%;
