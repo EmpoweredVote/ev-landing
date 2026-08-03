@@ -297,7 +297,30 @@
       var sy = window.scrollY || window.pageYOffset || 0;
       var floorDoc = cr.bottom + sy - 6;                 // keep his feet where they were
       var ar = e.el.getBoundingClientRect();             // his perch
-      var figScreenX = cr.left + e.w / 2;
+      // cr.left + e.w/2 only holds for canvas-centred modes (stand/seat/...). patrol walks,
+      // crosser, paddlepair, cartwheel, dogfetch, kite and yoyo all draw off-centre, so ask
+      // the pixels instead — same trick bobitAt uses. Must run BEFORE sizeCanvas: after the
+      // resize the old ink is gone. (Two-figure scenes: the ink spans both, so the midpoint
+      // lands between them — accepted, one runner per entry by design.)
+      var figScreenX = cr.left + e.w / 2;                // fallback if no ink is found
+      try {
+        var scanW = e.c.width, scanH = e.c.height;
+        var img = e.ctx.getImageData(0, 0, scanW, scanH).data;
+        var minX = -1, maxX = -1;
+        for (var yy = 0; yy < scanH; yy++) {
+          var rowBase = yy * scanW * 4;
+          for (var xx = 0; xx < scanW; xx++) {
+            if (img[rowBase + xx * 4 + 3] > 8) {
+              if (minX < 0) minX = xx;
+              maxX = xx;
+            }
+          }
+        }
+        if (minX >= 0) {
+          var ratio = scanW / e.w;                       // device px per css px
+          figScreenX = cr.left + (minX + maxX) / 2 / ratio;
+        }
+      } catch (err) { /* fall back to the canvas-centre estimate */ }
 
       var newW = fitW(document.documentElement.clientWidth);
       var newH = e.h + FLEE_DROP + 40;                   // room to fall below the ledge
@@ -630,7 +653,7 @@
       var sy = window.scrollY || window.pageYOffset;
       var sx = window.scrollX || window.pageXOffset;
       entries.forEach(function (e) {
-        if (e.gone) return;
+        if (e.gone || e.fl) return;   // fleeing: leave the widened flee canvas alone, don't reset to at-rest geometry
         var spec = e.spec;
         if (spec.mode === 'why') { sizeCanvas(e, 190, 215); return; }
         if (spec.mode === 'banner') { sizeCanvas(e, 120, 96); return; }
