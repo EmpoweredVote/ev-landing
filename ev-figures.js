@@ -791,13 +791,10 @@
     });
 
     function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
-    // blend two rig poses field-by-field (both come from clone(REST) so they share keys) — for organic pose transitions
-    function lerpPose(a, b, k) {
-      var out = {};
-      for (var key in a) out[key] = (typeof a[key] === 'number' && typeof b[key] === 'number') ? a[key] + (b[key] - a[key]) * k : a[key];
-      for (var kb in b) if (!(kb in out)) out[kb] = b[kb];
-      return out;
-    }
+    // lerpPose lives once, further down beside POSE_KEYS. A second copy used to sit here and it was
+    // DEAD: both were `function` declarations in this same scope, so the later one won for every
+    // call site in the file, including the ones written against this one. Don't add a local blend
+    // helper here — it will silently lose to that one.
     var BEAM_LOADS = ['circle', 'line'];   // the ball and the yellow line (no notched triangle); beamPick avoids repeats
 
     function sizeCanvas(e, w, h) {
@@ -1760,7 +1757,14 @@
 
     // ── PHONE-SITTER (a seated Bobit glued to a phone): click him → he pockets the phone and just
     //    hangs out; click again → he fishes it back out, bends over, and gets re-absorbed. ──
+    // POSE_KEYS is the whole pose contract: REST's eleven fields plus `hunch`, which the animations
+    // add. Verified against every one of the rig's 41 animations — none returns a field outside this
+    // list, so blending on these keys alone loses nothing. A pose that ever carries a thirteenth
+    // field must be added here, or lerpPose will quietly drop it.
     var POSE_KEYS = ['lean', 'headTilt', 'bob', 'hunch', 'armRU', 'armRF', 'armLU', 'armLF', 'legRU', 'legRF', 'legLU', 'legLF'];
+    // The ONLY lerpPose. Used by the flee getup, the quote glance/hold/resume, the cartwheel heap,
+    // the phone-sitter and the dog-fetch pain blend — i.e. from well above this line to well below
+    // it, which is fine because function declarations hoist.
     function lerpPose(a, b, u) {
       var p = {};
       for (var i = 0; i < POSE_KEYS.length; i++) { var k = POSE_KEYS[i]; var av = a[k] || 0, bv = b[k] || 0; p[k] = av + (bv - av) * u; }
