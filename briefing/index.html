@@ -114,23 +114,24 @@
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; <span data-auto="asof">July 26, 2026</span></p>
+  <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; <span data-auto="asof">August 4, 2026</span></p>
   <h1 class="serif">State of the Platform</h1>
   <p class="sub">Every number on this page comes from the live database, verified git history, or our product analytics, not from estimates.  We build tools for shared facts; our progress report should be one.  <b>Six apps are live or in alpha, two are in active development, and the deep data work is far ahead of what most of us realized.</b></p>
 
   <div class="statband">
-    <div class="stat"><div class="n" data-auto="pols_curated">8,710</div><div class="l">curated officials and candidates (plus a <span data-auto="pool">76,330</span>-record discovery pool in triage)</div></div>
-    <div class="stat"><div class="n" data-auto="stances">34,066</div><div class="l">sourced stance positions, every one with cited sources</div></div>
-    <div class="stat"><div class="n" data-auto="pols_with_stances">3,787</div><div class="l">politicians with researched stances (avg <span data-auto="avg_stances">9.0</span> topics each)</div></div>
-    <div class="stat"><div class="n" data-auto="budget_entities">2,435</div><div class="l">governments with budget data, across all 50 states + DC</div></div>
-    <div class="stat"><div class="n" data-auto="candidates_2026">2,961</div><div class="l">2026 candidate records seeded for the midterms</div></div>
-    <div class="stat"><div class="n" data-auto="commits30">~3,400</div><div class="l">commits landed in the last 30 days alone</div></div>
+    <div class="stat"><div class="n" data-auto="pols_curated">8,810</div><div class="l">curated officials and candidates (plus a <span data-auto="pool">76,330</span>-record discovery pool in triage)</div></div>
+    <div class="stat"><div class="n" data-auto="stances">33,124</div><div class="l">sourced stance positions, every one with cited sources</div></div>
+    <div class="stat"><div class="n" data-auto="pols_with_stances">3,770</div><div class="l">politicians with researched stances (avg <span data-auto="avg_stances">8.8</span> topics each)</div></div>
+    <div class="stat"><div class="n" data-auto="budget_entities">2,444</div><div class="l">governments with budget data, across all 50 states + DC</div></div>
+    <div class="stat"><div class="n" data-auto="candidates_2026">2,984</div><div class="l">2026 candidate records seeded for the midterms</div></div>
+    <div class="stat"><div class="n" data-auto="commits30">~2,300</div><div class="l">commits landed in the last 30 days alone</div></div>
   </div>
 
   <div class="push">
     <h3 class="serif">The current push: ready for November</h3>
     <p>Since June 7, nearly all effort has gone into the <b>Inform pillar</b>, on purpose.  The 2026 midterms are three months out, and the work that moved is exactly what an anonymous voter touches in an election year: House candidate coverage that now spans the whole country (over 1,500 2026 candidates carry researched stances, from the biggest states down to the single-district delegations, with the enacted 2026 district maps now imported for the largest states), audited state budget pipelines that reached all 50 states, campaign-finance records that trace the money behind every federal candidate, city-by-city official seeding, and a fast-growing public-meetings transcript system.  The Connect pillar apps are intentionally parked until after this push; that is sequencing, not abandonment.</p>
-    <p style="margin-top:10px">The last five days were unusually heavy on two fronts.  <b>Wisconsin came online from nothing</b> &mdash; the sitting Legislature, the August 11 primary, all 116 legislative races, and every one of Racine County's 17 municipalities plus the county, its circuit court, and the state Supreme Court.  And the <b>stance-integrity audit</b> found and removed research that did not hold up (see below).  That second one is why the stance total on this page went <i>down</i> this week, and we would rather show you that than a bigger number.</p>
+    <p style="margin-top:10px">Since the last briefing the work has been mostly <b>subtractive, on purpose</b>.  The <b>stance-integrity audit</b> finished sweeping the map, and the platform's stance total fell by 942 &mdash; Utah hardest, then Massachusetts, California and the national set (see below).  That is the second briefing in a row where this number went down, and it is the number we are least willing to inflate.  Alongside it: a <b>re-research worklist</b> that puts retired seats back through sourcing rather than leaving holes, <b>372 citations repaired</b> that were not URLs at all, and two Compass topics re-scoped so state and federal officials are asked the questions that actually apply to them.</p>
+    <p style="margin-top:10px">Additive work continued underneath that.  <b>2026 candidate coverage grew</b> to 1,566 candidates carrying researched stances (up 41), and candidate stances grew by 559 even while the audit was retiring rows elsewhere.  <b>Essentials shipped v25.0</b>, closing out the Collin County, Texas data-completeness push &mdash; with the honest edge cases recorded rather than filled in, including 39 council members across seven small towns explicitly marked not-researched instead of blank.  <b>Treasury Tracker shipped v2.20</b> (Madison and Dane County, Wisconsin onboarded &mdash; 61 officials live), and every one of its curated banners &mdash; all 50 states, the federal banner and fifteen cities &mdash; now credits its photographer by name.  And the <b>public-meetings transcript system grew fastest of anything</b> on the platform: 98 meetings to 145, 10,955 segments to 16,835, 611 identified speakers to 926.</p>
   </div>
 </header>
 
@@ -141,29 +142,29 @@
     <td class="fname">Empowered Essentials</td>
     <td><span class="chip c-live">Live Alpha</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote">ZIP-to-representatives with funding, votes, stances.  Three milestones shipped since the last briefing: <b>v22.0 Tucson &amp; Arizona</b>, <b>v23.0 Educators &amp; Judges tabs</b>, and <b>v24.0 Results-Page Search &amp; Header Overhaul</b> &mdash; which replaced Google Places with our own location search (that dependency is now deleted) and gave the Compass a lens switcher with plain-language tooltips.  Newest: a Bend, Oregon city banner, and provisional races now say so on the page instead of implying a final field.</td>
-    <td class="fnote">v25.0 Collin County TX data-completeness (in flight); more served alpha communities.</td>
+    <td class="fnote">ZIP-to-representatives with funding, votes, stances.  <b>v25.0 Collin County TX data-completeness has now shipped</b>, and its most useful output is a habit rather than a feature: where research genuinely stopped, the page says so.  Seven small towns had 39 council members marked not-researched instead of left blank, one city council was registered with all 55 of its fields settled as blanks, and Beverly Hills stopped claiming Compass stances it did not actually have.  Earlier milestones this cycle: v22.0 Tucson &amp; Arizona, v23.0 Educators &amp; Judges tabs, v24.0 Results-Page Search &amp; Header Overhaul (which replaced Google Places with our own location search).</td>
+    <td class="fnote">More served alpha communities; extend the has-context chips beyond the Collin County towns.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Compass</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote">44 topics, 220 authored stances, spectrum + invert mechanic, side-by-side politician comparison.  1,795 calibration changes tracked.  Three lenses now (general, Judicial, Educators) with an icon switcher that reached profile pages this week.</td>
-    <td class="fnote">Quick-compare polish; inferred-stance overlays as research matures.</td>
+    <td class="fnote">44 topics, 220 authored stances, spectrum + invert mechanic, side-by-side politician comparison.  1,795 calibration changes tracked.  Three lenses (general, Judicial, Educators) with an icon switcher on profile pages.  No app changes this cycle &mdash; the Compass work happened in the data instead: <b>Affordable Housing and Criminal Justice Approach were re-scoped</b> so federal and state officials are asked the questions that actually apply to their office.</td>
+    <td class="fnote">Quick-compare polish; inferred-stance overlays as research matures.  Getting the tool seen matters more than either &mdash; see Reach &amp; Engagement.</td>
   </tr>
   <tr>
     <td class="fname">Treasury Tracker</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
     <td class="fnote">The sleeper giant.  See the coverage panel below; the audited state-budget pipeline now covers all 50 states and reaches back to FY1976.</td>
-    <td class="fnote">v2.18 brought four Pima County municipalities to budget parity (34-scenario live UAT); the app then adopted the shared <b>@empoweredvote/analytics</b> stack &mdash; PostHog events on real line-item interactions, signed-in identity, error tracking with sourcemaps.  <b>v2.19 closed July 21</b> (hero banner info-row, a Civic Trivia coverage tether, desktop hover previews and per-tile accents on the dataset tiles).</td>
+    <td class="fnote"><b>v2.20 shipped</b> &mdash; Madison and Dane County, Wisconsin onboarded, with the county's 61 officials live in Essentials.  Every curated banner in the app now credits its photographer by name: all 50 states, the federal banner and fifteen cities, each attribution resolved against Commons rather than assumed.  Earlier: v2.19 (hero banner info-row, Civic Trivia coverage tether, dataset-tile hover previews) and v2.18 (four Pima County municipalities to budget parity, plus the shared <b>@empoweredvote/analytics</b> stack).</td>
   </tr>
   <tr>
     <td class="fname">Read &amp; Rank</td>
     <td><span class="chip c-dev">In Development</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote">Rebuilt this month: mobile-first evaluate/rank surfaces, motion system, race hub with relevance bands, now on real race data from the platform core.  Newest: a ballot-first election picker (smart search + county browse) and a redesigned reveal &amp; results &mdash; merged spectrum band, numbers-led marks, Essentials-style cards, and a per-topic quote drawer.</td>
-    <td class="fnote">Candidate quote sourcing for 2026 races.</td>
+    <td class="fnote">Rebuilt in July: mobile-first evaluate/rank surfaces, motion system, race hub with relevance bands, now on real race data from the platform core.  Also landed then: a ballot-first election picker (smart search + county browse) and a redesigned reveal &amp; results &mdash; merged spectrum band, numbers-led marks, Essentials-style cards, and a per-topic quote drawer.  Quiet this cycle while the stance audit ran.</td>
+    <td class="fnote">Candidate quote sourcing for 2026 races &mdash; now gated on the re-research worklist, since it draws from the same sourced-stance pool the audit is rebuilding.</td>
   </tr>
   <tr>
     <td class="fname">Fallacy Finders</td>
@@ -232,11 +233,11 @@
 <div class="cols">
   <div class="card">
     <h3 class="serif">ev-accounts <span class="gold">v2.22</span></h3>
-    <p>Auth, tiers, XP and gems, politician database, TIGER geofencing, elections.  Milestones shipped all summer, including 2026 House candidate coverage waves 1 through 3 plus a nationwide sweep of the small-delegation states, so every state's House races now carry sourced stances.  In the last five days: the <b>enacted</b> 2026 district polygons were imported for TX, FL, NC, CA and OH (147 of 147 rows, verification gate green); <b>Wisconsin</b> was stood up from scratch &mdash; state Legislature, Supreme Court, the August 11 primary, 116 legislative races, and all 17 Racine County municipalities plus the county government, its 21 supervisors and 10 circuit-court branches; <b>Bend, Oregon</b> and Deschutes County were deep-seeded with headshots and a sourced stance cohort; and Collin County, TX had its long tail closed (vacant seats seated, races backfilled, contact data filled in).  Underneath all of it, a schema change (ADR 0002) moved officeholder occupancy onto dated <code>office_terms</code>, so who holds a seat is now a fact with a start and end date rather than a flag.  <span data-auto="districts">7,064</span> districts mapped, <span data-auto="leg_votes">121,178</span> legislative votes and <span data-auto="bills">19,622</span> bills on record.</p>
+    <p>Auth, tiers, XP and gems, politician database, TIGER geofencing, elections.  Milestones shipped all summer, including 2026 House candidate coverage waves 1 through 3 plus a nationwide sweep of the small-delegation states, so every state's House races now carry sourced stances.  This cycle the core did the unglamorous half of the stance audit: a citation-level host sweep, applied migrations spanning retirement, repair and the first restorations, the re-research worklist that feeds retired seats back through sourcing, and two Compass topics re-scoped to the offices they actually apply to.  Chasing one bad cluster also caught a council roster two members out of date &mdash; the kind of error a citation check is not looking for but finds anyway.  In the cycle before this one: the <b>enacted</b> 2026 district polygons were imported for TX, FL, NC, CA and OH (147 of 147 rows, verification gate green); <b>Wisconsin</b> was stood up from scratch &mdash; state Legislature, Supreme Court, the August 11 primary, 116 legislative races, and all 17 Racine County municipalities plus the county government, its 21 supervisors and 10 circuit-court branches; <b>Bend, Oregon</b> and Deschutes County were deep-seeded with headshots and a sourced stance cohort; and Collin County, TX had its long tail closed.  Underneath all of it, a schema change (ADR 0002) moved officeholder occupancy onto dated <code>office_terms</code>, so who holds a seat is now a fact with a start and end date rather than a flag.  <span data-auto="districts">7,078</span> districts mapped, <span data-auto="leg_votes">121,178</span> legislative votes and <span data-auto="bills">19,622</span> bills on record.</p>
   </div>
   <div class="card">
     <h3 class="serif">On the Record <span class="gold">new</span></h3>
-    <p>Speaker-attributed, searchable transcripts of public meetings, synced to the original video.  Already live in the pipeline: <b><span data-auto="meetings">98</span> meetings, <span data-auto="segments">10,955</span> transcript segments, <span data-auto="speakers">611</span> identified speakers</b>, including LA City Council with <span data-auto="council_votes">7,200</span> recorded council votes.  Built by volunteer Chris Andrews; it now feeds the platform's meetings system.  The Fallacy Finders hand-off stopped being a plan this week: there is a written transcript contract between the two apps and an offline validator that fails loudly on a bad hand-off, proven against a real transcript.</p>
+    <p>Speaker-attributed, searchable transcripts of public meetings, synced to the original video.  Already live in the pipeline: <b><span data-auto="meetings">145</span> meetings, <span data-auto="segments">16,835</span> transcript segments, <span data-auto="speakers">926</span> identified speakers</b>, including LA City Council with <span data-auto="council_votes">7,200</span> recorded council votes.  Built by volunteer Chris Andrews; it now feeds the platform's meetings system.  <b>This was the fastest-growing dataset on the platform this cycle</b> &mdash; meetings up from 98, segments from 10,955, speakers from 611 &mdash; and all of that growth came from running the pipeline rather than changing its code.  The Fallacy Finders hand-off stopped being a plan last cycle: there is a written transcript contract between the two apps and an offline validator that fails loudly on a bad hand-off, proven against a real transcript.</p>
   </div>
 </div>
 
@@ -244,29 +245,30 @@
 <div class="cols">
   <div class="card">
     <h3 class="serif">Sourced stances, by where they serve</h3>
-    <p><span data-auto="stances">34,066</span> stance positions across <span data-auto="pols_with_stances">3,787</span> politicians and <span data-auto="topics">44</span> topics.  Every stance carries reasoning and cited sources; <span data-auto="verified_sources">2,722</span> sources independently verified.  <span data-auto="candidates_with_stances">1,525</span> of the 2026 candidates already have researched stances.</p>
+    <p><span data-auto="stances">33,124</span> stance positions across <span data-auto="pols_with_stances">3,770</span> politicians and <span data-auto="topics">44</span> topics.  Every stance carries reasoning and cited sources; <span data-auto="verified_sources">2,722</span> sources independently verified.  <span data-auto="candidates_with_stances">1,566</span> of the 2026 candidates already have researched stances.</p>
     <div class="tablebox" style="margin-top:14px;border:none;background:transparent"><table>
       <tr><th>Coverage area</th><th style="text-align:right">Politicians</th><th style="text-align:right">Stances</th></tr>
-      <tr><td>US Congress + national</td><td class="num">490</td><td class="num">7,755</td></tr>
-      <tr><td>2026 candidates (no office yet)</td><td class="num">~1,222</td><td class="num">9,354</td></tr>
-      <tr><td>California (state + local)</td><td class="num">370</td><td class="num">4,478</td></tr>
-      <tr><td>Maryland legislature</td><td class="num">192</td><td class="num">2,249</td></tr>
-      <tr><td>Texas (state + local)</td><td class="num">249</td><td class="num">1,933</td></tr>
-      <tr><td>Maine (state + local)</td><td class="num">186</td><td class="num">1,517</td></tr>
-      <tr><td>Utah (state + city + county)</td><td class="num">179</td><td class="num">1,358</td></tr>
-      <tr><td>Massachusetts (state + local)</td><td class="num">187</td><td class="num">1,137</td></tr>
-      <tr><td>Oregon (state + local + county)</td><td class="num">173</td><td class="num">943</td></tr>
-      <tr><td>Virginia (state + local)</td><td class="num">166</td><td class="num">806</td></tr>
+      <tr><td>US Congress + national</td><td class="num">490</td><td class="num">7,667</td></tr>
+      <tr><td>2026 candidates (no office yet)</td><td class="num">~1,428</td><td class="num">9,913</td></tr>
+      <tr><td>California (state + local)</td><td class="num">368</td><td class="num">4,422</td></tr>
+      <tr><td>Maryland legislature</td><td class="num">192</td><td class="num">2,248</td></tr>
+      <tr><td>Texas (state + local)</td><td class="num">255</td><td class="num">1,927</td></tr>
+      <tr><td>Maine (state + local)</td><td class="num">186</td><td class="num">1,521</td></tr>
+      <tr><td>Massachusetts (state + local)</td><td class="num">125</td><td class="num">902</td></tr>
+      <tr><td>Virginia (state + local)</td><td class="num">166</td><td class="num">804</td></tr>
+      <tr><td>Oregon (state + local + county)</td><td class="num">154</td><td class="num">727</td></tr>
+      <tr><td>Utah (state + city + county)</td><td class="num">48</td><td class="num">531</td></tr>
       <tr><td>Arizona (state + local)</td><td class="num">129</td><td class="num">396</td></tr>
-      <tr><td>41 more states</td><td class="num">228</td><td class="num">2,066</td></tr>
+      <tr><td>41 more states</td><td class="num">228</td><td class="num">2,063</td></tr>
     </table></div>
-    <p style="margin-top:14px"><b>Why Oregon shrank.</b>  We built a <b>source-supports-claim</b> check &mdash; it re-reads the cited source and asks whether it actually supports the stance we wrote &mdash; and pointed it at our own most-researched local coverage first.  It surfaced 153 rows worth acting on.  <b>145 Oregon rows were retired</b> (37 citations had gone dead, 108 could not be supported by what the source really said), 102 more fabricated rows were swept from 39 legislators before those seats went live, and 18 bad Bend rows were re-researched into 45 verified ones.  Oregon's stance count fell from 1,097 to 943 while its politician count rose.  The check now runs against the rest of the map.</p>
+    <p style="margin-top:14px"><b>Why several states shrank.</b>  We built a <b>source-supports-claim</b> check &mdash; it re-reads the cited source and asks whether it actually supports the stance we wrote &mdash; and pointed it at our own most-researched local coverage first.  Oregon went first and lost 145 rows.  Since then the check has swept the rest of the map, and this briefing is the one where that bill comes due: <b>the platform's stance total fell by 942</b>.  <b>Utah took the worst of it</b> (1,358 stances down to 531, and 179 researched officials down to 48 &mdash; it drops out of the Deep tier on the map below), with Massachusetts next (1,137 to 902), then California and the national set.  A citation-level host sweep found genuinely non-resolving domains &mdash; 23 of them, not the 42 a first pass over-reported &mdash; plus one composed hostname that alone carried 57 rows, and <b>372 citations that were not URLs at all</b>.  Newton, Massachusetts was the starkest single case: its roster was clean, but 48 of its 55 stances cited pages that had never existed.</p>
+    <p style="margin-top:10px">Two things worth saying plainly about that.  First, retirement is not the end state &mdash; a <b>re-research worklist</b> now feeds the removed seats back through sourcing, the way 18 bad Bend rows became 45 verified ones, and the first restorations have already landed.  Second, the audit keeps turning up errors that were never about citations at all: chasing the Beverly Hills cluster exposed a council roster two members out of date.  We would rather publish the smaller number and tell you why it moved.</p>
   </div>
   <div class="card">
     <h3 class="serif">Budgets you can follow</h3>
-    <p>Treasury Tracker's database now holds budget data for <b><span data-auto="budget_entities">2,435</span> government entities across all 50 states plus DC</b>, spanning fiscal years <span data-auto="min_fy">1976</span> to <span data-auto="max_fy">2026</span>:</p>
+    <p>Treasury Tracker's database now holds budget data for <b><span data-auto="budget_entities">2,444</span> government entities across all 50 states plus DC</b>, spanning fiscal years <span data-auto="min_fy">1976</span> to <span data-auto="max_fy">2026</span>:</p>
     <ul>
-      <li><b><span data-auto="t_cities">1,998</span> cities</b>, <span data-auto="t_counties">333</span> counties, <span data-auto="t_states">50</span> states, <span data-auto="t_towns">34</span> towns, and the federal budget</li>
+      <li><b><span data-auto="t_cities">2,006</span> cities</b>, <span data-auto="t_counties">334</span> counties, <span data-auto="t_states">50</span> states, <span data-auto="t_towns">34</span> towns, and the federal budget</li>
       <li><b><span data-auto="line_items_m">2.3 million</span></b> budget line items and <b><span data-auto="transactions_m">1.3 million</span></b> individual transactions</li>
       <li><b><span data-auto="salaries">282,457</span></b> public salary records</li>
       <li>State general funds upgraded to audited ACFR sources across all 50 states, each tie-verified to the penny; an independent blind re-derivation confirmed <b>149 of 151 exact matches</b>, with the two exceptions documented</li>
@@ -276,7 +278,7 @@
 </div>
 <div class="card" style="margin-top:18px">
   <h3 class="serif">Follow the money</h3>
-  <p style="max-width:92ch">The third leg of the transparency model, alongside votes and stances.  The platform now holds <b><span data-auto="fin_contribs_m">27 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">7.5 billion</span></b>, covering <b><span data-auto="fin_pols">1,578</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span> election cycles (<span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>)</b>.  Every record traces to its original FEC filing.  The historical backfill ran hard this month and this is the first briefing to report it accurately &mdash; the query that feeds these figures had been quietly timing out, so the page was publishing 6 million and $4.7 billion while the real totals grew past four times that.  The pipeline also learned to handle <b>amended filings</b>: when a committee refiles, the superseded lines are now retired per line instead of being counted twice.  That correction alone removed 18,553 duplicate rows and $20.2 million of phantom money.  This is the "who funds whom" data behind Essentials, presented without commentary so users draw their own conclusions.</p>
+  <p style="max-width:92ch">The third leg of the transparency model, alongside votes and stances.  The platform now holds <b><span data-auto="fin_contribs_m">27.2 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">7.5 billion</span></b>, covering <b><span data-auto="fin_pols">1,578</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span> election cycles (<span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>)</b>.  Every record traces to its original FEC filing.  The last briefing was the first to report these figures accurately &mdash; the query feeding them had been quietly timing out, so the page published 6 million and $4.7 billion while the real totals grew past four times that.  The pipeline also learned to handle <b>amended filings</b>: when a committee refiles, the superseded lines are retired per line instead of being counted twice, a correction that removed 18,553 duplicate rows and $20.2 million of phantom money.  This cycle the work moved from backfilling to <b>interrogating</b> the data &mdash; a local DuckDB mirror for fast exploration, a settled verdict on how refunds should net against contributions, and a discovered mechanism for the negative Schedule A rows that had made some committee totals look wrong.  A six-phase deep-exploration program is planned from there.  This is the "who funds whom" data behind Essentials, presented without commentary so users draw their own conclusions.</p>
 </div>
 
 <div class="card" style="margin-top:18px">
@@ -297,8 +299,8 @@
     <div class="st t1" style="grid-row:3;grid-column:8" title="Michigan: 4 researched officials">MI</div>
     <div class="st t1" style="grid-row:3;grid-column:9" title="New York: 4 researched officials">NY</div>
     <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 researched officials">RI</div>
-    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 187 researched officials">MA</div>
-    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 173 researched officials">OR</div>
+    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 125 researched officials">MA</div>
+    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 154 researched officials">OR</div>
     <div class="st t2" style="grid-row:4;grid-column:2" title="Nevada: 33 researched officials">NV</div>
     <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 researched officials">WY</div>
     <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 4 researched officials">SD</div>
@@ -308,8 +310,8 @@
     <div class="st t1" style="grid-row:4;grid-column:8" title="Pennsylvania: 4 researched officials">PA</div>
     <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 researched officials">NJ</div>
     <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 researched officials">CT</div>
-    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 370 researched officials">CA</div>
-    <div class="st t3" style="grid-row:5;grid-column:2" title="Utah: 179 researched officials">UT</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 368 researched officials">CA</div>
+    <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 48 researched officials">UT</div>
     <div class="st t1" style="grid-row:5;grid-column:3" title="Colorado: 5 researched officials">CO</div>
     <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 4 researched officials">NE</div>
     <div class="st t2" style="grid-row:5;grid-column:5" title="Missouri: 19 researched officials">MO</div>
@@ -332,12 +334,12 @@
     <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 4 researched officials">AL</div>
     <div class="st t1" style="grid-row:7;grid-column:8" title="Georgia: 4 researched officials">GA</div>
     <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 2 researched officials">HI</div>
-    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 249 researched officials">TX</div>
+    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 255 researched officials">TX</div>
     <div class="st t1" style="grid-row:8;grid-column:9" title="Florida: 4 researched officials">FL</div>
   </div>
   <div class="legend">
-    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">9</span> states)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">3</span> states)</span>
+    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">8</span> states)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">4</span> states)</span>
     <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">38</span>)</span>
   </div>
   <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deep tiers add legislatures, counties, and cities.</p>
@@ -347,12 +349,12 @@
   Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
   a rolling 90-day window with internal/test traffic excluded.  refresh.mjs does NOT
   touch these — it only reads the platform Postgres DB.  Re-pull from PostHog and edit
-  by hand when the story changes.  Last pulled: 90 days ending July 26, 2026.
+  by hand when the story changes.  Last pulled: 90 days ending August 4, 2026.
 -->
 <div class="h2row"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
 <div class="push">
   <h3 class="serif">The reach problem, stated plainly</h3>
-  <p>The Compass isn't failing to convert &mdash; it's failing to get seen.  Of everyone who reached it in the last 90 days, <b>9 in 10 engaged and 4 in 10 completed a full calibration</b>; that is a healthy flow.  The catch is the denominator: <b>only 68 people reached it in a quarter</b>.  The main site drew 182 unique visitors in the same window, and most never made it to the Compass.  The highest-leverage work in front of us isn't rewording the calibration questions &mdash; it's getting the tool in front of the voters already in our ecosystem.  Every number here moved up since the last briefing, which is real but small: the ceiling is still traffic.</p>
+  <p>The Compass isn't failing to convert &mdash; it's failing to get seen.  Of everyone who reached it in the last 90 days, <b>9 in 10 engaged and 4 in 10 completed a full calibration</b>; that is a healthy flow.  The catch is the denominator: <b>only 70 people reached it in a quarter</b>.  The main site drew 201 unique visitors in the same window, and most never made it to the Compass.  The highest-leverage work in front of us isn't rewording the calibration questions &mdash; it's getting the tool in front of the voters already in our ecosystem.  Every 90-day figure here moved up since the last briefing &mdash; the main site is up 19, Civic Trivia up 15 &mdash; but the 30-day column is flat to slightly down, and completed calibrations in the last 30 days actually fell from 12 to 10.  On numbers this small that is noise, not a trend; the honest reading is that the ceiling is still traffic and nothing we shipped this cycle was aimed at raising it.</p>
 </div>
 <div class="cols" style="margin-top:18px">
   <div class="card">
@@ -361,20 +363,20 @@
     <div class="funnel">
       <div class="fhead"><span class="fcol">30d</span><span class="fcol">90d</span></div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount"><span class="fcol f30">38</span><span class="fcol f90">68</span></span></div>
+        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount"><span class="fcol f30">38</span><span class="fcol f90">70</span></span></div>
         <div class="ftrack"><div class="fbar b1" style="width:100%">100%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount"><span class="fcol f30">32</span><span class="fcol f90">61</span></span></div>
-        <div class="ftrack"><div class="fbar b2" style="width:90%">90%</div></div>
+        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount"><span class="fcol f30">31</span><span class="fcol f90">62</span></span></div>
+        <div class="ftrack"><div class="fbar b2" style="width:89%">89%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount"><span class="fcol f30">12</span><span class="fcol f90">27</span></span></div>
-        <div class="ftrack"><div class="fbar b3" style="width:40%">40%</div></div>
+        <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount"><span class="fcol f30">10</span><span class="fcol f90">27</span></span></div>
+        <div class="ftrack"><div class="fbar b3" style="width:39%">39%</div></div>
       </div>
       <div class="fstep">
         <div class="frow"><span class="flabel">Compared to a politician</span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">10</span></span></div>
-        <div class="ftrack"><div class="fbar b4" style="width:15%">15%</div></div>
+        <div class="ftrack"><div class="fbar b4" style="width:14%">14%</div></div>
       </div>
     </div>
     <p class="fcap">&ldquo;Loaded the quiz&rdquo; fires on page load, so read it as &ldquo;didn't bounce.&rdquo;  The first real signal of intent is completing a calibration &mdash; and 4 in 10 of everyone who arrives does.</p>
@@ -384,15 +386,15 @@
     <p>Unique visitors per app across the empowered.vote ecosystem, last 30 days and the full quarter.  Bars scale to the 90-day count.</p>
     <div class="eco">
       <div class="ecohead"><span></span><span></span><span class="eh">30d</span><span class="eh">90d</span></div>
-      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">89</span><span class="eval">182</span></div>
-      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:58%"></span></span><span class="eval e30">50</span><span class="eval">105</span></div>
-      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:47%"></span></span><span class="eval e30">38</span><span class="eval">86</span></div>
-      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:37%"></span></span><span class="eval e30">38</span><span class="eval">68</span></div>
-      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:24%"></span></span><span class="eval e30">15</span><span class="eval">44</span></div>
-      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:21%"></span></span><span class="eval e30">30</span><span class="eval">39</span></div>
-      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:21%"></span></span><span class="eval e30">26</span><span class="eval">38</span></div>
+      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">89</span><span class="eval">201</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:56%"></span></span><span class="eval e30">48</span><span class="eval">113</span></div>
+      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:49%"></span></span><span class="eval e30">37</span><span class="eval">98</span></div>
+      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:35%"></span></span><span class="eval e30">38</span><span class="eval">70</span></div>
+      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:26%"></span></span><span class="eval e30">35</span><span class="eval">53</span></div>
+      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:22%"></span></span><span class="eval e30">12</span><span class="eval">45</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:21%"></span></span><span class="eval e30">29</span><span class="eval">43</span></div>
     </div>
-    <p class="fcap">One new Compass visitor roughly every 32 hours.  The audience already exists on the platform; the gap is the hand-off into the Compass, not the Compass itself.</p>
+    <p class="fcap">One new Compass visitor roughly every 31 hours.  The audience already exists on the platform; the gap is the hand-off into the Compass, not the Compass itself.</p>
   </div>
 </div>
 
@@ -431,7 +433,7 @@
 </div>
 
 <footer>
-  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">July 26, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 90 days ending July 26, 2026, with internal and test traffic excluded.  Stance area groupings combine state and local coverage; the ~1,222 candidate rows are records not yet linked to an office.  The coverage table's rows sum to 16 politicians and 74 stances short of the headline totals, which are rows whose office no longer resolves to a government &mdash; a known cleanup item, shown rather than smoothed over.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
+  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">August 4, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 90 days ending August 4, 2026, with internal and test traffic excluded.  Stance area groupings combine state and local coverage; the ~1,428 candidate rows are records not yet linked to an office.  The coverage table's rows now sum to 1 politician and 3 stances short of the headline totals, which are rows whose office no longer resolves to a government &mdash; down from 16 and 74 last briefing, so that cleanup item is very nearly closed.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
 </footer>
 
 </div>
