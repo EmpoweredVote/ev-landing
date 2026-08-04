@@ -6,3 +6,8 @@ node_modules/
 .vscode/
 .idea/
 take_screenshots.py
+
+# built output of tools/bubble-rig (rebuild with build.cjs; do not commit)
+tools/bubble-rig/bubble-rig.html
+tools/bubble-rig/bubble-rig.wrapped.html
+tools/bubble-rig/rig-*.png

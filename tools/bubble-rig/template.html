@@ -1,0 +1,1021 @@
+<title>The Bobits and their quotes</title>
+
+<style>
+  /* ══ the site's own tokens, verbatim from index.html ═══════════════════════
+     .ev-quote below is copied from index.html unchanged, so it needs the exact
+     variables it depends on there: --card, --heading, --muted, --teal,
+     --radius-card, --shadow-md. Changing any of these would stop this being a
+     test of the real bubble. */
+  :root {
+    --card: #FFFFFF;
+    --heading: #1C1C1C;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --teal: #00657C;
+    --shadow-md: 0 8px 24px rgba(15, 30, 40, 0.08);
+    --radius-card: 14px;
+
+    /* page chrome — deliberately separate names so nothing collides with the above */
+    --paper:     #F0F3F2;
+    --surface:   #FFFFFF;
+    --ink:       #14232A;
+    --ink-dim:   #5C6E73;
+    --ink-faint: #8A9B9F;
+    --flag:      #B33418;
+    --flag-bg:   #FBEEEA;
+    --rule:      #D7DEDC;
+    --rule-soft: #E6EBEA;
+
+    --sans: ui-sans-serif, system-ui, "Segoe UI Variable Text", "Segoe UI",
+            -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+    --step--2: 0.7rem;
+    --step--1: 0.8rem;
+    --step-0:  0.95rem;
+    --step-1:  1.08rem;
+    --step-2:  1.35rem;
+    --step-4:  2.7rem;
+  }
+  /* the site's dark tokens, also verbatim */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --card: #1C1C1F;
+      --heading: #F2F2F2;
+      --muted: #8B949E;
+      --border: #2D2D32;
+      --teal: #1DA8C6;
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+      --paper:     #0F1719;
+      --surface:   #162124;
+      --ink:       #E7EDEC;
+      --ink-dim:   #94A5A8;
+      --ink-faint: #6B7C80;
+      --flag:      #FF9077;
+      --flag-bg:   #2A1B18;
+      --rule:      #24312F;
+      --rule-soft: #1D2A2C;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --card: #1C1C1F;
+    --heading: #F2F2F2;
+    --muted: #8B949E;
+    --border: #2D2D32;
+    --teal: #1DA8C6;
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+    --paper:     #0F1719;
+    --surface:   #162124;
+    --ink:       #E7EDEC;
+    --ink-dim:   #94A5A8;
+    --ink-faint: #6B7C80;
+    --flag:      #FF9077;
+    --flag-bg:   #2A1B18;
+    --rule:      #24312F;
+    --rule-soft: #1D2A2C;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --card: #FFFFFF;
+    --heading: #1C1C1C;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --teal: #00657C;
+    --shadow-md: 0 8px 24px rgba(15, 30, 40, 0.08);
+
+    --paper:     #F0F3F2;
+    --surface:   #FFFFFF;
+    --ink:       #14232A;
+    --ink-dim:   #5C6E73;
+    --ink-faint: #8A9B9F;
+    --flag:      #B33418;
+    --flag-bg:   #FBEEEA;
+    --rule:      #D7DEDC;
+    --rule-soft: #E6EBEA;
+    color-scheme: light;
+  }
+
+  /* ══ THE REAL BUBBLE — copied from index.html, unmodified ════════════════ */
+  .ev-quote {
+      position: absolute;
+      z-index: 70;
+      box-sizing: border-box;
+      width: 300px;
+      max-width: calc(100vw - 16px);
+      padding: 15px 17px;
+      background: var(--card);
+      border: 2px solid var(--tone, var(--teal));
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-md);
+      color: var(--heading);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .18s ease, transform .18s ease;
+      pointer-events: auto;
+  }
+  .ev-quote.in { opacity: 1; transform: translateY(0); }
+  .ev-quote q {
+      display: block;
+      quotes: "\201C" "\201D";
+      font-size: 0.9rem;
+      line-height: 1.55;
+      font-style: italic;
+  }
+  .ev-quote .attrib { margin-top: 11px; font-size: 0.8rem; }
+  .ev-quote .attrib a {
+      color: var(--tone, var(--teal));
+      font-weight: 700;
+      font-style: normal;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+  }
+  .ev-quote .attrib .where {
+      display: block;
+      color: var(--muted);
+      font-size: 0.74rem;
+      margin-top: 2px;
+  }
+  .ev-quote .tail, .ev-quote .tail-in {
+      position: absolute;
+      width: 0; height: 0;
+      border-style: solid;
+      border-color: transparent;
+      border-bottom-width: 0;
+  }
+  .ev-quote .tail {
+      bottom: -14px;
+      border-width: 14px 11px 0;
+      border-top-color: var(--tone, var(--teal));
+  }
+  .ev-quote .tail-in {
+      bottom: -11px;
+      border-width: 11px 8px 0;
+      border-top-color: var(--card);
+  }
+  @media (prefers-reduced-motion: reduce) {
+      .ev-quote { transition: none; }
+  }
+  /* ══ end copied block ════════════════════════════════════════════════════ */
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: var(--step-0);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 2.5rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2rem, 4vw, 3rem);
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: var(--step--2);
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .masthead { display: flex; flex-direction: column; gap: 0.9rem; }
+  .masthead h1 {
+    margin: 0;
+    font-size: var(--step-4);
+    line-height: 1.04;
+    letter-spacing: -0.022em;
+    font-weight: 700;
+    text-wrap: balance;
+    max-width: 24ch;
+  }
+  .lede { margin: 0; max-width: 62ch; font-size: var(--step-1); color: var(--ink-dim); }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .lede code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--rule-soft);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  .tally {
+    margin: 0.6rem 0 0;
+    padding: 1rem 0 0;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem clamp(1.5rem, 4vw, 3rem);
+  }
+  .tally div { display: flex; flex-direction: column; gap: 0.15rem; }
+  .tally dt {
+    font-size: var(--step--2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+  .tally dd {
+    margin: 0;
+    font-size: var(--step-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── the measuring bench ─────────────────────────────────────────────── */
+  .bench {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .bench-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+  }
+  button.act {
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 700;
+    color: var(--surface);
+    background: var(--ink);
+    border: 0;
+    border-radius: 3px;
+    padding: 0.5rem 0.85rem;
+    cursor: pointer;
+  }
+  button.act:hover { background: var(--teal); }
+  button.act:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .readout {
+    font-family: var(--mono);
+    font-size: var(--step--1);
+    color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .readout b { color: var(--ink); }
+
+  .results { overflow-x: auto; }
+  table.heights {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+  }
+  table.heights th, table.heights td {
+    text-align: left;
+    padding: 0.4rem 0.7rem 0.4rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    white-space: nowrap;
+  }
+  table.heights th {
+    font-size: var(--step--2);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-bottom: 1px solid var(--rule);
+  }
+  table.heights td.num { text-align: right; font-family: var(--mono); }
+  table.heights td.cite { white-space: normal; color: var(--ink-dim); }
+  table.heights tr.tall td.num { color: var(--flag); font-weight: 700; }
+  table.heights td .swatch {
+    display: inline-block;
+    width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+
+  /* ── the shelf of readers ────────────────────────────────────────────── */
+  .theme { display: flex; flex-direction: column; gap: clamp(1.5rem, 3vw, 2.25rem); }
+  .theme-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .theme-head h2 {
+    margin: 0;
+    font-size: var(--step-2);
+    font-weight: 700;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+  .theme-head .count {
+    flex: none;
+    font-size: var(--step--2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+
+  .shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    align-items: start;
+    padding-top: 116px;         /* the readers sit 98px above their own ledge */
+    gap: 150px clamp(1.25rem, 3vw, 2rem);
+  }
+  @media (max-width: 520px) { .shelf { grid-template-columns: 1fr; } }
+
+  /* a reader is a button: click him and he looks up and says his piece */
+  .reader {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin: 0;
+    /* his shins hang ~31px below the ledge, so the name has to start clear of them */
+    padding: 2.75rem 0 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-top: 2px solid var(--tone);
+    cursor: pointer;
+  }
+  .reader:focus-visible { outline: 2px solid var(--tone); outline-offset: 4px; }
+  .reader .perch {
+    position: absolute;
+    top: -98px;
+    left: 0.35rem;
+    width: 152px;
+    height: 148px;
+    pointer-events: none;
+  }
+  .reader .perch canvas { display: block; width: 152px; height: 148px; }
+
+  .reader .who {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: var(--step-0);
+    letter-spacing: -0.008em;
+  }
+  .reader .who .dot {
+    flex: none; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--tone);
+  }
+  .reader .cite {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .reader .hint {
+    margin: 0;
+    font-size: var(--step--2);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink-faint);
+  }
+  .reader[data-open="1"] .hint { color: var(--tone); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .chip {
+    font-size: var(--step--2);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.4rem;
+    border-radius: 2px;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+  .chip.fix, .chip.flag { color: var(--flag); background: var(--flag-bg); }
+  .chip.clean { color: var(--teal); background: color-mix(in srgb, var(--teal) 12%, transparent); }
+  .was {
+    margin: 0;
+    font-size: var(--step--2);
+    line-height: 1.45;
+    color: var(--ink-faint);
+  }
+  .was s { text-decoration-thickness: 1px; }
+  .was b { color: var(--flag); font-weight: 700; }
+
+  .colophon {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.1rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    font-size: var(--step--1); color: var(--ink-dim); max-width: 70ch;
+  }
+  .colophon p { margin: 0; }
+  .colophon em { font-style: italic; }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">empowered.vote · quote bubble fit test</p>
+    <h1>Click a Bobit and see it in its actual bubble</h1>
+    <p class="lede">
+      This runs the homepage's real <code>ev-quotes.js</code> and its <code>.ev-quote</code> CSS,
+      unmodified — the same <strong>300px-wide</strong> bubble, clamping to
+      <code>calc(100vw − 16px)</code>, opening above his head in document coordinates and expiring
+      after 12&nbsp;seconds. The quotes are deliberately <strong>not printed on this page</strong>,
+      because reading them here is exactly what the test has to avoid. Click a reader; he looks up,
+      the bubble opens, and you see what a visitor sees.
+    </p>
+    <dl class="tally">
+      <div><dt>Quotes</dt><dd id="t-quotes">–</dd></div>
+      <div><dt>Speakers</dt><dd id="t-speakers">–</dd></div>
+      <div><dt>Read at source</dt><dd id="t-read">–</dd></div>
+      <div><dt>Corrected</dt><dd id="t-fixed">–</dd></div>
+      <div><dt>Restored</dt><dd id="t-restored">–</dd></div>
+      <div><dt>Flagged</dt><dd id="t-flagged">–</dd></div>
+    </dl>
+  </header>
+
+  <section class="bench">
+    <div class="bench-row">
+      <button class="act" id="measure" type="button">Measure every bubble</button>
+      <button class="act" id="closeall" type="button">Close open bubble</button>
+      <span class="readout" id="readout">Viewport <b id="vw">–</b> · bubble renders at <b id="bw">–</b></span>
+    </div>
+    <div class="results" id="results"></div>
+  </section>
+
+  <main class="theme" id="sections"></main>
+
+  <footer class="colophon">
+    <p>
+      Groupings are the five themes from <em>presidential_quotes.md</em>. Figures are the site's own
+      <em>leremy-rig</em>, running the real <em>read</em> → <em>lookup</em> → <em>hold</em> →
+      <em>resume</em> sequence; hovering a reader glances him up and pauses his bubble's timer, as on
+      the homepage.
+    </p>
+    <p>
+      Two departures from production, both to keep the test readable: opening one reader closes any
+      other (the homepage allows several at once), and the bubble is anchored to a shelf here rather
+      than a note-card edge. Bubbles overlay whatever is above them — that is production behaviour,
+      not a layout bug. Resize the window and measure again to see the narrow-viewport clamp.
+    </p>
+    <p>
+      A nineteenth quote used to be here: Jefferson's “difference of opinion leads to enquiry, and
+      enquiry to truth.” It was cut on 4 August 2026, because he wrote it in a draft and then decided
+      not to send it — a letter withheld is closer to something unpublished than to something said,
+      and a Bobit saying it would claim he said it to someone. It was also the only quote in the pool
+      never read on its own linked page, so with it gone <strong>every quote here has been read at its
+      source</strong>. The full record is under <em>Removed</em> in <em>presidential_quotes.md</em>.
+    </p>
+  </footer>
+</div>
+
+<script>
+/*__RIG__*/
+</script>
+
+<script>
+/*__QUOTES_JS__*/
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var R = window.LeremyRig, Q = window.EVQuotes;
+  var A = R.ANIMATIONS, CFG = R.CFG;
+
+  var FIG = {
+    light: ['#007D99', '#FF5740', '#B8860B', '#2E9E5B', '#7A4FD0', '#E0641C'],
+    dark:  ['#1DA8C6', '#FF6B52', '#FFD740', '#43D07E', '#B49BFF', '#FF9A4D']
+  };
+  var TONE = {
+    'George Washington': 0, 'John Adams': 4, 'Thomas Jefferson': 3,
+    'James Madison': 2, 'Franklin D. Roosevelt': 1, 'Harry S. Truman': 5,
+    'Dwight D. Eisenhower': 2, 'John F. Kennedy': 4, 'Ronald Reagan': 5
+  };
+  // Quotes are keyed by a distinctive SNIPPET of their own text, never by array index. An earlier
+  // version of this page used indices, and removing one quote from the pool silently shifted every
+  // theme and every correction note after it onto the wrong reader. A snippet key survives removals
+  // and reordering, and anything that fails to match is surfaced on the page instead of vanishing.
+  var THEMES = [
+    { title: 'On the danger of parties and faction', keys: [
+      'drive far away the dæmon',
+      'baneful effects of the spirit of party',
+      'alternate domination of one faction',
+      'common and continual mischiefs',
+      'Division of the Republick'
+    ] },
+    { title: 'On seeking the right answer over the partisan one', keys: [
+      'Republican answer or the Democratic answer',
+      'a moral duty—to try to keep public debate'
+    ] },
+    { title: 'On an informed citizenry', keys: [
+      'no safe depository',
+      'Cherish therefore the spirit',
+      'diffusion of knowledge among the people',
+      'Wherever the people are well informed',
+      'Knowledge will forever govern ignorance',
+      'prepared to choose wisely',
+      'The point of voting'
+    ] },
+    { title: "On the citizen's own share of the work", keys: [
+      'government is ourselves and not an alien power',
+      'part-time profession of every citizen',
+      'Freedom is a fragile thing'
+    ] },
+    { title: 'On problems being solvable', keys: [
+      'No problem of human destiny'
+    ] }
+  ];
+  // chips + the one-line "what it used to say", from the verification pass — same snippet keys
+  var MARKS = {
+    'alternate domination of one faction':
+      [['fix', 'Elision marked', 'ellipsis stands for a full clause, not a silent cut']],
+    'common and continual mischiefs':
+      [['fix', 'Corrected', 'was <s>“the interest and duty”</s> → <b>“and the duty”</b>']],
+    'Wherever the people are well informed':
+      [['fix', 'Corrected', 'was <s>“Whenever … well-informed”</s> → <b>“Wherever … well informed”</b>']],
+    'Knowledge will forever govern ignorance':
+      [['fix', 'Corrected', 'was <s>“ignorance; … governors”</s> → <b>“ignorance: … Governors”</b>']],
+    'government is ourselves and not an alien power':
+      [['fix', 'Restored', 'the circulating ellipsis deleted the officials who are <b>not</b> the ultimate rulers']],
+    'The point of voting':
+      [['clean', 'Verbatim', 'arrived needing no correction']],
+    'a moral duty—to try to keep public debate':
+      [['fix', 'Corrected', 'was <s>“has a moral duty”</s> → <b>“has a duty—a moral duty—”</b>']],
+    'part-time profession of every citizen':
+      [['fix', 'Restored', 'the popular cut stops at <s>“every citizen”</s>, dropping the whole qualifier']],
+    'No problem of human destiny':
+      [['fix', 'Corrected', 'was <s>“may be solved”</s> → <b>“can be solved”</b>; “manmade” is the Public Papers spelling']],
+    'Freedom is a fragile thing':
+      [['fix', 'Restored', 'usually cut to <s>“Freedom is never more than…”</s>, losing <b>“is a fragile thing and it’s”</b>'],
+       ['flag', 'Not as President', 'said as Governor of California, 1967']]
+  };
+
+  // resolve a snippet to exactly one quote, or complain loudly rather than quietly drop it
+  var unresolved = [];
+  function bySnippet(key) {
+    var hits = Q.QUOTES.filter(function (q) { return q.text.indexOf(key) >= 0; });
+    if (hits.length !== 1) { unresolved.push(key + ' (matched ' + hits.length + ')'); return null; }
+    return hits[0];
+  }
+
+  // ── figure geometry ───────────────────────────────────────────────────
+  var S = 0.58;
+  var PELVIS_X = 54, PELVIS_Y = 92, LEDGE_Y = 98;   // within the 152x148 canvas
+  var QUOTE_TRANS = 0.5, QUOTE_GLANCE = 0.35;
+  var KEYS = ['lean', 'headTilt', 'bob', 'hunch', 'armRU', 'armRF', 'armLU', 'armLF',
+              'legRU', 'legRF', 'legLU', 'legLF'];
+
+  function blend(a, b, u) {
+    var p = {}, i, k;
+    for (i = 0; i < KEYS.length; i++) { k = KEYS[i]; p[k] = (a[k] || 0) + ((b[k] || 0) - (a[k] || 0)) * u; }
+    return p;
+  }
+  function smooth01(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
+
+  // both poses lifted from ev-figures.js so the sequence matches the homepage
+  function quoteGlance(t) {
+    var p = A.read.frame(t);
+    var br = Math.sin(t * 0.28 * Math.PI * 2);
+    p.hunch = -(14 + br * 2);
+    p.headTilt = 6 + Math.sin(t * 0.4 * Math.PI * 2) * 3;
+    return p;
+  }
+  function quoteHold(t) {
+    var p = Object.assign({}, R.REST);
+    var br = Math.sin(t * 0.26 * Math.PI * 2);
+    p.lean = 2;
+    p.hunch = -(4 + br * 2);
+    p.bob = br * 1.2;
+    p.headTilt = 9 + Math.sin(t * 0.32 * Math.PI * 2) * 3;
+    p.armRU = 30 + br;  p.armRF = 88 + br * 3;
+    p.armLU = 22 - br;  p.armLF = 80 + br * 2;
+    p.legRU = 78; p.legRF = 11;
+    p.legLU = 70; p.legLF = 5;
+    return p;
+  }
+
+  function themeName() {
+    var t = document.documentElement.getAttribute('data-theme');
+    if (t === 'dark' || t === 'light') return t;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  var readers = [];
+
+  function paint(c) {
+    var ctx = c.ctx, t = c.t;
+    ctx.setTransform(c.dpr, 0, 0, c.dpr, 0, 0);
+    ctx.clearRect(0, 0, 152, 148);
+    var pose, u, book = true;
+    if (c.qs === 'read') {
+      pose = c.qGlance > 0
+        ? blend(A.read.frame(t), quoteGlance(t), smooth01(c.qGlance))
+        : A.read.frame(t);
+    } else if (c.qs === 'lookup') {
+      u = smooth01(Math.min(1, c.qsT / QUOTE_TRANS));
+      pose = blend(A.read.frame(t), quoteHold(t), u);
+    } else if (c.qs === 'hold') {
+      pose = quoteHold(t);
+    } else {                                  // resume
+      u = smooth01(Math.min(1, c.qsT / QUOTE_TRANS));
+      pose = blend(quoteHold(t), A.read.frame(t), u);
+    }
+    ctx.save();
+    ctx.translate(PELVIS_X, PELVIS_Y);
+    ctx.scale(S, S);
+    R.draw(ctx, R.computePose(pose, CFG, { x: 0, y: 0 }), CFG, { color: c.color, book: book });
+    ctx.restore();
+  }
+
+  // The homepage anchors the bubble to the head top: seat line minus (128 + R) * S,
+  // in DOCUMENT coordinates. Same formula here, measured off the reader's own ledge.
+  function anchorOf(c) {
+    var r = c.perch.getBoundingClientRect();
+    var sx = window.scrollX || window.pageXOffset || 0;
+    var sy = window.scrollY || window.pageYOffset || 0;
+    return {
+      headX: r.left + sx + PELVIS_X,
+      headY: r.top + sy + LEDGE_Y - (128 + CFG.R) * S,
+      tone: c.color,
+      quote: c.quote
+    };
+  }
+
+  function closeOthers(except) {
+    readers.forEach(function (c) {
+      if (c === except) return;
+      if (c.qh) { Q.close(c.qh); c.qh = null; }
+      if (c.qs === 'hold' || c.qs === 'lookup') { c.qs = 'resume'; c.qsT = 0; }
+      c.el.setAttribute('data-open', '0');
+      c.hint.textContent = 'click to hear him';
+    });
+  }
+
+  function activate(c) {
+    if (c.qs === 'hold') {                       // clicking him again puts him back to his book
+      if (c.qh) { Q.close(c.qh); c.qh = null; }
+      c.qs = 'resume'; c.qsT = 0;
+      c.el.setAttribute('data-open', '0');
+      c.hint.textContent = 'click to hear him';
+      return;
+    }
+    if (c.qs === 'lookup') return;
+    closeOthers(c);
+    c.qs = 'lookup'; c.qsT = 0;
+    c.el.setAttribute('data-open', '1');
+    c.hint.textContent = 'looking up…';
+    wake();
+  }
+
+  // ── build the shelves ─────────────────────────────────────────────────
+  var host = document.getElementById('sections');
+  var seq = 0;
+  var placed = {};
+
+  THEMES.forEach(function (theme) {
+    var sec = document.createElement('section');
+    var head = document.createElement('div');
+    head.className = 'theme-head';
+    var h2 = document.createElement('h2');
+    h2.textContent = theme.title;
+    var cnt = document.createElement('p');
+    cnt.className = 'count';
+    cnt.textContent = theme.keys.length + (theme.keys.length === 1 ? ' reader' : ' readers');
+    head.appendChild(h2); head.appendChild(cnt);
+
+    var shelf = document.createElement('div');
+    shelf.className = 'shelf';
+
+    theme.keys.forEach(function (key) {
+      var q = bySnippet(key);
+      if (!q) return;
+      placed[q.text] = true;
+      var tone = TONE[q.who] != null ? TONE[q.who] : 0;
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'reader';
+      btn.setAttribute('data-open', '0');
+      btn.setAttribute('aria-label', 'Open the quote bubble for ' + q.who + ', ' + q.where);
+
+      var perch = document.createElement('div');
+      perch.className = 'perch';
+      var canvas = document.createElement('canvas');
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(152 * dpr);
+      canvas.height = Math.round(148 * dpr);
+      perch.appendChild(canvas);
+
+      var who = document.createElement('p');
+      who.className = 'who';
+      var dot = document.createElement('span'); dot.className = 'dot';
+      who.appendChild(dot);
+      who.appendChild(document.createTextNode(q.who));
+
+      var cite = document.createElement('p');
+      cite.className = 'cite';
+      cite.textContent = q.where;
+
+      var hint = document.createElement('p');
+      hint.className = 'hint';
+      hint.textContent = 'click to hear him';
+
+      btn.appendChild(perch);
+      btn.appendChild(who);
+      btn.appendChild(cite);
+      btn.appendChild(hint);
+
+      var marks = MARKS[key] || [];
+      if (marks.length) {
+        var chips = document.createElement('div');
+        chips.className = 'chips';
+        marks.forEach(function (m) {
+          var s = document.createElement('span');
+          s.className = 'chip ' + m[0];
+          s.textContent = m[1];
+          chips.appendChild(s);
+        });
+        btn.appendChild(chips);
+        marks.forEach(function (m) {
+          var p = document.createElement('p');
+          p.className = 'was';
+          p.innerHTML = m[2];
+          btn.appendChild(p);
+        });
+      }
+
+      shelf.appendChild(btn);
+
+      var c = {
+        el: btn, perch: perch, hint: hint, canvas: canvas,
+        ctx: canvas.getContext('2d'), dpr: dpr,
+        tone: tone, color: FIG.light[tone], quote: q,
+        qs: 'read', qsT: 0, qGlance: 0, qh: null,
+        t: seq * 1.37, hover: false, live: true
+      };
+      seq++;
+      readers.push(c);
+
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); activate(c); });
+      btn.addEventListener('pointerenter', function () { c.hover = true; wake(); });
+      btn.addEventListener('pointerleave', function () { c.hover = false; wake(); });
+      btn.addEventListener('focus', function () { c.hover = true; wake(); });
+      btn.addEventListener('blur', function () { c.hover = false; wake(); });
+    });
+
+    sec.appendChild(head);
+    sec.appendChild(shelf);
+    host.appendChild(sec);
+  });
+
+  // Coverage guard: a quote in the pool that no theme claimed, or a key that matched nothing, is a
+  // wiring bug. Say so on the page — the failure mode being guarded against is a quote silently
+  // going missing from a page whose whole job is to show all of them.
+  (function () {
+    var missing = Q.QUOTES.filter(function (q) { return !placed[q.text]; });
+    if (!missing.length && !unresolved.length) return;
+    var warn = document.createElement('section');
+    var h = document.createElement('div');
+    h.className = 'theme-head';
+    var h2 = document.createElement('h2');
+    h2.textContent = 'Not shown above — this is a wiring bug, not a design choice';
+    h.appendChild(h2);
+    warn.appendChild(h);
+    var ul = document.createElement('ul');
+    ul.style.cssText = 'margin:0;padding-left:1.2rem;font-size:var(--step--1);color:var(--flag)';
+    missing.forEach(function (q) {
+      var li = document.createElement('li');
+      li.textContent = 'in the pool but claimed by no theme: ' + q.who + ' — ' + q.where;
+      ul.appendChild(li);
+    });
+    unresolved.forEach(function (k) {
+      var li = document.createElement('li');
+      li.textContent = 'theme key resolved to the wrong number of quotes: ' + k;
+      ul.appendChild(li);
+    });
+    warn.appendChild(ul);
+    host.appendChild(warn);
+  })();
+
+  // Tallies are COUNTED, never typed. The hand-written version of this strip said "8 speakers" when
+  // there were 9, and claimed a read-at-source figure that a later removal changed.
+  (function () {
+    var qs = Q.QUOTES;
+    var speakers = {};
+    qs.forEach(function (q) { speakers[q.who] = 1; });
+    // Count the chip LABEL, not its CSS class. "Corrected", "Restored" and "Elision marked" all
+    // share the `fix` styling, so counting classes reported 9 corrections where there are 5 —
+    // counting the right thing matters as much as not typing the number by hand.
+    var byLabel = {};
+    Object.keys(MARKS).forEach(function (k) {
+      MARKS[k].forEach(function (m) { byLabel[m[1]] = (byLabel[m[1]] || 0) + 1; });
+    });
+    var set = function (id, v) { document.getElementById(id).textContent = v; };
+    set('t-quotes', qs.length);
+    set('t-speakers', Object.keys(speakers).length);
+    // every remaining entry was read on its own linked page — the one that wasn't has been removed
+    set('t-read', qs.length);
+    set('t-fixed', byLabel['Corrected'] || 0);
+    set('t-restored', byLabel['Restored'] || 0);
+    set('t-flagged', byLabel['Not as President'] || 0);
+  })();
+
+  function retone() {
+    var pal = FIG[themeName()];
+    readers.forEach(function (c) {
+      c.color = pal[c.tone % pal.length];
+      c.el.style.setProperty('--tone', c.color);
+      if (c.qh) c.qh.el.style.setProperty('--tone', c.color);
+      paint(c);
+    });
+  }
+  retone();
+
+  // ── click-off and Escape dismiss, same as the homepage ────────────────
+  document.addEventListener('click', function () {
+    if (Q.openCount()) closeOthers(null);
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && Q.openCount()) closeOthers(null);
+  });
+
+  // ── paint only what's on screen ───────────────────────────────────────
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        for (var i = 0; i < readers.length; i++) {
+          if (readers[i].el === e.target) { readers[i].live = e.isIntersecting; break; }
+        }
+      });
+    }, { rootMargin: '150px' });
+    readers.forEach(function (c) { io.observe(c.el); });
+  }
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var raf = null, last = 0;
+
+  function frame(now) {
+    var dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
+    last = now;
+
+    // the real bubble clock — expired handles send their reader back to his book
+    var expired = Q.tick(dt);
+    if (expired.length) {
+      readers.forEach(function (c) {
+        if (c.qh && expired.indexOf(c.qh) >= 0) {
+          c.qh = null; c.qs = 'resume'; c.qsT = 0;
+          c.el.setAttribute('data-open', '0');
+          c.hint.textContent = 'click to hear him';
+        }
+      });
+    }
+
+    readers.forEach(function (c) {
+      if (!reduce.matches) c.t += dt;
+      c.qsT += dt;
+
+      if (c.qs === 'read') {
+        c.qGlance += (c.hover ? dt : -dt) / QUOTE_GLANCE;
+        if (c.qGlance < 0) c.qGlance = 0;
+        if (c.qGlance > 1) c.qGlance = 1;
+      } else if (c.qs === 'lookup') {
+        if (c.qsT >= QUOTE_TRANS) {
+          c.qs = 'hold'; c.qsT = 0;
+          c.qh = Q.open(anchorOf(c));
+          c.hint.textContent = 'speaking — 12s';
+          report(c);
+        }
+      } else if (c.qs === 'hold') {
+        if (c.qh) c.qh.setHeld(c.hover);      // hovering him pauses his own bubble
+      } else if (c.qs === 'resume') {
+        if (c.qsT >= QUOTE_TRANS) { c.qs = 'read'; c.qsT = 0; c.qGlance = 0; }
+      }
+
+      if (c.live) paint(c);
+    });
+
+    raf = requestAnimationFrame(frame);
+  }
+  function wake() { if (!raf) raf = requestAnimationFrame(frame); }
+  wake();
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retone);
+  new MutationObserver(retone).observe(document.documentElement,
+    { attributes: true, attributeFilter: ['data-theme'] });
+
+  // keep an open bubble pinned to its reader through resize / scroll reflow
+  window.addEventListener('resize', function () {
+    readers.forEach(function (c) {
+      if (!c.qh) return;
+      var a = anchorOf(c);
+      c.qh.headX = a.headX; c.qh.headY = a.headY;
+      Q.close(c.qh);
+      c.qh = Q.open(a);
+    });
+    stamp();
+  });
+
+  // ── the bench: measure the real component ─────────────────────────────
+  var vwEl = document.getElementById('vw');
+  var bwEl = document.getElementById('bw');
+  var results = document.getElementById('results');
+
+  function measureOne(q, tone) {
+    // a real .ev-quote, built the same way, measured offscreen and thrown away
+    var el = document.createElement('div');
+    el.className = 'ev-quote';
+    el.style.setProperty('--tone', tone);
+    el.style.left = '-9999px';
+    el.style.top = '0px';
+    el.style.visibility = 'hidden';
+    var qq = document.createElement('q');
+    qq.textContent = q.text;
+    var at = document.createElement('div');
+    at.className = 'attrib';
+    at.appendChild(document.createTextNode('— '));
+    var a = document.createElement('a');
+    a.href = q.href; a.textContent = q.who;
+    at.appendChild(a);
+    var wh = document.createElement('span');
+    wh.className = 'where'; wh.textContent = q.where;
+    at.appendChild(wh);
+    el.appendChild(qq); el.appendChild(at);
+    document.body.appendChild(el);
+    var box = { w: el.offsetWidth, h: el.offsetHeight, qh: qq.offsetHeight };
+    document.body.removeChild(el);
+    return box;
+  }
+
+  function stamp() {
+    vwEl.textContent = document.documentElement.clientWidth + 'px';
+    var probe = measureOne(Q.QUOTES[0], '#000');
+    bwEl.textContent = probe.w + 'px';
+  }
+  stamp();
+
+  function report(c) {
+    var m = measureOne(c.quote, c.color);
+    c.hint.textContent = 'speaking — bubble ' + m.w + '×' + m.h + 'px';
+  }
+
+  document.getElementById('measure').addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    var pal = FIG[themeName()];
+    var rows = Q.QUOTES.map(function (q, i) {
+      var tone = pal[(TONE[q.who] != null ? TONE[q.who] : 0) % pal.length];
+      var m = measureOne(q, tone);
+      return { q: q, i: i, h: m.h, w: m.w, chars: q.text.length, tone: tone };
+    }).sort(function (a, b) { return b.h - a.h; });
+
+    var tallest = rows[0].h;
+    var vh = window.innerHeight;
+    var tbl = document.createElement('table');
+    tbl.className = 'heights';
+    tbl.innerHTML = '<thead><tr><th>Speaker</th><th>Citation</th>' +
+      '<th style="text-align:right">Chars</th><th style="text-align:right">Bubble</th></tr></thead>';
+    var tb = document.createElement('tbody');
+    rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      if (r.h > vh * 0.55) tr.className = 'tall';
+      tr.innerHTML =
+        '<td><span class="swatch" style="background:' + r.tone + '"></span>' + r.q.who + '</td>' +
+        '<td class="cite">' + r.q.where + '</td>' +
+        '<td class="num">' + r.chars + '</td>' +
+        '<td class="num">' + r.w + '×' + r.h + '</td>';
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+
+    var summary = document.createElement('p');
+    summary.className = 'readout';
+    summary.style.marginTop = '0.75rem';
+    summary.innerHTML = 'Tallest <b>' + tallest + 'px</b> at ' + rows[0].w +
+      'px wide · shortest <b>' + rows[rows.length - 1].h + 'px</b> · viewport height <b>' +
+      vh + 'px</b>. Rows in red need more than 55% of this viewport’s height, so they are the ' +
+      'ones to watch on a short screen.';
+
+    results.textContent = '';
+    results.appendChild(tbl);
+    results.appendChild(summary);
+  });
+
+  document.getElementById('closeall').addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    closeOthers(null);
+  });
+})();
+</script>
