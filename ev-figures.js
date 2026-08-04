@@ -291,7 +291,7 @@
       }
     }
 
-    var FLEE_SPEED = 190, FLEE_DROP = 50;
+    var FLEE_SPEED = 190, FLEE_DROP = 50, RAISE_SECS = 0.45;
 
     // Arms straight overhead, flailing. Legs come from scurry so the run reads as a proper
     // panicked sprint. Remember 0deg is straight DOWN in this rig and 90 is horizontal, so
@@ -304,6 +304,36 @@
       p.armLU = -168 + f2 * 16; p.armLF = -150 + f1 * 30;
       p.headTilt = 8 + f2 * 7;
       p.hunch = -6 + f1 * 3;
+      return p;
+    }
+
+    // The pose the hands-up raise lands on, before the run takes over. Starts from the un-flailed
+    // centre of fleePose — seed 0 at t 0 zeroes both flail terms, which also leaves both legs
+    // straight underneath him via makeGait's sin(t) stride — then deliberately breaks the symmetry
+    // that leaves behind.
+    // Held still at this 0.32 scale, a symmetric pair of arms straight overhead (fleePose's own
+    // armRU 168 / armRF 150, i.e. 12deg and 30deg off vertical) merges into the head-and-torso line
+    // and the figure reads as one vertical stick — the hands-up doesn't land at all. The RUNNING
+    // figures read fine on the same numbers only because fleePose mixes its two flail terms
+    // differently into each arm, so one arm is always up while the other is out. This bakes that
+    // asymmetry in: one arm straight up and out, the other bent. The angles land near the edges of
+    // the flail's own range (armRU 152..184, armRF 120..180) rather than inside it, so the handoff
+    // into the run costs a few degrees in a single frame — less than the change between any two
+    // consecutive running frames.
+    function raisePose() {
+      var p = fleePose(0, 0);
+      // armRF/armLF are ABSOLUTE directions, not angles relative to the upper arm, so keeping each
+      // forearm near its own upper arm is what makes the arm read as one straight limb. The
+      // up-and-out pair is cwStar's (142/150), which already reads as arms-up elsewhere in the file.
+      // Both arms have to clear the head: anything inside ~30deg of vertical disappears behind it at
+      // this scale, which is why one arm is straight and the other bends outward rather than one
+      // simply being thrown higher.
+      p.armRU = 142; p.armRF = 150;      // straight up and out
+      p.armLU = -148; p.armLF = -130;    // bent at the elbow, hand swinging wide of the head
+      // A hair of stance, because fleePose's legs at t=0 are both at exactly 0 and overlap into a
+      // single thick line — fine for a running figure whose legs are moving, but a figure standing
+      // still on one apparent leg reads as a stick rather than a person.
+      p.legRU = 7; p.legRF = 5; p.legLU = -7; p.legLF = -5;
       return p;
     }
 
@@ -327,26 +357,36 @@
       // resize the old ink is gone. (Two-figure scenes: the ink spans both, so the midpoint
       // lands between them — accepted, one runner per entry by design.)
       var figScreenX = cr.left + e.w / 2;                // fallback if no ink is found
+      var inkFloor = -1;                                 // ditto: -1 means "no ink, use h - 6"
       try {
         var scanW = e.c.width, scanH = e.c.height;
         var img = e.ctx.getImageData(0, 0, scanW, scanH).data;
-        var minX = -1, maxX = -1;
+        var minX = -1, maxX = -1, maxY = -1;
         for (var yy = 0; yy < scanH; yy++) {
           var rowBase = yy * scanW * 4;
           for (var xx = 0; xx < scanW; xx++) {
             if (img[rowBase + xx * 4 + 3] > 8) {
               if (minX < 0) minX = xx;
-              maxX = xx;
+              if (xx < minX) minX = xx;
+              if (xx > maxX) maxX = xx;
+              if (yy > maxY) maxY = yy;
             }
           }
         }
         if (minX >= 0) {
           var ratio = scanW / e.w;                       // device px per css px
           figScreenX = cr.left + (minX + maxX) / 2 / ratio;
+          inkFloor = maxY / (scanH / e.h);               // lowest painted pixel = where he actually stands
         }
       } catch (err) { /* fall back to the canvas-centre estimate */ }
 
-      var oldFloor = e.h - 6;                            // his floor, in the OLD canvas's local coords — capture before sizeCanvas overwrites e.h
+      // His floor, in the OLD canvas's local coords — captured before sizeCanvas overwrites e.h.
+      // `e.h - 6` is only his floor for modes that draw at feetY = h - 6. A seated reader is drawn
+      // at h - 42 with his shins dangling, and the rope Bobit hangs in mid-air, so assuming h - 6
+      // TELEPORTED them: they popped to a different height and ran off through empty space instead
+      // of along the base they were standing on. The ink's bottom edge is where he visibly is,
+      // whatever his mode does — same ask-the-pixels approach as the x above.
+      var oldFloor = (inkFloor >= 0) ? inkFloor : (e.h - 6);
       var newW = fitW(document.documentElement.clientWidth);
       var newH = e.h + FLEE_DROP + 40;                   // room to fall below the ledge
       sizeCanvas(e, newW, newH);
@@ -363,9 +403,17 @@
       e.c.style.position = 'fixed';
       var newLeft = fitLeft(0, e.w, 0);                  // viewport coords now, so sx drops out
       e.c.style.left = newLeft + 'px';
-      e.c.style.top = (cr.bottom - 6 - oldFloor) + 'px'; // floor line stays exactly where it was on screen; headroom above it is unchanged, so all of FLEE_DROP+40 lands below it
+      // Leave the top edge exactly where it was. sizeCanvas only ever grows this canvas DOWNWARD
+      // (newH = e.h + FLEE_DROP + 40, and local y is measured from the top edge), so a canvas that
+      // does not move keeps every local y — including oldFloor — pointing at the same screen row it
+      // did before the resize, and all of the new headroom lands below him to fall into.
+      // This used to read `cr.bottom - 6 - oldFloor`, which is only `cr.top` while oldFloor is
+      // `e.h - 6`. Once oldFloor became the measured ink bottom the two h-6 assumptions cancelled
+      // exactly and the floor still landed on the h-6 line: a seated reader dropped 12px and a
+      // rope-hanger dropped 225px into mid-air. Fixing the scan without fixing this line is a no-op.
+      e.c.style.top = cr.top + 'px';
 
-      e.fl = 'run'; e.flT = 0;
+      e.fl = 'raise'; e.flT = 0;                         // hands up first, then 'run' takes over
       e.flX = figScreenX - newLeft;                      // canvas-local x
       e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
       e.flFloor = oldFloor;                              // canvas-local floor line
@@ -383,9 +431,10 @@
       }
     }
 
-    // HEAP_YOFF exists because drawFig's `rot` pivots about the figure's FEET, so tipping him
-    // ~83deg would swing him around that point rather than lay him down. The cartwheel gag
-    // solves the same problem with its `lieY`; this is the equivalent nudge.
+    // HEAP_YOFF exists because drawFig's `rot` pivots about the point handed to drawFig — the
+    // figure's PELVIS, since computePose builds outward from there — so tipping him ~83deg swings
+    // him about his middle and leaves him lying a leg's length above the ground rather than on it.
+    // The cartwheel gag solves the same problem with its `lieY`; this is the equivalent nudge.
     var HEAP_HOLD = 1.0, DROP_SECS = 0.45, GETUP_SECS = 0.9, HEAP_YOFF = 14;
 
     // He limps off favouring his right leg — same trick as the beam ball-gag's foot-drop: a
@@ -404,13 +453,27 @@
       return p;
     }
 
-    // Draw one fleeing figure. Sub-machine: run -> (drop -> heap -> getup -> limp) if his perch
-    // runs out before he reaches a screen edge.
+    // Draw one fleeing figure. Sub-machine: raise -> run -> (drop -> heap -> getup -> limp) if his
+    // perch runs out before he reaches a screen edge.
     function drawFlee(e, ctx, w, col, dt) {
       e.flT += dt;
       var pose, rot = 0, yOff = e.flYOff || 0;
 
-      if (e.fl === 'run') {
+      if (e.fl === 'raise') {
+        // The hands go up before the legs go: a beat of standing panic, then the sprint. flX is
+        // untouched here, so he throws his arms up on the spot he was occupying.
+        // He rises to raisePose() rather than to his own seeded fleePose: at t=0 the two flail terms
+        // are the constants sin(seed) and sin(2.1 * seed), and for some seeds they push the upper arm
+        // past vertical AND straighten the forearm, so the arms fold onto the torso and he reads as
+        // one vertical stick at the exact frame the hands-up is meant to land. Handing off to a run
+        // that starts flailing from t=0 costs a few degrees of arm angle in one frame — less than the
+        // change between any two consecutive running frames, and invisible next to the legs starting
+        // to move. The per-figure flail still de-synchronises the group the instant they run, which
+        // is where it earns its keep; here the whole room reacting on the same beat is the joke.
+        var rz = smooth01(Math.min(1, e.flT / RAISE_SECS));
+        pose = lerpPose(A.standstill.frame(0), raisePose(), rz);
+        if (e.flT >= RAISE_SECS) { e.fl = 'run'; e.flT = 0; }
+      } else if (e.fl === 'run') {
         e.flX += FLEE_SPEED * e.flDir * dt;
         pose = fleePose(e.flT, e.flSeed);
         // ran off the end of his perch? then there is nothing under him
@@ -444,7 +507,13 @@
       e.flYOff = yOff;
       var groundY = e.flFloor + yOff;
       R.drawShadow(ctx, e.flX, groundY, 15, 'rgba(127,127,127,0.18)');
-      drawFig(ctx, e.flX, groundY, S, e.flDir < 0, pose, { color: col, rot: rot });
+      // drawFig's y is the PELVIS, not the floor: computePose builds outward from the pelvis and
+      // the legs reach 112 rig-units (112 * S ~= 36px) below it, which is why every other caller
+      // in this file passes `feetY - 112 * S`. drawFlee alone passed the ground line straight
+      // through, so every runner was drawn 36px into the floor with his own shadow hovering above
+      // his head — measured, not guessed: a stander's floor line sat at screen y 734 and his ink
+      // bottom at 770. Same class of mistake as the flee floor above, one call lower down.
+      drawFig(ctx, e.flX, groundY - 112 * S, S, e.flDir < 0, pose, { color: col, rot: rot });
 
       if (e.flDog) {
         e.flDog.x += FLEE_SPEED * 1.25 * e.flDog.dir * dt;

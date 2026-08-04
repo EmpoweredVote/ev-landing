@@ -61,6 +61,12 @@ async function run(browser, width) {
     console.log(width + 'px: no patrol entries in this cast — finding-1 pixel-scan check skipped this run');
   }
 
+  // They stand still with their hands up for RAISE_SECS before a single step, so sampling from the
+  // instant of arming would measure the raise, not the run.
+  await page.waitForFunction(function () {
+    return window.__evFigDebug.entries.some(function (e) { return e.fl === 'run' && !e.gone; });
+  }, { timeout: 4000 });
+
   const moving = await page.evaluate(async function () {
     var d = window.__evFigDebug;
     function xs() {

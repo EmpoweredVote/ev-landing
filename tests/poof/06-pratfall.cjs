@@ -82,13 +82,16 @@ const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
     for (let i = 1; i < idx.length; i++) {
       assert.ok(idx[i] > idx[i - 1], 'pratfall out of order: ' + s.join('>'));
     }
-    assert.strictEqual(s[0], 'run', 'a pratfall must start from the run: ' + s.join('>'));
+    // 'raise' (hands up on the spot) always comes first, and the run always precedes the fall
+    assert.strictEqual(s[0], 'raise', 'a flee must start from the hands-up raise: ' + s.join('>'));
+    assert.strictEqual(s[1], 'run', 'the raise must hand off to the run: ' + s.join('>'));
   });
 
-  // every recorded sequence must be one of the two legal shapes
+  // every recorded sequence must be one of the legal shapes
   seen.forEach(function (s) {
     const uniq = s.join('>');
-    const legal = /^run$/.test(uniq) || /^run>drop>heap>getup>limp$/.test(uniq);
+    const legal = /^raise$/.test(uniq) || /^raise>run$/.test(uniq) ||
+                  /^raise>run>drop>heap>getup>limp$/.test(uniq);
     assert.ok(legal, 'unexpected flee sequence: ' + uniq);
   });
 
