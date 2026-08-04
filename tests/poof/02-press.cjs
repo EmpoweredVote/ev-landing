@@ -14,6 +14,21 @@ async function load(browser) {
   return page;
 }
 
+// Wait for the phase machine to be genuinely idle before starting the next gesture.
+//
+// Every cancel path (early release, Escape, blur, touch-move) leaves POOF in 'fizzle', which drains
+// back to 'idle' over 0.4s, and a fresh press is refused while it is still draining. The fixed
+// sleeps after each cancel used to be the only cover for that drain, and the one after blur left
+// 100ms of margin over a 400ms fizzle — ample on an idle machine, not ample with the whole suite
+// running back to back. Seen once in a full-suite run: the next touchstart landed mid-fizzle, was
+// refused, and the phase assertion read 'fizzle' instead of 'holding'. Both this file and the code
+// under test were correct; the test was racing a duration instead of waiting for a condition.
+async function settle(page) {
+  await page.waitForFunction(function () {
+    return window.__evFigDebug.poof.phase === 'idle';
+  }, { timeout: 5000 });
+}
+
 // a point that is definitely ON painted ink, and one definitely off it but inside the same canvas
 async function points(page) {
   return page.evaluate(function () {
@@ -114,6 +129,7 @@ async function points(page) {
   // Escape cancels too — figures keep animating/repositioning while the clock runs, so re-locate
   // painted ink now: several seconds have passed since pts2 was captured and that pixel may no
   // longer be on him
+  await settle(page);
   pts2 = await points(page);
   assert.ok(pts2, 'no painted Bobit found to test Escape-cancel against');
   await page.evaluate(function (p) {
@@ -129,6 +145,7 @@ async function points(page) {
   assert.ok(afterEsc === 'idle' || afterEsc === 'fizzle', 'Escape must cancel, got ' + afterEsc);
 
   // window blur cancels too — re-locate again for the same reason
+  await settle(page);
   pts2 = await points(page);
   assert.ok(pts2, 'no painted Bobit found to test blur-cancel against');
   await page.evaluate(function (p) {
@@ -147,6 +164,7 @@ async function points(page) {
   // this dispatches a plain Event carrying a manually-attached `touches` array of plain
   // {clientX, clientY} objects — the touchstart/touchmove handlers only ever read
   // ev.touches.length and ev.touches[0].clientX/clientY, so this is a faithful stand-in.
+  await settle(page);
   pts2 = await points(page);
   assert.ok(pts2, 'no painted Bobit found to test touch-move-cancel against');
   await page.evaluate(function (p) {
