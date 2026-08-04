@@ -21,7 +21,7 @@ const path = require('path');
       })
     };
   });
-  assert.strictEqual(shape.count, 19, 'pool should hold 19 quotes');
+  assert.strictEqual(shape.count, 18, 'pool should hold 18 quotes');
   assert.deepStrictEqual(shape.keys, ['href', 'text', 'where', 'who']);
   assert.ok(shape.allHttps, 'every href must be https');
   assert.ok(shape.allFilled, 'every field must be populated');

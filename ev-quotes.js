@@ -87,16 +87,11 @@
       where: "to Richard Price, 8 January 1789",
       href: "https://tjrs.monticello.org/letter/118"
     },
-    {
-      // Jefferson's spelling is "enquiry", twice — not "inquiry". And this is from the draft he
-      // decided NOT to send, noting at its foot: "On further consideration, this letter was not
-      // sent, mr Wendover's character & calling being entirely unknown." The sent version omits
-      // the passage entirely, so `where` has to say draft or the citation is a fiction.
-      text: "Difference of opinion leads to enquiry, and enquiry to truth; and that, I am sure, is the ultimate and sincere object of us both.",
-      who: "Thomas Jefferson",
-      where: "draft letter to Peter H. Wendover, 13 March 1815 (not sent)",
-      href: "https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0002"
-    },
+    // The Jefferson "enquiry to truth" passage was here and was REMOVED on 4 August 2026. He wrote
+    // it in a draft and then decided not to send it — a letter withheld is closer to something
+    // unpublished than to something said, and it was the weakest line in the pool on its own merits
+    // besides. It was also the only entry never read on its own linked page. See the Removed section
+    // of presidential_quotes.md. Do not restore it without reading that first.
     {
       // Colon after "ignorance", not a semicolon, and Madison capitalises "Governors" — the
       // circulating version lowercases it and swaps the colon out.

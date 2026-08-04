@@ -20,24 +20,31 @@ ungarbled, it is much less compelling than the misquotation that was circulating
 a Wayback Machine capture (`https://web.archive.org/web/2024id_/<url>`) served instead — that is how
 the Kennedy page was finally read.
 
-> **Second pass — August 3, 2026: twelve quotes added, pool now 19.** Two more Washington passages
-> from the Farewell Address, two Jefferson, one Madison, two Roosevelt, two Truman, one Eisenhower,
-> one Kennedy, one Reagan. Every link returns HTTP 200 and **eleven of the twelve** were read on the
-> linked page — the Wendover draft is the sole exception, below. Eighteen of the pool's nineteen
-> entries have now been read at their source. The same rule was applied throughout: **the entry says
-> what the linked page says**, even where that reads oddly to a modern eye.
+> **Second pass — August 3, 2026: twelve quotes added.** Two more Washington passages from the
+> Farewell Address, two Jefferson, one Madison, two Roosevelt, two Truman, one Eisenhower, one
+> Kennedy, one Reagan. Every link returns HTTP 200, and eleven of the twelve were read on the linked
+> page — the twelfth, the Wendover draft, has since been removed. The same rule was applied
+> throughout: **the entry says what the linked page says**, even where that reads oddly to a modern
+> eye.
 >
-> **Six of the twelve arrived misquoted** — these were supplied in their circulating form and
+> **Pool is 18 quotes from 9 speakers, and every one of them has now been read at its source.**
+> That last part became true on August 4, when the Wendover draft was cut — it was the only entry
+> whose page could not be opened. Every surviving entry now carries a ✅ status; a grep for the
+> warning marker returns nothing.
+>
+> **Five of the surviving additions arrived misquoted** — supplied in their circulating form and
 > corrected against the source:
 >
 > | Circulating | Source | Where |
 > |---|---|---|
 > | "the interest and duty of a wise people" | "the interest **and the** duty" | Washington, Farewell |
 > | "**Whenever** the people are **well-informed**" | "**Wherever** the people are **well informed**" | Jefferson to Price |
-> | "leads to **inquiry**, and **inquiry** to truth" | "leads to **enquiry**, and **enquiry** to truth" | Jefferson to Wendover |
 > | "govern ignorance**;** … their own **governors**" | "govern ignorance**:** … their own **Governors**" | Madison to Barry |
 > | "has a **moral duty** to try" | "has a duty—**a moral duty**—to try" | Truman, Citizenship |
 > | "they **may** be solved by man" | "they **can** be solved by man" | Kennedy, American University |
+>
+> A sixth correction — "inquiry" → Jefferson's own "**enquiry**" — belonged to the Wendover draft and
+> went with it; it is recorded under Removed so the finding is not lost.
 >
 > Three more were supplied truncated in ways that removed the substance rather than trimming it, and
 > have been restored to the full sentence — see the individual entries for **Roosevelt at Marietta**
@@ -45,10 +52,9 @@ the Kennedy page was finally read.
 > truncation dropped the entire qualifying clause) and **Reagan** ("Freedom is a fragile thing and
 > it's" is where the image lives).
 >
-> **Two provenance notes that change how an entry may be cited:** the Jefferson "enquiry to truth"
-> passage is from a draft he decided **not to send** and annotated as such, so its `where` says so;
-> and the Reagan line was said as **Governor of California in 1967**, not as President — flagged the
-> same way the 1958 Kennedy entry is.
+> **One provenance flag remains:** the Reagan line was said as **Governor of California in 1967**, not
+> as President — flagged the same way the 1958 Kennedy entry is. The other flag, the unsent Jefferson
+> draft, was the reason that entry was cut rather than kept with a caveat.
 
 ---
 
@@ -304,32 +310,6 @@ well-informed" form is what circulates and it is wrong on both counts.
 
 ---
 
-### Thomas Jefferson — Draft letter to Peter H. Wendover *(not sent)*
-
-> "difference of opinion leads to enquiry, and enquiry to truth; and that, I am sure, is the ultimate
-> and sincere object of us both."
-
-**Context and caveat:** Wendover, a New York congressman Jefferson had never corresponded with, sent
-him a sermon. Jefferson drafted a frank reply about clergy discussing public affairs from the pulpit,
-then thought better of it and noted at the foot of the draft: *"On further consideration, this letter
-was not sent, mr Wendover's character & calling being entirely unknown."* The much milder letter he
-actually sent does not contain this passage. **This must therefore never be cited as a letter to
-Wendover** — the `where` field reads "draft letter to Peter H. Wendover, 13 March 1815 (not sent)".
-
-**Source:** Thomas Jefferson to Peter H. Wendover (Draft), 13 March 1815. *Papers of Thomas Jefferson,
-Retirement Series.*
-**Link:** https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0002
-**Also:** https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0001 (editorial note),
-https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0003 (the version actually sent)
-**Status:** ⚠️ **Canonical, not read at source** — the weakest entry in this file. Founders Online
-answers automated requests with a bot challenge (HTTP 202, empty body), so the page could not be
-opened; the wording, the document title and Jefferson's foot-note were each returned identically by
-two independent searches of that page. Same category as the pre-existing Canonical entries, but worth
-opening in a browser and confirming by eye before anyone leans on it. Note Jefferson's spelling
-**"enquiry"** both times — the modernized "inquiry" is what circulates.
-
----
-
 ### James Madison — Letter to W. T. Barry
 
 > "A popular Government, without popular information, or the means of acquiring it, is but a Prologue
@@ -482,6 +462,36 @@ can be as big as he wants."
 ---
 
 ## Removed
+
+### Thomas Jefferson — Draft letter to Peter H. Wendover *(added and removed August 3–4, 2026)*
+
+> "difference of opinion leads to enquiry, and enquiry to truth; and that, I am sure, is the ultimate
+> and sincere object of us both."
+
+**Why it was cut.** Jefferson wrote this in a draft and then decided not to send it, noting at the foot
+of the page: *"On further consideration, this letter was not sent, mr Wendover's character & calling
+being entirely unknown."* **A letter withheld is closer to something unpublished than to something
+said** — putting it in a Bobit's mouth on the homepage claims he said it to someone, and he chose not
+to. It was also the least compelling line in the pool on its own merits, which made the call easy.
+
+Two things it was never confused about, recorded so nobody has to re-derive them: the spelling is
+Jefferson's own **"enquiry"** both times, not the modernized "inquiry" that circulates; and the much
+milder letter he actually *did* send omits the passage entirely, so it must never be cited as a letter
+to Wendover.
+
+It was also the only entry in the pool never read on its own linked page — Founders Online answers
+automated requests with a bot challenge (HTTP 202, empty body). Its wording, title and foot-note were
+each returned identically by two independent searches of that page, which is corroboration but below
+the bar every other entry meets. **Removing it means every remaining quote in the pool has been read
+at its source.**
+
+Thomas Jefferson to Peter H. Wendover (Draft), 13 March 1815. *Papers of Thomas Jefferson, Retirement
+Series* — https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0002
+Editorial note: https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0001 ·
+The version actually sent: https://founders.archives.gov/documents/Jefferson/03-08-02-0270-0003
+If it is ever restored, read the draft in a browser first, and keep "(not sent)" in the citation.
+
+---
 
 ### Thomas Jefferson — Letter to Francis Hopkinson *(removed August 2, 2026)*
 
