@@ -146,34 +146,53 @@ async function runResize(browser) {
       .map(function (e, i) {
         if (!e.fl || e.gone) return null;
         var dist = e.flDir < 0 ? (e.flX + 60) : (e.w + 60 - e.flX);
-        return { i: i, fl: e.fl, w: e.w, dist: dist };
+        var r = e.c.getBoundingClientRect();
+        return { i: i, fl: e.fl, w: e.w, dist: dist, screenX: r.left + e.flX };
       })
       .filter(function (x) { return x && x.dist > 60; });
   });
   assert.ok(before.length > 0, 'resize mid-flee: nobody had enough runway left to test the resize against');
 
-  // force a resize mid-flight — this is exactly what fires reposition() via the window listener
-  await page.setViewportSize({ width: 500, height: 900 });
+  // A shrink mid-exodus must not hand the page a horizontal scrollbar. Avoiding horizontal page
+  // scroll is a hard constraint (the bug fixed on 2026-08-02) and a phone rotating landscape ->
+  // portrait mid-flee is the real trigger.
+  //
+  // HOW that is achieved changed on 2026-08-04. These canvases used to go position:fixed while
+  // fleeing, so an over-wide one contributed nothing to the document and reposition() could skip
+  // them entirely — this test asserted the width was UNCHANGED across the resize. Fixed also meant
+  // scrolling no longer carried the runners, which made a fall to a section rule below the fold
+  // impossible to watch. They are position:absolute in document coords again, and refitFlee()
+  // re-clamps width and left on resize instead. So the width is now expected to CHANGE on a shrink;
+  // what must not change is his position on screen, or his sub-phase, or his existence.
+  //
+  // Two shrinks, because one cannot test both halves. A hard shrink to 360 crops runners out of the
+  // viewport entirely — at which point being removed is CORRECT, not a bug (measured: a runner at
+  // screen x 718 in a 900px viewport is genuinely off-screen once it is 500px wide), so it cannot
+  // also prove nobody vanished spuriously. So: first a gentle shrink that still contains every
+  // runner, which is where survival and the no-jump rebase are asserted; then the hard one, which is
+  // purely about overflow and finishing.
+  const gentleW = Math.max(420, Math.ceil(Math.max.apply(null, before.map(function (b) { return b.screenX; })) + 100));
+  await page.setViewportSize({ width: gentleW, height: 900 });
   await page.waitForTimeout(150);
 
-  // A shrink mid-exodus must not hand the page a horizontal scrollbar. reposition() skips
-  // fleeing entries (a full re-fit would yank the widened canvas out from under the run), so a
-  // viewport-wide flee canvas outlives the shrink at its old width — 900 -> 360 measured
-  // scrollWidth 896 vs clientWidth 360. Avoiding horizontal page scroll is a hard constraint
-  // (the bug fixed on 2026-08-02), and a phone rotating landscape -> portrait mid-flee is the
-  // real trigger.
   const shrunk = await page.evaluate(function () {
     return { scrollW: document.documentElement.scrollWidth, clientW: document.documentElement.clientWidth };
   });
   assert.ok(shrunk.scrollW <= shrunk.clientW,
-    'resize mid-flee: shrinking the viewport gave the page horizontal scroll (scrollWidth ' +
-    shrunk.scrollW + ' > clientWidth ' + shrunk.clientW + ')');
+    'resize mid-flee: shrinking the viewport to ' + gentleW + ' gave the page horizontal scroll ' +
+    '(scrollWidth ' + shrunk.scrollW + ' > clientWidth ' + shrunk.clientW + ')');
 
   const after = await page.evaluate(function (idxs) {
     var d = window.__evFigDebug;
     return idxs.map(function (i) {
       var e = d.entries[i];
-      return { fl: e.fl, gone: e.gone, w: e.w };
+      var r = e.c.parentNode ? e.c.getBoundingClientRect() : null;
+      return {
+        fl: e.fl, gone: e.gone, w: e.w,
+        pos: getComputedStyle(e.c).position,
+        // his x on screen: canvas viewport-left plus his canvas-local x
+        screenX: r ? r.left + e.flX : null
+      };
     });
   }, before.map(function (b) { return b.i; }));
 
@@ -181,15 +200,39 @@ async function runResize(browser) {
     var a = after[k];
     assert.ok(!a.gone,
       'resize mid-flee: entry ' + b.i + ' vanished right after the resize (canvas reset to w=' +
-      a.w + ', was ' + b.w + ') instead of continuing to run — reposition() reset the widened flee canvas out from under him');
-    assert.strictEqual(a.w, b.w,
-      'resize mid-flee: entry ' + b.i + ' canvas width changed from ' + b.w + ' to ' + a.w +
-      ' — reposition() reset the widened flee canvas out from under him');
+      a.w + ', was ' + b.w + ') instead of continuing to run');
     assert.strictEqual(a.fl, b.fl,
       'resize mid-flee: entry ' + b.i + ' lost its flee sub-phase across the resize');
+    assert.strictEqual(a.pos, 'absolute',
+      'resize mid-flee: entry ' + b.i + ' is position:' + a.pos + ', not absolute — a fleeing canvas ' +
+      'must stay in document coords so scrolling can follow a faller down to his line');
+    assert.ok(a.w <= shrunk.clientW,
+      'resize mid-flee: entry ' + b.i + ' canvas is ' + a.w + 'px wide in a ' + shrunk.clientW +
+      'px viewport — refitFlee() did not re-clamp it, which is what gives the page h-scroll');
+    // refitFlee rebases flX by the same delta it moves the canvas, so he must not jump. He is also
+    // still running, so allow a frame or two of real travel on top.
+    assert.ok(a.screenX != null && Math.abs(a.screenX - b.screenX) <= 40,
+      'resize mid-flee: entry ' + b.i + ' jumped from screen x ' + b.screenX.toFixed(1) + ' to ' +
+      a.screenX.toFixed(1) + ' across the resize — refitFlee() moved the canvas without rebasing flX');
   });
 
-  // the run must still finish despite the mid-flight resize
+  // Now the hard one: a phone-width rotation. Runners cropped out of the viewport may legitimately be
+  // removed here, so this half asserts only the overflow guarantee — and that the exodus still ends.
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.waitForTimeout(150);
+  const hard = await page.evaluate(function () {
+    return {
+      scrollW: document.documentElement.scrollWidth, clientW: document.documentElement.clientWidth,
+      widest: window.__evFigDebug.entries.reduce(function (m, e) {
+        return (e.fl && !e.gone && e.c.parentNode) ? Math.max(m, e.w) : m;
+      }, 0)
+    };
+  });
+  assert.ok(hard.scrollW <= hard.clientW,
+    'resize mid-flee: a 360px rotation gave the page horizontal scroll (scrollWidth ' + hard.scrollW +
+    ' > clientWidth ' + hard.clientW + '), widest live flee canvas ' + hard.widest + 'px');
+
+  // the run must still finish despite two mid-flight resizes
   await page.waitForFunction(function () {
     return window.__evFigDebug.poof.phase === 'cleared';
   }, { timeout: 20000 });

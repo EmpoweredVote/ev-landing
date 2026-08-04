@@ -305,15 +305,17 @@
     // across the page. Whichever edge of each element actually carries a border is the line.
     var BREAK_SELECTORS = 'header.site-banner, header.hero, section.why, section.how, section.watch, footer';
 
-    // VIEWPORT coords, and measured once when the cast is armed. Fleeing canvases are position:fixed
-    // and the exodus deliberately does not track scroll (see poofArmFlee), so a frozen viewport
-    // reading stays valid for the whole run.
+    // DOCUMENT coords, measured once when the cast is armed. Document rather than viewport because a
+    // fleeing canvas stays position:absolute in document space so you can scroll down and watch a
+    // faller land — see poofArmFlee. The page does not reflow during an exodus, so one reading holds
+    // for the whole run at any scroll position.
     function sectionBreakLines() {
+      var sy = window.scrollY || window.pageYOffset;
       var ys = [];
       document.querySelectorAll(BREAK_SELECTORS).forEach(function (el) {
         var cs = getComputedStyle(el), r = el.getBoundingClientRect();
-        if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') ys.push(r.top);
-        if (parseFloat(cs.borderBottomWidth) > 0 && cs.borderBottomStyle !== 'none') ys.push(r.bottom);
+        if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') ys.push(r.top + sy);
+        if (parseFloat(cs.borderBottomWidth) > 0 && cs.borderBottomStyle !== 'none') ys.push(r.bottom + sy);
       });
       ys.sort(function (a, b) { return a - b; });
       return ys.filter(function (y, i) { return i === 0 || y - ys[i - 1] > 2; });   // dedupe shared edges
@@ -323,8 +325,8 @@
     // floor is what stops a figure already standing ON a line from choosing it and playing a 2px
     // pratfall; null covers the footer cast and anyone below the last rule.
     var MIN_FALL = 24;
-    function breakLineBelow(lines, floorVY) {
-      for (var i = 0; i < lines.length; i++) if (lines[i] > floorVY + MIN_FALL) return lines[i];
+    function breakLineBelow(lines, floorDocY) {
+      for (var i = 0; i < lines.length; i++) if (lines[i] > floorDocY + MIN_FALL) return lines[i];
       return null;
     }
 
@@ -438,69 +440,75 @@
       var oldFloor = (inkFloor >= 0) ? inkFloor : (e.h - 6);
 
       // Pick his landing line BEFORE sizeCanvas, because how tall the canvas has to be depends on how
-      // far he is going to fall. Both sides are viewport coords here: the canvas top is pinned to
-      // cr.top below and never moves, so a canvas-local y and a viewport y differ by exactly cr.top
-      // for the whole run.
+      // far he is going to fall. Everything here is DOCUMENT coords: the canvas stays absolutely
+      // positioned in document space (see below), so a canvas-local y and a document y differ by
+      // exactly docTop for the whole run, whatever the page is scrolled to.
       // POOF.breakLines is set once when the cast is armed; the fallback keeps a test that calls this
       // function directly from silently getting FLEE_DROP for everyone.
+      var sy = window.scrollY || window.pageYOffset;
+      var sx = window.scrollX || window.pageXOffset;
+      var docTop = cr.top + sy;
       var lines = POOF.breakLines || sectionBreakLines();
-      var targetVY = breakLineBelow(lines, cr.top + oldFloor);
-      var fold = window.innerHeight;
-      var fallDist = (targetVY == null) ? FLEE_DROP : (targetVY - cr.top) - oldFloor;
+      var targetDocY = breakLineBelow(lines, docTop + oldFloor);
+      var fallDist = (targetDocY == null) ? FLEE_DROP : (targetDocY - docTop) - oldFloor;
 
-      // Is that line somewhere he can be SEEN to land? A section is often taller than the viewport
-      // (.watch is 747px) and the rope Bobit hangs near the top of his, so his line is usually past the
-      // bottom of the screen. Decided here, once, rather than by a per-frame position test: a line only
-      // just below the fold is one he technically reaches, and he would play the whole heap-getup-limp
-      // down there — unseen, and with poofTick waiting on him the entire time. So he keeps accelerating
-      // straight past it instead, and leaving the screen is his exit.
-      var plummet = targetVY != null && targetVY > fold - 8;
+      // Can this fall be watched at all? On desktop the drop to the next rule is 618px against a
+      // 900px viewport — 0.69 screens, so it fits and he lands where you can see it. On a phone the
+      // same fall is 1,149px against 640px (1.8 screens) because .watch stacks to 1,249px tall and he
+      // hangs near the top of it: you would see half a fall, then ~2s of unseen heap-and-getup and a
+      // ~4s limp, with poofTick waiting on him the whole time.
+      //
+      // So the rule is geometry, not a device test — measured against the viewport, it sorts desktop
+      // and mobile correctly on its own. FIT_SCREENS sits above every desktop/laptop ratio measured
+      // (0.69, 0.79) and below every phone one (1.36, 1.80).
+      //
+      // This flag ONLY governs whether the below-the-fold exit applies to him. It deliberately does not
+      // branch the drop itself: if he reaches his line he lands on it, flag or no flag. Gating the heap
+      // on this instead would leave a figure hovering at the line in the one case where a reader
+      // scrolled down fast enough to keep him on screen — which is exactly the case worth rewarding.
+      e.flCanLand = fallDist <= FIT_SCREENS * window.innerHeight;
 
       var newW = fitW(document.documentElement.clientWidth);
-      // Enough canvas to draw whichever ending he gets: clear of the fold, or lying on the line. For a
-      // plummet this is bounded by the viewport rather than by how far away the line happens to be,
-      // which is what keeps a 1149px drop from asking for a 1449px-tall canvas it never paints into.
-      var need = plummet ? ((fold + GONE_BELOW_FOLD + 20) - cr.top) - oldFloor : fallDist + HEAP_YOFF;
-      var newH = e.h + Math.max(FLEE_DROP, need) + 40;
+      // Tall enough to hold the fall and the heap at the bottom of it. Measured from oldFloor rather
+      // than e.h because the flee only ever draws the figure and his shadow, all of which lives within
+      // oldFloor of the canvas top — sizing off e.h instead added a section's worth of empty canvas
+      // below the page and grew the document's scroll height for no reason.
+      var newH = Math.max(e.h, oldFloor + fallDist + HEAP_YOFF + 8);
       sizeCanvas(e, newW, newH);
-      // A fleeing canvas goes position:FIXED, i.e. viewport coordinates instead of document
-      // ones. At rest these canvases are absolute and reposition() re-fits them on every resize,
-      // but a fleeing one must be left alone (a full reposition() would yank the widened canvas
-      // out from under the run), so an absolute viewport-wide canvas survives a shrink at its old
-      // width and hands the whole PAGE a horizontal scrollbar — a phone rotating landscape ->
-      // portrait mid-exodus did exactly that. Fixed elements contribute nothing to the document's
-      // scrollable area, so the flee geometry can stay frozen and still never overflow, at any
-      // viewport, at any scroll position. Trade-off: a scroll during the ~2-6s run no longer
-      // carries the runners with it. Nobody is tracking one figure in a stampede, and they are
-      // sprinting off-screen regardless. fitW/fitLeft still apply, so he starts on-screen.
-      e.c.style.position = 'fixed';
-      var newLeft = fitLeft(0, e.w, 0);                  // viewport coords now, so sx drops out
+      // The canvas stays position:ABSOLUTE in document coordinates, so scrolling carries the runners
+      // with it and you can follow a faller down to his line. It was briefly switched to fixed to kill
+      // a real bug — reposition() skips fleeing entries (a full re-fit would yank the widened canvas
+      // out from under the run), so an absolute viewport-wide canvas outlived a shrink at its old width
+      // and handed the whole PAGE a horizontal scrollbar; a phone rotating landscape -> portrait
+      // mid-exodus did exactly that. Fixed made that impossible, at the cost of the runners no longer
+      // moving with the page — which also made a fall to a line below the fold unwatchable.
+      // refitFlee() now handles the shrink directly (re-clamps width and left, rebases his x), so the
+      // overflow guarantee holds without freezing the geometry to the viewport.
+      e.c.style.position = 'absolute';
+      var newLeft = fitLeft(0, e.w, sx);
       e.c.style.left = newLeft + 'px';
+      e.flLeft = newLeft;                                // document x of the canvas, for refitFlee
       // Leave the top edge exactly where it was. sizeCanvas only ever grows this canvas DOWNWARD
-      // (newH = e.h + fallDist + ..., and local y is measured from the top edge), so a canvas that
-      // does not move keeps every local y — including oldFloor — pointing at the same screen row it
-      // did before the resize, and all of the new headroom lands below him to fall into.
+      // (local y is measured from the top edge), so a canvas that does not move keeps every local y —
+      // including oldFloor — pointing at the same document row it did before the resize, and all of
+      // the new headroom lands below him to fall into.
       // This used to read `cr.bottom - 6 - oldFloor`, which is only `cr.top` while oldFloor is
       // `e.h - 6`. Once oldFloor became the measured ink bottom the two h-6 assumptions cancelled
       // exactly and the floor still landed on the h-6 line: a seated reader dropped 12px and a
       // rope-hanger dropped 225px into mid-air. Fixing the scan without fixing this line is a no-op.
-      e.c.style.top = cr.top + 'px';
+      e.c.style.top = docTop + 'px';
+      e.flTopDoc = docTop;                               // local y -> document y, for the fold test
 
       e.fl = 'raise'; e.flT = 0;                         // hands up first, then 'run' (or the drop)
-      e.flX = figScreenX - newLeft;                      // canvas-local x
+      e.flX = (figScreenX + sx) - newLeft;               // canvas-local x
       e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
       e.flFloor = oldFloor;                              // canvas-local floor line
-      e.flLedgeL = ar.left - newLeft;                    // perch ends, canvas-local
-      e.flLedgeR = ar.right - newLeft;
+      e.flLedgeL = (ar.left + sx) - newLeft;             // perch ends, canvas-local
+      e.flLedgeR = (ar.right + sx) - newLeft;
       e.flSeed = (e.ci % 7) + 1;
       e.flYOff = 0;
       e.flFall = fallDist;                               // how far below flFloor his line is
       e.flDropSecs = dropSecs(fallDist);
-      e.flPlummet = plummet;                             // that line is off-screen: fall past it, don't heap
-      // The canvas is fixed and never moves again, so this one reading converts canvas-local y to
-      // viewport y for the rest of the run — which is how drawFlee knows when he has fallen out of
-      // sight, without a getBoundingClientRect per figure per frame.
-      e.flTopVY = cr.top;
       // Nothing to run along, so 'raise' hands straight off to 'drop': he throws his hands up on the
       // rope and lets go. His anchor rect is the video thumb BELOW his feet, so without this he
       // sprints its full 395px through empty air before falling.
@@ -508,10 +516,10 @@
 
       // The dog bolts too, as himself rather than as a stick figure — he already has a run
       // pose. Same direction as his owner, a shade faster, which is both true to a dog and
-      // funnier. dogX is canvas-local, so it is re-based onto the new (wider, fixed) canvas the
-      // same way the runner's own flX is.
+      // funnier. dogX is canvas-local, so it is re-based onto the new (wider) canvas the same way
+      // the runner's own flX is.
       if (e.spec.mode === 'dogfetch' && e.dogX != null) {
-        e.flDog = { x: e.dogX + (cr.left - newLeft), dir: e.flDir };
+        e.flDog = { x: e.dogX + (cr.left + sx - newLeft), dir: e.flDir };
       }
     }
 
@@ -544,6 +552,12 @@
     // A figure's ink measures ~84px tall, so his head has cleared the bottom of the screen once his
     // ground line is this far past it.
     var GONE_BELOW_FOLD = 96;
+
+    // How much of the viewport a fall may occupy and still be worth landing. Measured fall-to-viewport
+    // ratios: desktop 1280x900 0.69, laptop 1440x780 0.79, iPhone 14 390x844 1.36, small Android
+    // 360x640 1.80. 0.85 is the gap between those two clusters, so this sorts desktop from mobile
+    // without a device test — see the flCanLand note in poofArmFlee.
+    var FIT_SCREENS = 0.85;
 
     // He limps off favouring his right leg — same trick as the beam ball-gag's foot-drop: a
     // stiff knee, a shortened step and a weight-bearing hitch on the injured plant.
@@ -593,20 +607,20 @@
           e.fl = 'drop'; e.flT = 0;
         }
       } else if (e.fl === 'drop') {
-        // A plummeting Bobit is not stopping, so his progress is allowed past 1 and he keeps
-        // accelerating until the exit check below takes him off the page.
-        var k = e.flT / dSecs, kc = Math.min(1, k);
+        var k = Math.min(1, e.flT / dSecs);
         e.flX += FLEE_SPEED * 0.55 * e.flDir * dt;      // carries forward as he falls
         yOff = fall * k * k;                             // accelerating, down to the line
         pose = A.fall.frame(e.flT * 1.6);
         // Normalised progress, so however far he falls he arrives at the same angle and hands off to
         // the heap's 1.45 exactly as a 50px drop used to.
-        rot = e.flDir * 0.5 * kc;
+        rot = e.flDir * 0.5 * k;
         // The shadow belongs on the surface he is heading for, not glued to his feet in mid-air —
         // invisible over 50px, a smudge chasing him down over 618. Growing it in also telegraphs
         // where he is about to land.
-        shadowAt = { y: e.flFloor + fall, scale: 0.35 + 0.65 * kc };
-        if (k >= 1 && !e.flPlummet) { e.fl = 'heap'; e.flT = 0; yOff = fall; }
+        shadowAt = { y: e.flFloor + fall, scale: 0.35 + 0.65 * k };
+        // Reaching his line always lands him, whether or not the fold exit applies to him. See the
+        // flCanLand note in poofArmFlee for why the flag does not gate this.
+        if (k >= 1) { e.fl = 'heap'; e.flT = 0; yOff = fall; }
       } else if (e.fl === 'heap') {
         yOff = fall + HEAP_YOFF;                         // lie ON the ground, not pivoted above it
         pose = cwHeap(e.flT);
@@ -645,16 +659,22 @@
 
       // Off a screen edge and he is done with — sideways, or straight down off the bottom.
       //
-      // The downward exit is not a tidy-up, it is the whole behaviour for a Bobit whose landing line is
-      // below the fold. A section can easily be taller than the viewport (.watch is 747px), and the
-      // rope Bobit hangs near the TOP of his, so the next break line under him is ~618px down — usually
-      // past the bottom of the screen. Without this he would fall out of sight and then play ~2.4s of
-      // invisible heap-getup-limp before limping off, while poofTick sat waiting on him: the page looks
-      // finished and is not. So he simply plummets out of the world and that is his exit.
+      // The downward exit only applies to a Bobit whose fall does not fit the viewport (see flCanLand):
+      // on a phone the drop to the next rule is 1.8 screens, so without this he falls out of sight and
+      // then plays ~2s of unseen heap-and-getup plus a ~4s limp while poofTick waits on him — the page
+      // looks finished and is not. Desktop falls fit, so they never take this path and always land.
+      //
+      // Tested against the LIVE scroll position rather than a frozen one, which is what makes following
+      // him down work: scroll with him and he stays on screen, keeps falling, and lands on his line
+      // properly. Stop scrolling and he leaves the bottom of the screen and that is his exit.
       //
       // Deliberately gated on !flDog like the horizontal test: the dog runs along flFloor and never
       // falls, and he is drawn on his owner's canvas, so removing it early would delete him mid-sprint.
-      var belowFold = e.flTopVY != null && (e.flTopVY + groundY > window.innerHeight + GONE_BELOW_FOLD);
+      var belowFold = false;
+      if (!e.flCanLand && e.flTopDoc != null) {
+        var foldDocY = (window.scrollY || window.pageYOffset) + window.innerHeight;
+        belowFold = e.flTopDoc + groundY > foldDocY + GONE_BELOW_FOLD;
+      }
       if ((e.flX < -60 || e.flX > w + 60 || belowFold) && !e.flDog) {
         e.gone = true;
         if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
@@ -963,14 +983,35 @@
       return left;
     }
 
+    // A fleeing canvas must not be re-fitted the way a resting one is — a full reposition() would yank
+    // the widened canvas out from under the run — but it can't simply be skipped either. It is
+    // viewport-wide and position:absolute in document space, so a viewport SHRINK (a phone rotating
+    // landscape -> portrait mid-exodus) would leave it wider than the page and hand the whole document
+    // a horizontal scrollbar. That bug is why these canvases were briefly position:fixed.
+    //
+    // So: re-clamp width and left through the same fitW/fitLeft the rest of the file uses, and rebase
+    // every canvas-local x by the same delta so the figure does not jump on screen. Heights and all
+    // vertical state are untouched, which is what keeps the fall geometry intact across a resize.
+    function refitFlee(e, sx) {
+      var newW = fitW(document.documentElement.clientWidth);
+      var newLeft = fitLeft(0, newW, sx);
+      if (newW === e.w && newLeft === e.flLeft) return;         // nothing moved; no-op on the 700ms tick
+      var shift = e.flLeft - newLeft;                           // keeps document x fixed
+      e.flX += shift;
+      e.flLedgeL += shift;
+      e.flLedgeR += shift;
+      if (e.flDog) e.flDog.x += shift;
+      e.flLeft = newLeft;
+      e.c.style.left = newLeft + 'px';
+      sizeCanvas(e, newW, e.h);
+    }
+
     function reposition() {
       var sy = window.scrollY || window.pageYOffset;
       var sx = window.scrollX || window.pageXOffset;
       entries.forEach(function (e) {
-        // fleeing: leave the widened flee canvas alone, don't reset to at-rest geometry. Safe to
-        // skip even on a mid-exodus viewport shrink because poofArmFlee switches the canvas to
-        // position:fixed, so a canvas left wider than the new viewport adds no page overflow.
-        if (e.gone || e.fl) return;
+        if (e.gone) return;
+        if (e.fl) { refitFlee(e, sx); return; }
         var spec = e.spec;
         if (spec.mode === 'why') { sizeCanvas(e, 190, 215); return; }
         if (spec.mode === 'banner') { sizeCanvas(e, 120, 96); return; }
@@ -2868,7 +2909,8 @@
       entries: entries, footWalk: footWalk, footStand: footStand,
       quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
       poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay,
-      sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs
+      sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
+      fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };
   });
 })();
