@@ -143,7 +143,7 @@
     // yoyo, dogfetch) draw well off-centre, so the centre could be hundreds of px of blank page
     // away from him. Fractions rather than pixels so a canvas resize can't strand the cloud.
     // 0.5 / 1.0 (centre, floor) is the fallback when the phase is driven directly, e.g. by tests.
-    var POOF = { phase: 'idle', t: 0, victim: null, armed: false, sx: 0, sy: 0, fx: 0.5, fy: 1 };
+    var POOF = { phase: 'idle', t: 0, victim: null, armed: false, sx: 0, sy: 0, fx: 0.5, fy: 1, breakLines: null };
 
     // Which Bobit is under this point? The canvases are pointer-events:none and only two modes
     // bother to store a hitbox, so rather than add one to all fourteen we ask the pixels:
@@ -293,6 +293,55 @@
 
     var FLEE_SPEED = 190, FLEE_DROP = 50, RAISE_SECS = 0.45;
 
+    // ── Where a falling Bobit lands ────────────────────────────────────────────────────────────
+    // The page's full-bleed 1px rules — the lines that run right across the screen between
+    // sections. They are the only horizontal surfaces a figure can crumple onto and read as having
+    // landed on something; FLEE_DROP's flat 50px is anchored to nothing and drops him onto an
+    // invisible plane in the middle of a section.
+    //
+    // An explicit selector list, NOT a sweep of the DOM for wide borders: the note cards are 1232px
+    // of a 1280px viewport, so any width threshold loose enough to catch the real rules also catches
+    // four card interiors, and a figure would land on the inside edge of a box instead of on a line
+    // across the page. Whichever edge of each element actually carries a border is the line.
+    var BREAK_SELECTORS = 'header.site-banner, header.hero, section.why, section.how, section.watch, footer';
+
+    // VIEWPORT coords, and measured once when the cast is armed. Fleeing canvases are position:fixed
+    // and the exodus deliberately does not track scroll (see poofArmFlee), so a frozen viewport
+    // reading stays valid for the whole run.
+    function sectionBreakLines() {
+      var ys = [];
+      document.querySelectorAll(BREAK_SELECTORS).forEach(function (el) {
+        var cs = getComputedStyle(el), r = el.getBoundingClientRect();
+        if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') ys.push(r.top);
+        if (parseFloat(cs.borderBottomWidth) > 0 && cs.borderBottomStyle !== 'none') ys.push(r.bottom);
+      });
+      ys.sort(function (a, b) { return a - b; });
+      return ys.filter(function (y, i) { return i === 0 || y - ys[i - 1] > 2; });   // dedupe shared edges
+    }
+
+    // Nearest break line more than MIN_FALL below him, or null to keep the flat FLEE_DROP. The 24px
+    // floor is what stops a figure already standing ON a line from choosing it and playing a 2px
+    // pratfall; null covers the footer cast and anyone below the last rule.
+    var MIN_FALL = 24;
+    function breakLineBelow(lines, floorVY) {
+      for (var i = 0; i < lines.length; i++) if (lines[i] > floorVY + MIN_FALL) return lines[i];
+      return null;
+    }
+
+    // Modes with nothing under them at all. The rope Bobit sits on a frame bar he paints himself and
+    // then hangs off a rope — both mid-air — so the whole mode counts rather than a check against
+    // e.rphase that would have to stay in sync with it. vclimb is not in the current cast but its
+    // draw branch is live, so it is covered rather than left as a trap.
+    //
+    // This is a per-mode predicate and not a measurement because measuring cannot work: every figure
+    // is placed with edge:'top', which puts his feet exactly on his anchor's top edge, so the rope
+    // hanger's ink bottom and a thumbnail stander's ink bottom are THE SAME NUMBER. (Fourth defect in
+    // this feature from inferring footing off a dimension that only holds for some modes — see the
+    // header of tests/poof/08-flee-floor.cjs for the first three.)
+    function fleeAirborne(e) {
+      return e.spec.mode === 'rope' || e.spec.mode === 'vclimb';
+    }
+
     // Arms straight overhead, flailing. Legs come from scurry so the run reads as a proper
     // panicked sprint. Remember 0deg is straight DOWN in this rig and 90 is horizontal, so
     // overhead is ~±170. Two non-harmonic frequencies plus a per-figure seed keep the group
@@ -387,8 +436,32 @@
       // of along the base they were standing on. The ink's bottom edge is where he visibly is,
       // whatever his mode does — same ask-the-pixels approach as the x above.
       var oldFloor = (inkFloor >= 0) ? inkFloor : (e.h - 6);
+
+      // Pick his landing line BEFORE sizeCanvas, because how tall the canvas has to be depends on how
+      // far he is going to fall. Both sides are viewport coords here: the canvas top is pinned to
+      // cr.top below and never moves, so a canvas-local y and a viewport y differ by exactly cr.top
+      // for the whole run.
+      // POOF.breakLines is set once when the cast is armed; the fallback keeps a test that calls this
+      // function directly from silently getting FLEE_DROP for everyone.
+      var lines = POOF.breakLines || sectionBreakLines();
+      var targetVY = breakLineBelow(lines, cr.top + oldFloor);
+      var fold = window.innerHeight;
+      var fallDist = (targetVY == null) ? FLEE_DROP : (targetVY - cr.top) - oldFloor;
+
+      // Is that line somewhere he can be SEEN to land? A section is often taller than the viewport
+      // (.watch is 747px) and the rope Bobit hangs near the top of his, so his line is usually past the
+      // bottom of the screen. Decided here, once, rather than by a per-frame position test: a line only
+      // just below the fold is one he technically reaches, and he would play the whole heap-getup-limp
+      // down there — unseen, and with poofTick waiting on him the entire time. So he keeps accelerating
+      // straight past it instead, and leaving the screen is his exit.
+      var plummet = targetVY != null && targetVY > fold - 8;
+
       var newW = fitW(document.documentElement.clientWidth);
-      var newH = e.h + FLEE_DROP + 40;                   // room to fall below the ledge
+      // Enough canvas to draw whichever ending he gets: clear of the fold, or lying on the line. For a
+      // plummet this is bounded by the viewport rather than by how far away the line happens to be,
+      // which is what keeps a 1149px drop from asking for a 1449px-tall canvas it never paints into.
+      var need = plummet ? ((fold + GONE_BELOW_FOLD + 20) - cr.top) - oldFloor : fallDist + HEAP_YOFF;
+      var newH = e.h + Math.max(FLEE_DROP, need) + 40;
       sizeCanvas(e, newW, newH);
       // A fleeing canvas goes position:FIXED, i.e. viewport coordinates instead of document
       // ones. At rest these canvases are absolute and reposition() re-fits them on every resize,
@@ -404,7 +477,7 @@
       var newLeft = fitLeft(0, e.w, 0);                  // viewport coords now, so sx drops out
       e.c.style.left = newLeft + 'px';
       // Leave the top edge exactly where it was. sizeCanvas only ever grows this canvas DOWNWARD
-      // (newH = e.h + FLEE_DROP + 40, and local y is measured from the top edge), so a canvas that
+      // (newH = e.h + fallDist + ..., and local y is measured from the top edge), so a canvas that
       // does not move keeps every local y — including oldFloor — pointing at the same screen row it
       // did before the resize, and all of the new headroom lands below him to fall into.
       // This used to read `cr.bottom - 6 - oldFloor`, which is only `cr.top` while oldFloor is
@@ -413,7 +486,7 @@
       // rope-hanger dropped 225px into mid-air. Fixing the scan without fixing this line is a no-op.
       e.c.style.top = cr.top + 'px';
 
-      e.fl = 'raise'; e.flT = 0;                         // hands up first, then 'run' takes over
+      e.fl = 'raise'; e.flT = 0;                         // hands up first, then 'run' (or the drop)
       e.flX = figScreenX - newLeft;                      // canvas-local x
       e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
       e.flFloor = oldFloor;                              // canvas-local floor line
@@ -421,6 +494,17 @@
       e.flLedgeR = ar.right - newLeft;
       e.flSeed = (e.ci % 7) + 1;
       e.flYOff = 0;
+      e.flFall = fallDist;                               // how far below flFloor his line is
+      e.flDropSecs = dropSecs(fallDist);
+      e.flPlummet = plummet;                             // that line is off-screen: fall past it, don't heap
+      // The canvas is fixed and never moves again, so this one reading converts canvas-local y to
+      // viewport y for the rest of the run — which is how drawFlee knows when he has fallen out of
+      // sight, without a getBoundingClientRect per figure per frame.
+      e.flTopVY = cr.top;
+      // Nothing to run along, so 'raise' hands straight off to 'drop': he throws his hands up on the
+      // rope and lets go. His anchor rect is the video thumb BELOW his feet, so without this he
+      // sprints its full 395px through empty air before falling.
+      e.flAir = fleeAirborne(e);
 
       // The dog bolts too, as himself rather than as a stick figure — he already has a run
       // pose. Same direction as his owner, a shade faster, which is both true to a dog and
@@ -435,7 +519,31 @@
     // figure's PELVIS, since computePose builds outward from there — so tipping him ~83deg swings
     // him about his middle and leaves him lying a leg's length above the ground rather than on it.
     // The cartwheel gag solves the same problem with its `lieY`; this is the equivalent nudge.
-    var HEAP_HOLD = 1.0, DROP_SECS = 0.45, GETUP_SECS = 0.9, HEAP_YOFF = 14;
+    var HEAP_HOLD = 1.0, GETUP_SECS = 0.9, HEAP_YOFF = 14;
+
+    // The drop used to be a flat 0.45s because it was always the same flat 50px. Now that the
+    // distance is whatever the next section break happens to be, the duration has to come from it or
+    // a 413px plunge covers the same ground in the same time as a 50px hop and reads as a yank.
+    //
+    // FALL_G is tuned, not physical: these figures are ~84px tall, so real gravity reads as a
+    // teleport. 618px -> 1.06s, 413px -> 0.87s, 139px -> 0.50s, the legacy 50px -> 0.30s. At 50fps the
+    // longest of those peaks around 23px/frame, so the fall still has frames you can see.
+    //
+    // Because dSecs is sqrt(2*dist/G), `yOff = dist * (t/dSecs)^2` reduces to `G*t^2/2` — the distance
+    // cancels, so every Bobit falls at exactly the same acceleration however far he has to go. That is
+    // the point of deriving the duration rather than picking one.
+    //
+    // The clamp is a sanity bound that almost never engages: the longest fall you can actually WATCH is
+    // a viewport height (past that he is off the bottom of the screen and marked gone), and 900px comes
+    // in at 1.28s. It only catches an absurd viewport, where he falls harder than FALL_G unnoticed.
+    var FALL_G = 1100, MAX_FALL_SECS = 1.4;
+    function dropSecs(dist) {
+      return Math.min(MAX_FALL_SECS, Math.sqrt(2 * Math.max(1, dist) / FALL_G));
+    }
+
+    // A figure's ink measures ~84px tall, so his head has cleared the bottom of the screen once his
+    // ground line is this far past it.
+    var GONE_BELOW_FOLD = 96;
 
     // He limps off favouring his right leg — same trick as the beam ball-gag's foot-drop: a
     // stiff knee, a shortened step and a weight-bearing hitch on the injured plant.
@@ -458,6 +566,9 @@
     function drawFlee(e, ctx, w, col, dt) {
       e.flT += dt;
       var pose, rot = 0, yOff = e.flYOff || 0;
+      var fall = e.flFall != null ? e.flFall : FLEE_DROP;    // how far below flFloor his landing line is
+      var dSecs = e.flDropSecs || dropSecs(fall);
+      var shadowAt = null;                                   // set during the drop: he casts it on the LINE
 
       if (e.fl === 'raise') {
         // The hands go up before the legs go: a beat of standing panic, then the sprint. flX is
@@ -472,7 +583,8 @@
         // is where it earns its keep; here the whole room reacting on the same beat is the joke.
         var rz = smooth01(Math.min(1, e.flT / RAISE_SECS));
         pose = lerpPose(A.standstill.frame(0), raisePose(), rz);
-        if (e.flT >= RAISE_SECS) { e.fl = 'run'; e.flT = 0; }
+        // An airborne Bobit has no perch to run along, so he lets go instead of entering 'run'.
+        if (e.flT >= RAISE_SECS) { e.fl = e.flAir ? 'drop' : 'run'; e.flT = 0; }
       } else if (e.fl === 'run') {
         e.flX += FLEE_SPEED * e.flDir * dt;
         pose = fleePose(e.flT, e.flSeed);
@@ -481,32 +593,41 @@
           e.fl = 'drop'; e.flT = 0;
         }
       } else if (e.fl === 'drop') {
-        var k = Math.min(1, e.flT / DROP_SECS);
+        // A plummeting Bobit is not stopping, so his progress is allowed past 1 and he keeps
+        // accelerating until the exit check below takes him off the page.
+        var k = e.flT / dSecs, kc = Math.min(1, k);
         e.flX += FLEE_SPEED * 0.55 * e.flDir * dt;      // carries forward as he falls
-        yOff = FLEE_DROP * k * k;                        // accelerating
+        yOff = fall * k * k;                             // accelerating, down to the line
         pose = A.fall.frame(e.flT * 1.6);
-        rot = e.flDir * 0.5 * k;
-        if (k >= 1) { e.fl = 'heap'; e.flT = 0; yOff = FLEE_DROP; }
+        // Normalised progress, so however far he falls he arrives at the same angle and hands off to
+        // the heap's 1.45 exactly as a 50px drop used to.
+        rot = e.flDir * 0.5 * kc;
+        // The shadow belongs on the surface he is heading for, not glued to his feet in mid-air —
+        // invisible over 50px, a smudge chasing him down over 618. Growing it in also telegraphs
+        // where he is about to land.
+        shadowAt = { y: e.flFloor + fall, scale: 0.35 + 0.65 * kc };
+        if (k >= 1 && !e.flPlummet) { e.fl = 'heap'; e.flT = 0; yOff = fall; }
       } else if (e.fl === 'heap') {
-        yOff = FLEE_DROP + HEAP_YOFF;                    // lie ON the ground, not pivoted above it
+        yOff = fall + HEAP_YOFF;                         // lie ON the ground, not pivoted above it
         pose = cwHeap(e.flT);
         rot = e.flDir * 1.45 + Math.sin(e.flT * 6) * 0.1;   // lying over, twitching
         if (e.flT >= HEAP_HOLD) { e.fl = 'getup'; e.flT = 0; }
       } else if (e.fl === 'getup') {
         var g = smooth01(Math.min(1, e.flT / GETUP_SECS));
-        yOff = FLEE_DROP + HEAP_YOFF * (1 - g);          // eases back onto his feet as he rises
+        yOff = fall + HEAP_YOFF * (1 - g);               // eases back onto his feet as he rises
         pose = lerpPose(cwHeap(0), A.standstill.frame(0), g);
         rot = (e.flDir * 1.45) * (1 - g);                // rotates upright, slowly
         if (e.flT >= GETUP_SECS) { e.fl = 'limp'; e.flT = 0; }
       } else {                                            // 'limp'
-        yOff = FLEE_DROP;
+        yOff = fall;
         e.flX += FLEE_SPEED * 0.45 * e.flDir * dt;        // about half speed now
         pose = limpPose(e.flT, e.flSeed);
       }
 
       e.flYOff = yOff;
       var groundY = e.flFloor + yOff;
-      R.drawShadow(ctx, e.flX, groundY, 15, 'rgba(127,127,127,0.18)');
+      if (shadowAt) R.drawShadow(ctx, e.flX, shadowAt.y, 15 * shadowAt.scale, 'rgba(127,127,127,0.18)');
+      else R.drawShadow(ctx, e.flX, groundY, 15, 'rgba(127,127,127,0.18)');
       // drawFig's y is the PELVIS, not the floor: computePose builds outward from the pelvis and
       // the legs reach 112 rig-units (112 * S ~= 36px) below it, which is why every other caller
       // in this file passes `feetY - 112 * S`. drawFlee alone passed the ground line straight
@@ -522,7 +643,19 @@
         if (e.flDog.x < -80 || e.flDog.x > w + 80) e.flDog = null;
       }
 
-      if ((e.flX < -60 || e.flX > w + 60) && !e.flDog) {
+      // Off a screen edge and he is done with — sideways, or straight down off the bottom.
+      //
+      // The downward exit is not a tidy-up, it is the whole behaviour for a Bobit whose landing line is
+      // below the fold. A section can easily be taller than the viewport (.watch is 747px), and the
+      // rope Bobit hangs near the TOP of his, so the next break line under him is ~618px down — usually
+      // past the bottom of the screen. Without this he would fall out of sight and then play ~2.4s of
+      // invisible heap-getup-limp before limping off, while poofTick sat waiting on him: the page looks
+      // finished and is not. So he simply plummets out of the world and that is his exit.
+      //
+      // Deliberately gated on !flDog like the horizontal test: the dog runs along flFloor and never
+      // falls, and he is drawn on his owner's canvas, so removing it early would delete him mid-sprint.
+      var belowFold = e.flTopVY != null && (e.flTopVY + groundY > window.innerHeight + GONE_BELOW_FOLD);
+      if ((e.flX < -60 || e.flX > w + 60 || belowFold) && !e.flDog) {
         e.gone = true;
         if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
       }
@@ -558,6 +691,10 @@
       } else if (POOF.phase === 'stunned') {
         if (POOF.t >= POOF_STUN) {
           POOF.phase = 'fleeing'; POOF.t = 0;
+          // One reading for the whole cast, here rather than per-figure: they all fall onto the same
+          // page furniture, and every runner's canvas goes position:fixed in this same frame, so a
+          // single viewport measurement is both cheaper and guaranteed consistent between them.
+          POOF.breakLines = sectionBreakLines();
           entries.forEach(function (e) {
             if (e.gone || e.spec.mode === 'why') return;
             poofArmFlee(e);
@@ -2730,7 +2867,8 @@
     if (location.hash === '#figdebug') window.__evFigDebug = {
       entries: entries, footWalk: footWalk, footStand: footStand,
       quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
-      poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay
+      poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay,
+      sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs
     };
   });
 })();
