@@ -254,8 +254,21 @@ async function quoteRun(browser) {
   assert.ok(victimGone.removed, 'the victim must be removed once the cloud clears');
 
   // and the smoke eventually clears
+  //
+  // "clears" now means the SMOKE is gone, not that the overlay is blank. Since the stunned drop landed,
+  // the same overlay also carries everything the room dropped, and those stay on the floor deliberately.
+  // So: nothing at all when nobody dropped anything, and otherwise only a residue far too small to be a
+  // cloud — the burst is a ~128px radius, a dropped prop is a ~12px mark.
   await page.waitForTimeout(1200);
-  assert.strictEqual(await page.evaluate(smokeCoverage), 0, 'smoke must clear after the burst');
+  const residue = await page.evaluate(smokeCoverage);
+  const nDrops = await page.evaluate(function () { return window.__evFigDebug.drops().length; });
+  if (!nDrops) {
+    assert.strictEqual(residue, 0, 'smoke must clear after the burst');
+  } else {
+    assert.ok(residue < burst * 0.05,
+      'smoke must clear after the burst — ' + residue + ' px still painted against a ' + burst +
+      ' px burst, which is far more than the ' + nDrops + ' dropped prop(s) can account for');
+  }
   await page.close();
 
   await centroidRun(browser);

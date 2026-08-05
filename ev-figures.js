@@ -184,7 +184,7 @@
         }
       }
       document.body.classList.add('ev-poofing');   // suppresses the touch callout while holding
-      abductStart(e);                              // he drops what he is holding and starts to rise
+      abductStart(e);                              // he drops what he is holding and starts to rise (poofTick also guards this)
     }
     function poofCancel() {
       if (POOF.phase !== 'holding') return;
@@ -262,9 +262,13 @@
       return _poofC;
     }
 
-    function poofDrawSmoke() {
+    // The overlay carries two things now: the smoke, and everything the room dropped. Either one alone
+    // is reason enough to keep it alive.
+    function poofDrawSmoke(dtFrame) {
       var ph = POOF.phase;
-      if (ph !== 'holding' && ph !== 'poof' && ph !== 'fizzle') {
+      var wantSmoke = (ph === 'holding' || ph === 'poof' || ph === 'fizzle');
+      var wantDrops = DROPS.length > 0;
+      if (!wantSmoke && !wantDrops) {
         // Nothing will ever paint here again this phase: drop the overlay rather than leave a
         // fixed full-viewport canvas in the DOM being clearRect-ed ~50x a second forever. A
         // later hold recreates it. ("~6s cleared: nothing left painting.")
@@ -277,6 +281,8 @@
       var c = poofOverlay(), g = c.getContext('2d');
       g.setTransform(DPR, 0, 0, DPR, 0, 0);
       g.clearRect(0, 0, c.__w, c.__h);
+      if (wantDrops) drawDrops(g, dtFrame);
+      if (!wantSmoke) return;
 
       // Follow the victim while he is still there, then hold his last spot. The anchor is the
       // press point re-projected through his LIVE rect, so it stays on him rather than on the
@@ -603,6 +609,20 @@
       return p;
     }
 
+    // Same bad leg as limpPose, but the arms never came down. limpPose is explicitly the moment "the
+    // panic became pain" — arms lowered, pain wins. This is the other order: something heavy landed on
+    // his foot while he was already terrified, so he limps off still flailing overhead. Hurt AND
+    // hysterical, rather than one resolving into the other.
+    function hystericalLimp(t, seed) {
+      var p = limpPose(t, seed);
+      var f = fleePose(t * 1.35, seed);
+      p.armRU = f.armRU; p.armRF = f.armRF;
+      p.armLU = f.armLU; p.armLF = f.armLF;
+      p.headTilt = -4 + Math.sin(t * 9 + seed) * 9;      // head snapping about, not fixed on the foot
+      p.hunch = -4;
+      return p;
+    }
+
     // Draw one fleeing figure. Sub-machine: raise -> run -> (drop -> heap -> getup -> limp) if his
     // perch runs out before he reaches a screen edge.
     function drawFlee(e, ctx, w, col, dt) {
@@ -626,7 +646,21 @@
         var rz = smooth01(Math.min(1, e.flT / RAISE_SECS));
         pose = lerpPose(A.standstill.frame(0), raisePose(), rz);
         // An airborne Bobit has no perch to run along, so he lets go instead of entering 'run'.
-        if (e.flT >= RAISE_SECS) { e.fl = e.flAir ? 'drop' : 'run'; e.flT = 0; }
+        // A Bobit who just had his own load land on his foot throws his hands up with everybody else —
+        // the whole room reacting on one beat is the joke — and only discovers the foot when he tries
+        // to move. So the limp starts here, after the raise, not instead of it.
+        if (e.flT >= RAISE_SECS) {
+          e.fl = e.flAir ? 'drop' : (e.footHurt ? 'hlimp' : 'run');
+          e.flT = 0;
+        }
+      } else if (e.fl === 'hlimp') {
+        // Slower than the run and slower than he would like. He still has to clear the perch, so the
+        // ledge test is the same one 'run' uses — he just takes longer to get there.
+        e.flX += FLEE_SPEED * 0.5 * e.flDir * dt;
+        pose = hystericalLimp(e.flT, e.flSeed);
+        if (e.flDir > 0 ? (e.flX > e.flLedgeR) : (e.flX < e.flLedgeL)) {
+          e.fl = 'drop'; e.flT = 0;
+        }
       } else if (e.fl === 'run') {
         e.flX += FLEE_SPEED * e.flDir * dt;
         pose = fleePose(e.flT, e.flSeed);
@@ -780,7 +814,7 @@
     function propOf(e) {
       var s = e.spec, m = s.mode;
       if (m === 'dogfetch') return (e.bHeld === 'thrower') ? { kind: 'ball', x: e.bX, y: e.bY } : null;
-      if (m === 'paddlepair') return { kind: 'ball', x: e._ballX, y: e._ballY };
+      if (m === 'paddlepair') return { kind: 'ball', x: e._ballX, y: e._ballY, vx: e._ballVX };
       if (m === 'kite') return { kind: 'kite', x: e.kx, y: e.ky };
       if (m === 'yoyo') return { kind: 'yoyo', x: null, y: null };
       if (m === 'beam') {
@@ -964,6 +998,79 @@
       R.drawShadow(ctx, e.abX + jitter * 0.3, groundY, 15 * Math.max(0.3, shrink), 'rgba(127,127,127,0.18)');
       drawFig(ctx, e.abX + jitter, figY - 112 * S, S, false, pose, { color: col, rot: rot });
     }
+    // ── pass 2: the stunned drop ───────────────────────────────────────────────────────────────
+    // The victim goes, the room freezes — and everything anybody was holding hits the floor. The
+    // figures are pinned at dt = 0 through the stun, so the props are the only thing moving: a still
+    // room and the sound of things landing.
+    //
+    // Dropped props live in DROPS on the smoke overlay, not on their owner's canvas. Two reasons that
+    // has to be so: most mode branches return early, so there is no clean post-figure hook to draw
+    // them from (the same reason the smoke lives there), and when the owner flees his canvas is
+    // cleared, resized and repositioned out from under anything drawn on it. Once it is on the floor a
+    // prop is page furniture, not part of a figure.
+    //
+    // Coordinates are DOCUMENT, converted at draw time, so they stay put while the page scrolls — the
+    // overlay itself is position:fixed.
+    var DROPS = [];
+
+    // What lands hard enough to hurt. Ball, the beam crew's load, and a .vote logo piece have weight;
+    // a light, a book, a phone, a yo-yo or a paddle just clatters down beside him.
+    var HEAVY_PROP = { ball: 1, beamload: 1, letter: 1 };
+
+    function stunDropAll() {
+      var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
+      entries.forEach(function (e) {
+        if (e.gone || e.spec.mode === 'why' || e.propGone) return;
+        var p = propOf(e);
+        if (!p) return;
+        var ink = scanInk(e);
+        var cr = e.c.getBoundingClientRect();
+        var lx = (p.x != null) ? p.x : ink.midX;
+        var ly = (p.y != null) ? p.y : ink.floor - HAND_Y;
+        e.propGone = true;                            // his mode stops drawing it from this frame on
+        DROPS.push({
+          kind: p.kind, owner: e,
+          x: cr.left + sx + lx, x0: cr.left + sx + lx,
+          y: cr.top + sy + ly, y0: cr.top + sy + ly,
+          floor: cr.top + sy + ink.floor,
+          t: 0, landed: false,
+          // A kite does not fall. Let go of it and the wind has it — it lifts and blows off the side.
+          blow: p.kind === 'kite',
+          // Heavy things land on the foot of whoever was holding them. He still throws his hands up
+          // with everybody else; it catches up with him when he tries to run.
+          hurts: !!HEAVY_PROP[p.kind],
+          // A ball already in flight carries on the way it was travelling rather than stopping dead in
+          // the air, so it bumps down near whoever it was heading for. Clamped: a rally ball moves fast
+          // enough that its full velocity would send it clean off the canvas.
+          drift: (p.kind === 'ball' && p.vx) ? Math.max(-70, Math.min(70, p.vx * 0.22)) : 0
+        });
+      });
+    }
+
+    function drawDrops(g, dt) {
+      if (!DROPS.length) return;
+      var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
+      for (var i = DROPS.length - 1; i >= 0; i--) {
+        var d = DROPS[i];
+        d.t += dt;
+        if (d.blow) {
+          d.x += 145 * dt; d.y -= 52 * dt;            // caught by the wind, up and away
+          if (d.x - sx > document.documentElement.clientWidth + 80 || d.y - sy < -80) {
+            DROPS.splice(i, 1); continue;
+          }
+        } else if (!d.landed) {
+          var dist = Math.max(1, d.floor - d.y0);
+          var k = Math.min(1, d.t / dropSecs(dist));
+          d.y = d.y0 + dist * k * k;
+          d.x = d.x0 + d.drift * k;
+          if (k >= 1) {
+            d.y = d.floor; d.landed = true;
+            if (d.hurts && d.owner && !d.owner.gone) d.owner.footHurt = true;
+          }
+        }
+        drawGroundProp(g, d.kind, d.x - sx, d.y - sy, figColor(d.owner ? (d.owner.spec.tone != null ? d.owner.spec.tone : d.owner.ci) : 0));
+      }
+    }
     // ══ end ABDUCTION ═══════════════════════════════════════════════════════════════════
 
     // Advance the phase machine. Called once per frame from tick().
@@ -971,6 +1078,11 @@
       if (POOF.phase === 'idle' || POOF.phase === 'cleared') return;
       POOF.t += dt;
       if (POOF.phase === 'holding') {
+        // Being held IS being abducted, so the phase owns it rather than the entry point that set the
+        // phase. poofStart normally kicks this off, but anything that drives POOF directly — the tests,
+        // and any future trigger — has to get the same behaviour, or the victim quietly skips the whole
+        // sequence and his prop is never dropped.
+        if (POOF.victim && !POOF.victim.ab && !POOF.victim.gone) abductStart(POOF.victim);
         if (POOF.t >= POOF_HOLD) {
           POOF.phase = 'poof'; POOF.t = 0;
           document.body.classList.remove('ev-poofing');
@@ -979,6 +1091,23 @@
           POOF.vx = vr.left + POOF.fx * vr.width;
           POOF.vy = vr.top + POOF.fy * vr.height;
           POOF.victim.gone = true;
+          // His prop outlives him. It was drawn on HIS canvas during the abduction, so without this it
+          // would vanish in the same puff — and the whole point of dropping it is that it is still lying
+          // there afterwards, evidence that somebody was taken. Hand it to DROPS, in document coords,
+          // where the overlay keeps drawing it after the canvas is gone.
+          if (POOF.victim.abProp) {
+            var ap = POOF.victim.abProp;
+            var apr = POOF.victim.c.getBoundingClientRect();
+            var apx = window.scrollX || window.pageXOffset, apy = window.scrollY || window.pageYOffset;
+            DROPS.push({
+              kind: ap.kind, owner: null,
+              x: apr.left + apx + ap.x, x0: apr.left + apx + ap.x,
+              y: apr.top + apy + ap.y, y0: apr.top + apy + ap.y,
+              floor: apr.top + apy + POOF.victim.abFloor,
+              // a kite still blows away even when its owner was the one taken
+              t: 0, landed: ap.landed, blow: ap.kind === 'kite', hurts: false, drift: 0
+            });
+          }
           // He is leaving with the canvas, so the abduction state goes with him rather than through
           // abductEnd — there is nothing left to restore, and a live e.ab on a gone entry would have
           // poofStart refuse the next grab forever.
@@ -996,7 +1125,13 @@
       } else if (POOF.phase === 'fizzle') {
         if (POOF.t >= 0.4) { POOF.phase = 'idle'; POOF.t = 0; POOF.victim = null; }
       } else if (POOF.phase === 'poof') {
-        if (POOF.t >= POOF_BURST) { POOF.phase = 'stunned'; POOF.t = 0; }
+        if (POOF.t >= POOF_BURST) {
+          POOF.phase = 'stunned'; POOF.t = 0;
+          // The room freezes and everything anybody was holding hits the floor. Deliberately at the
+          // START of the stun: every figure is pinned at dt = 0 for the next second, so the falling
+          // props are the only thing moving in it.
+          stunDropAll();
+        }
       } else if (POOF.phase === 'stunned') {
         if (POOF.t >= POOF_STUN) {
           POOF.phase = 'fleeing'; POOF.t = 0;
@@ -1496,7 +1631,7 @@
       if (pose) {
         R.drawShadow(ctx, e.lgX, feetY, 15, shadow);
         drawFig(ctx, e.lgX, feetY - 112 * S, S, flip, pose, { color: col });
-        if (carryBox) {
+        if (carryBox && !e.propGone) {
           var bx0 = e.lgX + e.lgFace * 12, by0 = feetY - 44;                      // box in his hands, then lofted to the swatch
           var bxX = bx0 + (swX - bx0) * boxRise, bxY = by0 + (swY - by0) * boxRise, bs = 12;
           ctx.fillStyle = YEL; ctx.beginPath();
@@ -1616,10 +1751,13 @@
       var figR = e.hoverSide === 'R' ? A.greet.frame(tt, e._wave) : padR;
       drawFig(ctx, xL, baseY, S, false, figL, { color: colA });
       drawFig(ctx, xR, baseY, S, e.hoverSide === 'R' ? false : true, figR, { color: colB });
-      if (e.hoverSide !== 'L') drawPaddle(handL.x, handL.y, colA);
-      if (e.hoverSide !== 'R') drawPaddle(handR.x, handR.y, colB);
-      drawBall(ballX, ballY);
-      e._ballX = ballX; e._ballY = ballY;   // remembered so a hover-drop starts from here
+      if (e.hoverSide !== 'L' && !e.propGone) drawPaddle(handL.x, handL.y, colA);
+      if (e.hoverSide !== 'R' && !e.propGone) drawPaddle(handR.x, handR.y, colB);
+      if (!e.propGone) drawBall(ballX, ballY);
+      // Remembered so a hover-drop starts from here — and _ballVX so a ball dropped mid-rally carries on
+      // the way it was already travelling instead of stopping dead in the air.
+      if (e._ballX != null && dt > 0) e._ballVX = (ballX - e._ballX) / dt;
+      e._ballX = ballX; e._ballY = ballY;
     }
 
     // ── CARTWHEEL scene (occasionally replaces the footer meet pair): one Bobit walks around
@@ -2024,7 +2162,7 @@
       R.drawShadow(ctx, e.thrX, feetY, 16, shadow);
       drawFig(ctx, e.thrX, throwerBaseY, S, thFlip, thP, { color: colThrower });
       // small yellow ball when it's loose or in the thrower's hand (the dog draws it when carried)
-      if (e.bHeld === 'thrower') { var hp = thHand(thP, thFlip); ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(hp.x, hp.y, smallR, 0, Math.PI * 2); ctx.fill(); }
+      if (e.bHeld === 'thrower' && !e.propGone) { var hp = thHand(thP, thFlip); ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(hp.x, hp.y, smallR, 0, Math.PI * 2); ctx.fill(); }
       else if (e.bHeld === 'air' || e.bHeld === 'ground') { ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(e.bX, e.bY, smallR, 0, Math.PI * 2); ctx.fill(); }
       // dog
       R.drawShadow(ctx, e.dogX, feetY, rolling ? 15 : 11, shadow);
@@ -2137,9 +2275,13 @@
       if (kiteGround) R.drawShadow(ctx, kx, feetY, 11, shadow);
       drawFig(ctx, e.gxCur, guyBaseY, S, guyFlip, guyPose, { color: colGuy });
       if (kiteInHand) { var hnd = guyHandOf(guyPose, guyFlip); kx = hnd.x; ky = hnd.y - 6; ang = guyFlip ? -0.7 : 0.7; e.kx = kx; e.ky = ky; e.kang = ang; }
-      if (e.kt === 'fly' || e.kt === 'loop' || e.kt === 'spin') kiteString(guyHandOf(kiteHold(e.ktT), false), kx, ky, ang, slack);
-      kiteTail(kx, ky, ang, e.ktT);
-      kiteDiamond(kx, ky, ang);
+      // Let go of a kite and the wind has it: the overlay flies it off the side rather than dropping it,
+      // so string, tail and kite all leave together the moment he releases.
+      if (!e.propGone) {
+        if (e.kt === 'fly' || e.kt === 'loop' || e.kt === 'spin') kiteString(guyHandOf(kiteHold(e.ktT), false), kx, ky, ang, slack);
+        kiteTail(kx, ky, ang, e.ktT);
+        kiteDiamond(kx, ky, ang);
+      }
     }
 
     // ── YO-YO player: throws it down, it bounces back up, the hand pops up slightly at the catch,
@@ -2214,15 +2356,17 @@
       if (dropFrac > 0.92 && botY >= groundBotY - 0.5) R.drawShadow(ctx, yoX, feetY, 8, shadow);   // the yo-yo's own shadow when it's on the floor
       drawFig(ctx, gx0, guyBaseY, S, false, pose, { color: colGuy });
       // string from the hand down to the yo-yo
-      ctx.strokeStyle = cssVar('--border', '#B0AEA6'); ctx.lineWidth = 1.2; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.lineTo(yoX, yoY); ctx.stroke();
-      // the yo-yo — a spinning disc; a streak + hub sell the spin
-      ctx.save(); ctx.translate(yoX, yoY); ctx.rotate(e.yoSpin);
-      ctx.fillStyle = colYoyo; ctx.beginPath(); ctx.arc(0, 0, rY, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = colGuy; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(-rY + 1.6, 0); ctx.lineTo(rY - 1.6, 0); ctx.stroke();
-      ctx.fillStyle = cssVar('--bg', '#fff'); ctx.beginPath(); ctx.arc(0, 0, 1.2, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
+      if (!e.propGone) {                              // dropped: the string and the yo-yo go with it
+        ctx.strokeStyle = cssVar('--border', '#B0AEA6'); ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.lineTo(yoX, yoY); ctx.stroke();
+        // the yo-yo — a spinning disc; a streak + hub sell the spin
+        ctx.save(); ctx.translate(yoX, yoY); ctx.rotate(e.yoSpin);
+        ctx.fillStyle = colYoyo; ctx.beginPath(); ctx.arc(0, 0, rY, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = colGuy; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-rY + 1.6, 0); ctx.lineTo(rY - 1.6, 0); ctx.stroke();
+        ctx.fillStyle = cssVar('--bg', '#fff'); ctx.beginPath(); ctx.arc(0, 0, 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
     }
 
     // ── PHONE-SITTER (a seated Bobit glued to a phone): click him → he pockets the phone and just
@@ -2276,7 +2420,7 @@
         phoneRot = 0.42 - u * 0.5;
         if (e.phT >= TRANS) { e.ph = 'absorbed'; e.phT = 0; }
       }
-      drawFig(ctx, w / 2, seatY, S, e.spec.x > 0.5, pose, { color: col, phone: showPhone, phoneRot: phoneRot });
+      drawFig(ctx, w / 2, seatY, S, e.spec.x > 0.5, pose, { color: col, phone: showPhone && !e.propGone, phoneRot: phoneRot });
       var cr = e.c.getBoundingClientRect();
       e._phSX = cr.left + w / 2; e._phFY = cr.top + h;       // click hitbox anchor (screen coords)
     }
@@ -2389,7 +2533,7 @@
         if (e.qsT >= QUOTE_SHRUG) { e.qs = 'read'; e.qsT = 0; }
       }
 
-      drawFig(ctx, w / 2, seatY, S, flip, pose, { color: col, book: book });
+      drawFig(ctx, w / 2, seatY, S, flip, pose, { color: col, book: book && !e.propGone });
       e._qSX = cr.left + w / 2; e._qFY = cr.top + h;   // click hitbox anchor (screen coords)
     }
 
@@ -2555,7 +2699,7 @@
       var vLY = (vHandY - 6) + ((vHeadY + 2) - (vHandY - 6)) * e.vDrop;   // slides from aloft down over the eyes
       R.drawShadow(ctx, e.vX, feetY, 14, shadow);
       drawFig(ctx, e.vX, oy, S, flip, vPose, { color: figColor(2) });     // yellow/gold guy carrying the v
-      drawLetterV(ctx, vLX, vLY, 16, 30, colV, 0);
+      if (!e.propGone) drawLetterV(ctx, vLX, vLY, 16, 30, colV, 0);
 
       // ── E-carrier ──
       switch (e.eSt) {
@@ -2592,7 +2736,7 @@
       R.drawShadow(ctx, e.eX, feetY, 14, shadow);
       if (e.eSt !== 'walk') R.drawShadow(ctx, eLX, feetY, 12, shadow);
       drawFig(ctx, e.eX, oy, S, eFlip, ePose, { color: figColor(5) });    // orange guy carrying the e
-      drawLetterE(ctx, eLX, eLY, letterR, colE, eRot);
+      if (!e.propGone) drawLetterE(ctx, eLX, eLY, letterR, colE, eRot);
 
       // click hitboxes (screen coords)
       e._vSX = cr.left + e.vX; e._eSX = cr.left + e.eX; e._lFY = cr.top + feetY;
@@ -2889,7 +3033,7 @@
           }
           else { animSt = e.greet ? A[spec.hoverAnim || 'greet'] : A[spec.anim]; ptSt = e.greet ? e.greet : tt; }
           R.drawShadow(ctx, w / 2, feetY, 16, shadow);
-          drawFig(ctx, w / 2, oyS, S, flipSt, animSt.frame(ptSt, e._wave), { color: col, paddle: animSt.paddle, time: tt });
+          drawFig(ctx, w / 2, oyS, S, flipSt, animSt.frame(ptSt, e._wave), { color: col, paddle: animSt.paddle && !e.propGone, time: tt });
           return;
         }
         if (spec.mode === 'seat') {
@@ -2898,7 +3042,7 @@
           var animSe = e.greet ? A.greetseat : A[spec.anim];
           var ptSe = e.greet ? e.greet : tt;
           var seatY = h - 42;   // matches the seat line set in reposition(); leaves room for dangling legs
-          drawFig(ctx, w / 2, seatY, S, spec.x > 0.5, animSe.frame(ptSe, e._wave), { color: col, book: (!e.greet && spec.anim === 'read') });
+          drawFig(ctx, w / 2, seatY, S, spec.x > 0.5, animSe.frame(ptSe, e._wave), { color: col, book: (!e.greet && spec.anim === 'read' && !e.propGone) });
           return;
         }
         if (spec.mode === 'patrol') {
@@ -3055,7 +3199,10 @@
           e.dF += (((e.greet && e.wF && dropOK) ? 1 : 0) - e.dF) * kB;
           e.dB += (((e.greet && e.wB && dropOK) ? 1 : 0) - e.dB) * kB;
           var carryY = feetY - 97 * S, groundY = feetY - 3;
-          if (e.load === 'triangle') {
+          if (e.propGone) {
+            // it is on the floor now, drawn by the overlay — the crew keeps their carry pose but the
+            // load itself is gone from between them
+          } else if (e.load === 'triangle') {
             // logo-style red triangle: tip forward, a MEDIUM notch bitten out of the mid back edge
             var baseX = bx2, tipX = fx + e.dir * 4, cyT = carryY, halfT = 18, notch = 11;
             ctx.fillStyle = cssVar('--coral', '#FF5740');
@@ -3185,7 +3332,7 @@
         }
       });
 
-      poofDrawSmoke();
+      poofDrawSmoke(dtFrame);
 
       // Expire any quote bubble whose 12s ran out and send that reader back to his book.
       // Driven from this loop rather than a second timer of its own. (window.EVQuotes.tick
@@ -3211,6 +3358,7 @@
       quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
       poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay,
       sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
+      drops: function () { return DROPS; }, propOf: propOf,
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };
   });

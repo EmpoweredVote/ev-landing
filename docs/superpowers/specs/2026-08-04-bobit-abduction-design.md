@@ -144,6 +144,39 @@ that already exist.
 The prop is dropped in `letgo` under the same `FALL_G` as everything else that falls in this feature, and
 it stays on the floor after he vanishes — physical evidence that someone was taken.
 
+## Pass 2 — built
+
+Shipped, with three changes to what was sketched below.
+
+**Which props hurt.** Only ball, the beam crew's load, and a `.vote` logo piece land on a foot. A light,
+book, phone, yo-yo or paddle falls and clatters beside him. A **kite does not fall at all** — let go of
+it and the wind lifts it off the side of the page. A ball already in flight carries on the way it was
+travelling as it drops, so it bumps down near whoever it was heading for, rather than stopping dead in
+the air.
+
+**The hurt Bobit still raises.** He throws his hands up with everybody else — the whole room reacting on
+one beat is the joke — and only discovers the foot when he tries to move. Then `hlimp`, a new sub-phase
+between `raise` and the ledge test, at half speed.
+
+**`hystericalLimp` is a new pose.** The existing `limpPose` deliberately has the arms DOWN: it is the
+moment "the panic became pain". This is the other order — something heavy landed on him while he was
+already terrified — so it keeps the flee's overhead flailing on top of the limping legs.
+
+Props live in `DROPS` on the smoke overlay in DOCUMENT coordinates, not on their owners' canvases. Two
+reasons that has to be so: most mode branches return early, so there is no clean post-figure hook (the
+same reason the smoke lives there), and a fleeing canvas is cleared, resized and repositioned out from
+under anything drawn on it. Once it is on the floor a prop is page furniture.
+
+Three things this pass had to fix in pass 1:
+
+- `abductStart` now also fires from `poofTick` when the phase is `holding`, not only from `poofStart`.
+  Being held IS being abducted, so the phase owns it; anything driving `POOF` directly otherwise skipped
+  the whole sequence and never dropped the victim's prop.
+- The victim's prop is handed to `DROPS` at the burst. It was drawn on his canvas, so it had been
+  vanishing in the same puff — contradicting this spec's own claim that it stays as evidence.
+- `HEAVY_PROP` was keyed `letter-v`/`letter-e` while `propOf` returns `letter`, so a dropped logo piece
+  would never have hurt anyone.
+
 ## What pass 2 inherits
 
 Pass 2 ("everyone drops what they are holding during the stunned beat") needs exactly one thing this pass

@@ -72,11 +72,15 @@ const RAISE_SECS = 0.45;   // must match ev-figures.js
 
   assert.ok(s.length > 0, 'no flee samples recorded');
   const raise = s.filter(function (x) { return x.fl === 'raise'; });
-  const run = s.filter(function (x) { return x.fl === 'run'; });
+  // 'run' or 'hlimp': this test is about the hands-up beat and the hand-off OUT of it, not about which
+  // gait follows. Since the stunned drop landed, a Bobit whose own load came down on his foot raises
+  // with everybody else and then limps instead of running — and the watched entry is entries[0], the
+  // beam crew, who is carrying the heaviest thing on the page and so is usually exactly that Bobit.
+  const moving = s.filter(function (x) { return x.fl === 'run' || x.fl === 'hlimp'; });
 
   assert.strictEqual(s[0].fl, 'raise', 'the flee must open with the raise, saw ' + s[0].fl);
   assert.ok(raise.length >= 3, 'only ' + raise.length + ' raise samples — too short to be a beat');
-  assert.ok(run.length > 0, 'the raise never handed off to the run');
+  assert.ok(moving.length > 0, 'the raise never handed off to a run or a limp');
 
   // hands up ON THE SPOT: not one pixel of ground covered while the arms come up
   const x0 = raise[0].x;
@@ -110,8 +114,8 @@ const RAISE_SECS = 0.45;   // must match ev-figures.js
     'the raise ran ' + last.toFixed(2) + 's, expected about ' + RAISE_SECS + 's');
 
   // and only after it does he start covering ground
-  const advanced = run.some(function (r) { return (r.x - x0) * r.dir > 4; });
-  assert.ok(advanced, 'he never advanced toward his edge once the run started');
+  const advanced = moving.some(function (r) { return (r.x - x0) * r.dir > 4; });
+  assert.ok(advanced, 'he never advanced toward his edge once he started moving');
 
   console.log('09-raise: PASS (raise ' + last.toFixed(2) + 's, ' + raise.length +
     ' samples, silhouette +' + (wMax - wStart).toFixed(1) + 'px, then ran)');
