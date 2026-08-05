@@ -868,8 +868,9 @@
     // Draw a dropped prop lying on the floor. Deliberately simple shapes: at S=0.32 these are 8-16px
     // across, and the read that matters is "he was holding something and now it is on the ground",
     // not the fidelity of the object.
-    function drawGroundProp(ctx, kind, x, y, col) {
+    function drawGroundProp(ctx, kind, x, y, col, alpha) {
       ctx.save();
+      if (alpha != null) ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2;
       if (kind === 'ball' || kind === 'yoyo') {
@@ -977,11 +978,15 @@
       e.abMates = split.mates.map(function (m) {
         return { x: m.x, floor: (m.floor != null ? m.floor : ink.floor) + grow, small: m.small };
       });
+      // floor: the surface he was on, not his own ink bottom — see propFloorDoc. Converted into this
+      // canvas's local coords, which the upward growth shifted down by `grow`.
+      var propFloorLocal = propFloorDoc(e, ink, cr, sy) - (cr.top + sy) + grow;
       e.abProp = prop ? {
         kind: prop.kind,
         x: (prop.x != null ? prop.x : ink.midX),
         y0: (prop.y != null ? prop.y + grow : ink.floor + grow - HAND_Y),
-        y: 0, t: 0, landed: false
+        floor: propFloorLocal,
+        y: 0, t: 0, hold: 0, landed: false
       } : null;
       if (e.abProp) e.abProp.y = e.abProp.y0;
       // The pose he eases OUT of. Captured once so `letgo` has something to lerp from without the
@@ -1079,13 +1084,21 @@
           p.x += 145 * dt; p.y -= 52 * dt;
         } else if (!p.landed) {
           p.t += dt;
-          var dist = groundY - p.y0;
+          var pFloor = (p.floor != null ? p.floor : groundY);
+          var dist = pFloor - p.y0;
           var ps = dropSecs(Math.max(1, dist));
           var pk = Math.min(1, p.t / ps);
           p.y = p.y0 + dist * pk * pk;
-          if (pk >= 1) { p.y = groundY; p.landed = true; }
+          if (pk >= 1) { p.y = pFloor; p.landed = true; }
         }
-        drawGroundProp(ctx, p.kind, p.x, p.y, col);
+        // hold a beat, fade, gone — same as the stunned drop; nothing is left lying about
+        var pAlpha = 1;
+        if (p.landed && p.kind !== 'kite') {
+          p.hold += dt;
+          if (p.hold > DROP_HOLD) pAlpha = 1 - (p.hold - DROP_HOLD) / DROP_FADE;
+        }
+        if (pAlpha <= 0) e.abProp = null;
+        else drawGroundProp(ctx, p.kind, p.x, p.y, col, pAlpha);
       }
 
       // Anyone else this entry draws stays where he was, watching. His mode is not running — the
@@ -1125,6 +1138,31 @@
     // a light, a book, a phone, a yo-yo or a paddle just clatters down beside him.
     var HEAVY_PROP = { ball: 1, beamload: 1, letter: 1 };
 
+    // Which document row a dropped prop should come to rest on.
+    //
+    // NOT the owner's ink bottom. That is where the FIGURE visibly is, which is the right floor for him
+    // but wrong for the thing he was holding: a seated reader's ink bottom is his dangling shins, well
+    // below the card edge he is sitting on, so his book landed in mid-air underneath the card and read
+    // as a floating book. The surface is his perch — the element he was placed against, which is what
+    // `edge: 'top'` lines every figure up with in the first place.
+    //
+    // min() of the two so a mode with no useful perch (or one that draws below it) still lands on
+    // something rather than higher than the figure himself.
+    function propFloorDoc(e, ink, cr, sy) {
+      var inkDoc = cr.top + sy + ink.floor;
+      if (!e.el) return inkDoc;
+      var ar = e.el.getBoundingClientRect();
+      var perchDoc = ar.top + sy;
+      // a perch far above him is not his floor either (kite/rope hang well below their anchor)
+      if (perchDoc < inkDoc - 140 || perchDoc > inkDoc) return inkDoc;
+      return perchDoc;
+    }
+
+    // Landed props hold for a beat and then fade out, rather than lying there for good. Left on the
+    // page they piled up as litter the eye could not attach to any surface. HOLD is long enough to read
+    // as "it hit the floor" inside the 1s stun; the fade finishes about as the room starts running.
+    var DROP_HOLD = 0.35, DROP_FADE = 0.45;
+
     function stunDropAll() {
       var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
       entries.forEach(function (e) {
@@ -1140,8 +1178,8 @@
           kind: p.kind, owner: e,
           x: cr.left + sx + lx, x0: cr.left + sx + lx,
           y: cr.top + sy + ly, y0: cr.top + sy + ly,
-          floor: cr.top + sy + ink.floor,
-          t: 0, landed: false,
+          floor: propFloorDoc(e, ink, cr, sy),
+          t: 0, landed: false, hold: 0,
           // A kite does not fall. Let go of it and the wind has it — it lifts and blows off the side.
           blow: p.kind === 'kite',
           // Heavy things land on the foot of whoever was holding them. He still throws his hands up
@@ -1176,7 +1214,17 @@
             if (d.hurts && d.owner && !d.owner.gone) d.owner.footHurt = true;
           }
         }
-        drawGroundProp(g, d.kind, d.x - sx, d.y - sy, figColor(d.owner ? (d.owner.spec.tone != null ? d.owner.spec.tone : d.owner.ci) : 0));
+        // Down: hold a beat, fade, then stop existing. Nothing is left on the floor afterwards.
+        var alpha = 1;
+        if (d.landed) {
+          d.hold += dt;
+          if (d.hold > DROP_HOLD) {
+            alpha = 1 - (d.hold - DROP_HOLD) / DROP_FADE;
+            if (alpha <= 0) { DROPS.splice(i, 1); continue; }
+          }
+        }
+        drawGroundProp(g, d.kind, d.x - sx, d.y - sy,
+          figColor(d.owner ? (d.owner.spec.tone != null ? d.owner.spec.tone : d.owner.ci) : 0), alpha);
       }
     }
     // ══ end ABDUCTION ═══════════════════════════════════════════════════════════════════
@@ -1211,9 +1259,9 @@
               kind: ap.kind, owner: null,
               x: apr.left + apx + ap.x, x0: apr.left + apx + ap.x,
               y: apr.top + apy + ap.y, y0: apr.top + apy + ap.y,
-              floor: apr.top + apy + POOF.victim.abFloor,
+              floor: apr.top + apy + (ap.floor != null ? ap.floor : POOF.victim.abFloor),
               // a kite still blows away even when its owner was the one taken
-              t: 0, landed: ap.landed, blow: ap.kind === 'kite', hurts: false, drift: 0
+              t: 0, hold: ap.hold || 0, landed: ap.landed, blow: ap.kind === 'kite', hurts: false, drift: 0
             });
           }
           // He is leaving with the canvas, so the abduction state goes with him rather than through

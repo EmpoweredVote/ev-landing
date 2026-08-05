@@ -249,7 +249,9 @@ async function scenarioProp(browser) {
   await page.waitForTimeout(900);            // letgo done, prop should be down
   const landed = await page.evaluate(t => {
     const e = window.__evFigDebug.entries[t];
-    return { landed: e.abProp.landed, y: e.abProp.y, floor: e.abFloor };
+    // abProp.floor, not abFloor: a prop comes to rest on the SURFACE its owner was on, which for a
+    // seated reader is the card edge rather than his dangling shins. See propFloorDoc.
+    return { landed: e.abProp.landed, y: e.abProp.y, floor: e.abProp.floor };
   }, i);
   const errs = page.__errs.slice();
   await page.close();
@@ -388,7 +390,7 @@ async function scenarioMoveOff(browser) {
   } else {
     assert.ok(c.landed.landed, 'prop: his ' + c.hasProp.kind + ' never finished falling');
     assert.ok(Math.abs(c.landed.y - c.landed.floor) < 2,
-      'prop: his ' + c.hasProp.kind + ' came to rest at y ' + c.landed.y.toFixed(1) + ', not on his floor (' +
+      'prop: his ' + c.hasProp.kind + ' came to rest at y ' + c.landed.y.toFixed(1) + ', not on the surface (' +
       c.landed.floor.toFixed(1) + ')');
     assert.ok(c.landed.y > c.hasProp.y0,
       'prop: it did not fall — started at ' + c.hasProp.y0.toFixed(1) + ', ended at ' + c.landed.y.toFixed(1));

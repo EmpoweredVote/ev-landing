@@ -69,7 +69,9 @@ async function run(browser, scrollTo) {
     };
   });
 
-  await page.waitForTimeout(700);   // long enough for every fall (a ~46px drop is ~0.29s)
+  // Landed but not yet faded. They hold DROP_HOLD then fade over DROP_FADE and are removed, so this
+  // window is deliberately narrow: too early and nothing has landed, too late and they are gone.
+  await page.waitForTimeout(380);
 
   // Pixels: the overlay must actually be painting the landed props. Scroll to them first — they sit at
   // DOCUMENT positions all over the page, and at scroll 0 every one of them is below the fold, so a
@@ -141,6 +143,16 @@ async function run(browser, scrollTo) {
     });
   });
 
+  // and nothing is left lying on the floor afterwards
+  const settled = await page.evaluate(() => new Promise(res => {
+    const t0 = performance.now();
+    (function step() {
+      if (!window.__evFigDebug.drops().length) return res(true);
+      if (performance.now() - t0 > 8000) return res(false);
+      requestAnimationFrame(step);
+    })();
+  }));
+
   const cleared = await page.evaluate(() => new Promise(res => {
     const t0 = performance.now();
     (function step() {
@@ -151,7 +163,7 @@ async function run(browser, scrollTo) {
   }));
 
   await page.close();
-  return { held, victimIdx, atStun, painted, afterFall, flee, cleared, errs };
+  return { held, victimIdx, atStun, painted, afterFall, flee, settled, cleared, errs };
 }
 
 function check(r, label) {
@@ -213,7 +225,12 @@ function check(r, label) {
       label + ': hurt entry ' + i + ' never limped (' + ph.join(' -> ') + ')');
   });
 
-  // 6. and none of it stalls the page
+  // 6. dropped props do not become litter — they hold a beat, fade and go
+  assert.ok(r.settled,
+    label + ': dropped props are still on the floor after 8s. They are meant to land, hold, fade and ' +
+    'disappear; left lying about they read as artifacts floating with no surface under them.');
+
+  // 7. and none of it stalls the page
   assert.ok(r.cleared, label + ': the exodus never reached "cleared"');
 
   return r.atStun.drops.length + ' props (' + r.atStun.drops.map(d => d.kind).sort().join(', ') +
