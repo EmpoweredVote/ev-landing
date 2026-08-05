@@ -1563,6 +1563,38 @@
     // helper here — it will silently lose to that one.
     var BEAM_LOADS = ['circle', 'line'];   // the ball and the yellow line (no notched triangle); beamPick avoids repeats
 
+    // ── the carried button's size ──────────────────────────────────────────────────────────────
+    // The `button` load is the REAL showcase button from the tool list, so its size is measured off
+    // the DOM rather than hardcoded: that list is a `minmax(0, 340px)` grid track with two
+    // breakpoints, so the box is 340x102 on a wide screen and 390x90 in the 1024 band.
+    //
+    // Below 901px the measurement is deliberately IGNORED. There the button goes full width AND
+    // renders its `.m-desc` description inline, so it measures 178px tall at 768 and 250px at 360.
+    // That height is a paragraph of body text the carried prop does not have; copying it would hand
+    // the crew a near-square empty slab taller than their whole 240px canvas. The desktop shape is
+    // used instead, which is also the last-resort fallback if the button cannot be measured at all.
+    //
+    // 340x102 and not 340x96: 96 is the CSS `min-height`, but a 64px logo plus 18px padding either
+    // side plus the 1px border measures 102, and the measured number is the one that matters.
+    var CARD_FALLBACK = { w: 340, h: 102 };
+    function buttonCardSize(e, w) {
+      if (!('_btnEl' in e)) e._btnEl = document.querySelector('.showcase-logos .logo-trigger');
+      var cw = CARD_FALLBACK.w, ch = CARD_FALLBACK.h;
+      if (e._btnEl && window.innerWidth >= 901) {
+        var br = e._btnEl.getBoundingClientRect();
+        if (br.width > 20 && br.height > 20) { cw = br.width; ch = br.height; }
+      }
+      // Never wider than the viewport, and uniform so the button's proportions survive — this is the
+      // ONLY scaling the card gets. It is NOT a fit-the-hero-content clamp: the card is meant to be
+      // too big for the strip it walks along. Measured: this engages at 320px (card 292x88) and
+      // 360px (332x100), and never at 384px or above, where 340 fits inside the guard.
+      if (w > 40) {
+        var cap = w - 20;
+        if (cw > cap) { ch *= cap / cw; cw = cap; }
+      }
+      return { w: cw, h: ch };
+    }
+
     function sizeCanvas(e, w, h) {
       if (e.w !== w || e.h !== h) {
         e.w = w; e.h = h;
@@ -3552,6 +3584,7 @@
       poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay,
       sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
       drops: function () { return DROPS; }, propOf: propOf, __gp: drawGroundProp,
+      buttonCardSize: buttonCardSize, beamPick: beamPick,
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };
   });
