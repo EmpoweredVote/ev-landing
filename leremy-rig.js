@@ -625,6 +625,40 @@ const ANIMATIONS = {
     g.frame = (t) => { const p = base(t); p.armRU = 16; p.armRF = 6; p.armLU = -16; p.armLF = -6; return p; };
     return g;
   })(),
+  // Hauling something far too big for two people: the beam crew's Fallacy Finders button is a
+  // ~340x102 slab, wider than four of them and taller than any. Everything here is `carry` pushed
+  // toward strain — shorter steps, folded deeper, arms hanging nearly straight so the hands sit as
+  // low as the rig reaches, the head lifted relative to the fold (so he is not simply staring at
+  // his shoes), and a small sag each time the weight lands on a foot.
+  //
+  // `head: 8` is relative to a spine already folded 26 forward, so the head still reads net-forward
+  // in world space. That is the intent: hunched over the load, not craning over it.
+  //
+  // Note the speed: the crew walks this load FASTER than the ball or the line, not slower. It
+  // covers part of the .meta-row on the way past, and pace is the only thing that keeps that brief.
+  // So the strain has to live entirely in the pose — which reads truer anyway. Someone hustling
+  // under a load too heavy for them, rather than someone crawling.
+  hefty: (() => {
+    const g = makeGait({ label: "Heavy haul", mood: "…who ordered the big one?", speed: 1.5, stride: 11, hunch: -26, knee: 16, arm: 0, bob: 2, head: 8 });
+    const base = g.frame;
+    g.frame = (t) => {
+      const p = base(t);
+      p.armRU = 2; p.armRF = 1; p.armLU = -2; p.armLF = -1;   // straight down: lowest hands the rig gives
+      // A sag onto the weight-bearing leg. Bounded, because makeGait leaves the planted (rear) leg
+      // fully straight — `legRF = legRU - max(0, sw) * knee` zeroes the knee bend on that side — so
+      // there is no slack to absorb a pelvis drop and the foot goes through the floor instead.
+      // Measured lowest ink below the floor line at the crew's S = 0.32, where every shipped gait
+      // already sits at 2px because of the round cap on the foot:
+      //     sag  0 -> 2px    8 -> 3px    16 -> 6px
+      //     sag  4 -> 2px   11 -> 4px    24 -> 8px
+      // 8 is the most weight available for 1px past the house baseline.
+      const plant = Math.max(0, -Math.sin(t * 1.5 * Math.PI));
+      p.bob += plant * 8;
+      p.lean = -4;                                            // braced back a touch against the load
+      return p;
+    };
+    return g;
+  })(),
   climb: {
     label: "Climb", mood: "up we go…",
     frame(t) {
@@ -1054,7 +1088,7 @@ function makeGait(g) {
 }
 ANIMATIONS.walk = ANIMATIONS.stroll;   // scene walker + old references
 
-const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "paddleball", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "sit", "read"];
+const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "paddleball", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "hefty", "sit", "read"];
 
 // ── singleton animation controller ─────────────────────────
 // Owns its own rAF + state so it is immune to React re-mounts.
