@@ -13,7 +13,10 @@ const assert = require('assert');
 
 const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
 const RELOADS = 12;
-const HEAVY = ['ball', 'beamload', 'letter'];
+// Mirrors HEAVY_PROP in ev-figures.js. Kept as a literal so the expectation is readable here, but
+// checked against the real table below — three copies of this list have now existed at once, and a
+// silent divergence would show up as a baffling hurts=true/false mismatch rather than as itself.
+const HEAVY = ['ball', 'beamload', 'letter', 'card'];
 
 async function run(browser, scrollTo) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -36,6 +39,9 @@ async function run(browser, scrollTo) {
     }).filter(Boolean);
   });
 
+  // the real HEAVY_PROP table, so the literal at the top of this file can be checked against it
+  const heavyTable = await page.evaluate(() => Object.keys(window.__evFigDebug.heavyProp));
+
   // Drive the gag from the phase machine: this test is about the drop beat, not the press handling.
   const victimIdx = await page.evaluate(() => {
     const d = window.__evFigDebug;
@@ -43,7 +49,7 @@ async function run(browser, scrollTo) {
     // victim takes his prop with him owner-less — so picking him means nothing ever lands on a foot
     // and the limp goes untested while the suite stays green. Prefer someone empty-handed.
     const cand = d.entries.filter(e => e.w && e.spec.mode !== 'why' && !e.gone);
-    const HEAVY_K = ['ball', 'beamload', 'letter'];
+    const HEAVY_K = Object.keys(d.heavyProp);   // the real table, not a fourth copy
     const v = cand.filter(e => !d.propOf(e))[0] ||
               cand.filter(e => HEAVY_K.indexOf(d.propOf(e).kind) < 0)[0] || cand[0];
     d.poof.victim = v; d.poof.phase = 'holding'; d.poof.t = 2.9;
@@ -163,11 +169,16 @@ async function run(browser, scrollTo) {
   }));
 
   await page.close();
-  return { held, victimIdx, atStun, painted, afterFall, flee, settled, cleared, errs };
+  return { held, victimIdx, atStun, painted, afterFall, flee, settled, cleared, errs, heavyTable };
 }
 
 function check(r, label) {
   assert.deepStrictEqual(r.errs, [], label + ': page errors during the drop beat');
+  // Keep the HEAVY literal above honest against ev-figures' HEAVY_PROP. Without this, adding a heavy
+  // prop there and forgetting here surfaces as an unexplained hurts= mismatch on an unrelated line.
+  assert.deepStrictEqual(r.heavyTable.slice().sort(), HEAVY.slice().sort(),
+    label + ': HEAVY in this test (' + HEAVY.join('/') + ') has drifted from HEAVY_PROP in ' +
+    'ev-figures.js (' + r.heavyTable.join('/') + ')');
 
   // 1. nobody is left holding anything, and something actually dropped
   assert.deepStrictEqual(r.atStun.stillHolding, [],

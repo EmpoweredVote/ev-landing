@@ -885,6 +885,8 @@
       if (m === 'beam') {
         if (e.scene === 'letters') return { kind: 'letter', x: e.eLX, y: e.eLY };
         if (e.scene === 'light') return { kind: 'light', x: e.lgX, y: null };
+        // the button is a 340x102 slab, not a ball — it gets its own dropped form and its own weight
+        if (e.load === 'button') return { kind: 'card', x: null, y: null };
         return { kind: 'beamload', x: null, y: null };
       }
       if (m === 'seat') return s.phone ? { kind: 'phone', x: null, y: null }
@@ -913,6 +915,14 @@
       } else if (kind === 'paddle') {
         ctx.beginPath(); ctx.ellipse(x - 3, y - 4, 6, 4, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x + 3, y - 3); ctx.lineTo(x + 11, y - 1); ctx.stroke();
+      } else if (kind === 'card') {
+        // the showcase button, face down on the floor: the widest thing anyone drops, and shallow,
+        // so it reads as a slab rather than another ball. Still in the deliberately-simple idiom —
+        // at this size the read that matters is "that big flat thing he was carrying is down now".
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(x - 13, y - 7, 26, 7, 2);
+        else ctx.rect(x - 13, y - 7, 26, 7);
+        ctx.stroke();
       } else if (kind === 'beamload' || kind === 'light') {
         ctx.beginPath(); ctx.arc(x, y - 7, 7, 0, Math.PI * 2); ctx.stroke();
       } else if (kind === 'kite') {
@@ -1162,9 +1172,11 @@
     // overlay itself is position:fixed.
     var DROPS = [];
 
-    // What lands hard enough to hurt. Ball, the beam crew's load, and a .vote logo piece have weight;
-    // a light, a book, a phone, a yo-yo or a paddle just clatters down beside him.
-    var HEAVY_PROP = { ball: 1, beamload: 1, letter: 1 };
+    // What lands hard enough to hurt. Ball, the beam crew's load, the Fallacy Finders button (the
+    // heaviest thing anybody here is carrying — it is the whole showcase button at full size) and a
+    // .vote logo piece have weight; a light, a book, a phone, a yo-yo or a paddle just clatters down
+    // beside him.
+    var HEAVY_PROP = { ball: 1, beamload: 1, letter: 1, card: 1 };
 
     // Which document row counts as the SURFACE a figure was on — what he stands up onto, and what a
     // thing he drops comes to rest on.
@@ -3754,7 +3766,7 @@
       sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
       drops: function () { return DROPS; }, propOf: propOf, __gp: drawGroundProp,
       buttonCardSize: buttonCardSize, beamPick: beamPick, drawButtonCard: drawButtonCard,
-      beamLoads: BEAM_LOADS,
+      beamLoads: BEAM_LOADS, heavyProp: HEAVY_PROP,
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };
   });
