@@ -39,7 +39,7 @@ Two new files, plus the tool that turns them into canvas path data:
 - `icons/fallacy-finders-logo-lg-dark.svg`
 - `tools/gen-fallacy-card-art.mjs`
 
-Derived from `brand/fallacy-finders/Fallacy Finders/Logo/SVG/fallacy-finders-logo-{light,dark}.svg`
+Derived from `brand/fallacy-finders/Logo/SVG/fallacy-finders-logo-{light,dark}.svg`
 (453×169, teal `#00657C` wordmark + coral `#FF5740` + yellow `#FFD426` spark, broken-chain symbol on the
 right). The `d` attributes are byte-identical to the brand source; only the `viewBox` differs.
 
