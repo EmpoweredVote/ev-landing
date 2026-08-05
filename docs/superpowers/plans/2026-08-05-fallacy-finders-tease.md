@@ -4,7 +4,7 @@
 
 **Goal:** Add the Fallacy Finders showcase button, carried upside down at full size, as a third load in the hero beam crew's rotation — teasing an unfinished feature without giving it a button in the tool list.
 
-**Architecture:** One new load key (`button`) in the existing `beam` mode of `ev-figures.js`. Its dimensions are measured off the live `.showcase-logos .logo-trigger` at layout time, the artwork is two new SVG lockups drawn via a cached `Image`, and the carriers' gap, walk speed and pose all switch on `e.load === 'button'`. No `index.html` change.
+**Architecture:** One new load key (`button`) in the existing `beam` mode of `ev-figures.js`. Its dimensions are measured off the live `.showcase-logos .logo-trigger` at layout time, the artwork is drawn as `Path2D` data generated from two new SVG lockups (an `<img>` would taint the canvas — see Task 1), and the carriers' gap, walk speed and pose all switch on `e.load === 'button'`. No `index.html` change.
 
 **Tech Stack:** Vanilla ES5-style JS on `<canvas>` (no build step), the `leremy-rig.js` pose library, Playwright `.cjs` test scripts run directly with `node`.
 
@@ -19,56 +19,49 @@
 
 ---
 
-### Task 1: The lockup SVGs
+### Task 1: The lockup SVGs  ✅ DONE (commit 60aeeaa)
 
 **Files:**
 - Create: `icons/fallacy-finders-logo-lg-light.svg`
 - Create: `icons/fallacy-finders-logo-lg-dark.svg`
 
 **Interfaces:**
-- Produces: two SVGs with intrinsic `width`/`height` attributes (required — `drawImage` of an SVG with no intrinsic size draws nothing in Chromium), consumed by Task 4 as `icons/fallacy-finders-logo-lg-{light,dark}.svg`.
+- Produces: `icons/fallacy-finders-logo-lg-{light,dark}.svg` (the eventual real button's artwork) and
+  `tools/gen-fallacy-card-art.mjs`, whose stdout is the `FF_ART` block Task 4 pastes into `ev-figures.js`.
+  `FF_ART` is `{x0, y0, w, h, light, dark, evenodd, roles, d}` — one shared geometry, colours as roles.
 
-- [ ] **Step 1: Copy the brand artwork into `icons/`**
+**What actually happened**, since it changed Task 4: the seam check found the raw brand art out of family
+(symbol right edge at x=330 vs the others' average 303; ink filling all 64px where the others sit at
+55–63), fixed with a `viewBox="0 -7 530 183"` pad that moves no path. And an `<img>` of the SVG turned out
+to **taint** the canvas under `file://`, which would break `beam-clears-metarow.cjs` permanently — so the
+card draws `Path2D` data instead. Verified against the browser's own SVG rendering: 0% colour mismatch.
 
-```bash
-cd C:/ev-landing/ev-landing-main
-cp "brand/fallacy-finders/Fallacy Finders/Logo/SVG/fallacy-finders-logo-light.svg" \
-   icons/fallacy-finders-logo-lg-light.svg
-cp "brand/fallacy-finders/Fallacy Finders/Logo/SVG/fallacy-finders-logo-dark.svg" \
-   icons/fallacy-finders-logo-lg-dark.svg
-```
+- [x] **Step 1: Copy the brand artwork into `icons/`** — done
+- [x] **Step 2: Confirm both carry an intrinsic size** — done (`width="530" height="183"` after Step 3)
+- [x] **Step 3: Normalise into the family** — done
 
-- [ ] **Step 2: Confirm both carry an intrinsic size**
+Measured all five lockups at `height:64px` in a 340px column. The raw brand art was out of family:
 
-Run: `head -c 120 icons/fallacy-finders-logo-lg-light.svg`
-Expected: starts `<svg width="453" height="169" viewBox="0 0 453 169"`. Both files must have `width` and `height`, not `viewBox` alone. If either lacks them, add them from the `viewBox`.
+| lockup | rendered W | ink H | ink right edge x |
+|---|---|---|---|
+| essentials | 262 | 56 | 302 |
+| readrank | 189 | 62 | 306 |
+| treasury-tracker | 214 | 55 | 313 |
+| ctc | 287 | 63 | 292 |
+| **fallacy-finders (raw)** | 172 | **64** | **330** |
+| **fallacy-finders (padded)** | 186 | **60** | **304** |
 
-- [ ] **Step 3: Check the family seam at render size**
+Fixed with `viewBox="0 -7 530 183"` (was `"0 0 453 169"`) — a pure box change; the `d` attributes are
+byte-identical to `brand/fallacy-finders/`. Family averages are ink H 59 and right edge 303.
 
-The other five lockups have differing intrinsic boxes (824×184, 588×200, 682×167, 540×162) because `.logo-trigger img { height: 64px }` normalises them. Fallacy Finders at 453×169 is already in family. Confirm optically:
+- [x] **Step 4: Build the canvas artwork generator** — done, `tools/gen-fallacy-card-art.mjs`
 
-```bash
-cat > /tmp/seam.html <<'EOF'
-<body style="background:#fff;padding:20px">
-<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;width:340px">
-<img src="icons/essentials-logo-lg-light.svg" style="height:64px">
-<img src="icons/readrank-logo-lg-light.svg" style="height:64px">
-<img src="icons/treasury-tracker-logo-lg-light.svg" style="height:64px">
-<img src="icons/ctc-logo-lg-light.svg" style="height:64px">
-<img src="icons/fallacy-finders-logo-lg-light.svg" style="height:64px">
-</div></body>
-EOF
-cp /tmp/seam.html ./seam-check.html
-```
+Added because the card cannot use an `<img>`. Emits an ~11KB `FF_ART` block: one shared geometry (the two
+variants agree exactly at 1dp and differ only in the wordmark teal), colours as roles, `evenodd` indices,
+and the `x0/y0` viewBox origin. `--check` re-verifies the variants still agree and throws if a future
+brand update reshapes one of them.
 
-Open `seam-check.html`, look at whether the Fallacy Finders wordmark's optical weight and baseline sit with the other four. Only if it is visibly off, pad the `viewBox` vertically (never rescale the paths) so its cap-height matches. Then `rm seam-check.html`.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add icons/fallacy-finders-logo-lg-light.svg icons/fallacy-finders-logo-lg-dark.svg
-git commit -m "feat(icons): Fallacy Finders homepage lockups"
-```
+- [x] **Step 5: Commit** — done, `60aeeaa`
 
 ---
 
@@ -320,83 +313,67 @@ git commit -m "feat(figures): measure the real showcase button for the crew's ne
 
 In `ev-figures.js`, after `buttonCardSize`:
 
-```js
-    // The card's artwork. Two variants so it matches the themed button; cached because this is
-    // called every frame of a pass. Until a variant decodes, the card draws as an empty rounded
-    // rect — the crew is still visibly hauling a big rectangle, so a slow first paint degrades to
-    // "blank sign" rather than "no load at all".
-    var CARD_IMG = {};
-    function cardImage() {
-      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-      var key = dark ? 'dark' : 'light';
-      if (!CARD_IMG[key]) {
-        var im = new Image();
-        im.src = 'icons/fallacy-finders-logo-lg-' + key + '.svg';
-        CARD_IMG[key] = im;
-      }
-      var img = CARD_IMG[key];
-      return (img.complete && img.naturalWidth > 0) ? img : null;
-    }
+First paste the generated `FF_ART` block. Produce it with:
 
+```bash
+node tools/gen-fallacy-card-art.mjs
+```
+
+and paste its output directly above `buttonCardSize`. It is ~11KB and self-documenting; do not hand-edit it.
+
+**Do not use an `<img>` of the SVG here.** Drawing an SVG loaded by `src` onto a canvas taints it, unconditionally under `file://`, and every pixel test in `tests/` runs from `file://`. A tainted beam canvas makes `tests/layout/beam-clears-metarow.cjs` throw `SecurityError` forever, because it reads pixels off that exact canvas. Measured:
+
+| origin | `img.src` file ref | data URI |
+|---|---|---|
+| `file://` | draws, **taints** → `SecurityError` | draws, clean |
+| `http://` | draws, clean | draws, clean |
+
+`Path2D` carries no origin and cannot taint. Then the draw function:
+
+```js
     // The button as the crew carries it: UPSIDE DOWN. The whole card is rotated 180 degrees, which
     // is the gag — the sign for the next feature is being carried in and nobody has established
     // which way up it goes. The logo hugs one end rather than sitting centred, faithful to the real
     // buttons, which right-align their content so the five icons line up in the column. Because of
     // the rotation that end reads opposite in world space, and it swaps as the crew reverses.
     function drawButtonCard(ctx, cx, cy, cw, ch) {
-      var pad = 24 * (ch / 102);          // the button's own 24px padding, scaled with its height
-      var logoH = ch * (64 / 102);        // and its own 64px logo in a 102px box
-      var r = 16 * (ch / 102);
+      var k = ch / 102;                   // the real button is 102px tall at >=1025px
+      var pad = 24 * k;                   // its own 24px padding
+      var logoH = 64 * k;                 // its own 64px logo box
+      if (!FF_PATHS) FF_PATHS = FF_ART.d.map(function (d) { return new Path2D(d); });
+      var pal = (document.documentElement.getAttribute('data-theme') === 'dark') ? FF_ART.dark : FF_ART.light;
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(Math.PI);                // <- the joke
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(-cw / 2, -ch / 2, cw, ch, r);
+      if (ctx.roundRect) ctx.roundRect(-cw / 2, -ch / 2, cw, ch, 16 * k);
       else ctx.rect(-cw / 2, -ch / 2, cw, ch);
       ctx.fillStyle = cssVar('--card', '#FFFFFF'); ctx.fill();
       ctx.strokeStyle = cssVar('--border', '#C9C6BE'); ctx.lineWidth = 1; ctx.stroke();
-      var img = cardImage();
-      if (img) {
-        var lw = logoH * (img.naturalWidth / img.naturalHeight);
-        var maxW = cw - pad * 2;
-        if (lw > maxW) { logoH *= maxW / lw; lw = maxW; }
-        ctx.drawImage(img, cw / 2 - pad - lw, -logoH / 2, lw, logoH);   // hugging one end
+      // the lockup, hugging one end, scaled to the button's logo box
+      var lw = logoH * (FF_ART.w / FF_ART.h);
+      var maxW = cw - pad * 2;
+      var ls = (lw > maxW) ? (maxW / lw) : 1;
+      var s = (logoH * ls) / FF_ART.h;
+      ctx.translate(cw / 2 - pad - lw * ls, -logoH * ls / 2);
+      ctx.scale(s, s);
+      ctx.translate(-FF_ART.x0, -FF_ART.y0);   // the lockups carry a normalising viewBox offset
+      for (var i = 0; i < FF_PATHS.length; i++) {
+        ctx.fillStyle = pal[FF_ART.roles[i]];
+        ctx.fill(FF_PATHS[i], FF_ART.evenodd.indexOf(i) >= 0 ? 'evenodd' : 'nonzero');
       }
       ctx.restore();
     }
 ```
 
-- [ ] **Step 2: Verify it renders, over http**
+Note there is no longer any "not yet decoded" fallback state — path data is synchronous, so the card is never blank.
 
-`file://` blocks canvas `drawImage` of an SVG in Chromium, which is exactly the failure that would leave a silently blank card looking like a design choice. So this check runs over http.
+- [ ] **Step 2: Verify it renders**
 
-There is no Python on this machine and no static-server dependency in `package.json`, so use Node's
-built-in one. Save this once as `tools/serve.cjs`:
+Because the artwork is path data, this works from `file://` with no server.
 
-```js
-// Minimal static server for canvas checks that cannot run from file:// — Chromium refuses to
-// drawImage an SVG loaded over file://, which would leave the card silently blank.
-const http = require('http'), fs = require('fs'), path = require('path');
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml',
-                '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon' };
-http.createServer((req, res) => {
-  const rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
-  const file = path.join(__dirname, '..', rel);
-  fs.readFile(file, (err, buf) => {
-    if (err) { res.writeHead(404); return res.end('not found'); }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
-    res.end(buf);
-  });
-}).listen(8765, () => console.log('serving on http://localhost:8765'));
-```
 
-Then run it in the background:
-
-```bash
-cd C:/ev-landing/ev-landing-main && node tools/serve.cjs &
-```
-
-Then in a browser at `http://localhost:8765/index.html#figdebug`, in the console:
+Open `index.html#figdebug` in a browser, and in the console:
 
 ```js
 var d = window.__evFigDebug, b = d.entries.filter(e => e.spec.mode === 'beam')[0];
@@ -589,9 +566,9 @@ with:
           }
 ```
 
-- [ ] **Step 4: Check it by eye, over http**
+- [ ] **Step 4: Check it by eye**
 
-With the http server from Task 4 running, at `http://localhost:8765/index.html#figdebug`, scroll to the meta-row and wait for the button pass (or force it as in Task 4 Step 2).
+At `index.html#figdebug`, scroll to the meta-row and wait for the button pass (or force it as in Task 4 Step 2).
 
 Expected: two figures at the card's ends, folded and heads tipped back, walking noticeably brisker than the ball pass, card held low. The card overlaps the meta-row text as designed.
 
@@ -670,9 +647,9 @@ with:
               if (dropOK && (e.dF > 0.25 || e.dB > 0.25)) e._pickup = (e.load === 'button') ? 1.6 : 1.2;
 ```
 
-- [ ] **Step 4: Check both ends by hand, over http**
+- [ ] **Step 4: Check both ends by hand**
 
-At `http://localhost:8765/index.html#figdebug` during a button pass: hover the leading carrier — his end swings down, the card tilts, his partner holds it annoyed. Move away — they heave it back up without a snap. Hover both in turn — it goes flat on the floor.
+At `index.html#figdebug` during a button pass: hover the leading carrier — his end swings down, the card tilts, his partner holds it annoyed. Move away — they heave it back up without a snap. Hover both in turn — it goes flat on the floor.
 
 - [ ] **Step 5: Commit**
 
@@ -919,35 +896,10 @@ Expected: no `FAILED:` lines. `tests/poof/shots.cjs` and `tests/quotes/shots.cjs
 Run: `git diff --stat main -- index.html`
 Expected: empty output. If anything shows, revert it — the constraint is absolute.
 
-- [ ] **Step 3: Look at the pixels, over http**
+- [ ] **Step 3: Look at the pixels**
 
-Green tests do not prove a Bobit is visible. Screenshot the button pass at three widths over **http** (not `file://`, which blocks SVG-into-canvas `drawImage`):
+Green tests do not prove a Bobit is visible. Screenshot the button pass at three widths, from `file://`:
 
-There is no Python on this machine and no static-server dependency in `package.json`, so use Node's
-built-in one. Save this once as `tools/serve.cjs`:
-
-```js
-// Minimal static server for canvas checks that cannot run from file:// — Chromium refuses to
-// drawImage an SVG loaded over file://, which would leave the card silently blank.
-const http = require('http'), fs = require('fs'), path = require('path');
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml',
-                '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon' };
-http.createServer((req, res) => {
-  const rel = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '') || 'index.html';
-  const file = path.join(__dirname, '..', rel);
-  fs.readFile(file, (err, buf) => {
-    if (err) { res.writeHead(404); return res.end('not found'); }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
-    res.end(buf);
-  });
-}).listen(8765, () => console.log('serving on http://localhost:8765'));
-```
-
-Then run it in the background:
-
-```bash
-cd C:/ev-landing/ev-landing-main && node tools/serve.cjs &
-```
 
 Capture at 1280, 1024 and 375 with the button load pinned, and confirm by eye:
 - the logo is legible and unmistakably upside down
@@ -971,6 +923,6 @@ overlap, the faster walk and why). So this step is only:
 - [ ] **Step 5: Commit**
 
 ```bash
-git add docs/superpowers/specs/2026-08-05-fallacy-finders-tease-design.md screenshots/New tools/serve.cjs
+git add docs/superpowers/specs/2026-08-05-fallacy-finders-tease-design.md screenshots/New
 git commit -m "docs(spec): Fallacy Finders tease shipped, with measured geometry"
 ```
