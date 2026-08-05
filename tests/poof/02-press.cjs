@@ -182,8 +182,12 @@ async function points(page) {
     start.touches = [{ clientX: p.hit.x, clientY: p.hit.y }];
     document.dispatchEvent(start);
   }, pts2);
+  // A touch no longer starts the hold on touchstart: it waits TAP_MS (320ms) so a plain tap can reach
+  // the tap gags — quotes and the rest — instead of every tap becoming an abduction. Wait past that.
+  await page.waitForTimeout(430);
   assert.strictEqual(await page.evaluate(function () { return window.__evFigDebug.poof.phase; }), 'holding',
-    'a touch-hold on a Bobit must start a hold before the >10px-move cancel can be tested');
+    'a touch-hold on a Bobit must start a hold once TAP_MS has passed, before the >10px-move cancel ' +
+    'can be tested');
   await page.evaluate(function (p) {
     var move = new Event('touchmove', { bubbles: true });
     move.touches = [{ clientX: p.hit.x + 20, clientY: p.hit.y }];

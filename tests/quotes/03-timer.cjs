@@ -1,3 +1,13 @@
+// Quote bubbles have NO auto-expiry: one stays up until the next tap dismisses it.
+//
+// This file used to assert a 12s lifetime and all of its pause hooks (hover, figure-hold, keyboard
+// focus), which existed to stop the clock running out while you were still reading. On a phone that
+// clock was the problem rather than the fix — a quote could vanish before you got to it — so LIFE is 0
+// now and `tick` never closes anything on its own. Dismissal was already covered elsewhere: ev-figures
+// closes every open bubble on a tap that is not on a reader or a bubble, and on Escape.
+//
+// So what has to be true now is the opposite of what this file used to check: no amount of time closes
+// a bubble, and closing still works when it is asked for.
 const { chromium } = require('playwright');
 const assert = require('assert');
 
@@ -10,89 +20,63 @@ const URL = 'file:///C:/ev-landing/ev-landing-main/index.html';
     return /^https?:/.test(r.request().url()) ? r.abort() : r.continue();
   });
   await page.goto(URL);
+  await page.waitForFunction(function () { return !!window.EVQuotes; });
 
-  assert.strictEqual(await page.evaluate(function () { return window.EVQuotes.LIFE; }), 12,
-    'lifetime should be 12 seconds');
+  assert.strictEqual(await page.evaluate(function () { return window.EVQuotes.LIFE; }), 0,
+    'LIFE must be 0 — anything else is an auto-expiry, and a bubble is meant to survive until a tap');
 
-  // runs down and closes, reporting the handle it closed
-  const expiry = await page.evaluate(function () {
+  // no amount of ticking closes it
+  const patient = await page.evaluate(function () {
+    window.EVQuotes.closeAll();
     var h = window.EVQuotes.open({ headX: 600, headY: 500, tone: '#007D99', quote: window.EVQuotes.QUOTES[0] });
-    var closedEarly = window.EVQuotes.tick(11.5).length;
-    var stillOpen = window.EVQuotes.openCount();
-    var closedNow = window.EVQuotes.tick(0.6);
-    return {
-      closedEarly: closedEarly,
-      stillOpen: stillOpen,
-      closedNow: closedNow.length,
-      sameHandle: closedNow[0] === h,
-      remaining: window.EVQuotes.openCount()
-    };
+    var closed = 0;
+    for (var i = 0; i < 300; i++) closed += window.EVQuotes.tick(1).length;   // five minutes
+    return { closed: closed, open: window.EVQuotes.openCount(), attached: !!h.el.parentNode };
   });
-  assert.strictEqual(expiry.closedEarly, 0, 'must not close before 12s');
-  assert.strictEqual(expiry.stillOpen, 1);
-  assert.strictEqual(expiry.closedNow, 1, 'must close once past 12s');
-  assert.ok(expiry.sameHandle, 'tick must return the handle it closed');
-  assert.strictEqual(expiry.remaining, 0);
+  assert.strictEqual(patient.closed, 0, 'tick closed a bubble after 300s — there must be no clock');
+  assert.strictEqual(patient.open, 1, 'the bubble should still be open after five minutes of ticking');
+  assert.ok(patient.attached, 'the bubble element left the DOM without being closed');
 
-  // setHeld(true) pauses it indefinitely — this is the figure-hover case
-  const held = await page.evaluate(function () {
+  // the pause hooks are harmless no-ops now: still callable, and still nothing expires afterwards
+  const paused = await page.evaluate(function () {
     window.EVQuotes.closeAll();
     var h = window.EVQuotes.open({ headX: 600, headY: 500, tone: '#007D99', quote: window.EVQuotes.QUOTES[1] });
     h.setHeld(true);
-    for (var i = 0; i < 60; i++) window.EVQuotes.tick(1);   // a whole minute
-    var survived = window.EVQuotes.openCount();
+    window.EVQuotes.tick(60);
     h.setHeld(false);
-    var closed = window.EVQuotes.tick(12.1).length;
-    return { survived: survived, closed: closed };
-  });
-  assert.strictEqual(held.survived, 1, 'a held bubble must never expire');
-  assert.strictEqual(held.closed, 1, 'releasing the hold lets it expire again');
-
-  // pointer over the bubble pauses it without the figure code doing anything
-  const hovered = await page.evaluate(function () {
-    window.EVQuotes.closeAll();
-    var h = window.EVQuotes.open({ headX: 600, headY: 500, tone: '#007D99', quote: window.EVQuotes.QUOTES[2] });
+    var afterRelease = window.EVQuotes.tick(60).length;
     h.el.dispatchEvent(new MouseEvent('mouseenter'));
-    for (var i = 0; i < 30; i++) window.EVQuotes.tick(1);
-    var survived = window.EVQuotes.openCount();
+    window.EVQuotes.tick(60);
     h.el.dispatchEvent(new MouseEvent('mouseleave'));
-    var closed = window.EVQuotes.tick(12.1).length;
-    return { survived: survived, closed: closed };
+    var afterLeave = window.EVQuotes.tick(60).length;
+    return { afterRelease: afterRelease, afterLeave: afterLeave, open: window.EVQuotes.openCount() };
   });
-  assert.strictEqual(hovered.survived, 1, 'pointer-over-bubble must pause the timer');
-  assert.strictEqual(hovered.closed, 1);
+  assert.strictEqual(paused.afterRelease, 0, 'releasing a hold must not start a countdown');
+  assert.strictEqual(paused.afterLeave, 0, 'the pointer leaving must not start a countdown');
+  assert.strictEqual(paused.open, 1, 'the bubble closed itself somewhere in the pause hooks');
 
-  // keyboard focus inside the bubble also pauses it
-  const focused = await page.evaluate(function () {
+  // and it still closes when asked
+  const dismissed = await page.evaluate(function () {
+    var before = window.EVQuotes.openCount();
     window.EVQuotes.closeAll();
-    var h = window.EVQuotes.open({ headX: 600, headY: 500, tone: '#007D99', quote: window.EVQuotes.QUOTES[3] });
-    h.el.querySelector('a').dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    for (var i = 0; i < 30; i++) window.EVQuotes.tick(1);
-    return window.EVQuotes.openCount();
+    return { before: before, after: window.EVQuotes.openCount() };
   });
-  assert.strictEqual(focused, 1, 'focus inside the bubble must pause the timer');
+  assert.strictEqual(dismissed.before, 1);
+  assert.strictEqual(dismissed.after, 0,
+    'closeAll must still close everything — no clock does not mean unclosable');
 
-  // several bubbles each run their own clock
-  const many = await page.evaluate(function () {
-    window.EVQuotes.closeAll();
-    var a = window.EVQuotes.open({ headX: 300, headY: 500, tone: '#007D99', quote: window.EVQuotes.QUOTES[0] });
-    window.EVQuotes.tick(8);
-    var b = window.EVQuotes.open({ headX: 900, headY: 500, tone: '#FF5740', quote: window.EVQuotes.QUOTES[1] });
-    var firstOut = window.EVQuotes.tick(4.5);        // a expires, b has only had 4.5s
-    return { count: window.EVQuotes.openCount(), closed: firstOut.length, wasA: firstOut[0] === a };
+  // A tap on empty page area closes it too. That is the real dismissal path on a phone, and it lives in
+  // ev-figures rather than ev-quotes, so this drives the document the way a finger would.
+  const tapped = await page.evaluate(function () {
+    window.EVQuotes.open({ headX: 600, headY: 500, tone: '#007D99', quote: window.EVQuotes.QUOTES[2] });
+    var open = window.EVQuotes.openCount();
+    document.dispatchEvent(new MouseEvent('click', { clientX: 4, clientY: 4, bubbles: true }));
+    return { open: open, after: window.EVQuotes.openCount() };
   });
-  assert.strictEqual(many.closed, 1, 'only the older bubble should expire');
-  assert.ok(many.wasA);
-  assert.strictEqual(many.count, 1, 'the newer bubble stays open');
+  assert.strictEqual(tapped.open, 1);
+  assert.strictEqual(tapped.after, 0,
+    'a tap on empty page area must dismiss the bubble — with no clock, this is the only way it closes');
 
-  // double-close must not throw or double-remove
-  await page.evaluate(function () {
-    window.EVQuotes.closeAll();
-    var h = window.EVQuotes.open({ headX: 600, headY: 500, tone: '#007D99', quote: window.EVQuotes.QUOTES[0] });
-    window.EVQuotes.close(h);
-    window.EVQuotes.close(h);
-  });
-
-  console.log('03-timer: PASS');
+  console.log('03-timer: PASS (no auto-expiry; closes on closeAll and on a tap)');
   await browser.close();
 })();

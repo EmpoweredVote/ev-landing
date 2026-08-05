@@ -144,23 +144,32 @@ function check(res) {
     checked++;
     if (Math.abs(p.offConvention) > OFF_CONVENTION_PX) offConvention++;
 
-    // 1. the floor handed to drawFlee is the floor he was standing on. Both sides come from the
-    //    same frozen ink, so this is exact — anything above a rounding px is a real displacement.
-    assert.ok(Math.abs(a.floorScreen - p.inkScreen) <= 1.5,
-      label + ': flee floor is at screen y ' + a.floorScreen.toFixed(1) + ' but his ink bottom was at ' +
-      p.inkScreen.toFixed(1) + ' — he teleported ' + (a.floorScreen - p.inkScreen).toFixed(1) +
-      'px before starting to run. His mode draws ' + p.offConvention.toFixed(1) +
-      'px off the h-6 line, so the flee geometry is still assuming h-6 somewhere.');
+    // 1. the floor handed to drawFlee is the SURFACE he was on.
+    //
+    //    This used to demand it equal his ink bottom to within 1.5px. That was the fix for the
+    //    original defects (a rope-hanger yanked 225px, everyone pinned to h-6) but it was too strong:
+    //    a seated figure's ink bottom is his dangling shins, BELOW the card edge he is sitting on, so
+    //    matching it made him stand up and run along a line under the card. He now stands up onto his
+    //    perch. So the contract is: never BELOW where his ink ended (that is the drop-into-the-floor
+    //    bug) and never far above it (that is the teleport).
+    assert.ok(a.floorScreen <= p.inkScreen + 2,
+      label + ': flee floor is at screen y ' + a.floorScreen.toFixed(1) + ', BELOW his ink bottom at ' +
+      p.inkScreen.toFixed(1) + ' — he is running underneath the surface he was on');
+    assert.ok(p.inkScreen - a.floorScreen <= 60,
+      label + ': flee floor is at screen y ' + a.floorScreen.toFixed(1) + ', ' +
+      (p.inkScreen - a.floorScreen).toFixed(1) + 'px above his ink bottom (' + p.inkScreen.toFixed(1) +
+      ') — that is a teleport, not standing up onto his perch. His mode draws ' +
+      p.offConvention.toFixed(1) + 'px off the h-6 line.');
 
-    // 2. and the ink that actually got painted is there too. drawFlee lays a shadow ellipse
-    //    (ry ~2.4px) on the floor line, so the painted bottom sits a couple of px below it.
-    //    Only figures still standing on their floor are comparable: 'raise' (hands going up on
-    //    the spot) or 'run', with no drop offset yet.
+    // 2. and the ink that actually got painted sits on THAT floor — not on his old ink bottom, which
+    //    for a seated figure is a shin's length lower. drawFlee lays a shadow ellipse (ry ~2.4px) on
+    //    the floor line, so the painted bottom sits a couple of px below it. Only figures still on
+    //    their floor are comparable: 'raise' or 'run', with no drop offset yet.
     if ((a.fl === 'raise' || a.fl === 'run') && a.yOff === 0 && a.inkScreen != null) {
-      assert.ok(Math.abs(a.inkScreen - p.inkScreen) <= 6,
+      assert.ok(Math.abs(a.inkScreen - a.floorScreen) <= 8,
         label + ': first flee frame painted its lowest ink at screen y ' + a.inkScreen.toFixed(1) +
-        ', ' + (a.inkScreen - p.inkScreen).toFixed(1) + 'px from where he was standing (' +
-        p.inkScreen.toFixed(1) + ')');
+        ', ' + (a.inkScreen - a.floorScreen).toFixed(1) + 'px from the floor it was handed (' +
+        a.floorScreen.toFixed(1) + ')');
     }
   });
 

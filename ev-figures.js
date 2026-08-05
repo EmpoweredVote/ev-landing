@@ -226,21 +226,43 @@
 
     // ── touch: a 3s hold does the same. No preventDefault on touchstart, so a scroll that
     //    happens to begin on a Bobit still scrolls — a >10px move cancels instead. ──
+    // On a touch screen the hold has to WAIT, because a tap is also how you use everything else. This
+    // used to call poofStart on touchstart, so smoke began the instant you touched a Bobit and every
+    // tap-to-read-a-quote turned into an abduction — the tap gags were unreachable on a phone.
+    //
+    // So: touchstart only remembers where you touched. If the finger is still down after TAP_MS the
+    // hold begins and smoke starts gathering; lift before that and nothing poof-related ever happened,
+    // leaving the tap to do its ordinary job. A >10px move still cancels, so a scroll that begins on a
+    // Bobit is a scroll.
+    var TAP_MS = 320;
+    var _tapTimer = null;
+    function clearTapTimer() { if (_tapTimer) { clearTimeout(_tapTimer); _tapTimer = null; } }
+
     document.addEventListener('touchstart', function (ev) {
+      clearTapTimer();
       if (ev.touches.length !== 1) { poofCancel(); return; }
       var t = ev.touches[0];
       var e = bobitAt(t.clientX, t.clientY);
       POOF.armed = !!e;
       POOF.sx = t.clientX; POOF.sy = t.clientY;
-      if (e) poofStart(e, t.clientX, t.clientY);
+      if (!e) return;
+      var px = t.clientX, py = t.clientY;
+      _tapTimer = setTimeout(function () {
+        _tapTimer = null;
+        poofStart(e, px, py);
+      }, TAP_MS);
     }, { passive: true });
     document.addEventListener('touchmove', function (ev) {
-      if (POOF.phase !== 'holding' || !ev.touches.length) return;
+      if (!ev.touches.length) return;
       var t = ev.touches[0];
-      if (Math.abs(t.clientX - POOF.sx) > 10 || Math.abs(t.clientY - POOF.sy) > 10) poofCancel();
+      var moved = Math.abs(t.clientX - POOF.sx) > 10 || Math.abs(t.clientY - POOF.sy) > 10;
+      if (!moved) return;
+      clearTapTimer();                 // a scroll must not turn into a hold once the finger travels
+      if (POOF.phase === 'holding') poofCancel();
     }, { passive: true });
-    document.addEventListener('touchend', poofCancel);
-    document.addEventListener('touchcancel', poofCancel);
+    function touchRelease() { clearTapTimer(); poofCancel(); }
+    document.addEventListener('touchend', touchRelease);
+    document.addEventListener('touchcancel', touchRelease);
 
     // One fixed full-viewport canvas for all smoke. Not the victim's own canvas: most mode
     // branches return early so there is no clean post-figure hook, and a 190px canvas would
@@ -471,7 +493,13 @@
       var ar = e.el.getBoundingClientRect();             // his perch
       var ink = scanInk(e);
       var figScreenX = cr.left + ink.midX;
-      var oldFloor = ink.floor;
+      // The SURFACE he was on, not his ink bottom. A seated reader's ink bottom is his dangling shins, so
+      // using it made him stand up and run along a line BELOW the card he had been sitting on. See
+      // surfaceFloorDoc — it leaves standing modes exactly where they were and only lifts the ones whose
+      // painted pixels hang past their perch.
+      // scroll offset passed as 0 deliberately: it cancels between the two terms, and poofArmFlee's own
+      // sy is declared further down — reading it here would be undefined and quietly make this NaN.
+      var oldFloor = surfaceFloorDoc(e, ink, cr, 0) - cr.top;
 
       // Pick his landing line BEFORE sizeCanvas, because how tall the canvas has to be depends on how
       // far he is going to fall. Everything here is DOCUMENT coords: the canvas stays absolutely
@@ -980,7 +1008,7 @@
       });
       // floor: the surface he was on, not his own ink bottom — see propFloorDoc. Converted into this
       // canvas's local coords, which the upward growth shifted down by `grow`.
-      var propFloorLocal = propFloorDoc(e, ink, cr, sy) - (cr.top + sy) + grow;
+      var propFloorLocal = surfaceFloorDoc(e, ink, cr, sy) - (cr.top + sy) + grow;
       e.abProp = prop ? {
         kind: prop.kind,
         x: (prop.x != null ? prop.x : ink.midX),
@@ -1138,17 +1166,18 @@
     // a light, a book, a phone, a yo-yo or a paddle just clatters down beside him.
     var HEAVY_PROP = { ball: 1, beamload: 1, letter: 1 };
 
-    // Which document row a dropped prop should come to rest on.
+    // Which document row counts as the SURFACE a figure was on — what he stands up onto, and what a
+    // thing he drops comes to rest on.
     //
-    // NOT the owner's ink bottom. That is where the FIGURE visibly is, which is the right floor for him
-    // but wrong for the thing he was holding: a seated reader's ink bottom is his dangling shins, well
-    // below the card edge he is sitting on, so his book landed in mid-air underneath the card and read
-    // as a floating book. The surface is his perch — the element he was placed against, which is what
-    // `edge: 'top'` lines every figure up with in the first place.
+    // NOT his ink bottom. That is where his painted pixels end, which for a SEATED figure is his
+    // dangling shins, well below the card edge he is sitting on. Used as a floor it put his dropped book
+    // in mid-air under the card, and it made him flee BELOW the line he had been sitting on rather than
+    // standing up onto it. His perch is the surface — the element `edge: .top.` lined him up against in
+    // the first place.
     //
-    // min() of the two so a mode with no useful perch (or one that draws below it) still lands on
-    // something rather than higher than the figure himself.
-    function propFloorDoc(e, ink, cr, sy) {
+    // Guarded both ways: a perch below his ink, or implausibly far above it, is not his floor either —
+    // that keeps a kite flyer and a rope hanger, who hang well below their anchors, on their own ink.
+    function surfaceFloorDoc(e, ink, cr, sy) {
       var inkDoc = cr.top + sy + ink.floor;
       if (!e.el) return inkDoc;
       var ar = e.el.getBoundingClientRect();
@@ -1178,7 +1207,7 @@
           kind: p.kind, owner: e,
           x: cr.left + sx + lx, x0: cr.left + sx + lx,
           y: cr.top + sy + ly, y0: cr.top + sy + ly,
-          floor: propFloorDoc(e, ink, cr, sy),
+          floor: surfaceFloorDoc(e, ink, cr, sy),
           t: 0, landed: false, hold: 0,
           // A kite does not fall. Let go of it and the wind has it — it lifts and blows off the side.
           blow: p.kind === 'kite',
@@ -1922,7 +1951,7 @@
     //    cartwheel he collapses into a heap (~10s wriggle), then gets up and shakes it off. On
     //    the spill the corner Bobit runs over and kneels by him; rises when he rises; and when
     //    he starts wheeling again, throws up his hands and trudges back to his corner. ──
-    var HEAP_SECS = 10;
+    var HEAP_SECS = 5;      // both of them down together; 10s was twice as long as the beat wants
     function cwStar() { var p = A.standstill.frame(0); p.hunch = 0; p.bob = 0; p.headTilt = 0; p.armRU = 142; p.armRF = 150; p.armLU = -142; p.armLF = -150; p.legRU = 30; p.legRF = 26; p.legLU = -30; p.legLF = -26; return p; }
     function cwHeap(t) { var p = A.standstill.frame(0); var wr = Math.sin(t * 7) * 4, wr2 = Math.sin(t * 5.3 + 1) * 5; p.hunch = -46 + wr; p.bob = 10; p.lean = 6 + wr2; p.headTilt = -22 + wr; p.legRU = 66 + Math.sin(t * 6) * 12; p.legRF = -38; p.legLU = 58 + wr2; p.legLF = -32; p.armRU = 52 + Math.sin(t * 8) * 14; p.armRF = 40; p.armLU = -56; p.armLF = -38 + wr; return p; }
     // crouched over the fallen one — knelt low, one arm reaching in. Drawn with a y-offset so it sits on the ground.

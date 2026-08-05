@@ -184,7 +184,11 @@
   }
 
   var live = [];   // open bubble handles
-  var LIFE = 12;   // seconds a bubble survives untouched
+  // 0 = no auto-expiry: a bubble stays until the next tap dismisses it. It used to close itself after
+  // 12s, which on a phone meant a quote could vanish while you were still getting to it. Dismissal was
+  // already handled — the figure code closes every bubble on a tap that is not on a reader or a bubble —
+  // so this only removes the clock, it does not leave them unclosable.
+  var LIFE = 0;
 
   function place(h) {
     var el = h.el;
@@ -290,7 +294,7 @@
       paused = h.held || h.pointerIn || h.focusIn;
       if (paused) continue;
       h.life += dt;
-      if (h.life >= LIFE) { closed.push(h); close(h); }
+      if (LIFE > 0 && h.life >= LIFE) { closed.push(h); close(h); }
     }
     return closed;
   }
