@@ -3049,8 +3049,8 @@
     // at each off-screen turn the crew picks its next pass: the light gag, a letter-carry, or another load
     // pick the crew's next pass. ALTERNATE carry <-> special every pass so the light gag and the
     // letter carriers show up regularly (turns are ~30-50s apart, so a random pick made specials feel
-    // like they never happened). Loads (circle/line) and specials (light/letters) each alternate too,
-    // so no action ever repeats back-to-back.
+    // like they never happened). The loads ROTATE through BEAM_LOADS and the specials (light/letters)
+    // alternate, so no action ever repeats back-to-back.
     function beamPick(e, w) {
       var lastWasSpecial = (e.lastAction === 'light' || e.lastAction === 'letters');
       // after a special always carry; after a carry usually go special, but ~30% of the time run ONE
@@ -3058,7 +3058,12 @@
       var goCarry = lastWasSpecial || ((e.carryRun || 0) < 2 && chance(0.3));
       var a;
       if (goCarry) {
-        a = (e.lastLoad === 'circle') ? 'line' : 'circle';       // the other load (never repeats)
+        // Advance one step around BEAM_LOADS, so a third load gets a turn. Deterministic rotation
+        // rather than a random pick, which is what the old two-element flip-flop was too: it keeps
+        // the "never repeats" guarantee for free, and a random pick over three would both repeat
+        // and starve. An unknown lastLoad (indexOf -1) starts the cycle at the first load.
+        var li = BEAM_LOADS.indexOf(e.lastLoad);
+        a = BEAM_LOADS[(li + 1) % BEAM_LOADS.length];
         e.lastLoad = a; e.carryRun = lastWasSpecial ? 1 : (e.carryRun || 0) + 1;
         e.scene = 'carry'; e.load = a; e.dwell = 1.1; e.bx = e.dir > 0 ? -110 : w + 110;
       } else {
@@ -3662,6 +3667,7 @@
       sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
       drops: function () { return DROPS; }, propOf: propOf, __gp: drawGroundProp,
       buttonCardSize: buttonCardSize, beamPick: beamPick, drawButtonCard: drawButtonCard,
+      beamLoads: BEAM_LOADS,
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };
   });
