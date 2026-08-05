@@ -3425,6 +3425,15 @@
           //          lives in the pose — A.hefty — which reads truer anyway: hustling under
           //          something too heavy, rather than crawling.
           var speedB = isBtn ? 51 : 30;
+          // See the card-draw branch for why the hold height is split by breakpoint. Hoisted here
+          // because the drop gag needs it too: it is exactly how far a dropped end can fall.
+          var btnHold = (window.innerWidth >= 901) ? 32 : 20;
+          var PK = isBtn ? 1.7 : 1.2;      // how long the bend-down-and-lift takes; the button is heavier
+          // Which loads can be set down at all: the rope-like line and the button. A ball rolls and a
+          // rigid triangle was never dropped. Declared HERE and not beside `kB` further down, because
+          // the greet-release block above needs it to arm the pickup — read later it is still
+          // undefined, so the lift would silently never fire.
+          var dropOK = (e.load === 'line' || isBtn);
           // +8, not -8: just OUTSIDE the card's edge. Standing inside its footprint put the card's
           // edge through each carrier's torso, so they read as loitering in front of a billboard
           // rather than carrying it. Outside, the hanging inner hand lands right on the edge.
@@ -3509,7 +3518,7 @@
           } else if (e.greet) {
             e.linger -= dt;
             if (e.linger <= 0) {
-              if (e.load === 'line' && (e.dF > 0.25 || e.dB > 0.25)) e._pickup = 1.2;   // bend down & lift, don't snap
+              if (dropOK && (e.dF > 0.25 || e.dB > 0.25)) e._pickup = PK;   // bend down & lift, don't snap
               e.greet = 0; e.wF = e.wB = false;
             }
           }
@@ -3527,7 +3536,7 @@
           var goingR = e.dir > 0;
           // drop/raise each end (line load only — a rigid triangle isn't dropped)
           e.dF = e.dF || 0; e.dB = e.dB || 0;
-          var kB = Math.min(1, dt * 6), dropOK = e.load === 'line';
+          var kB = Math.min(1, dt * 6);
           e.dF += (((e.greet && e.wF && dropOK) ? 1 : 0) - e.dF) * kB;
           e.dB += (((e.greet && e.wB && dropOK) ? 1 : 0) - e.dB) * kB;
           var carryY = feetY - 97 * S, groundY = feetY - 3;
@@ -3547,9 +3556,38 @@
             //            empty hero space above the row, so the better grip is free.
             //   <=900px  the row wraps to THREE lines, ~88px tall. Here 12px is a further 12px of
             //            real text hidden, so it stays low and the grip is the thing that gives.
-            var cardCY = feetY - (window.innerWidth >= 901 ? 32 : 20) - card.h / 2;
-            e._cardRect = { x: (fx + bx2) / 2 - card.w / 2, y: cardCY - card.h / 2, w: card.w, h: card.h };
-            drawButtonCard(ctx, (fx + bx2) / 2, cardCY, card.w, card.h);
+            var levelCY = feetY - btnHold - card.h / 2;
+            // Rigid, so it cannot sag between them like the line: a dropped end PIVOTS the whole card
+            // about the end still held. How far an end can fall is exactly the hold height, because
+            // that is when its bottom corner reaches the floor — 32px over 340px of width, so only
+            // ~5 degrees of tilt. Shallow, but the end moves a third of the card's own height, which
+            // is what actually reads. (An earlier draft of the spec promised a "steep diagonal"; that
+            // is not available to a long plank carried this low.)
+            var dropF = e.dF, dropB = e.dB;
+            if (e._pickup > 0) {
+              // Being heaved back up. Driven off the lift progress rather than left to e.dF/e.dB,
+              // which relax on a ~0.17s time constant and would have the card level again long
+              // before the figures finish straightening.
+              var pk = PK - e._pickup;
+              dropF = 1 - smooth01((pk - 0.55 * PK) / (0.45 * PK));
+              dropB = 1 - smooth01((pk - 0.55 * PK - 0.2) / (0.45 * PK));   // back hitches a beat behind
+            }
+            var endF = levelCY + dropF * btnHold;      // the end by the front carrier
+            var endB = levelCY + dropB * btnHold;
+            var midX = (fx + bx2) / 2;
+            // Resolve the ends to LEFT and RIGHT before taking the angle. Using front-vs-back with a
+            // signed dx (midX + dir * w/2) puts dx negative whenever the crew walks left, which sends
+            // atan2 to nearly PI — rotating the card a half turn and cancelling the upside-down gag.
+            // Against a positive card.w the tilt is always the small angle it should be.
+            var yL = (e.dir > 0) ? endB : endF;
+            var yR = (e.dir > 0) ? endF : endB;
+            var tilt = Math.atan2(yR - yL, card.w);
+            var cCY = (endF + endB) / 2;
+            e._cardRect = { x: midX - card.w / 2, y: cCY - card.h / 2, w: card.w, h: card.h };
+            ctx.save();
+            ctx.translate(midX, cCY); ctx.rotate(tilt); ctx.translate(-midX, -cCY);
+            drawButtonCard(ctx, midX, cCY, card.w, card.h);
+            ctx.restore();
           } else if (e.load === 'triangle') {
             // logo-style red triangle: tip forward, a MEDIUM notch bitten out of the mid back edge
             var baseX = bx2, tipX = fx + e.dir * 4, cyT = carryY, halfT = 18, notch = 11;
@@ -3571,7 +3609,7 @@
             ctx.lineWidth = 5; ctx.lineCap = 'round';
             if (e._pickup > 0) {
               // being picked up: front lifts first, back hitches a beat behind → the line tilts as it rises
-              var peF = 1.2 - e._pickup, liftF = peF < 0.6 ? 0 : (peF - 0.6) / 0.6;
+              var peF = PK - e._pickup, liftF = peF < 0.6 ? 0 : (peF - 0.6) / 0.6;
               var peB2 = Math.max(0, peF - 0.2), liftB = peB2 < 0.6 ? 0 : (peB2 - 0.6) / 0.6;
               var yLF = groundY + (carryY - groundY) * smooth01(liftF);
               var yLB = groundY + (carryY - groundY) * smooth01(liftB);
@@ -3587,7 +3625,10 @@
           var poseF, poseB, flipF = !goingR, flipB = !goingR;
           if (e._pickup > 0) {
             // they crouch differently and lift out of sync: front hinges & lifts, back squats a hitch behind
-            var peP = 1.2 - e._pickup;
+            // The heave poses saturate at t = 1.2 (their bend is sin(min(1, t/1.2) * PI)), so a longer
+            // PK is fed a SCALED clock rather than a longer one — otherwise the extra 0.5s for the
+            // button would be dead time with both of them already stood up straight.
+            var peP = (PK - e._pickup) * (1.2 / PK);
             poseF = A.heave.frame(peP); poseB = A.heave2.frame(Math.max(0, peP - 0.2));
           } else if (e.greet) {
             var holdPose = A.holdannoyed.frame(e.greet);
