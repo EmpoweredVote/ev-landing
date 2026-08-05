@@ -172,6 +172,7 @@
 
     function poofStart(e, px, py) {
       if (POOF.phase !== 'idle' || !e) return;
+      if (e.ab) return;                            // still picking himself up from the last grab
       POOF.phase = 'holding'; POOF.t = 0; POOF.victim = e;
       POOF.vx = null; POOF.vy = null;
       POOF.fx = 0.5; POOF.fy = 1;
@@ -183,11 +184,15 @@
         }
       }
       document.body.classList.add('ev-poofing');   // suppresses the touch callout while holding
+      abductStart(e);                              // he drops what he is holding and starts to rise
     }
     function poofCancel() {
       if (POOF.phase !== 'holding') return;
       POOF.phase = 'fizzle'; POOF.t = 0;           // smoke thins out, nobody vanishes
       document.body.classList.remove('ev-poofing');
+      // His recovery is owned by the entry, not by POOF, so it outlives the 0.4s fizzle: the smoke
+      // goes away and THEN he finishes picking himself up.
+      if (POOF.victim) abductRelease(POOF.victim);
     }
 
     // ── mouse ──
@@ -208,6 +213,11 @@
     document.addEventListener('mouseup', function (ev) { if (ev.button === 2) poofCancel(); });
     document.addEventListener('mousemove', function (ev) {
       if (POOF.phase !== 'holding') return;
+      // Once he leaves the ground he slides out from under the cursor, so this would cancel the hold
+      // by itself and the gag could never complete. Releasing the button is the cancel from there on.
+      // Still applies during 'letgo', when he has not moved yet — dragging off him in the first third
+      // of a second is a genuine "no, not that one".
+      if (POOF.victim && POOF.victim.ab && POOF.victim.ab !== 'letgo') return;
       if (bobitAt(ev.clientX, ev.clientY) !== POOF.victim) poofCancel();
     }, { passive: true });
     window.addEventListener('blur', poofCancel);
@@ -275,13 +285,26 @@
         var r = POOF.victim.c.getBoundingClientRect();
         POOF.vx = r.left + POOF.fx * r.width;
         POOF.vy = r.top + POOF.fy * r.height;
+        // While he is being abducted the press-point fraction is the wrong anchor twice over: the cloud
+        // would stay on the floor he left, and the canvas growth shifts the fraction anyway. drawAbduct
+        // publishes his actual torso position each frame, so ask for that instead.
+        if (POOF.victim.ab && POOF.victim.abBodyY != null) {
+          POOF.vx = r.left + POOF.victim.abBodyX;
+          POOF.vy = r.top + POOF.victim.abBodyY;
+        }
       }
       if (POOF.vx == null) return;
 
       var seed = 11;
       if (POOF.phase === 'holding') {
         var k = Math.min(1, POOF.t / POOF_HOLD);
-        R.drawSmoke(g, POOF.vx, POOF.vy, 12 + k * k * 46, 0.12 + k * 0.7, seed, POOF.t);
+        // Capped and then tightened, rather than swelling the whole way. The original 12 + k*k*46 grew
+        // to a 58px radius, which at this figure's 84px height buried him — measured against the
+        // screenshots, the spread eagle and the shimmy were invisible behind it right when they are the
+        // entire point of the build-up. Peaks at 34 and draws back to ~22 through the shimmy.
+        var draw = 12 + k * k * 22;
+        if (k > 0.7) draw *= 1 - (k - 0.7) * 1.2;
+        R.drawSmoke(g, POOF.vx, POOF.vy, draw, 0.12 + k * 0.7, seed, POOF.t);
       } else if (POOF.phase === 'fizzle') {
         var f = Math.max(0, 1 - POOF.t / 0.4);
         R.drawSmoke(g, POOF.vx, POOF.vy, 20 * f, 0.5 * f, seed, POOF.t);
@@ -289,6 +312,44 @@
         var b = Math.min(1, POOF.t / POOF_BURST);
         R.drawSmoke(g, POOF.vx, POOF.vy - 10, 58 + b * 70, 1 - b, seed, POOF.t);
       }
+    }
+
+    // Where a figure actually is, in his own canvas — asked of the pixels rather than inferred from a
+    // canvas dimension. `cr.left + e.w/2` only holds for canvas-centred modes (stand, seat, ...); patrol
+    // walks, and crosser, paddlepair, cartwheel, dogfetch, kite and yoyo all draw well off-centre.
+    // `e.h - 6` is only the floor for modes that draw at feetY = h - 6 — a seated reader is at h - 42
+    // with his shins dangling and the rope Bobit hangs in mid-air, and assuming h - 6 TELEPORTED both of
+    // them. The ink's bottom edge is where he visibly is, whatever his mode does.
+    //
+    // Both callers must run this BEFORE resizing the canvas: after the resize the old ink is gone.
+    // (Two-figure scenes: the ink spans both, so midX lands between them — accepted by both callers.)
+    // Returns canvas-LOCAL css px; the fallbacks are the old per-mode guesses.
+    function scanInk(e) {
+      var out = { midX: e.w / 2, floor: e.h - 6, top: 0, found: false };
+      try {
+        var scanW = e.c.width, scanH = e.c.height;
+        var img = e.ctx.getImageData(0, 0, scanW, scanH).data;
+        var minX = -1, maxX = -1, maxY = -1, minY = -1;
+        for (var yy = 0; yy < scanH; yy++) {
+          var rowBase = yy * scanW * 4;
+          for (var xx = 0; xx < scanW; xx++) {
+            if (img[rowBase + xx * 4 + 3] > 8) {
+              if (minX < 0 || xx < minX) minX = xx;
+              if (xx > maxX) maxX = xx;
+              if (minY < 0) minY = yy;
+              if (yy > maxY) maxY = yy;
+            }
+          }
+        }
+        if (minX >= 0) {
+          var rx = scanW / e.w, ry = scanH / e.h;
+          out.midX = (minX + maxX) / 2 / rx;
+          out.floor = maxY / ry;
+          out.top = minY / ry;
+          out.found = true;
+        }
+      } catch (err) { /* tainted or zero-size: keep the fallbacks */ }
+      return out;
     }
 
     var FLEE_SPEED = 190, FLEE_DROP = 50, RAISE_SECS = 0.45;
@@ -402,42 +463,9 @@
         return;
       }
       var ar = e.el.getBoundingClientRect();             // his perch
-      // cr.left + e.w/2 only holds for canvas-centred modes (stand/seat/...). patrol walks,
-      // crosser, paddlepair, cartwheel, dogfetch, kite and yoyo all draw off-centre, so ask
-      // the pixels instead — same trick bobitAt uses. Must run BEFORE sizeCanvas: after the
-      // resize the old ink is gone. (Two-figure scenes: the ink spans both, so the midpoint
-      // lands between them — accepted, one runner per entry by design.)
-      var figScreenX = cr.left + e.w / 2;                // fallback if no ink is found
-      var inkFloor = -1;                                 // ditto: -1 means "no ink, use h - 6"
-      try {
-        var scanW = e.c.width, scanH = e.c.height;
-        var img = e.ctx.getImageData(0, 0, scanW, scanH).data;
-        var minX = -1, maxX = -1, maxY = -1;
-        for (var yy = 0; yy < scanH; yy++) {
-          var rowBase = yy * scanW * 4;
-          for (var xx = 0; xx < scanW; xx++) {
-            if (img[rowBase + xx * 4 + 3] > 8) {
-              if (minX < 0) minX = xx;
-              if (xx < minX) minX = xx;
-              if (xx > maxX) maxX = xx;
-              if (yy > maxY) maxY = yy;
-            }
-          }
-        }
-        if (minX >= 0) {
-          var ratio = scanW / e.w;                       // device px per css px
-          figScreenX = cr.left + (minX + maxX) / 2 / ratio;
-          inkFloor = maxY / (scanH / e.h);               // lowest painted pixel = where he actually stands
-        }
-      } catch (err) { /* fall back to the canvas-centre estimate */ }
-
-      // His floor, in the OLD canvas's local coords — captured before sizeCanvas overwrites e.h.
-      // `e.h - 6` is only his floor for modes that draw at feetY = h - 6. A seated reader is drawn
-      // at h - 42 with his shins dangling, and the rope Bobit hangs in mid-air, so assuming h - 6
-      // TELEPORTED them: they popped to a different height and ran off through empty space instead
-      // of along the base they were standing on. The ink's bottom edge is where he visibly is,
-      // whatever his mode does — same ask-the-pixels approach as the x above.
-      var oldFloor = (inkFloor >= 0) ? inkFloor : (e.h - 6);
+      var ink = scanInk(e);
+      var figScreenX = cr.left + ink.midX;
+      var oldFloor = ink.floor;
 
       // Pick his landing line BEFORE sizeCanvas, because how tall the canvas has to be depends on how
       // far he is going to fall. Everything here is DOCUMENT coords: the canvas stays absolutely
@@ -681,6 +709,263 @@
       }
     }
 
+    // ══ ABDUCTION ═══════════════════════════════════════════════════════════════════════
+    // What the victim does across the 3s hold, on his own state machine (e.ab) rather than on
+    // POOF.phase. Keeping it on the entry is what lets the smoke fizzle on its own 0.4s clock while
+    // he is still collapsing underneath it — "the smoke goes away, THEN he picks himself up" — and
+    // it means a recovery can outlive POOF returning to idle.
+    //
+    //   letgo  0    -> 0.35  prop hits the floor, pose eases out of whatever he was doing
+    //   rise   0.35 -> 2.0   floats to FLOAT_H, pose lerps to the spread eagle
+    //   shimmy 2.0  -> 3.0   holds and judders
+    //   (burst at 3.0 is poofTick's job, not this machine's)
+    //
+    // On an early release: settle (barely left the ground) or collapse -> heap -> getup, then resume.
+    var AB_LETGO = 0.35, AB_RISE_END = 2.0;
+    // 0.4 of a figure's measured 84px ink height. Low on purpose: he hovers just off the floor rather
+    // than hanging in space, which reads better for the shimmy — a body vibrating a few px above the
+    // ground looks held by something.
+    var FLOAT_H = 34;
+    // The canvas grows for EVERY victim, not only when it is tight — a branch firing for one mode in
+    // twenty never gets exercised and rots, which is the shape of three defects already logged here.
+    //
+    // Sized for the worst case, which is rope. Two things stack up on him. His canvas has 0px above his
+    // ink to begin with (drawFig gets barY=46 as his PELVIS and his head sits ~48px above that). And his
+    // resting ink is a SEATED figure, only 68px tall, while the abduction draws him STANDING in the
+    // spread eagle at 84px — so he needs room for the pose change as well as for the float. Sizing this
+    // as FLOAT_H + 12 covered the float and missed the other 16px, and he was clipped at y=0 on the
+    // first frame; the test measured it rather than anyone spotting it.
+    //
+    // Requirement: at least STAND_INK_H + FLOAT_H + slack between the canvas top and his floor. rope's
+    // floor sits 68px down, so he needs 58; 64 is that with a margin, and every other mode already has
+    // far more than it needs.
+    var STAND_INK_H = 84;              // a standing figure's measured ink height at S = 0.32
+    var AB_GROW = 64;
+    var AB_SETTLE_MIN = 12;            // risen less than this on release: settle, no pratfall
+    var AB_SETTLE_SECS = 0.35, AB_HEAP_HOLD = 0.7, AB_GETUP_SECS = 0.8;
+
+    // Arms out and up, legs apart. 0deg is straight DOWN in this rig and 90 is horizontal, so 120 is
+    // 30deg above the shoulder. Symmetric on purpose — raisePose() had to bake in asymmetry because a
+    // symmetric arms-OVERHEAD pose merges into the head-and-torso line and reads as one vertical stick
+    // at S=0.32, but a spread eagle is wide rather than vertical and does not collapse that way.
+    //
+    // Upper arm and forearm are set to the SAME angle, and the same for thigh and shin, because armRF
+    // and legRF are ABSOLUTE directions in this rig rather than angles relative to the limb above them.
+    // The first attempt used 132/150, which folds the forearm back toward vertical: measured silhouette
+    // 39px wide against 15px for the idle, and — worse — it got NARROWER through the second half of the
+    // rise, so the spread read as the figure shrinking. Straight limbs measure 49px. Chosen off the
+    // measurements, not by eye: 100/100 is wider still at 56px but the arms come down to 10deg above
+    // horizontal and it reads as a T-pose rather than a spread eagle.
+    function spreadEagle() {
+      var p = A.standstill.frame(0);
+      p.armRU = 120; p.armRF = 120;
+      p.armLU = -120; p.armLF = -120;
+      p.legRU = 30; p.legRF = 30;
+      p.legLU = -30; p.legLF = -30;
+      p.lean = -6;                     // tipped slightly back, like he is being lifted from the chest
+      p.headTilt = -14;                // looking up at whatever has him
+      p.hunch = 4;
+      return p;
+    }
+
+    // ── the prop registry ──────────────────────────────────────────────────────────────────────
+    // What is he holding, and where is it? Canvas-local, captured at the grab. The abduction draw
+    // REPLACES his mode's draw, so nothing here has to teach a mode to stop drawing its own prop —
+    // that piece (suppressProp) is only needed for pass 2, when non-victims drop things too.
+    //
+    // Several modes already track their prop's position because they can already drop it; the rest are
+    // pose-derived, and for those the exact origin barely matters since the thing falls to his feet
+    // within 0.3s. HAND_Y is the fallback: roughly where a figure's hands are above his own floor.
+    var HAND_Y = 46;
+    function propOf(e) {
+      var s = e.spec, m = s.mode;
+      if (m === 'dogfetch') return (e.bHeld === 'thrower') ? { kind: 'ball', x: e.bX, y: e.bY } : null;
+      if (m === 'paddlepair') return { kind: 'ball', x: e._ballX, y: e._ballY };
+      if (m === 'kite') return { kind: 'kite', x: e.kx, y: e.ky };
+      if (m === 'yoyo') return { kind: 'yoyo', x: null, y: null };
+      if (m === 'beam') {
+        if (e.scene === 'letters') return { kind: 'letter', x: e.eLX, y: e.eLY };
+        if (e.scene === 'light') return { kind: 'light', x: e.lgX, y: null };
+        return { kind: 'beamload', x: null, y: null };
+      }
+      if (m === 'seat') return s.phone ? { kind: 'phone', x: null, y: null }
+                                       : { kind: 'book', x: null, y: null };
+      if (m === 'stand' && s.anim === 'paddleball') return { kind: 'paddle', x: null, y: null };
+      return null;                     // patrol, crosser, cartwheel, rope, vclimb, plain stand: empty-handed
+    }
+
+    // Draw a dropped prop lying on the floor. Deliberately simple shapes: at S=0.32 these are 8-16px
+    // across, and the read that matters is "he was holding something and now it is on the ground",
+    // not the fidelity of the object.
+    function drawGroundProp(ctx, kind, x, y, col) {
+      ctx.save();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2;
+      if (kind === 'ball' || kind === 'yoyo') {
+        ctx.beginPath(); ctx.arc(x, y - 5, 5, 0, Math.PI * 2); ctx.fill();
+        if (kind === 'yoyo') { ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 11, y - 1); ctx.stroke(); }
+      } else if (kind === 'book') {
+        // shut, lying face-down with the spine up — an open book reads as still being read
+        ctx.beginPath(); ctx.moveTo(x - 9, y - 1); ctx.lineTo(x + 9, y - 1);
+        ctx.lineTo(x + 7, y - 5); ctx.lineTo(x - 7, y - 5); ctx.closePath(); ctx.stroke();
+      } else if (kind === 'phone') {
+        ctx.beginPath(); ctx.rect(x - 6, y - 5, 12, 5); ctx.stroke();
+      } else if (kind === 'paddle') {
+        ctx.beginPath(); ctx.ellipse(x - 3, y - 4, 6, 4, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 3, y - 3); ctx.lineTo(x + 11, y - 1); ctx.stroke();
+      } else if (kind === 'beamload' || kind === 'light') {
+        ctx.beginPath(); ctx.arc(x, y - 7, 7, 0, Math.PI * 2); ctx.stroke();
+      } else if (kind === 'kite') {
+        ctx.beginPath();
+        ctx.moveTo(x, y - 12); ctx.lineTo(x + 8, y - 6); ctx.lineTo(x, y - 1); ctx.lineTo(x - 8, y - 6);
+        ctx.closePath(); ctx.stroke();
+      } else if (kind === 'letter') {
+        ctx.font = '700 15px Manrope, system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText('e', x, y - 1);
+      }
+      ctx.restore();
+    }
+
+    // Begin the abduction. Grows the canvas upward so he has somewhere to float to, and captures his
+    // floor and his prop from the frame that is already on the canvas — both must be read BEFORE the
+    // resize, which throws the old ink away.
+    function abductStart(e) {
+      var ink = scanInk(e);
+      var prop = propOf(e);
+      var cr = e.c.getBoundingClientRect();
+      var sy = window.scrollY || window.pageYOffset;
+
+      // Grow UPWARD: the top edge moves up by AB_GROW and the height grows by the same, so the canvas
+      // BOTTOM does not move and every mode's `h - 6`-style bottom-relative drawing still lands where
+      // it did. Local y for a fixed screen point therefore shifts by +AB_GROW, which is why the floor
+      // and the prop are rebased below.
+      // AB_GROW covers every mode in the cast today, so this resolves to AB_GROW every time and there
+      // is one path, always exercised. The max() is what stops that from silently going stale: a future
+      // mode drawn lower in its canvas gets the clearance it needs instead of being quietly decapitated,
+      // which is exactly how rope failed.
+      var grow = Math.max(AB_GROW, STAND_INK_H + FLOAT_H + 8 - ink.floor);
+      e.abPrevH = e.h; e.abPrevTop = cr.top + sy;
+      e.abGrow = grow;
+      sizeCanvas(e, e.w, e.h + grow);
+      e.c.style.top = (cr.top + sy - grow) + 'px';
+
+      e.ab = 'letgo'; e.abT = 0; e.abLift = 0;
+      e.abFloor = ink.floor + grow;                    // his feet, in the GROWN canvas's coords
+      e.abX = ink.midX;
+      e.abProp = prop ? {
+        kind: prop.kind,
+        x: (prop.x != null ? prop.x : ink.midX),
+        y0: (prop.y != null ? prop.y + grow : ink.floor + grow - HAND_Y),
+        y: 0, t: 0, landed: false
+      } : null;
+      if (e.abProp) e.abProp.y = e.abProp.y0;
+      // The pose he eases OUT of. Captured once so `letgo` has something to lerp from without the
+      // mode's own machine still running underneath.
+      e.abFrom = A.standstill.frame(0);
+    }
+
+    // Undo the canvas growth and hand the draw back to his mode.
+    function abductEnd(e) {
+      if (e.abPrevH != null) {
+        sizeCanvas(e, e.w, e.abPrevH);
+        e.c.style.top = e.abPrevTop + 'px';
+      }
+      e.ab = null; e.abT = 0; e.abLift = 0; e.abProp = null;
+      e.abPrevH = null; e.abPrevTop = null;
+      reposition();                                    // put him back exactly where his mode wants him
+    }
+
+    // Released early. Which recovery he gets depends on how far he actually got off the ground: a 0.2s
+    // grab must not produce a full pratfall.
+    function abductRelease(e) {
+      if (!e.ab || e.ab === 'collapse' || e.ab === 'heap' || e.ab === 'getup' || e.ab === 'settle') return;
+      if (e.abLift < AB_SETTLE_MIN) { e.ab = 'settle'; e.abT = 0; e.abFrom0 = e.abLift; }
+      else { e.ab = 'collapse'; e.abT = 0; e.abFrom0 = e.abLift; e.abSecs = dropSecs(e.abLift); }
+    }
+
+    function drawAbduct(e, ctx, w, col, dt) {
+      e.abT += dt;
+      var pose, lift = e.abLift, rot = 0, jitter = 0;
+
+      if (e.ab === 'letgo') {
+        var u = Math.min(1, e.abT / AB_LETGO);
+        pose = lerpPose(e.abFrom, spreadEagle(), u * 0.25);     // only a quarter of the way; the rise does the rest
+        lift = 0;
+        if (e.abT >= AB_LETGO) { e.ab = 'rise'; e.abT = 0; }
+      } else if (e.ab === 'rise') {
+        var r = Math.min(1, e.abT / (AB_RISE_END - AB_LETGO));
+        lift = FLOAT_H * smooth01(r);
+        pose = lerpPose(lerpPose(e.abFrom, spreadEagle(), 0.25), spreadEagle(), smooth01(r));
+        if (r >= 1) { e.ab = 'shimmy'; e.abT = 0; }
+      } else if (e.ab === 'shimmy') {
+        lift = FLOAT_H;
+        pose = spreadEagle();
+        // Pose stays LOCKED and the whole body judders as one — that rigidity is what reads as
+        // electrocution. Two non-harmonic frequencies so it does not look like a clean sine.
+        var amp = 2.5 * Math.min(1, e.abT / 0.8);
+        jitter = Math.sin(e.abT * 51) * amp + Math.sin(e.abT * 79) * amp * 0.4;
+        rot = Math.sin(e.abT * 63) * 0.05 * Math.min(1, e.abT / 0.8);
+      } else if (e.ab === 'settle') {
+        var s = smooth01(Math.min(1, e.abT / AB_SETTLE_SECS));
+        lift = e.abFrom0 * (1 - s);
+        pose = lerpPose(spreadEagle(), e.abFrom, s);
+        if (e.abT >= AB_SETTLE_SECS) { abductEnd(e); return; }
+      } else if (e.ab === 'collapse') {
+        var k = Math.min(1, e.abT / e.abSecs);
+        lift = e.abFrom0 * (1 - k * k);                          // same accelerating fall as everything else here
+        pose = A.fall.frame(e.abT * 1.6);
+        rot = 0.4 * k;
+        if (k >= 1) { e.ab = 'heap'; e.abT = 0; lift = 0; }
+      } else if (e.ab === 'heap') {
+        lift = -HEAP_YOFF;                                       // lying ON the floor, not pivoted above it
+        pose = cwHeap(e.abT);
+        rot = 1.45 + Math.sin(e.abT * 6) * 0.1;
+        if (e.abT >= AB_HEAP_HOLD) { e.ab = 'getup'; e.abT = 0; }
+      } else {                                                   // 'getup'
+        var g = smooth01(Math.min(1, e.abT / AB_GETUP_SECS));
+        lift = -HEAP_YOFF * (1 - g);
+        pose = lerpPose(cwHeap(0), e.abFrom, g);
+        rot = 1.45 * (1 - g);
+        if (e.abT >= AB_GETUP_SECS) { abductEnd(e); return; }
+      }
+
+      e.abLift = lift;
+      var groundY = e.abFloor;
+      var figY = groundY - lift;
+      // Where his torso actually is, published for the smoke. Deriving the anchor from POOF.fx/fy
+      // instead does not work once the canvas grows: those are fractions of the canvas rect, and
+      // growing it moves the top AND changes the height, so the anchor drifts by grow * fy — measured
+      // ~52px low on the beam crew, which put the cloud around his ankles.
+      e.abBodyX = e.abX + jitter;
+      // His HIPS, not his centre. Centred on the torso the cloud sat over his head and arms and hid the
+      // spread eagle and the shimmy — the two things the whole build-up exists to show. Low on his body
+      // it still swirls around him and reads as the thing lifting him, with his upper half clear.
+      e.abBodyY = figY - STAND_INK_H * 0.3;
+
+      // The prop falls on its own clock the moment the abduction starts, under the same gravity as
+      // every other falling thing in this feature, and stays where it lands.
+      if (e.abProp) {
+        var p = e.abProp;
+        if (!p.landed) {
+          p.t += dt;
+          var dist = groundY - p.y0;
+          var ps = dropSecs(Math.max(1, dist));
+          var pk = Math.min(1, p.t / ps);
+          p.y = p.y0 + dist * pk * pk;
+          if (pk >= 1) { p.y = groundY; p.landed = true; }
+        }
+        drawGroundProp(ctx, p.kind, p.x, p.y, col);
+      }
+
+      // Shadow stays on the floor and shrinks as he rises — the only cue that says "off the ground"
+      // rather than "drawn higher up".
+      var shrink = 1 - 0.55 * (lift / FLOAT_H);
+      R.drawShadow(ctx, e.abX + jitter * 0.3, groundY, 15 * Math.max(0.3, shrink), 'rgba(127,127,127,0.18)');
+      drawFig(ctx, e.abX + jitter, figY - 112 * S, S, false, pose, { color: col, rot: rot });
+    }
+    // ══ end ABDUCTION ═══════════════════════════════════════════════════════════════════
+
     // Advance the phase machine. Called once per frame from tick().
     function poofTick(dt) {
       if (POOF.phase === 'idle' || POOF.phase === 'cleared') return;
@@ -694,6 +979,10 @@
           POOF.vx = vr.left + POOF.fx * vr.width;
           POOF.vy = vr.top + POOF.fy * vr.height;
           POOF.victim.gone = true;
+          // He is leaving with the canvas, so the abduction state goes with him rather than through
+          // abductEnd — there is nothing left to restore, and a live e.ab on a gone entry would have
+          // poofStart refuse the next grab forever.
+          POOF.victim.ab = null; POOF.victim.abPrevH = null; POOF.victim.abProp = null;
           if (POOF.victim.c.parentNode) POOF.victim.c.parentNode.removeChild(POOF.victim.c);
           if (window.EVQuotes) {
             window.EVQuotes.closeAll();
@@ -712,8 +1001,8 @@
         if (POOF.t >= POOF_STUN) {
           POOF.phase = 'fleeing'; POOF.t = 0;
           // One reading for the whole cast, here rather than per-figure: they all fall onto the same
-          // page furniture, and every runner's canvas goes position:fixed in this same frame, so a
-          // single viewport measurement is both cheaper and guaranteed consistent between them.
+          // page furniture, so a single measurement is both cheaper and guaranteed consistent between
+          // them. Document coords, so it stays valid however the page is scrolled during the run.
           POOF.breakLines = sectionBreakLines();
           entries.forEach(function (e) {
             if (e.gone || e.spec.mode === 'why') return;
@@ -1012,6 +1301,9 @@
       entries.forEach(function (e) {
         if (e.gone) return;
         if (e.fl) { refitFlee(e, sx); return; }
+        // Mid-abduction his canvas is deliberately taller and higher than his mode wants; abductEnd
+        // calls reposition() itself once he is back on his feet.
+        if (e.ab) return;
         var spec = e.spec;
         if (spec.mode === 'why') { sizeCanvas(e, 190, 215); return; }
         if (spec.mode === 'banner') { sizeCanvas(e, 120, 96); return; }
@@ -2427,6 +2719,15 @@
         if (e.fl && spec.mode !== 'why') {
           ctx.clearRect(0, 0, w, h);
           drawFlee(e, ctx, w, figColor(spec.tone != null ? spec.tone : e.ci), dt);
+          return;
+        }
+        // Being abducted takes the draw over completely, which is also why no mode has to learn to
+        // stop drawing its own prop — his mode simply is not running. Uses dtFrame, not dt: he is the
+        // one figure who must keep moving through the stun, and in any case the stun only starts after
+        // he is gone.
+        if (e.ab && spec.mode !== 'why') {
+          ctx.clearRect(0, 0, w, h);
+          drawAbduct(e, ctx, w, figColor(spec.tone != null ? spec.tone : e.ci), dtFrame);
           return;
         }
         if (!w) return;

@@ -1,7 +1,36 @@
 # Bobit abduction — he drops it, floats, shimmies, vanishes
 
 **Date:** 2026-08-04
-**Status:** approved, ready for implementation
+**Status:** implemented
+
+## Deviations found while building
+
+Three numbers in this spec were wrong, all caught by measurement rather than review.
+
+**`AB_GROW` is 64, not `FLOAT_H + 12` = 46.** The headroom survey below measures each mode's *resting*
+ink, and rope's resting ink is a SEATED figure only 68px tall — but the abduction draws him STANDING in
+the spread eagle at 84px. He needs room for the pose change as well as the float. At 46 he was still
+clipped at y=0 on the first frame. It is now `Math.max(AB_GROW, STAND_INK_H + FLOAT_H + 8 - ink.floor)`,
+which resolves to 64 for every mode in the cast today — one path, always exercised — while a future mode
+drawn lower in its canvas gets what it needs instead of being quietly decapitated.
+
+**The spread eagle is 120/120/30/30, not 132/150/26/20.** `armRF` and `legRF` are ABSOLUTE directions in
+this rig, not angles relative to the limb above them, so the original numbers folded each forearm back
+toward vertical. Measured silhouette: 39px against 49px for straight limbs, and — worse — it got
+*narrower* through the second half of the rise, so the spread read as the figure shrinking. Chosen off
+measurements: 100/100 is wider still at 56px but drops the arms to 10 degrees above horizontal and reads
+as a T-pose.
+
+**The smoke anchor and radius both had to change.** Anchoring off `POOF.fx/fy` does not survive the
+canvas growth — those are fractions of the canvas rect, and growing it moves the top and changes the
+height, so the cloud drifted `grow * fy` low, measured ~52px, putting it round his ankles. `drawAbduct`
+now publishes his actual body position each frame. The radius then had the opposite problem: the
+original `12 + k*k*46` grows to 58px against an 84px figure and buried the spread eagle and the shimmy
+behind it. It is now capped at 34 and draws back to ~22 through the shimmy, anchored at his hips rather
+than his centre so his upper half stays clear.
+
+None of these were visible to a state-only test. The first was caught by the new test, the other two only
+by looking at screenshots.
 **Amends:** [2026-08-03-bobit-poof-exodus-design.md](2026-08-03-bobit-poof-exodus-design.md)
 **Pass 1 of 2.** This covers the victim. The page-wide "everyone drops what they are holding during the
 stunned beat" is pass 2 — see "What pass 2 inherits".

@@ -23,10 +23,20 @@ async function load(browser) {
 // running back to back. Seen once in a full-suite run: the next touchstart landed mid-fizzle, was
 // refused, and the phase assertion read 'fizzle' instead of 'holding'. Both this file and the code
 // under test were correct; the test was racing a duration instead of waiting for a condition.
+// Quiet page: POOF back to idle AND nobody still picking himself up.
+//
+// The second half matters since the abduction landed. A cancelled hold leaves the victim recovering on
+// his own clock (collapse + heap + getup is ~1.75s after a full-height release, outliving the 0.4s
+// fizzle by design), and poofStart deliberately refuses a figure whose e.ab is still running — grabbing
+// a man mid-pratfall would re-enter abductStart and overwrite abPrevH with the already-grown height,
+// leaking the canvas growth for good. So a test that presses on the first painted ink it finds can land
+// on the recovering figure and get no hold at all.
 async function settle(page) {
   await page.waitForFunction(function () {
-    return window.__evFigDebug.poof.phase === 'idle';
-  }, { timeout: 5000 });
+    var d = window.__evFigDebug;
+    if (d.poof.phase !== 'idle') return false;
+    return d.entries.every(function (e) { return !e.ab; });
+  }, { timeout: 8000 });
 }
 
 // a point that is definitely ON painted ink, and one definitely off it but inside the same canvas
