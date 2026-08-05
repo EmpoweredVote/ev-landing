@@ -10,10 +10,10 @@ Instead the beam crew — the two Bobits who haul a load back and forth along th
 gain a third load in their rotation: the **Fallacy Finders showcase button, carried upside down**.
 
 The joke is scale. The other two loads are a 32px ball and a 72px line. This one is the real button at
-full size, measured off the live DOM, so two 84px stick figures are hauling a 340×96 slab between them —
+full size, measured off the live DOM, so two 84px stick figures are hauling a 340×102 slab between them —
 nearly five times the span of the yellow line they usually carry, and taller than either of them. It is a
-heavy hold, walked slowly, and it reads as "the sign for the next thing is being carried in, and nobody
-has worked out which way up it goes."
+strained hold, hustled along rather than crawled, and it reads as "the sign for the next thing is being
+carried in, and nobody has worked out which way up it goes."
 
 Two artifacts ship: the tuned homepage lockups (needed to draw the card, and reusable verbatim when the
 button really lands) and the new scene in `ev-figures.js`.
@@ -69,7 +69,7 @@ A rounded rect matching the button's own styling, with the logo inside, and **th
 | Fill | `--card` |
 | Stroke | 1px `--border` |
 | Corner radius | `16px` |
-| Logo height | `64/96` of card height, i.e. the button's own logo-to-height ratio |
+| Logo height | `64/102` of card height, i.e. the button's own logo-to-height ratio |
 | Logo position | Hugging one end, inset by the button's `24px` padding |
 | Theme | `-light.svg` / `-dark.svg` chosen from the active theme, same as the DOM button |
 
@@ -88,18 +88,18 @@ Button dimensions shift with screen resolution; the card must follow. Three regi
 
 | Viewport | Real button | Source |
 |---|---|---|
-| ≥1025px | ≤340 × 96, logo 64px | `.showcase` track `minmax(0, 340px)` |
-| 901–1024px | ~320–390 × 84, logo 52px | `@media (max-width: 1024px)` |
+| ≥1025px | 340 × 102, logo 64px | `.showcase` track `minmax(0, 340px)` |
+| 901–1024px | 390 × 90 measured at 1024px, logo 52px | `@media (max-width: 1024px)` |
 | ≤900px | up to 560 × **~195**, logo 48px, **plus inline `.m-desc` body text** | `@media (max-width: 900px)` |
 
 Dimensions come from measuring the first `.showcase-logos .logo-trigger` with `getBoundingClientRect()`
 at layout time — the same technique `runLightGag` already uses to find the `.meta-row .swatch.s-yellow`,
 including caching the element on `e` and keeping a fallback for when it cannot be measured.
 
-**Below 901px the measurement is deliberately ignored** in favour of the desktop `340:96` shape. The
+**Below 901px the measurement is deliberately ignored** in favour of the desktop `340:102` shape. The
 mobile button is ~195px tall *only because it contains a paragraph of description text*, which the
 carried prop does not. Copying that height would produce a near-square empty slab, taller than the whole
-240px crew canvas. Fallback when nothing is measurable is also `340:96`.
+240px crew canvas. Fallback when nothing is measurable is also `340:102`.
 
 The card is drawn at that size directly: **no height clamp, and no scaling to make it clear the hero
 content.** The single guard is that it may never be wider than the viewport — if the target width exceeds
@@ -112,10 +112,25 @@ still fully enters and fully exits, so the whole sign is legible for most of the
 
 ## Passing over the meta-row
 
-The crew canvases are `z-index: 60`, above `.hero .wrap` at `z-index: 1`. A full-height card held low
-reaches ~106px above the crew's feet, while the gap from their feet to the bottom of `.hero .meta-row` is
-only ~86px (`--crew-clear: 92px` less the 6px `feetY = h - 6` floor offset). So the card **paints over**
-the `501(c)(3) nonprofit / Antipartisan by design / Open about money — see our books` row as it goes by.
+Measured on the live page at 320/360/480/768/1024/1280/1600px, rather than derived from the CSS:
+
+| Quantity | Value |
+|---|---|
+| Crew feet → `.meta-row` last-line bottom | **93px, identical at every width** |
+| Crew's own painted ink height | 81px (so only 12px of spare headroom today) |
+| Real button, ≥1025px | **340 × 102** |
+| Real button, 1024px | **390 × 90** |
+| Real button, 768 / 480 / 360 / 320px | 560×178 / 440×202 / 320×250 / 280×250 |
+
+The crew canvases are `z-index: 60`, above `.hero .wrap` at `z-index: 1`. The rig's hands do not reach
+below ~22px above the feet even folded, so a 90–102px card tops out 112–133px up against 93px of
+headroom. The card therefore **paints over** the
+`501(c)(3) nonprofit / Antipartisan by design / Open about money — see our books` row by roughly
+**19–40px** — about the full height of the 25px desktop text line.
+
+Carrying it as low as the rig allows recovers ~10px of that; it cannot clear the row, and no amount of
+"hold it lower" can, because the card is taller than the headroom. Being explicit about this because an
+earlier draft of this spec guessed ~9px from CSS arithmetic and was wrong by a factor of three.
 
 This was chosen knowingly over the alternatives (shrinking the card, bumping `--crew-clear`, or rendering
 the card on a lower-z-index canvas so it slid behind the text). Two facts make it tolerable:
@@ -125,9 +140,22 @@ the card on a lower-z-index canvas so it slid behind the text). Two facts make i
 - The button load is one of three carries, which themselves alternate with the light gag and the letter
   carriers, so this is an occasional pass rather than a permanent state.
 
-Worth being honest about the duration: at the heavy-hold pace below, a 340px card overlaps that ~600px row
-for roughly **45 seconds** of a pass. This is not a brief occlusion, and if it proves annoying in practice
-the cheapest remedy is the lower-z-index canvas, which preserves the full size.
+Worth being honest about the duration: the row is 627px wide at ≥768px, so at the faster pace below a
+340px card is over it for about **19 seconds** of a pass (it would be ~32s at the normal carry speed).
+That is a mitigation, not a fix. If it grates in practice the cheapest remedy is a lower-z-index canvas
+for the card alone, which preserves the full size and clears the text entirely.
+
+### The existing guardrail
+
+`tests/layout/beam-clears-metarow.cjs` exists precisely to assert that the `carry` scene never rises into
+this row — it was written after the crew's heads landed on the "Open about money" link on a phone. It
+already carves out `light` (146px) and `letters` (150px) as gags that reach up on purpose.
+
+The button load becomes a third such carve-out, but not a blanket one, because that would discard the
+coverage the test exists for. Instead the **figures** keep the original hard assertion (their heads must
+still clear the row) and the **card** gets its own two bounds: it may never climb past the meta-row into
+the `.showcase` block above, and it may never eat more than a 48px budget of the row. Those bounds are the
+design claim, so a failure means the hold is wrong, not that the budget needs raising.
 
 ## The heavy hold
 
@@ -139,7 +167,11 @@ The oversized load is the reason the hold has to change:
   before the crew turns around, instead of the far end popping out of nothing.
 - **Grip.** Held **low** — arms straight down at the card's bottom edge, not up at chest height. A deep
   hunch, head tipped back, and a pronounced downward lurch on each planted foot.
-- **Speed.** ~30% slower than `speedB = 30`.
+- **Speed.** **Faster**, not slower: `speedB` goes from `30` to about `51`. This reverses the original
+  design. The card overlaps the meta-row on the way past, and pace is the only lever that keeps the
+  overlap brief — at `30` a pass takes ~32s to clear that row, at `51` about 19s. The strain lives
+  entirely in the pose, which is the truer read anyway: someone hustling under a load too heavy for
+  them, rather than someone crawling.
 
 Because `beamPick` places the crew off-screen at the start of every pass, the gap and margin changes
 happen out of sight. Nothing pops.
@@ -178,7 +210,7 @@ that as a small 7px circle outline. A dropped 340px button should not become a s
 Green tests do not prove a Bobit is visible, so this needs pixels as well as assertions.
 
 - **Tests** (`tests/`, house `.cjs` style): the 3-cycle never repeats a load; the card matches the measured
-  button at ≥901px and the `340:96` shape below it; the viewport-width guard only engages below ~360px;
+  button at ≥901px and the `340:102` shape below it; the viewport-width guard only engages below ~360px;
   `halfGap`/`endMargin` derive from `cardW`; `dropOK` includes the button; `propOf` returns `card` for the
   button load and `beamload` otherwise.
 - **Pixels:** screenshot the hero mid-pass at desktop, the 1024 band, and a phone width, over **http**
@@ -189,9 +221,9 @@ Green tests do not prove a Bobit is visible, so this needs pixels as well as ass
 
 ## Accepted trade-offs
 
-1. **The card paints over the meta-row** for ~45 seconds of a pass. Full size was chosen over clearing
-   the hero content; the link underneath stays clickable. Remedy on file if it grates: draw the card on a
-   canvas below `.hero .wrap`.
+1. **The card paints over the meta-row** by ~19–40px for ~19 seconds of a pass. Full size was chosen over
+   clearing the hero content; the link underneath stays clickable. Remedy on file if it grates: draw the
+   card on a canvas below `.hero .wrap`.
 2. **Below 901px the card is not the mobile button**, it is the desktop lockup shape at full size, because
    the mobile button's height comes from body text the prop does not have.
 3. **On narrow screens the carriers ride near the screen edges** mid-pass and clip slightly.
