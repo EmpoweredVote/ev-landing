@@ -39,6 +39,11 @@ async function run(browser, scrollTo) {
     }).filter(Boolean);
   });
 
+  // Was a kite cast at all this load? Distinguishes "the cast never had one" from "it had one but it
+  // did not reach the drop", which are different bugs — see the kite phase at the bottom.
+  const castKite = await page.evaluate(() =>
+    window.__evFigDebug.entries.some(e => e.spec.mode === 'kite'));
+
   // the real HEAVY_PROP table, so the literal at the top of this file can be checked against it
   const heavyTable = await page.evaluate(() => Object.keys(window.__evFigDebug.heavyProp));
 
@@ -169,7 +174,7 @@ async function run(browser, scrollTo) {
   }));
 
   await page.close();
-  return { held, victimIdx, atStun, painted, afterFall, flee, settled, cleared, errs, heavyTable };
+  return { held, victimIdx, atStun, painted, afterFall, flee, settled, cleared, errs, heavyTable, castKite };
 }
 
 function check(r, label) {
@@ -276,14 +281,28 @@ function check(r, label) {
 
   // The kite is the one prop that does not fall, and it is cast only some loads — so it gets its own
   // run that reloads until it is there, rather than being reported as "unverified" forever.
-  // chance(0.25) per load, so this needs a bigger budget than the others: at 12 tries it misses ~3%%
-  // of runs, which is a flaky suite. 26 puts that under 0.1%%.
-  let kiteRun = null;
+  // The budget assumes the kite really is cast at chance(0.25). Measured 27% of loads reaching the
+  // drop at this scroll, so 26 tries miss ~0.0%.
+  //
+  // That assumption was WRONG for a long time and made this phase fail about 1 run in 3. dealQuotes()
+  // recast the FIRST .note-anchored spec as a reader whenever the cast had no seats, and the kite
+  // lives on `.note.n-alpha` — which is exactly that spec. So he reached the page on ~3% of loads
+  // rather than ~25%, and 26 tries missed ~17% of the time. Hence the counter below: if this fails
+  // again, the first thing worth knowing is whether he was in the cast at all.
+  let kiteRun = null, kiteAttempts = 0, castHadKite = 0;
   for (let n = 0; n < 26 && !kiteRun; n++) {
     const res = await run(browser, 2100);
+    kiteAttempts++;
+    if (res && res.castKite) castHadKite++;
     if (res && res.atStun.drops.some(d => d.kind === 'kite')) kiteRun = res;
   }
-  assert.ok(kiteRun, 'no cast in 26 loads put a kite on screen, so the blow-away is untested');
+  assert.ok(kiteRun, 'no cast in ' + kiteAttempts + ' loads put a kite in the drop, so the blow-away ' +
+    'is untested. A kite WAS in the cast on ' + castHadKite + '/' + kiteAttempts + ' of them' +
+    (castHadKite === 0
+      ? ' — so he is not being cast at all. Check that dealQuotes() still skips mode "kite" when it ' +
+        'recasts a .note-anchored spec as a reader; he sits on the first one.'
+      : ' — so he is cast but not reaching the drop. Check culling at this scroll, and whether he is ' +
+        'being picked as the poof victim (a victim takes his prop with him).'));
   const k0 = kiteRun.atStun.drops.filter(d => d.kind === 'kite')[0];
   assert.ok(k0.blow, 'the kite is set to fall — let go of a kite and the wind takes it, it does not drop');
   assert.strictEqual(k0.hurts, false, 'a kite cannot land on anybody\'s foot');

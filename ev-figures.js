@@ -1520,9 +1520,14 @@
         else {
           // 2. no seats at all this load. Recast one note-card figure as a reader, keeping
           //    its anchor, position and colour so the population stays the same size.
+          // Skip the kite flyer. He is the rarest thing in the cast (chance(0.25)) and he lives on
+          // `.note.n-alpha`, which is the FIRST note-anchored spec — so an unguarded search recast
+          // him every time this branch ran, and he reached the page on only ~3% of loads instead of
+          // ~25%. Any other note slot serves as a reader just as well.
           var i = -1, j;
           for (j = 0; j < SPECS.length; j++) {
-            if (SPECS[j].anchor && SPECS[j].anchor.indexOf('.note') === 0) { i = j; break; }
+            if (SPECS[j].anchor && SPECS[j].anchor.indexOf('.note') === 0 &&
+                SPECS[j].mode !== 'kite') { i = j; break; }
           }
           var seat = {
             mode: 'seat', edge: 'top', anim: 'read',
