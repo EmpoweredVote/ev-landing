@@ -188,15 +188,21 @@ async function points(page) {
   assert.strictEqual(await page.evaluate(function () { return window.__evFigDebug.poof.phase; }), 'holding',
     'a touch-hold on a Bobit must start a hold once TAP_MS has passed, before the >10px-move cancel ' +
     'can be tested');
+  // 80px, not 20. The move budget DURING a hold is now HOLD_SLOP = 44px sideways (and abLift + 44
+  // upward), because he floats 34px up out from under the fingertip and following him is what a hand
+  // does — a 10px budget cancelled the gag for anyone who tracked him. The 10px threshold still
+  // applies BEFORE the hold begins, which is the case it was written for: keeping a scroll a scroll.
+  // See tests/poof/15-touch-hold.cjs for the follow-him-up case and the pre-hold scroll case.
   await page.evaluate(function (p) {
     var move = new Event('touchmove', { bubbles: true });
-    move.touches = [{ clientX: p.hit.x + 20, clientY: p.hit.y }];
+    move.touches = [{ clientX: p.hit.x + 80, clientY: p.hit.y }];
     document.dispatchEvent(move);
   }, pts2);
   await page.waitForTimeout(500);
   const afterTouchMove = await page.evaluate(function () { return window.__evFigDebug.poof.phase; });
   assert.ok(afterTouchMove === 'idle' || afterTouchMove === 'fizzle',
-    'a >10px touch move must cancel the hold, got ' + afterTouchMove);
+    'a decisive (80px) touch drag must still cancel the hold, got ' + afterTouchMove +
+    ' — dragging away has to remain an escape hatch');
 
   // figures keep animating/repositioning while the clock runs, so re-locate painted ink now —
   // several seconds have passed since pts2 was captured and that pixel may no longer be on him

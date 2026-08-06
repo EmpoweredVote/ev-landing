@@ -252,13 +252,36 @@
         poofStart(e, px, py);
       }, TAP_MS);
     }, { passive: true });
+    // Once the hold has BEGUN the finger gets much more room, and the room grows upward as he rises.
+    //
+    // The 10px threshold exists to keep a scroll a scroll, which is a decision made in the first
+    // TAP_MS — before that, any travel means "I am scrolling". After the hold starts the same
+    // threshold works against the gag: he floats up FLOAT_H (34px) out from under the fingertip, and
+    // tracking him is exactly what a hand does, so a 10px budget cancelled the abduction for anyone
+    // who followed him. Nothing re-tests bobitAt during a hold, so he was never actually escaping the
+    // press — only the move guard thought so.
+    //
+    // Upward allowance therefore tracks abLift: the tolerated region covers where he IS plus
+    // everywhere he HAS BEEN, padded. Sideways and downward stay tight-ish, because dragging away is
+    // still the escape hatch and lifting off is the ordinary cancel.
+    //
+    // The mousemove handler above already had this problem and already fixed it, by skipping its
+    // hit-test entirely once `ab` passes 'letgo'. This path was simply never given the same
+    // treatment. It does not copy that rule verbatim, though, because a finger is not a cursor: a
+    // touchmove also SCROLLS (the listener is passive by design), so a decisive drag is a real
+    // competing gesture here in a way that moving a mouse with a button held is not. Hence a
+    // generous-but-finite budget rather than "never cancel on move".
+    var HOLD_SLOP = 44;
     document.addEventListener('touchmove', function (ev) {
       if (!ev.touches.length) return;
       var t = ev.touches[0];
-      var moved = Math.abs(t.clientX - POOF.sx) > 10 || Math.abs(t.clientY - POOF.sy) > 10;
-      if (!moved) return;
-      clearTapTimer();                 // a scroll must not turn into a hold once the finger travels
-      if (POOF.phase === 'holding') poofCancel();
+      var dx = t.clientX - POOF.sx, dy = t.clientY - POOF.sy;
+      if (POOF.phase === 'holding') {
+        var lift = (POOF.victim && POOF.victim.abLift) || 0;
+        if (Math.abs(dx) > HOLD_SLOP || dy > HOLD_SLOP || dy < -(lift + HOLD_SLOP)) poofCancel();
+        return;
+      }
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) clearTapTimer();   // a scroll must not become a hold
     }, { passive: true });
     function touchRelease() { clearTapTimer(); poofCancel(); }
     document.addEventListener('touchend', touchRelease);
