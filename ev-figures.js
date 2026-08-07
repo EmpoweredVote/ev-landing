@@ -2187,6 +2187,23 @@
     var KNEEL_YOFF = 18;
     function cwKneel(t) { var p = A.standstill.frame(0); p.bob = 6 + Math.sin(t * 2) * 1.2; p.hunch = -34; p.lean = 8; p.headTilt = -10; p.legRU = 84; p.legRF = -78; p.legLU = -70; p.legLF = 66; p.armRU = 56; p.armRF = 66; p.armLU = -34; p.armLF = -26; return p; }
     function cwFrust(t) { var p = A.standstill.frame(0); p.armRU = 166; p.armRF = 172; p.armLU = -166; p.armLF = -172; p.headTilt = Math.sin(t * 9) * 7; p.lean = -3; p.bob = Math.sin(t * 4) * 2; return p; }
+    // ── keeping the two of them apart ────────────────────────────────────────────────────────────
+    // The helper kneels 30px from the man he is helping and stays there — through the kneel, the lift
+    // and the watch — which parks him INSIDE the cartwheeler's roam. Nothing kept the walker off him,
+    // so he strolled straight through: measured at 390x844 with the spill mid-lane, 225 of the 387
+    // frames the helper spent on the floor had the pair closer than 45px and the closest approach was
+    // ZERO. Two 15-30px-wide stick figures at 0px apart are one tangle of limbs, and the helper is
+    // drawn over the walker, so the pixels where he stands alternate between the two tones as the
+    // limbs sweep through him.
+    //
+    // That is what was reported, on a phone, as the other one "switching colours" — and why it is a
+    // phone bug: the roam is roamR - roamL, 180px at 390 wide against 1070px on a desktop, so here he
+    // crosses the man within seconds and there he can wander for a minute without going near him.
+    // An earlier measurement put their closest approach at 87px and cleared the overlap idea, but it
+    // sampled the untouched cycle, where the helper never leaves his corner at all.
+    var CW_CLEAR = 58;                                        // gap at which the two silhouettes separate
+    var CW_WATCH_MAX = 2.0;                                   // how long he will stand over him before giving up
+    function cwHelperOut(e) { return e.hp && e.hp !== 'corner'; }
     function drawCartwheel(e, ctx, w, h, feetY, tt, colA, colB, shadow, dt, cr) {
       var baseY = feetY - 112 * S, cornerX = 46, roamL = 128, roamR = w - 74;
       var lieRot = 80 * Math.PI / 180, lieY = (feetY - 14) - baseY;
@@ -2200,15 +2217,48 @@
           e.cwT += dt; cwPose = A.standstill.frame(tt);
           if (e.cwT > 0.5) {   // brief pause, then head off at a brisk walk
             if (e.cwX <= roamL) e.cwDir = 1; else if (e.cwX >= roamR) e.cwDir = -1; else if (Math.sin(e.cwX * 12.9) > 0.6) e.cwDir = -e.cwDir;
-            e.cw = 'walk'; e.cwT = 0; e.cwWalk = 1.6 + (Math.sin(e.cwX * 3.1) + 1) * 1.1;   // walk 1.6–3.8s before the next move
+            // Not straight into the man who just picked him up: his first move after a rescue is away
+            // from him. He is standing right beside him at this point — the helper knelt 30px off.
+            var cwAway = 0, cwRoom = 0;
+            if (cwHelperOut(e)) {
+              cwAway = (e.cwX >= e.hpX) ? 1 : -1;
+              cwRoom = cwAway > 0 ? (roamR - e.cwX) : (e.cwX - roamL);
+              if ((e.hpX - e.cwX) * e.cwDir > 0) e.cwDir = -e.cwDir;
+            }
+            // Cornered — the spill put him against a wall with the helper just inside him, which is
+            // common because a wheel ends at the wall — so there is no away to walk. He waits instead
+            // of walking through him; the helper's watch times out (CW_WATCH_MAX) whether or not he
+            // moves, so this cannot deadlock the pair of them.
+            if (!(cwHelperOut(e) && cwRoom < 40)) {
+              e.cw = 'walk'; e.cwT = 0; e.cwWalk = 1.6 + (Math.sin(e.cwX * 3.1) + 1) * 1.1;   // walk 1.6–3.8s before the next move
+            }
           }
           break;
         case 'walk':
           e.cwT += dt; e.cwX += e.cwDir * 50 * dt; cwFlip = e.cwDir < 0; cwPose = A.strut.frame(tt);
           if (e.cwX <= roamL) { e.cwX = roamL; e.cwDir = 1; } else if (e.cwX >= roamR) { e.cwX = roamR; e.cwDir = -1; }
+          // Turn before walking into him rather than through him — but only while turning still leaves
+          // somewhere to walk. Cornered between the helper and a wall he would jitter on the spot,
+          // which is worse than the single pass it is avoiding, and the helper is on his way home by
+          // then anyway.
+          if (cwHelperOut(e)) {
+            var toHelp = e.hpX - e.cwX;
+            var behind = toHelp > 0 ? (e.cwX - roamL) : (roamR - e.cwX);
+            if (toHelp * e.cwDir > 0 && Math.abs(toHelp) < CW_CLEAR && behind > 40) {
+              e.cwDir = -e.cwDir; cwFlip = e.cwDir < 0;
+            }
+          }
           if (e.cwT > e.cwWalk) {
             if (e.cwHurt || Math.sin(e.cwX * 7.7) > -0.3) {   // usually punctuate the walk with a cartwheel (always, if flagged, so he can fall out of it)
               if (e.cwX + e.cwDir * 96 > roamR) e.cwDir = -1; else if (e.cwX + e.cwDir * 96 < roamL) e.cwDir = 1;   // keep the wheel in-bounds
+              // ...and not through the helper, if the other way round is in bounds. A wheel covers
+              // 96px in 0.95s, so one that starts toward him lands on top of him.
+              if (cwHelperOut(e)) {
+                var end = e.cwX + e.cwDir * 96;
+                var sweeps = (e.hpX - e.cwX) * e.cwDir > -CW_CLEAR && (e.hpX - end) * e.cwDir < CW_CLEAR;
+                var flipEnd = e.cwX - e.cwDir * 96;
+                if (sweeps && flipEnd >= roamL && flipEnd <= roamR) e.cwDir = -e.cwDir;
+              }
               e.cw = 'cwheel'; e.cwT = 0; e.cwX0 = e.cwX;
             } else { e.cw = 'stand'; e.cwT = 0; }   // …otherwise just pause and turn
           }
@@ -2259,12 +2309,18 @@
           break;
         case 'helperup': {
           e.hpT += dt; var up = smooth01(e.hpT / 1.0); hpPose = lerpPose(cwKneel(0), A.standstill.frame(0), up); hpFlip = e.cwX < e.hpX; hpYoff = KNEEL_YOFF * (1 - up);
-          if (up >= 1) { e.hp = 'watch'; }
+          if (up >= 1) { e.hp = 'watch'; e.hpT = 0; }
           break;
         }
         case 'watch':
-          hpPose = A.standstill.frame(tt); hpFlip = e.cwX < e.hpX;
-          if (e.cw === 'cwheel') { e.hp = 'frustrated'; e.hpT = 0; }
+          e.hpT += dt; hpPose = A.standstill.frame(tt); hpFlip = e.cwX < e.hpX;
+          // He waits to see the man back on his feet, and gives up on him the moment he goes off
+          // again — wheeling OR walking. Keyed to the wheel alone, he stood there through the whole
+          // 1.6-3.8s walk leg first, which on a phone is the width of the entire roam, and that is
+          // when he was being walked through. The timeout is the other half of that: a man cornered
+          // against a wall waits for him to move rather than walking through him, so the watch has
+          // to end on its own or the two of them stand there forever.
+          if (e.cw === 'cwheel' || e.cw === 'walk' || e.hpT > CW_WATCH_MAX) { e.hp = 'frustrated'; e.hpT = 0; }
           break;
         case 'frustrated':
           e.hpT += dt; hpPose = cwFrust(e.hpT); hpFlip = e.cwX < e.hpX;
