@@ -18,6 +18,11 @@
     var CFG = R.CFG, A = R.ANIMATIONS;
     var DPR = Math.min(1.5, window.devicePixelRatio || 1);
     var S = 0.32;                       // tiny-figure scale
+    // The patrol's toddler is the one body in the cast drawn at anything other than S. He is drawn by
+    // his mode, by the abduction and by the exodus, so the ratio lives here rather than being written
+    // out at each of them — it was, and two of the three still scaled him while the third stood him up
+    // as a full-sized adult mid-abduction.
+    var TOT_S = S * 0.62;               // a toddler's scale
     var FIG_H = 150;                    // canvas height for edge-standing figures
 
     // pointer tracking for hover reactions
@@ -596,11 +601,19 @@
       // existing the moment the room bolted — the dog was the only companion ever handled, and only
       // because it had its own special case.
       var flSplit = splitBodies(e, figScreenX - cr.left, ink.midX);
+      // Same as the abduction: the runner and his mates each keep their own colour and size. Unlike the
+      // abduction there is no grab point here, so the split is the ink midpoint — and measured over
+      // repeated loads the adult wins it every time, because his is the wider silhouette and it pulls
+      // the pair's midpoint toward him. The child therefore reaches drawFlee as a mate today. flSmall
+      // is set anyway rather than assumed away: a body knowing his own size is what keeps the next
+      // pairing (or a parent who walks off the edge of his canvas) from repeating this bug.
+      e.flCol = flSplit.hit.col || null;
+      e.flSmall = !!flSplit.hit.small;
       e.flMates = flSplit.mates.map(function (m, mi) {
         return {
           x: (cr.left + sx + m.x) - newLeft,
           floor: (m.floor != null ? m.floor : oldFloor),
-          small: m.small,
+          small: m.small, col: m.col,
           seed: ((e.ci + mi + 1) % 7) + 1,
           t: -0.06 * (mi + 1)                                // a beat apart, so they do not move in lockstep
         };
@@ -693,6 +706,8 @@
     function drawFlee(e, ctx, w, col, dt) {
       e.flT += dt;
       var pose, rot = 0, yOff = e.flYOff || 0;
+      // He runs as himself — see the note in splitBodies. fk rescales the full-grown constants below.
+      var fcol = e.flCol || col, fs = e.flSmall ? TOT_S : S, fk = fs / S;
       var fall = e.flFall != null ? e.flFall : FLEE_DROP;    // how far below flFloor his landing line is
       var dSecs = e.flDropSecs || dropSecs(fall);
       var shadowAt = null;                                   // set during the drop: he casts it on the LINE
@@ -749,13 +764,13 @@
         // flCanLand note in poofArmFlee for why the flag does not gate this.
         if (k >= 1) { e.fl = 'heap'; e.flT = 0; yOff = fall; }
       } else if (e.fl === 'heap') {
-        yOff = fall + HEAP_YOFF;                         // lie ON the ground, not pivoted above it
+        yOff = fall + HEAP_YOFF * fk;                    // lie ON the ground, not pivoted above it
         pose = cwHeap(e.flT);
         rot = e.flDir * 1.45 + Math.sin(e.flT * 6) * 0.1;   // lying over, twitching
         if (e.flT >= HEAP_HOLD) { e.fl = 'getup'; e.flT = 0; }
       } else if (e.fl === 'getup') {
         var g = smooth01(Math.min(1, e.flT / GETUP_SECS));
-        yOff = fall + HEAP_YOFF * (1 - g);               // eases back onto his feet as he rises
+        yOff = fall + HEAP_YOFF * fk * (1 - g);          // eases back onto his feet as he rises
         pose = lerpPose(cwHeap(0), A.standstill.frame(0), g);
         rot = (e.flDir * 1.45) * (1 - g);                // rotates upright, slowly
         if (e.flT >= GETUP_SECS) { e.fl = 'limp'; e.flT = 0; }
@@ -767,15 +782,16 @@
 
       e.flYOff = yOff;
       var groundY = e.flFloor + yOff;
-      if (shadowAt) R.drawShadow(ctx, e.flX, shadowAt.y, 15 * shadowAt.scale, 'rgba(127,127,127,0.18)');
-      else R.drawShadow(ctx, e.flX, groundY, 15, 'rgba(127,127,127,0.18)');
+      var fsh = e.flSmall ? 10 : 15;
+      if (shadowAt) R.drawShadow(ctx, e.flX, shadowAt.y, fsh * shadowAt.scale, 'rgba(127,127,127,0.18)');
+      else R.drawShadow(ctx, e.flX, groundY, fsh, 'rgba(127,127,127,0.18)');
       // drawFig's y is the PELVIS, not the floor: computePose builds outward from the pelvis and
       // the legs reach 112 rig-units (112 * S ~= 36px) below it, which is why every other caller
       // in this file passes `feetY - 112 * S`. drawFlee alone passed the ground line straight
       // through, so every runner was drawn 36px into the floor with his own shadow hovering above
       // his head — measured, not guessed: a stander's floor line sat at screen y 734 and his ink
       // bottom at 770. Same class of mistake as the flee floor above, one call lower down.
-      drawFig(ctx, e.flX, groundY - 112 * S, S, e.flDir < 0, pose, { color: col, rot: rot });
+      drawFig(ctx, e.flX, groundY - 112 * fs, fs, e.flDir < 0, pose, { color: fcol, rot: rot });
 
       // The rest of this entry's cast, running on the same beat. They share the raise/run timing rather
       // than getting their own sub-machine: they are extras, and one figure per entry is still what
@@ -791,9 +807,9 @@
             fm.x += FLEE_SPEED * e.flDir * dt;
             mPose = fleePose(fm.t - RAISE_SECS, fm.seed);
           }
-          var msc = fm.small ? S * 0.62 : S;
+          var msc = bodyScale(fm);
           R.drawShadow(ctx, fm.x, mFloor, fm.small ? 10 : 15, 'rgba(127,127,127,0.18)');
-          drawFig(ctx, fm.x, mFloor - 112 * msc, msc, e.flDir < 0, mPose, { color: col });
+          drawFig(ctx, fm.x, mFloor - 112 * msc, msc, e.flDir < 0, mPose, { color: bodyCol(fm, col) });
         }
         // once they are all off the sides they stop costing anything
         e.flMates = e.flMates.filter(function (m) { return m.x > -70 && m.x < w + 70; });
@@ -991,6 +1007,13 @@
     // blinked out: grab one paddle player and the other vanished, and poofing anyone near the
     // parent-and-toddler took the toddler with him.
     //
+    // A body carries his COLOUR and his SIZE as well as his position, because an entry is not one
+    // colour: the cartwheel and paddle pairs are tone/tone2, the letter carriers are gold and orange,
+    // and a patrol is the parent's tone with the toddler on his own. Both takeovers used to draw every
+    // body in the entry's single `col` at the one adult scale, so deleting one cartwheeler repainted
+    // the other in his colour, and grabbing the toddler stood him up as a full-sized adult in his
+    // parent's colour until you let go. Geometry alone is not enough to redraw somebody.
+    //
     // Returns { hit, mates } in canvas-local coords. `hit` is the body nearest the grab; everything else
     // is a mate that has to keep existing.
     function splitBodies(e, atX, fallbackX) {
@@ -1003,9 +1026,14 @@
       return {
         hit: bodies[best],
         mates: bodies.filter(function (b, i) { return i !== best; })
-                     .map(function (b) { return { x: b.x, floor: b.floor, small: !!b.small }; })
+                     .map(function (b) { return { x: b.x, floor: b.floor, small: !!b.small, col: b.col }; })
       };
     }
+
+    // What a body is drawn in, and at what scale, once his mode has stopped drawing him. The fallback
+    // is the entry colour: single-figure modes publish no `_bodies` at all and are drawn in it.
+    function bodyCol(b, col) { return (b && b.col) || col; }
+    function bodyScale(b) { return (b && b.small) ? TOT_S : S; }
 
     function abductStart(e) {
       var ink = scanInk(e);
@@ -1036,8 +1064,11 @@
       var split = splitBodies(e, grabX, ink.midX);
       e.abFloor = (split.hit.floor != null ? split.hit.floor : ink.floor) + grow;
       e.abX = split.hit.x;
+      // Who he is, not just where he was standing — the abduction draws him from here on.
+      e.abCol = split.hit.col || null;
+      e.abSmall = !!split.hit.small;
       e.abMates = split.mates.map(function (m) {
-        return { x: m.x, floor: (m.floor != null ? m.floor : ink.floor) + grow, small: m.small };
+        return { x: m.x, floor: (m.floor != null ? m.floor : ink.floor) + grow, small: m.small, col: m.col };
       });
       // floor: the surface he was on, not his own ink bottom — see propFloorDoc. Converted into this
       // canvas's local coords, which the upward growth shifted down by `grow`.
@@ -1062,6 +1093,7 @@
         e.c.style.top = e.abPrevTop + 'px';
       }
       e.ab = null; e.abT = 0; e.abLift = 0; e.abProp = null;
+      e.abCol = null; e.abSmall = false;
       e.abPrevH = null; e.abPrevTop = null;
       reposition();                                    // put him back exactly where his mode wants him
     }
@@ -1077,6 +1109,10 @@
     function drawAbduct(e, ctx, w, col, dt) {
       e.abT += dt;
       var pose, lift = e.abLift, rot = 0, jitter = 0;
+      // He is abducted as HIMSELF. vk rescales the things below that were measured on a full-grown
+      // Bobit — his pelvis offset, the nudge that lays him flat in the heap, and where his hips are
+      // for the smoke — so a toddler floats as a toddler instead of growing up on the way past.
+      var vcol = e.abCol || col, vs = e.abSmall ? TOT_S : S, vk = vs / S;
 
       if (e.ab === 'letgo') {
         var u = Math.min(1, e.abT / AB_LETGO);
@@ -1108,13 +1144,13 @@
         rot = 0.4 * k;
         if (k >= 1) { e.ab = 'heap'; e.abT = 0; lift = 0; }
       } else if (e.ab === 'heap') {
-        lift = -HEAP_YOFF;                                       // lying ON the floor, not pivoted above it
+        lift = -HEAP_YOFF * vk;                                  // lying ON the floor, not pivoted above it
         pose = cwHeap(e.abT);
         rot = 1.45 + Math.sin(e.abT * 6) * 0.1;
         if (e.abT >= AB_HEAP_HOLD) { e.ab = 'getup'; e.abT = 0; }
       } else {                                                   // 'getup'
         var g = smooth01(Math.min(1, e.abT / AB_GETUP_SECS));
-        lift = -HEAP_YOFF * (1 - g);
+        lift = -HEAP_YOFF * vk * (1 - g);
         pose = lerpPose(cwHeap(0), e.abFrom, g);
         rot = 1.45 * (1 - g);
         if (e.abT >= AB_GETUP_SECS) { abductEnd(e); return; }
@@ -1131,7 +1167,7 @@
       // His HIPS, not his centre. Centred on the torso the cloud sat over his head and arms and hid the
       // spread eagle and the shimmy — the two things the whole build-up exists to show. Low on his body
       // it still swirls around him and reads as the thing lifting him, with his upper half clear.
-      e.abBodyY = figY - STAND_INK_H * 0.3;
+      e.abBodyY = figY - STAND_INK_H * vk * 0.3;
 
       // The prop falls on its own clock the moment the abduction starts, under the same gravity as
       // every other falling thing in this feature, and stays where it lands.
@@ -1168,17 +1204,17 @@
       if (e.abMates) {
         for (var mi = 0; mi < e.abMates.length; mi++) {
           var m = e.abMates[mi];
-          var ms = m.small ? S * 0.62 : S;                       // the toddler is drawn smaller
+          var ms = bodyScale(m);                                 // the toddler is drawn smaller
           R.drawShadow(ctx, m.x, m.floor, m.small ? 10 : 15, 'rgba(127,127,127,0.18)');
-          drawFig(ctx, m.x, m.floor - 112 * ms, ms, false, A.standstill.frame(0), { color: col });
+          drawFig(ctx, m.x, m.floor - 112 * ms, ms, false, A.standstill.frame(0), { color: bodyCol(m, col) });
         }
       }
 
       // Shadow stays on the floor and shrinks as he rises — the only cue that says "off the ground"
       // rather than "drawn higher up".
       var shrink = 1 - 0.55 * (lift / FLOAT_H);
-      R.drawShadow(ctx, e.abX + jitter * 0.3, groundY, 15 * Math.max(0.3, shrink), 'rgba(127,127,127,0.18)');
-      drawFig(ctx, e.abX + jitter, figY - 112 * S, S, false, pose, { color: col, rot: rot });
+      R.drawShadow(ctx, e.abX + jitter * 0.3, groundY, (e.abSmall ? 10 : 15) * Math.max(0.3, shrink), 'rgba(127,127,127,0.18)');
+      drawFig(ctx, e.abX + jitter, figY - 112 * vs, vs, false, pose, { color: vcol, rot: rot });
     }
     // ── pass 2: the stunned drop ───────────────────────────────────────────────────────────────
     // The victim goes, the room freezes — and everything anybody was holding hits the floor. The
@@ -2083,7 +2119,7 @@
       R.drawShadow(ctx, xL, feetY, 14, shadow); R.drawShadow(ctx, xR, feetY, 14, shadow);
       var figL = e.hoverSide === 'L' ? A.greet.frame(tt, e._wave) : padL;   // hovered → wave (faces viewer)
       var figR = e.hoverSide === 'R' ? A.greet.frame(tt, e._wave) : padR;
-      e._bodies = [{ x: xL, floor: feetY }, { x: xR, floor: feetY }];
+      e._bodies = [{ x: xL, floor: feetY, col: colA }, { x: xR, floor: feetY, col: colB }];
       drawFig(ctx, xL, baseY, S, false, figL, { color: colA });
       drawFig(ctx, xR, baseY, S, e.hoverSide === 'R' ? false : true, figR, { color: colB });
       if (e.hoverSide !== 'L' && !e.propGone) drawPaddle(handL.x, handL.y, colA);
@@ -2158,7 +2194,7 @@
           break;
       }
       R.drawShadow(ctx, e.cwX, feetY, 15, shadow);
-      e._bodies = [{ x: e.cwX, floor: feetY }, { x: e.hpX, floor: feetY }];
+      e._bodies = [{ x: e.cwX, floor: feetY, col: colA }, { x: e.hpX, floor: feetY, col: colB }];
       drawFig(ctx, e.cwX, baseY + cwYoff, S, cwFlip, cwPose, { color: colA, rot: cwRot });
 
       // ---- helper (corner Bobit) ----
@@ -2496,7 +2532,7 @@
       }
       // thrower
       R.drawShadow(ctx, e.thrX, feetY, 16, shadow);
-      e._bodies = [{ x: e.thrX, floor: feetY }];
+      e._bodies = [{ x: e.thrX, floor: feetY, col: colThrower }];
       drawFig(ctx, e.thrX, throwerBaseY, S, thFlip, thP, { color: colThrower });
       // small yellow ball when it's loose or in the thrower's hand (the dog draws it when carried)
       if (e.bHeld === 'thrower' && !e.propGone) { var hp = thHand(thP, thFlip); ctx.fillStyle = figColor(2); ctx.beginPath(); ctx.arc(hp.x, hp.y, smallR, 0, Math.PI * 2); ctx.fill(); }
@@ -2610,7 +2646,7 @@
       // ── draw ──
       R.drawShadow(ctx, e.gxCur, feetY, 15, shadow);
       if (kiteGround) R.drawShadow(ctx, kx, feetY, 11, shadow);
-      e._bodies = [{ x: e.gxCur, floor: feetY }];   // the flyer, NOT the ink midpoint: that spans him and the kite
+      e._bodies = [{ x: e.gxCur, floor: feetY, col: colGuy }];   // the flyer, NOT the ink midpoint: that spans him and the kite
       drawFig(ctx, e.gxCur, guyBaseY, S, guyFlip, guyPose, { color: colGuy });
       if (kiteInHand) { var hnd = guyHandOf(guyPose, guyFlip); kx = hnd.x; ky = hnd.y - 6; ang = guyFlip ? -0.7 : 0.7; e.kx = kx; e.ky = ky; e.kang = ang; }
       // Let go of a kite and the wind has it: the overlay flies it off the side rather than dropping it,
@@ -2692,7 +2728,7 @@
       // ── draw ──
       R.drawShadow(ctx, gx0, feetY, 15, shadow);
       if (dropFrac > 0.92 && botY >= groundBotY - 0.5) R.drawShadow(ctx, yoX, feetY, 8, shadow);   // the yo-yo's own shadow when it's on the floor
-      e._bodies = [{ x: gx0, floor: feetY }];       // likewise: the ink spans him and the yo-yo
+      e._bodies = [{ x: gx0, floor: feetY, col: colGuy }];       // likewise: the ink spans him and the yo-yo
       drawFig(ctx, gx0, guyBaseY, S, false, pose, { color: colGuy });
       // string from the hand down to the yo-yo
       if (!e.propGone) {                              // dropped: the string and the yo-yo go with it
@@ -3074,7 +3110,8 @@
       else { eLX = e.eLX; eLY = groundLY - Math.abs(Math.sin(e.eRoll * 1.5)) * 3 * Math.min(1, (e.eLV || 0) / 40); eRot = Math.PI + e.eRoll; }  // non-round → little bump while moving, flat when stopped
       R.drawShadow(ctx, e.eX, feetY, 14, shadow);
       if (e.eSt !== 'walk') R.drawShadow(ctx, eLX, feetY, 12, shadow);
-      e._bodies = [{ x: e.vX, floor: feetY }, { x: e.eX, floor: feetY }];
+      // gold and orange, neither of which is the entry's own tone — see the drawFig calls either side
+      e._bodies = [{ x: e.vX, floor: feetY, col: figColor(2) }, { x: e.eX, floor: feetY, col: figColor(5) }];
       drawFig(ctx, e.eX, oy, S, eFlip, ePose, { color: figColor(5) });    // orange guy carrying the e
       if (!e.propGone) drawLetterE(ctx, eLX, eLY, letterR, colE, eRot);
 
@@ -3405,14 +3442,17 @@
           var SEQ = 4.5;   // toddler fall-and-recover length (matches SEQ_FALL in the rig)
           // toddler in front (adult trails); click him -> he falls, the parent scoops him back up
           if (spec.toddler) {
-            var TS = S * 0.62;
+            var TS = TOT_S;
             var tTgt = (e._dirR ? 1 : -1) * 48;                       // leads farther ahead, so the adult is clearly behind
             e._toff = (e._toff == null) ? tTgt : e._toff + (tTgt - e._toff) * Math.min(1, dt * 5);
             var toddX = figX + e._toff;
-            e._bodies = [{ x: figX, floor: feetY }, { x: toddX, floor: feetY, small: true }];
+            // his own tone, published with him: the gag redraws him from _bodies and drew him in his
+            // parent's colour, at his parent's size, without it
+            var totCol = figColor(spec.toddlerTone != null ? spec.toddlerTone : 1);
+            e._bodies = [{ x: figX, floor: feetY, col: col },
+                         { x: toddX, floor: feetY, small: true, col: totCol }];
             e._toddSX = cr.left + toddX; e._toddSY = cr.top + feetY - 26;   // for click hit-testing
             pushBeacon(cr.left + toddX, cr.top + feetY, e._fall > 0 ? 'collapse' : 'walk');   // toddler toddling/tumbling below
-            var totCol = figColor(spec.toddlerTone != null ? spec.toddlerTone : 1);
             var standYtot = feetY - 112 * TS, groundYtot = feetY - 8 * TS;
             R.drawShadow(ctx, toddX, feetY, 10, shadow);
             if (e._fall > 0) {
@@ -3684,7 +3724,7 @@
             poseF = A.carry.frame(tt);
             poseB = A.carry.frame(tt + 0.16);
           }
-          e._bodies = [{ x: fx, floor: feetY }, { x: bx2, floor: feetY }];
+          e._bodies = [{ x: fx, floor: feetY, col: col }, { x: bx2, floor: feetY, col: col }];
           drawFig(ctx, fx, feetY - 112 * S, S, flipF, poseF, { color: col });
           drawFig(ctx, bx2, feetY - 112 * S, S, flipB, poseB, { color: col });
           return;
