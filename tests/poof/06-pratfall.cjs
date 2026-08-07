@@ -87,11 +87,23 @@ const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
     assert.strictEqual(s[1], 'run', 'the raise must hand off to the run: ' + s.join('>'));
   });
 
-  // every recorded sequence must be one of the legal shapes
+  // Every recorded sequence must be a PREFIX of a legal progression, not one of a hand-listed set of
+  // completed ones. A runner is taken off the page the moment he leaves a screen edge — sideways or
+  // below the fold — and that test runs in every sub-phase, so any prefix is a legal way to end.
+  // The hand-listed version missed raise>run>drop (off the right edge while already falling) and went
+  // red the day an entry with survivors on it started fleeing: the hero's crew is anchored to a
+  // full-width canvas, so his ledge ends where the screen does and his drop begins on the way out.
+  // Prefix-matching still rejects what this is here to catch — an out-of-order or invented sub-phase.
+  const LINES = [
+    ['raise', 'run', 'drop', 'heap', 'getup', 'limp'],     // ran out of ledge
+    ['raise', 'hlimp', 'drop', 'heap', 'getup', 'limp'],   // his own load landed on his foot first
+    ['raise', 'drop', 'heap', 'getup', 'limp']             // nothing under him to run along (rope)
+  ];
   seen.forEach(function (s) {
     const uniq = s.join('>');
-    const legal = /^raise$/.test(uniq) || /^raise>run$/.test(uniq) ||
-                  /^raise>run>drop>heap>getup>limp$/.test(uniq);
+    const legal = LINES.some(function (line) {
+      return s.length <= line.length && s.every(function (step, i) { return step === line[i]; });
+    });
     assert.ok(legal, 'unexpected flee sequence: ' + uniq);
   });
 

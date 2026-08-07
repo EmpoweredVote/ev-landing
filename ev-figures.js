@@ -148,7 +148,9 @@
     // yoyo, dogfetch) draw well off-centre, so the centre could be hundreds of px of blank page
     // away from him. Fractions rather than pixels so a canvas resize can't strand the cloud.
     // 0.5 / 1.0 (centre, floor) is the fallback when the phase is driven directly, e.g. by tests.
-    var POOF = { phase: 'idle', t: 0, victim: null, armed: false, sx: 0, sy: 0, fx: 0.5, fy: 1, breakLines: null };
+    // taken: he has left the page. Not the same as "the victim's canvas is gone" — an entry with
+    // other people on it keeps its canvas after the burst.
+    var POOF = { phase: 'idle', t: 0, victim: null, armed: false, sx: 0, sy: 0, fx: 0.5, fy: 1, breakLines: null, taken: false };
 
     // Which Bobit is under this point? The canvases are pointer-events:none and only two modes
     // bother to store a hitbox, so rather than add one to all fourteen we ask the pixels:
@@ -178,7 +180,7 @@
     function poofStart(e, px, py) {
       if (POOF.phase !== 'idle' || !e) return;
       if (e.ab) return;                            // still picking himself up from the last grab
-      POOF.phase = 'holding'; POOF.t = 0; POOF.victim = e;
+      POOF.phase = 'holding'; POOF.t = 0; POOF.victim = e; POOF.taken = false;
       POOF.vx = null; POOF.vy = null;
       POOF.fx = 0.5; POOF.fy = 1;
       if (px != null) {
@@ -337,7 +339,12 @@
       // Follow the victim while he is still there, then hold his last spot. The anchor is the
       // press point re-projected through his LIVE rect, so it stays on him rather than on the
       // middle of a canvas he may not be standing in the middle of.
-      if (POOF.victim && POOF.victim.c.parentNode) {
+      //
+      // POOF.taken, not the canvas being in the DOM: an entry with survivors on it keeps its canvas
+      // after the burst, and following that rect through the burst threw the cloud back to the
+      // press-point fraction on a canvas that is still grown — a visible jump off the spot he
+      // vanished from, in the one frame everybody is looking at it.
+      if (POOF.victim && !POOF.taken && POOF.victim.c.parentNode) {
         var r = POOF.victim.c.getBoundingClientRect();
         POOF.vx = r.left + POOF.fx * r.width;
         POOF.vy = r.top + POOF.fy * r.height;
@@ -618,6 +625,9 @@
           t: -0.06 * (mi + 1)                                // a beat apart, so they do not move in lockstep
         };
       });
+      // A bereaved entry has been holding its survivors up since the burst; they are runners now, and
+      // drawFlee owns them from here. Retiring `ab` keeps a stale takeover from outliving the exodus.
+      if (e.ab === 'bereft') { e.ab = null; e.abMates = null; }
       e.flYOff = 0;
       e.flFall = fallDist;                               // how far below flFloor his line is
       e.flDropSecs = dropSecs(fallDist);
@@ -1106,7 +1116,34 @@
       else { e.ab = 'collapse'; e.abT = 0; e.abFrom0 = e.abLift; e.abSecs = dropSecs(e.abLift); }
     }
 
+    // Anyone else this entry draws stays where he was, watching. His mode is not running — the
+    // abduction owns the canvas — so he is drawn here or not at all, and "not at all" is what made a
+    // paddle player's partner and a patrol's toddler blink out of existence.
+    function drawAbductMates(e, ctx, col) {
+      if (!e.abMates) return;
+      for (var mi = 0; mi < e.abMates.length; mi++) {
+        var m = e.abMates[mi];
+        var ms = bodyScale(m);                                   // the toddler is drawn smaller
+        R.drawShadow(ctx, m.x, m.floor, m.small ? 10 : 15, 'rgba(127,127,127,0.18)');
+        drawFig(ctx, m.x, m.floor - 112 * ms, ms, false, A.standstill.frame(0), { color: bodyCol(m, col) });
+      }
+    }
+
     function drawAbduct(e, ctx, w, col, dt) {
+      // 'bereft': the burst took him and left the rest of his entry standing there. There is no
+      // victim to draw and no machine left to run — just the survivors, holding still through the
+      // stun until the room bolts.
+      //
+      // They also republish _bodies, because the last set his MODE published still had the man who
+      // was taken in it, and the exodus splits on that list: without this it hands one runner's role
+      // to a ghost and the survivor is drawn as his mate, in the wrong place.
+      if (e.ab === 'bereft') {
+        drawAbductMates(e, ctx, col);
+        e._bodies = e.abMates.map(function (m) {
+          return { x: m.x, floor: m.floor, small: m.small, col: m.col };
+        });
+        return;
+      }
       e.abT += dt;
       var pose, lift = e.abLift, rot = 0, jitter = 0;
       // He is abducted as HIMSELF. vk rescales the things below that were measured on a full-grown
@@ -1198,17 +1235,7 @@
         else drawGroundProp(ctx, p.kind, p.x, p.y, col, pAlpha);
       }
 
-      // Anyone else this entry draws stays where he was, watching. His mode is not running — the
-      // abduction owns the canvas — so he is drawn here or not at all, and "not at all" is what made a
-      // paddle player's partner and a patrol's toddler blink out of existence.
-      if (e.abMates) {
-        for (var mi = 0; mi < e.abMates.length; mi++) {
-          var m = e.abMates[mi];
-          var ms = bodyScale(m);                                 // the toddler is drawn smaller
-          R.drawShadow(ctx, m.x, m.floor, m.small ? 10 : 15, 'rgba(127,127,127,0.18)');
-          drawFig(ctx, m.x, m.floor - 112 * ms, ms, false, A.standstill.frame(0), { color: bodyCol(m, col) });
-        }
-      }
+      drawAbductMates(e, ctx, col);
 
       // Shadow stays on the floor and shrinks as he rises — the only cue that says "off the ground"
       // rather than "drawn higher up".
@@ -1346,7 +1373,7 @@
           var vr = POOF.victim.c.getBoundingClientRect();
           POOF.vx = vr.left + POOF.fx * vr.width;
           POOF.vy = vr.top + POOF.fy * vr.height;
-          POOF.victim.gone = true;
+          POOF.taken = true;                          // he is off the page; the smoke holds his last spot
           // His prop outlives him. It was drawn on HIS canvas during the abduction, so without this it
           // would vanish in the same puff — and the whole point of dropping it is that it is still lying
           // there afterwards, evidence that somebody was taken. Hand it to DROPS, in document coords,
@@ -1364,11 +1391,28 @@
               t: 0, hold: ap.hold || 0, landed: ap.landed, blow: ap.kind === 'kite', hurts: false, drift: 0
             });
           }
-          // He is leaving with the canvas, so the abduction state goes with him rather than through
-          // abductEnd — there is nothing left to restore, and a live e.ab on a gone entry would have
-          // poofStart refuse the next grab forever.
-          POOF.victim.ab = null; POOF.victim.abPrevH = null; POOF.victim.abProp = null;
-          if (POOF.victim.c.parentNode) POOF.victim.c.parentNode.removeChild(POOF.victim.c);
+          // The burst takes a PERSON. An entry is a canvas, and several of them carry more than one
+          // person — a patrol and his toddler, both paddle players, the cartwheeler and his medic —
+          // so ending the entry here deleted whoever was standing next to him, with no smoke and no
+          // reason. The hold is careful about exactly this; the burst threw that away a frame later.
+          //
+          // So an entry with survivors keeps its canvas and stays in the takeover as 'bereft': his
+          // mode is not coming back (it would redraw the man who was taken), and drawAbduct draws
+          // what is left of the cast until the room bolts and drawFlee takes them.
+          if (POOF.victim.abMates && POOF.victim.abMates.length) {
+            POOF.victim.ab = 'bereft';
+            POOF.victim.abProp = null;
+            // Already handed to DROPS above. Without this stunDropAll, which skips gone entries and
+            // no longer skips this one, drops a second copy of it a beat later.
+            POOF.victim.propGone = true;
+          } else {
+            // Nobody left on it: he is leaving with the canvas, so the abduction state goes with him
+            // rather than through abductEnd — there is nothing left to restore, and a live e.ab on a
+            // gone entry would have poofStart refuse the next grab forever.
+            POOF.victim.gone = true;
+            POOF.victim.ab = null; POOF.victim.abPrevH = null; POOF.victim.abProp = null;
+            if (POOF.victim.c.parentNode) POOF.victim.c.parentNode.removeChild(POOF.victim.c);
+          }
           if (window.EVQuotes) {
             window.EVQuotes.closeAll();
             // same reset as the click/Escape dismiss paths: a closed bubble must not leave a

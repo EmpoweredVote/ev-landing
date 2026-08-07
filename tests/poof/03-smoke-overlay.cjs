@@ -247,11 +247,23 @@ async function quoteRun(browser) {
     var p = window.__evFigDebug.poof;
     return p.phase === 'stunned' || p.phase === 'fleeing' || p.phase === 'cleared';
   }, { timeout: 4000 });
+  // "Removed" means the PERSON, not his canvas. An entry is a canvas and several of them carry more
+  // than one person, so a victim with somebody standing next to him leaves his entry behind: it stays
+  // in the DOM as 'bereft', drawing the survivors until the room bolts. What must be true either way
+  // is that nothing is painted where he was standing. See 17-survivors for the full contract.
   const victimGone = await page.evaluate(function () {
     var v = window.__evFigDebug.poof.victim;
-    return { removed: !v || !v.c.parentNode || v.gone === true };
+    if (!v || !v.c.parentNode || v.gone === true) return { removed: true };
+    if (v.ab !== 'bereft' || v.abX == null) return { removed: false, why: 'entry alive, ab=' + v.ab };
+    // scan his last column for ink: he must not still be standing there
+    var sw = v.c.width, sh = v.c.height, rx = sw / v.w;
+    var x0 = Math.max(0, Math.round((v.abX - 16) * rx));
+    var w = Math.min(sw - x0, Math.round(32 * rx));
+    var d = v.ctx.getImageData(x0, 0, w, sh).data;
+    for (var p = 3; p < d.length; p += 4) if (d[p] > 8) return { removed: false, why: 'still painted at abX' };
+    return { removed: true };
   });
-  assert.ok(victimGone.removed, 'the victim must be removed once the cloud clears');
+  assert.ok(victimGone.removed, 'the victim must be removed once the cloud clears: ' + victimGone.why);
 
   // and the smoke eventually clears
   //
