@@ -70,14 +70,36 @@ const treasury = await one(`SELECT
   (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='state'  AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_states,
   (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='town'   AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_towns`);
 
+// Which state a researched official belongs to has TWO linkages, and the map has to read both.
+// ADR 0002 moved officeholder occupancy onto dated `office_terms`; `politicians.office_id` is the
+// older link and is not backfilled for anyone seeded after that change.  Reading only office_id
+// showed Wisconsin as 5 researched officials when it has 208 (its whole 2026 build is term-linked),
+// and Massachusetts as 109 when it has 302 — WI sat in the palest map tier for a month.  The union
+// is deliberate: term-linked is a superset today, but a politician still carrying only the legacy
+// link would silently vanish from the map if we swapped rather than unioned.  Terms are filtered to
+// CURRENT occupancy (term_end null or not yet passed) so a former officeholder does not keep
+// shading a state he has left.
 const byState = await all(`
-  SELECT upper(trim(g.state)) AS st, count(DISTINCT p.id) AS pols
-  FROM inform.politician_answers pa
-  JOIN essentials.politicians p ON p.id = pa.politician_id
-  JOIN essentials.offices o ON o.id = p.office_id
-  JOIN essentials.chambers c ON c.id = o.chamber_id
-  JOIN essentials.governments g ON g.id = c.government_id
-  WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+  WITH by_term AS (
+    SELECT upper(trim(g.state)) AS st, pa.politician_id AS pid
+    FROM inform.politician_answers pa
+    JOIN essentials.office_terms ot ON ot.politician_id = pa.politician_id
+    JOIN essentials.offices o ON o.id = ot.office_id
+    JOIN essentials.chambers c ON c.id = o.chamber_id
+    JOIN essentials.governments g ON g.id = c.government_id
+    WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+      AND (ot.term_end IS NULL OR ot.term_end >= current_date)
+  ), by_office AS (
+    SELECT upper(trim(g.state)) AS st, pa.politician_id AS pid
+    FROM inform.politician_answers pa
+    JOIN essentials.politicians p ON p.id = pa.politician_id
+    JOIN essentials.offices o ON o.id = p.office_id
+    JOIN essentials.chambers c ON c.id = o.chamber_id
+    JOIN essentials.governments g ON g.id = c.government_id
+    WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+  )
+  SELECT st, count(*) AS pols
+  FROM (SELECT st, pid FROM by_term UNION SELECT st, pid FROM by_office) u
   GROUP BY 1`);
 
 // Campaign finance (FEC).  Wrapped: if the schema is absent, leave the spans as-is.

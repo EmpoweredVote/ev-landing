@@ -50,5 +50,16 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 - The stance total can go **down** when a research audit retires unsupported
   rows.  That is working as intended — explain it in the narrative rather than
   hiding it.
+- **Per-state counts must read BOTH occupancy links.**  ADR 0002 moved
+  officeholder occupancy onto dated `essentials.office_terms`; the older
+  `politicians.office_id` column is not backfilled for anyone seeded after that
+  change.  `byState` therefore unions current terms (`term_end` null or future)
+  with the legacy link.  Reading only `office_id` showed Wisconsin as 5
+  researched officials when it has 208 — it sat in the palest map tier for a
+  month — and filed those officials' stances under "2026 candidates (no office
+  yet)".  The hand-maintained coverage table uses the same resolution order
+  (current term, then `office_id`, then no office); if you rebuild it, check
+  that its rows sum to the headline totals, because that sum is what catches
+  this class of error.
 - Update narrative sections in a strategy session (or by hand) whenever the
   story changes, not just the numbers.
