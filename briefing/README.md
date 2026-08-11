@@ -50,16 +50,26 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 - The stance total can go **down** when a research audit retires unsupported
   rows.  That is working as intended — explain it in the narrative rather than
   hiding it.
-- **Per-state counts must read BOTH occupancy links.**  ADR 0002 moved
+- **Per-state counts must read ALL THREE jurisdiction links.**  ADR 0002 moved
   officeholder occupancy onto dated `essentials.office_terms`; the older
   `politicians.office_id` column is not backfilled for anyone seeded after that
   change.  `byState` therefore unions current terms (`term_end` null or future)
   with the legacy link.  Reading only `office_id` showed Wisconsin as 5
   researched officials when it has 208 — it sat in the palest map tier for a
   month — and filed those officials' stances under "2026 candidates (no office
-  yet)".  The hand-maintained coverage table uses the same resolution order
-  (current term, then `office_id`, then no office); if you rebuild it, check
-  that its rows sum to the headline totals, because that sum is what catches
-  this class of error.
+  yet)".  Then a third link: **93% of offices (77,680 of 83,291) have
+  `chamber_id` NULL** and keep their jurisdiction on the office row itself, in
+  `representing_state` / `representing_city`.  Any query that walks
+  office → chamber → government misses every one of them — that hid 29 more
+  researched officials, 16 of them **DC**, which the tile writer was still
+  captioning "stance research in progress" because its count came back zero.
+  DC is now tallied like any other jurisdiction, which is why the legend says
+  "jurisdictions" rather than "states": otherwise it claims four Growing while
+  the map plainly shows five.  The hand-maintained coverage table uses the same
+  resolution order (current term → `office_id` → `representing_state` → none);
+  if you rebuild it, check that its rows sum to the headline totals, because
+  that sum is what catches this class of error.  Note it catches only *missing*
+  rows — a wrong number that still sums will pass, which is how the Wisconsin
+  undercount survived a table that reconciled.
 - Update narrative sections in a strategy session (or by hand) whenever the
   story changes, not just the numbers.

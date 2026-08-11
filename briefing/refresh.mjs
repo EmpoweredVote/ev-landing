@@ -97,9 +97,24 @@ const byState = await all(`
     JOIN essentials.chambers c ON c.id = o.chamber_id
     JOIN essentials.governments g ON g.id = c.government_id
     WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+  ), by_repr AS (
+    -- Third link, and the reason it is needed: 93% of offices (77,680 of 83,291) have
+    -- chamber_id NULL and carry their jurisdiction on the office row itself.  Both joins above
+    -- walk office -> chamber -> government, so every one of those offices is invisible to them.
+    -- This hid 29 researched officials, 16 of them the District of Columbia — which the tile
+    -- writer below was still captioning as "stance research in progress" because its count read 0.
+    SELECT upper(btrim(o.representing_state)) AS st, pa.politician_id AS pid
+    FROM inform.politician_answers pa
+    JOIN essentials.politicians p ON p.id = pa.politician_id
+    LEFT JOIN essentials.office_terms ot ON ot.politician_id = p.id
+         AND (ot.term_end IS NULL OR ot.term_end >= current_date)
+    JOIN essentials.offices o ON o.id = coalesce(ot.office_id, p.office_id)
+    WHERE o.chamber_id IS NULL AND btrim(coalesce(o.representing_state, '')) <> ''
   )
   SELECT st, count(*) AS pols
-  FROM (SELECT st, pid FROM by_term UNION SELECT st, pid FROM by_office) u
+  FROM (SELECT st, pid FROM by_term
+        UNION SELECT st, pid FROM by_office
+        UNION SELECT st, pid FROM by_repr) u
   GROUP BY 1`);
 
 // Campaign finance (FEC).  Wrapped: if the schema is absent, leave the spans as-is.
@@ -143,8 +158,11 @@ const stateNames = { AK:'Alaska', AL:'Alabama', AR:'Arkansas', AZ:'Arizona', CA:
 const counts = Object.fromEntries(byState.map(r => [r.st, Number(r.pols)]));
 const tier = (n) => n >= 100 ? 't3' : n >= 10 ? 't2' : n >= 1 ? 't1' : 't0';
 const tiers = { t3: 0, t2: 0, t1: 0 };
+// DC used to be skipped here because it had no stance rows and was captioned by hand.  It has 16
+// now, so it is tallied like anywhere else — otherwise the legend would claim four Growing
+// jurisdictions while the map plainly shows five shaded that way.  The legend labels say
+// "jurisdictions", not "states", for the same reason.
 for (const abbr of Object.keys(stateNames)) {
-  if (abbr === 'DC') continue;
   const t = tier(counts[abbr] ?? 0);
   if (tiers[t] !== undefined) tiers[t]++;
 }
