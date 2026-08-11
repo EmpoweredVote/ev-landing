@@ -100,6 +100,34 @@
       where: "to W. T. Barry, 4 August 1822",
       href: "https://press-pubs.uchicago.edu/founders/documents/v1ch18s35.html"
     },
+
+    // ── Added 11 August 2026. Lincoln, two passages from the same speech — the first inaugural.
+    //    He is the tenth speaker in the pool and the only one who reconciles rather than warns;
+    //    every other entry is either a warning about faction or a case for education. Both were
+    //    read on the American Presidency Project page linked below AND cross-read at the Avalon
+    //    Project (Yale Law School), https://avalon.law.yale.edu/19th_century/lincoln1.asp — the
+    //    two transcriptions agree character for character, including the two traps below.
+
+    {
+      // NO comma after "strained" (both transcriptions), and "Though passion may have strained it"
+      // — reprints often insert the comma and swap "it" for "them". Stops at "bonds of affection":
+      // the mystic-chords sentence that follows is the famous one but runs 60 words, which is past
+      // what a bubble holds. Ending on a sentence boundary needs no ellipsis.
+      text: "We are not enemies, but friends. We must not be enemies. Though passion may have strained it must not break our bonds of affection.",
+      who: "Abraham Lincoln",
+      where: "First Inaugural Address, 4 March 1861",
+      href: "https://www.presidency.ucsb.edu/documents/inaugural-address-34"
+    },
+    {
+      // "sentiments" plural, and both commas are in the source — the clause between them is what
+      // distinguishes his majority from a mob, so it survives every temptation to trim. The
+      // sentence before it in the address is "Plainly the central idea of secession is the essence
+      // of anarchy," which is the case this answers.
+      text: "A majority held in restraint by constitutional checks and limitations, and always changing easily with deliberate changes of popular opinions and sentiments, is the only true sovereign of a free people.",
+      who: "Abraham Lincoln",
+      where: "First Inaugural Address, 4 March 1861",
+      href: "https://www.presidency.ucsb.edu/documents/inaugural-address-34"
+    },
     {
       // The circulating version ellipsises the middle away as "The ultimate rulers of our
       // democracy… are the voters of this country", which quietly deletes the whole point: the

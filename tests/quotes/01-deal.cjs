@@ -21,7 +21,7 @@ const path = require('path');
       })
     };
   });
-  assert.strictEqual(shape.count, 18, 'pool should hold 18 quotes');
+  assert.strictEqual(shape.count, 20, 'pool should hold 20 quotes');
   assert.deepStrictEqual(shape.keys, ['href', 'text', 'where', 'who']);
   assert.ok(shape.allHttps, 'every href must be https');
   assert.ok(shape.allFilled, 'every field must be populated');
@@ -52,6 +52,36 @@ const path = require('path');
   // he closes the speech on a poet's verse; it must stay out, because everything in a bubble
   // is attributed to the named speaker and those are another author's words
   assert.ok(chars.jfkOwnWordsOnly, 'the Kennedy quote must contain only his own words');
+
+  // Lincoln, first inaugural: two punctuation points that reprints get wrong and that two
+  // independent transcriptions (American Presidency Project, Avalon) agree on. Selected by
+  // citation text for the same reason the Kennedy check is — both Lincoln entries cite the
+  // same speech, so they are told apart by their opening words.
+  const abe = await page.evaluate(function () {
+    var all = window.EVQuotes.QUOTES.filter(function (q) { return q.who === 'Abraham Lincoln'; });
+    var friends = all.filter(function (q) { return q.text.indexOf('We are not enemies') === 0; })[0];
+    var major = all.filter(function (q) { return q.text.indexOf('A majority held') === 0; })[0];
+    return {
+      n: all.length,
+      noCommaAfterStrained: friends.text.indexOf('may have strained it must not break') >= 0,
+      strainedIt: friends.text.indexOf('strained them') < 0,
+      endsAtAffection: /bonds of affection\.$/.test(friends.text),
+      noMysticChords: friends.text.indexOf('mystic chords') < 0,
+      sentimentsPlural: major.text.indexOf('popular opinions and sentiments,') >= 0,
+      keepsTheClause: major.text.indexOf('and always changing easily with deliberate changes') >= 0
+    };
+  });
+  assert.strictEqual(abe.n, 2, 'two Lincoln passages expected');
+  // "Though passion may have strained, it must not break" is the common reprint; the source has
+  // no comma there, and it is "strained it", not "strained them"
+  assert.ok(abe.noCommaAfterStrained, 'no comma after "strained" — the source has none');
+  assert.ok(abe.strainedIt, '"strained it", not "strained them"');
+  // the trim is deliberate: the mystic-chords sentence runs ~60 words and overflows the bubble
+  assert.ok(abe.endsAtAffection, 'the friends quote must stop at a sentence boundary');
+  assert.ok(abe.noMysticChords, 'the mystic-chords sentence stays out of the trimmed form');
+  assert.ok(abe.sentimentsPlural, '"sentiments" is plural in the source');
+  // the clause between the commas is what separates his majority from a mob — never trim it
+  assert.ok(abe.keepsTheClause, 'the majority quote must keep its middle clause');
 
   // Identity key is the TEXT, not who/where: several entries legitimately share a citation now
   // (two passages from the Farewell Address, two from Truman's 1952 citizenship address), so

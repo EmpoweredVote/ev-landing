@@ -27,7 +27,7 @@ the Kennedy page was finally read.
 > throughout: **the entry says what the linked page says**, even where that reads oddly to a modern
 > eye.
 >
-> **Pool is 18 quotes from 9 speakers, and every one of them has now been read at its source.**
+> **Pool was 18 quotes from 9 speakers, and every one of them has now been read at its source.**
 > That last part became true on August 4, when the Wendover draft was cut — it was the only entry
 > whose page could not be opened. Every surviving entry now carries a ✅ status; a grep for the
 > warning marker returns nothing.
@@ -55,6 +55,23 @@ the Kennedy page was finally read.
 > **One provenance flag remains:** the Reagan line was said as **Governor of California in 1967**, not
 > as President — flagged the same way the 1958 Kennedy entry is. The other flag, the unsent Jefferson
 > draft, was the reason that entry was cut rather than kept with a caveat.
+
+> **Third pass — August 11, 2026: two Lincoln passages added.** Both from the first inaugural,
+> March 4, 1861 — "We are not enemies, but friends" (trimmed to a sentence boundary) and "A majority
+> held in restraint by constitutional checks and limitations…". **Pool is now 20 quotes from 10
+> speakers, every one read at its source.**
+>
+> These two are the first entries in the file to be **cross-read against a second independent
+> transcription** — the American Presidency Project and Yale's Avalon Project — which settled two
+> punctuation points that reprints get wrong: no comma after "strained", and plural "sentiments".
+> Where a second authoritative transcription is cheap to obtain, this is worth doing; it is stronger
+> evidence than one reading, and it is how the "manmade"/"man-made" split in the Kennedy entry was
+> caught.
+>
+> Lincoln is the only speaker in the pool who **reconciles rather than warns or instructs**, which is
+> what he was added for. Three further Lincoln passages were sourced and read but not taken, and one
+> widely-circulated line was rejected for want of any primary source — all four are recorded at the
+> end of *On holding together under majority rule* so the work is not repeated.
 
 ---
 
@@ -170,6 +187,81 @@ transcribed in the Adams Papers, which is what the link shows.
 > Francis Adams, 1856), vol. 9. It reads more smoothly for a general audience. Both are legitimate;
 > use the modernized text only if the link is changed to point at the *Works*, so quote and source
 > match.
+
+---
+
+## On holding together under majority rule
+
+Both passages below are from the same speech, delivered six weeks before Fort Sumter. They are the
+answer to the section above it: Washington and Adams describe the disease, Lincoln is speaking to a
+country that already has it.
+
+### Abraham Lincoln — First Inaugural Address *(not enemies, but friends)*
+
+> "I am loath to close. We are not enemies, but friends. We must not be enemies. Though passion may
+> have strained it must not break our bonds of affection. The mystic chords of memory, stretching from
+> every battlefield and patriot grave to every living heart and hearthstone all over this broad land,
+> will yet swell the chorus of the Union, when again touched, as surely they will be, by the better
+> angels of our nature."
+
+Short form for display (stops at a sentence boundary, so no ellipsis):
+
+> "We are not enemies, but friends. We must not be enemies. Though passion may have strained it must
+> not break our bonds of affection."
+
+**Context:** The closing paragraph of the address. Seven states had already declared secession; Sumter
+was six weeks away. Read that against the date before treating it as a sentiment.
+
+**Why the short form.** The mystic-chords sentence is the famous one, but it runs about sixty words on
+its own and a speech bubble on a phone will not hold the whole paragraph. The trim ends where a
+sentence ends.
+
+**Source:** First Inaugural Address, March 4, 1861. *The American Presidency Project.*
+**Link:** https://www.presidency.ucsb.edu/documents/inaugural-address-34
+**Also:** https://avalon.law.yale.edu/19th_century/lincoln1.asp (Avalon Project, Yale Law School)
+**Status:** ✅ Verified at source, and cross-read against Avalon — the two transcriptions agree
+character for character. **One trap:** there is **no comma after "strained"** in either, and it is
+"Though passion may have strained **it**", not "them". Reprints commonly add the comma.
+
+---
+
+### Abraham Lincoln — First Inaugural Address *(the only true sovereign)*
+
+> "A majority held in restraint by constitutional checks and limitations, and always changing easily
+> with deliberate changes of popular opinions and sentiments, is the only true sovereign of a free
+> people."
+
+**Context:** Preceded by "Plainly the central idea of secession is the essence of anarchy." Lincoln is
+rejecting minority rule and mob majority in the same breath — the qualifying clause between the commas
+is the whole distinction, which is why it is not trimmed.
+
+**Source:** First Inaugural Address, March 4, 1861. *The American Presidency Project.*
+**Link:** https://www.presidency.ucsb.edu/documents/inaugural-address-34
+**Also:** https://avalon.law.yale.edu/19th_century/lincoln1.asp (Avalon Project, Yale Law School)
+**Status:** ✅ Verified at source, and cross-read against Avalon — identical in both. **"sentiments"**
+is plural; both commas are in the source.
+
+> **Note for anyone extending the Lincoln entries.** He has almost nothing on party spirit itself — he
+> was a working party politician who helped build one, so the Washington/Adams register is not
+> available from him. What he offers this pool is self-government and reconciliation.
+>
+> **Do not add** *"I am a firm believer in the people. If given the truth, they can be depended upon to
+> meet any national crisis. The great point is to bring them the real facts."* It circulates widely and
+> fits this pool almost too neatly, but no primary source for it was found — it traces to secondhand
+> recollection. Same category as the Yancey line under Removed.
+>
+> Candidates that were sourced and read but not taken, so the work is not repeated: the **Lyceum
+> Address** (January 27, 1838) — "If destruction be our lot, we must ourselves be its author and
+> finisher. As a nation of freemen, we must live through all time, or die by suicide" — read at
+> abrahamlincolnonline.org (follows Basler) and teachingamericanhistory.org (Miller, 1907), identical
+> in both; the authoritative Basler text at quod.lib.umich.edu returns HTTP 403 to automated requests,
+> so it needs one browser click before it could ship. The **Ottawa debate** (August 21, 1858) — "In
+> this and like communities, public sentiment is everything. With public sentiment, nothing can fail;
+> without it nothing can succeed" — read at teachingamericanhistory.org (Sparks, 1908) and confirmed
+> at the NPS Lincoln Home site; note his spelling is "moulds". And the **Gettysburg Address**, which
+> was passed over because the five manuscript copies differ — "under God" is absent from the Nicolay
+> copy — so any entry must name which copy it prints (Bliss is the usual choice, the only one Lincoln
+> signed).
 
 ---
 
