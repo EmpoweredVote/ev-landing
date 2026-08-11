@@ -350,12 +350,14 @@
   Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
   a rolling 90-day window with internal/test traffic excluded.  refresh.mjs does NOT
   touch these — it only reads the platform Postgres DB.  Re-pull from PostHog and edit
-  by hand when the story changes.  Last pulled: 90 days ending August 6, 2026.
+  by hand when the story changes.  Last pulled: 90 days ending August 11, 2026.
+  Pulled from dashboard 1840760 (Compass — Top of Funnel) with refresh=blocking, so the
+  four figures below come from the same insights the dashboard shows, not from ad-hoc queries.
 -->
 <div class="h2row"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
 <div class="push">
   <h3 class="serif">The reach problem, stated plainly</h3>
-  <p>The Compass isn't failing to convert &mdash; it's failing to get seen.  Of everyone who reached it in the last 90 days, <b>9 in 10 engaged and nearly 4 in 10 completed a full calibration</b>; that is a healthy flow.  The catch is the denominator: <b>only 82 people reached it in a quarter</b>.  The main site drew 212 unique visitors in the same window, and most never made it to the Compass.  The highest-leverage work in front of us isn't rewording the calibration questions &mdash; it's getting the tool in front of the voters already in our ecosystem.  Every figure here moved up again, and this time the 30-day column moved with it: the Compass is up 12 visitors on the quarter and 11 on the month, and <b>completed calibrations in the last 30 days rose from 10 to 13</b> &mdash; the number that fell last briefing.  On totals this small that is still noise rather than a trend, and nothing shipped this cycle was aimed at traffic, so read it as the ceiling holding rather than lifting.  The honest summary is unchanged: the constraint is how many people arrive, not what they do when they get here.</p>
+  <p>The Compass isn't failing to convert &mdash; it's failing to get seen.  Of everyone who reached it in the last 90 days, <b>9 in 10 engaged and more than a third completed a full calibration</b>; that is a healthy flow.  The catch is the denominator: <b>only 85 people reached it in a quarter</b>.  The main site drew 230 unique visitors in the same window, and most never made it to the Compass.  The highest-leverage work in front of us isn't rewording the calibration questions &mdash; it's getting the tool in front of the voters already in our ecosystem.  <b>The two columns disagree this time, and the 30-day one is the more current reading.</b>  Every 90-day total rose again &mdash; the quarter is still carrying an earlier surge &mdash; but on the month the Compass fell from 49 visitors to 40, <b>completed calibrations fell from 13 to 9</b>, and Essentials, Read &amp; Rank and Treasury Tracker each slipped a little too.  On totals this small every one of those moves is noise rather than a trend, and nothing shipped this cycle was aimed at traffic; report it in both directions or the number means nothing when it goes up.  The honest summary is unchanged: the constraint is how many people arrive, not what they do when they get here.</p>
 </div>
 <div class="cols" style="margin-top:18px">
   <div class="card">
@@ -364,38 +366,38 @@
     <div class="funnel">
       <div class="fhead"><span class="fcol">30d</span><span class="fcol">90d</span></div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount"><span class="fcol f30">49</span><span class="fcol f90">82</span></span></div>
+        <div class="frow"><span class="flabel">Landed on the Compass</span><span class="fcount"><span class="fcol f30">40</span><span class="fcol f90">85</span></span></div>
         <div class="ftrack"><div class="fbar b1" style="width:100%">100%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount"><span class="fcol f30">42</span><span class="fcol f90">74</span></span></div>
-        <div class="ftrack"><div class="fbar b2" style="width:90%">90%</div></div>
+        <div class="frow"><span class="flabel">Loaded the quiz</span><span class="fcount"><span class="fcol f30">34</span><span class="fcol f90">77</span></span></div>
+        <div class="ftrack"><div class="fbar b2" style="width:91%">91%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount"><span class="fcol f30">13</span><span class="fcol f90">30</span></span></div>
-        <div class="ftrack"><div class="fbar b3" style="width:37%">37%</div></div>
+        <div class="frow"><span class="flabel">Completed a calibration</span><span class="fcount"><span class="fcol f30">9</span><span class="fcol f90">31</span></span></div>
+        <div class="ftrack"><div class="fbar b3" style="width:36%">36%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Compared to a politician</span><span class="fcount"><span class="fcol f30">8</span><span class="fcol f90">13</span></span></div>
+        <div class="frow"><span class="flabel">Compared to a politician</span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">14</span></span></div>
         <div class="ftrack"><div class="fbar b4" style="width:16%">16%</div></div>
       </div>
     </div>
-    <p class="fcap">&ldquo;Loaded the quiz&rdquo; fires on page load, so read it as &ldquo;didn't bounce.&rdquo;  The first real signal of intent is completing a calibration &mdash; and 4 in 10 of everyone who arrives does.</p>
+    <p class="fcap">&ldquo;Loaded the quiz&rdquo; fires on page load, so read it as &ldquo;didn't bounce.&rdquo;  The first real signal of intent is completing a calibration &mdash; and more than a third of everyone who arrives does.</p>
   </div>
   <div class="card">
     <h3 class="serif">How many arrive</h3>
     <p>Unique visitors per app across the empowered.vote ecosystem, last 30 days and the full quarter.  Bars scale to the 90-day count.</p>
     <div class="eco">
       <div class="ecohead"><span></span><span></span><span class="eh">30d</span><span class="eh">90d</span></div>
-      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">96</span><span class="eval">212</span></div>
-      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:55%"></span></span><span class="eval e30">50</span><span class="eval">117</span></div>
-      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:48%"></span></span><span class="eval e30">39</span><span class="eval">101</span></div>
-      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:39%"></span></span><span class="eval e30">49</span><span class="eval">82</span></div>
-      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:28%"></span></span><span class="eval e30">42</span><span class="eval">59</span></div>
-      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:22%"></span></span><span class="eval e30">13</span><span class="eval">46</span></div>
-      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:21%"></span></span><span class="eval e30">29</span><span class="eval">44</span></div>
+      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">100</span><span class="eval">230</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:51.7%"></span></span><span class="eval e30">42</span><span class="eval">119</span></div>
+      <div class="ecorow"><span class="ehost">financials</span><span class="etrack"><span class="ebar" style="width:47%"></span></span><span class="eval e30">39</span><span class="eval">108</span></div>
+      <div class="ecorow me"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:37%"></span></span><span class="eval e30">40</span><span class="eval">85</span></div>
+      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:27.8%"></span></span><span class="eval e30">45</span><span class="eval">64</span></div>
+      <div class="ecorow"><span class="ehost">treasury tracker</span><span class="etrack"><span class="ebar" style="width:20.4%"></span></span><span class="eval e30">12</span><span class="eval">47</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:19.6%"></span></span><span class="eval e30">26</span><span class="eval">45</span></div>
     </div>
-    <p class="fcap">One new Compass visitor roughly every 26 hours.  The audience already exists on the platform; the gap is the hand-off into the Compass, not the Compass itself.</p>
+    <p class="fcap">One new Compass visitor roughly every 25 hours.  The audience already exists on the platform; the gap is the hand-off into the Compass, not the Compass itself.</p>
   </div>
 </div>
 
@@ -434,7 +436,7 @@
 </div>
 
 <footer>
-  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">August 11, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 90 days ending August 6, 2026, with internal and test traffic excluded.  Stance area groupings combine state and local coverage; the ~1,426 candidate rows are records not yet linked to an office.  The coverage table's rows sum to 1 politician and 3 stances short of the headline totals &mdash; rows whose office no longer resolves to a government.  That is the same single unresolved office as the last two briefings, re-checked against this cycle's 466 retirements and 450 repairs, so the cleanup item is holding.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
+  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">August 11, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 90 days ending August 11, 2026, with internal and test traffic excluded.  Stance area groupings combine state and local coverage; the ~1,426 candidate rows are records not yet linked to an office.  The coverage table's rows sum to 1 politician and 3 stances short of the headline totals &mdash; rows whose office no longer resolves to a government.  That is the same single unresolved office as the last two briefings, re-checked against this cycle's 466 retirements and 450 repairs, so the cleanup item is holding.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
 </footer>
 
 </div>
