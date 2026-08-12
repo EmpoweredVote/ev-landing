@@ -39,9 +39,19 @@ const fmtM = (n) => (Number(n) / 1e6).toFixed(1).replace(/\.0$/, '') + ' million
 const fmtB = (n) => (Number(n) / 1e9).toFixed(1).replace(/\.0$/, '') + ' billion';
 
 // ---------- queries ----------
+// Curated vs discovery pool is a STRUCTURAL question, not a source-name one.  Testing
+// source = 'cal_access_discovery' caught California and missed Indiana entirely: 672 records seeded
+// from Indiana candidate-committee filings were being counted as curated officials.  Migration 1702
+// made the real test one column — essentials.politician_occupancy_evidence.is_placeholder_occupancy,
+// which asks whether the office carries geography (district, chamber or city) rather than where the
+// person came from.  Provenance is the wrong test: every incumbent seeking re-election has a
+// candidate committee.  The two figures below now sum the way migration 1702 describes: 77,002
+// placeholder rows in the pool, everyone else curated.
+const PLACEHOLDER = `EXISTS (SELECT 1 FROM essentials.politician_occupancy_evidence e
+                             WHERE e.politician_id = p.id AND e.is_placeholder_occupancy)`;
 const core = await one(`SELECT
-  (SELECT count(*) FROM essentials.politicians WHERE coalesce(source,'') <> 'cal_access_discovery') AS pols_curated,
-  (SELECT count(*) FROM essentials.politicians WHERE source = 'cal_access_discovery') AS pool,
+  (SELECT count(*) FROM essentials.politicians p WHERE NOT ${PLACEHOLDER}) AS pols_curated,
+  (SELECT count(*) FROM essentials.politicians p WHERE ${PLACEHOLDER}) AS pool,
   (SELECT count(*) FROM inform.politician_answers) AS stances,
   (SELECT count(DISTINCT politician_id) FROM inform.politician_answers) AS pols_with_stances,
   (SELECT count(*) FROM inform.compass_topics) AS topics,
@@ -115,6 +125,12 @@ const byState = await all(`
   FROM (SELECT st, pid FROM by_term
         UNION SELECT st, pid FROM by_office
         UNION SELECT st, pid FROM by_repr) u
+  -- ...and then take the discovered candidates back out.  Adding by_repr above pulled in 7 Indiana
+  -- records whose "office" is a placeholder with no geography — they are people we found in
+  -- candidate-committee filings, not sitting officials, and they had Indiana reading 27 where it
+  -- holds 20.  Migration 1702's view is the test; a source-name test misses this class by design.
+  WHERE NOT EXISTS (SELECT 1 FROM essentials.politician_occupancy_evidence e
+                    WHERE e.politician_id = u.pid AND e.is_placeholder_occupancy)
   GROUP BY 1`);
 
 // Campaign finance (FEC).  Wrapped: if the schema is absent, leave the spans as-is.
