@@ -71,5 +71,24 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   that sum is what catches this class of error.  Note it catches only *missing*
   rows — a wrong number that still sums will pass, which is how the Wisconsin
   undercount survived a table that reconciled.
+- **…and then exclude placeholder occupancy, or the fix above over-corrects.**
+  Reading `representing_state` recovers real officials whose office has no
+  chamber, but it also sweeps in **discovered candidates** — names seeded from
+  campaign-finance filings onto placeholder offices, which migration 1459 turned
+  into open-ended terms.  Of 83,291 rows in the current-holder view only ~5,476
+  rest on more than a placeholder.  Test **structurally**, via migration 1702:
+
+  ```sql
+  AND NOT EXISTS (SELECT 1 FROM essentials.politician_occupancy_evidence e
+                  WHERE e.politician_id = p.id AND e.is_placeholder_occupancy)
+  ```
+
+  🔴 Never test on provenance (`source = 'cal_access_discovery'`) — it caught
+  California and missed Indiana, leaving 672 candidates counted as curated
+  officials and Indiana's map tile reading 27 where it holds 20.  Never test on
+  `has_candidate_committee` either: every incumbent seeking re-election has one.
+  A real seat carries geography; a placeholder carries none.  The two rules pull
+  in opposite directions and the map needs **both**, in this order — that is why
+  they are written down together.
 - Update narrative sections in a strategy session (or by hand) whenever the
   story changes, not just the numbers.
