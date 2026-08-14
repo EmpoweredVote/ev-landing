@@ -764,6 +764,13 @@
         }
         footer a:hover { color: var(--heading); }
         footer .links { display: inline-flex; gap: 18px; }
+        /* Own line under brand/links: width:100% forces the wrap in row mode and is a no-op
+           once .wrap goes column on a phone (a flex-basis would have meant HEIGHT there). */
+        footer .legal {
+            width: 100%;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
 
         /* ---------------- NEWSLETTER SIGN-UP ---------------- */
         .sr-only {
@@ -1551,6 +1558,12 @@
                     <button type="submit" class="btn btn-primary" tabindex="-1">Subscribe</button>
                 </form>
             </span>
+            <!-- The EIN is public anyway (IRS TEOS, and the 990s once we have them), so printing it
+                 costs nothing and unblocks employer-match and DAF flows, which are EIN-keyed. The
+                 501(c)(3) claim itself lives in the hero .meta-row. Never pair this with
+                 bank/routing details or a SIGNED W-9 — that combination is what makes
+                 payment-redirection fraud easy. -->
+            <span class="legal">EIN 33-1841708</span>
         </div>
     </footer>
 
