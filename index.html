@@ -20,7 +20,14 @@
     <style>
         :root {
             /* Design system tokens (from ev-ui) */
-            --bg: #F7F7F8;
+            /* Light-mode palette sampled from Aditi's pass, Figma node 4197:519 ("Style Guide"
+               canvas > Section 4 > frame "4"). She kept our type colours and accents exactly
+               (#1C1C1C ink, #00657C teal, #FF5740 coral) and changed only the surfaces, so the
+               upgrade here is band + tint values — no geometry, no new selectors.
+               --bg is the tinted band: it already alternates against --card white section by
+               section (hero/how/footer tinted, why/talks white), so cooling this one value
+               reproduces her banding. */
+            --bg: #F2F7F8;
             --card: #FFFFFF;
             --heading: #1C1C1C;
             --body: #535964;
@@ -31,10 +38,13 @@
             --coral: #FF5740;
             --yellow: #FED12E;
 
-            /* Derived */
-            --yellow-soft: #FFF6CC;
-            --teal-soft: #E6F0F3;
-            --coral-soft: #FFE7E2;
+            /* Derived — the note-card pastels, sampled off Aditi's cards. These sit ON the tinted
+               --bg band, which is why they read greyer than a tint mixed against white would:
+               picking brighter values here makes the cards pop off the band instead of settling
+               into it. */
+            --yellow-soft: #F3F5EC;
+            --teal-soft: #E4EEF0;
+            --coral-soft: #F3EDED;
 
             --shadow-sm: 0 1px 2px rgba(15, 30, 40, 0.05);
             --shadow-md: 0 8px 24px rgba(15, 30, 40, 0.08);
@@ -660,6 +670,23 @@
             background: var(--yellow-soft);
         }
         .note.n-money .marker .glyph { background: var(--yellow); color: var(--heading); }
+
+        /* Aditi tints all five notes to match their edge accent; n-money and n-follow already
+           carried theirs. LIGHT ONLY on purpose: in dark mode the -soft tokens are deep
+           browns/teals (#2A2400, #2B1410...), so an unscoped rule here would repaint three dark
+           cards nobody asked to change. :root:not([data-theme="dark"]) rather than
+           [data-theme="light"] so the tints survive if the inline theme script never runs. */
+        :root:not([data-theme="dark"]) .note.n-alpha { background: var(--coral-soft); }
+        :root:not([data-theme="dark"]) .note.n-team  { background: var(--yellow-soft); }
+        :root:not([data-theme="dark"]) .note.n-ai    { background: var(--teal-soft); }
+        /* Measured: --muted markers land at 4.09–4.39 against these tints, under AA's 4.5 (they
+           were 4.83 on white), so they move to --body (~6.0) — the same swap .note.n-follow
+           already documents. n-money is in the list because it was ALREADY failing at 4.44 on
+           the old #FFF6CC, so leaving it out would keep a known miss. */
+        :root:not([data-theme="dark"]) .note.n-alpha .marker,
+        :root:not([data-theme="dark"]) .note.n-team .marker,
+        :root:not([data-theme="dark"]) .note.n-ai .marker,
+        :root:not([data-theme="dark"]) .note.n-money .marker { color: var(--body); }
 
         @media (min-width: 880px) {
             .note.n-team   { grid-column: span 5; }
