@@ -38,13 +38,24 @@
             --coral: #FF5740;
             --yellow: #FED12E;
 
-            /* Derived — the note-card pastels, sampled off Aditi's cards. These sit ON the tinted
-               --bg band, which is why they read greyer than a tint mixed against white would:
-               picking brighter values here makes the cards pop off the band instead of settling
-               into it. */
-            --yellow-soft: #F3F5EC;
-            --teal-soft: #E4EEF0;
-            --coral-soft: #F3EDED;
+            /* Derived tints. Aditi's pass turned out to be a single number: every card fill in her
+               frame is one of OUR accents mixed into the surface behind it at ~6% (measured off a
+               raw decode of node 4197:519 — #F3F5EC, #E4EEF0, #F3EDED on the band; #FBF8F1,
+               #F0F6F7, #FFF5F4 on white). Our previous hand-picked values sat at 10–24%, which is
+               why hers read so much quieter. So this is one dial, not six hexes.
+               -soft = on the --bg band (the notes). -wash = on --card white (the why cards).
+               We run at 18% rather than her 6% on purpose: adopting her literal values drained the
+               two cards that already had colour (n-money was ~24%, n-follow ~14%) and the page read
+               washed out. 18% keeps her structure and hue direction at roughly the old punch.
+               Raising this further is safe until the teal note crosses AA — it measures 4.98 here
+               against --body, so ~20% is the ceiling before contrast needs rechecking. */
+            --tint: 18%;
+            --yellow-soft: color-mix(in srgb, var(--yellow) var(--tint), var(--bg));
+            --teal-soft:   color-mix(in srgb, var(--teal)   var(--tint), var(--bg));
+            --coral-soft:  color-mix(in srgb, var(--coral)  var(--tint), var(--bg));
+            --yellow-wash: color-mix(in srgb, var(--yellow) var(--tint), var(--card));
+            --teal-wash:   color-mix(in srgb, var(--teal)   var(--tint), var(--card));
+            --coral-wash:  color-mix(in srgb, var(--coral)  var(--tint), var(--card));
 
             --shadow-sm: 0 1px 2px rgba(15, 30, 40, 0.05);
             --shadow-md: 0 8px 24px rgba(15, 30, 40, 0.08);
@@ -309,6 +320,23 @@
             padding: 36px 0 44px 0;
             border-top: 1px solid var(--border);
         }
+        /* Aditi's Why items are padded, tinted cards rather than our flush columns. The fill can't
+           ship without the side padding — copy would run straight into the tint edge — so the two
+           travel together. LIGHT ONLY, same call as the note tints: in dark the -soft tokens are
+           deep browns and the flush-column look is what's live, so doing this there would be an
+           unasked-for dark redesign.
+           The three Why Bobits anchor to `.why-item:nth-of-type(N) .why-icon` (ev-figures.js) and
+           position off that element's rect, so they follow the new padding rather than needing
+           their own offset. */
+        :root:not([data-theme="dark"]) .why-grid { gap: 24px; }
+        :root:not([data-theme="dark"]) .why-item {
+            padding: 32px 28px 36px;
+            border-top: none;
+            border-radius: var(--radius-card);
+        }
+        :root:not([data-theme="dark"]) .why-item:nth-of-type(1) { background: var(--yellow-wash); }
+        :root:not([data-theme="dark"]) .why-item:nth-of-type(2) { background: var(--teal-wash); }
+        :root:not([data-theme="dark"]) .why-item:nth-of-type(3) { background: var(--coral-wash); }
         .why-item .idx {
             font-size: 0.72rem;
             font-weight: 700;
@@ -950,6 +978,9 @@
             .section-h { max-width: 100%; font-size: 1.55rem; }
             .section-sub { font-size: 0.97rem; margin-bottom: 32px; }
             .why-item { padding: 28px 0 36px; }
+            /* the light card treatment out-specifies the line above, so it needs its own phone
+               padding — otherwise the cards keep desktop insets on a 390px screen */
+            :root:not([data-theme="dark"]) .why-item { padding: 26px 20px 30px; }
             .why-icon { height: 72px; margin-bottom: 22px; }
             .why-icon img { height: 72px; }
             .card { padding: 24px 22px 22px; min-height: 0; }
