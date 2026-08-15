@@ -3436,8 +3436,10 @@
             ctx.fillStyle = cssVar('--border', '#E5E7EB');
             ctx.fillRect(w / 2 - 16, h - 10, 32, 8);
           }
-          // furniture (desk/chair) drawn in a muted neutral; screen picks up --bg
-          var furn = cssVar('--border', '#B4B0A6');
+          // furniture (desk/chair/monitor frame); screen picks up --bg so it still reads as a screen.
+          // --fig-furniture, not --border: once the why card gained a coral tint, --border was
+          // invisible against it in light mode. Falls back to the old --border if the token is gone.
+          var furn = cssVar('--fig-furniture', cssVar('--border', '#B4B0A6'));
           drawFig(ctx, ox, py0, ws, false, anim.frame(tt),
             { color: color, swirl: anim.swirl, laptop: anim.laptop, book: anim.book, time: tt,
               chair: anim.chair, desk: anim.desk, chairColor: furn, deskColor: furn,
