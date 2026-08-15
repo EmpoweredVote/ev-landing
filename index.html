@@ -367,6 +367,12 @@
             margin-bottom: 10px;
             font-variant-numeric: tabular-nums;
         }
+        /* --coral at 11.5px measures 2.37-2.92 against the why-card tints — and was already 3.14 on
+           plain white before those tints existed — all under AA's 4.5. This is --coral darkened to
+           62%, the point where it clears 4.5 on all three cards (5.26 worst). 80% only reaches 3.53
+           and 70% still misses the teal card at 4.38, so it genuinely has to come down this far.
+           Light only: in dark, --coral is #FF6B52 on a near-black card and reads fine. */
+        :root:not([data-theme="dark"]) .why-item .idx { color: #9E3628; }
         .why-item h3 {
             font-size: 1.18rem;
             font-weight: 700;
