@@ -388,8 +388,8 @@
         <div class="ftrack"><div class="fbar b1" style="width:7%">7%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Treasury &mdash; opened anything past the front page <span style="color:var(--dim);font-weight:400">(of 152)</span></span><span class="fcount"><span class="fcol f30">7</span><span class="fcol f90">7</span></span></div>
-        <div class="ftrack"><div class="fbar b5" style="width:5%">5%</div></div>
+        <div class="frow"><span class="flabel">Treasury &mdash; drilled into the budget chart <span style="color:var(--dim);font-weight:400">(of an unmeasured denominator &mdash; see below)</span></span><span class="fcount"><span class="fcol f30">7</span><span class="fcol f90">7</span></span></div>
+        <div class="ftrack"><div class="fbar b5" style="width:5%">n/a</div></div>
       </div>
     </div>
     <p class="fcap"><b>Two of these are start problems, not finish problems.</b>  Only 7 people <i>started</i> a trivia game in a quarter and 5 finished &mdash; a 71% finish rate on almost no starts.  Read &amp; Rank is the same shape: 18 races started, 10 ballots revealed.  The Compass is the opposite: 67 of its 97 visitors opened the quiz and 26 saw it through.</p>
@@ -406,8 +406,13 @@
       <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:27.8%"></span></span><span class="eval e30">48</span><span class="eval">70</span></div>
       <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:19.4%"></span></span><span class="eval e30">23</span><span class="eval">49</span></div>
     </div>
-    <p class="fcap"><b>Put the two cards side by side and Treasury Tracker is the finding.</b>  It is the second most-visited thing we run and holds the largest dataset on the platform &mdash; 2.3 million budget line items &mdash; and <b>seven people in a quarter opened any of it</b>.  The sleeper giant is asleep at the front door, and that is a product problem we can actually act on, unlike the traffic numbers above it.</p>
+    <p class="fcap"><b>Treasury Tracker is the second most-visited thing we run</b> and holds the largest dataset on the platform &mdash; 2.3 million budget line items.  Whether those 152 people <i>reached a budget</i> is the one thing this page cannot tell you; see the note below.</p>
   </div>
+</div>
+<div class="card" style="margin-top:18px;border-left:3px solid var(--amber)">
+  <h3 class="serif">A number this page published yesterday, withdrawn</h3>
+  <p style="max-width:92ch">Yesterday's version of this section said <b>seven people in a quarter opened any of Treasury Tracker</b>, as 5% of 152 visitors, and called it the sharpest finding on the page.  <b>The rate was not sound and it is withdrawn.</b>  The events are fine &mdash; clicking a department in the icicle chart to go a level deeper <i>is</i> counted, because the drill event is driven off the chart's own navigation state and covers the icicle, the sunburst and the category list alike.  The denominator is the problem.  Treasury pushes its in-app navigation into the URL but <b>never captures a pageview for it</b>, so every one of those 152 visitors is recorded against the bare domain and nothing else.  Essentials, Read &amp; Rank and Civic Trivia do capture their route changes, which is why their rates above are comparable and this one is not.  The app also opens on an entity picker rather than on a budget, so an unknown share of those 152 never had a chart in front of them to drill.  Comparing &ldquo;everyone who loaded the domain&rdquo; against &ldquo;people who clicked inside a budget&rdquo; reads as a verdict on the product when it is mostly a verdict on our instrumentation.</p>
+  <p style="margin-top:10px;max-width:92ch"><b>And the direction was wrong too.</b>  &ldquo;Seven people&rdquo; is not seven glances: those few produced <b>56 drills into the chart, 29 line-item views, 41 entity selections and 13 year changes</b> &mdash; about fourteen drills each.  The handful who reach a budget use it hard.  What we cannot yet say is how many people reached one at all.  <b>The fix is a pageview on in-app navigation</b>, which every other app on this list already sends; until it ships, Treasury's engagement rate is unmeasured rather than low, and this page will say unmeasured.</p>
 </div>
 
 <div class="h2row"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>

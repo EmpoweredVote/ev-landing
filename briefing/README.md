@@ -51,6 +51,28 @@ Two traps in that table, both already paid for:
   Both sides are unique people over the same window, which makes the ratio fair,
   but a person can fire the action without a `$pageview` attributed to that
   host.  Say "of 152", never "converted".
+- 🔴 **Treasury has no usable denominator, so do not publish a rate for it.**
+  This one was published wrong on 2026-08-15 and withdrawn the next day.  The
+  *events* are sound — `treasury_category_drilled` is driven off the chart's
+  `navigationPath`, so the icicle (`BudgetIcicle.onPathClick`), the sunburst and
+  the category list are all covered, and it fires only on a forward drill.  The
+  problem is the other side of the ratio: Treasury calls `history.pushState`
+  for in-app navigation but **never captures a `$pageview` for it**, so every
+  visitor is recorded against the bare host and nothing else — confirmed by the
+  distinct `$current_url` values, which for Treasury are only
+  `https://treasurytracker.empowered.vote/` and `https://financials.empowered.vote/`
+  while Essentials and Read & Rank show `/politician/…`, `/results?…`,
+  `/race/…/read`.  On top of that the app opens on an *entity picker*
+  (`selectedEntity` starts `null`), so an unknown share of its visitors never
+  had a chart to drill.  Until Treasury sends a pageview on navigation, report
+  it as **unmeasured, not low** — and check the raw event counts before calling
+  anything quiet: in the 90 days to 2026-08-16 those few users produced 56
+  drills, 29 line-item views, 41 entity selections and 13 year changes.
+
+The general lesson, worth applying to any app added here later: **a low
+unique-user count is a claim about instrumentation until you have checked the
+code path.**  Read where the event fires and whether the app captures its own
+navigation before writing a sentence about user behaviour.
 
 The platform-wide framing numbers (visitors, sessions, average session
 duration, bounce rate) come from `query-web-overview` with no host filter.
