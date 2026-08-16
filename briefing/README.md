@@ -16,14 +16,44 @@ ACFR states bullet, and the **Reach & Engagement** figures (funnel + per-app
 visitors).  Judgment stays human; only facts are automated.
 
 The Reach & Engagement numbers are the one set that does NOT come from the
-platform database — they are product-analytics figures from PostHog, and
-`refresh.mjs` does not touch them.  When you refresh them, pull from the live
-**Compass — Top of Funnel** dashboard so the page never drifts from the source:
-<https://us.posthog.com/project/444996/dashboard/1840760> (funnel 30d/90d +
-unique visitors by app).  Update the funnel steps, the visitor bars, and the
-"90 days ending …" date in the section and the footer by hand.  Visitor bar
-widths are a percentage of the largest 90-day count (empowered.vote), not of
-100 visitors — recompute them when the top row moves.
+platform database — they are product-analytics figures from PostHog (project
+444996), and `refresh.mjs` does not touch them.  Update the bars, the counts,
+and the "30 and 90 days ending …" date in the section and the footer by hand.
+Visitor bar widths are a percentage of the largest 90-day count
+(empowered.vote), not of 100 visitors — recompute them when the top row moves.
+
+**The section is no longer Compass-shaped.**  It used to be the *Compass — Top
+of Funnel* dashboard rendered as HTML.  As of 2026-08-15 it compares every app
+on the same two questions — how many arrive, and how many do the one thing that
+app exists for — so it is pulled with ad-hoc `query-trends` calls instead.  Run
+every one with `filterTestAccounts: true`, `math: "dau"`, and
+`trendsFilter.display: "ActionsBarValue"` so each series returns one unique-person
+count for the whole window.  Arrivals are `$pageview` broken down by `$host`.
+The per-app actions are:
+
+| App | The action | Event |
+| --- | --- | --- |
+| Compass | completed a calibration | `compass_calibration_completed` |
+| Read & Rank | revealed a ballot | `readrank_ballot_revealed` |
+| Essentials | looked up an official | `essentials_politician_viewed` |
+| Civic Trivia | finished a game | `ctc_game_completed` |
+| Treasury | anything past the front page | OR of `treasury_line_item_viewed`, `treasury_category_drilled`, `treasury_entity_selected`, `treasury_search`, `treasury_year_changed`, `treasury_visualization_changed` |
+| Main site | clicked through to an app | OR of `landing_tool_clicked`, `landing_app_link_clicked`, `landing_financials_clicked` |
+
+Two traps in that table, both already paid for:
+
+- **Treasury Tracker lives on two hostnames.**  `financials.empowered.vote` and
+  `treasurytracker.empowered.vote` are the same app, and a `$host` breakdown
+  splits it into two rows that each look like a minor app.  Briefings before
+  2026-08-15 published it that way.  Union the hosts (`tt.empowered.vote` too)
+  before comparing it to anything.
+- **Comparing a per-event count to a per-app total is a rate, not a funnel.**
+  Both sides are unique people over the same window, which makes the ratio fair,
+  but a person can fire the action without a `$pageview` attributed to that
+  host.  Say "of 152", never "converted".
+
+The platform-wide framing numbers (visitors, sessions, average session
+duration, bounce rate) come from `query-web-overview` with no host filter.
 
 ## How to refresh
 
