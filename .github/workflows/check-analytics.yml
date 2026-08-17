@@ -12,6 +12,21 @@ name: Check PostHog analytics coverage
 # Redirect stubs (meta-refresh pages that immediately bounce to a subdomain
 # with its own tracking, e.g. donate.html -> financials.empowered.vote) are
 # auto-skipped — they never render, so there is nothing to instrument.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# THIS CHECK WARNS. IT DOES NOT BLOCK MERGES. That's intentional—for now.
+# Chris Andrews, 2026-08-17
+#
+# If this check shows a warning, the change can still be merged. Our analytics
+# setup is currently understood by only a small number of people, so we don't
+# want to block someone because they can't fix a warning on their own.
+#
+# In other words: seeing this warning after a merge is expected. Nothing is broken.
+#
+# If you see a warning, add the line it asks for, or ask Chris for help.
+# If we later want this check to block merges, change it in:
+# Repository Settings → Branches → main
+# ─────────────────────────────────────────────────────────────────────────────
 
 on:
   push:
