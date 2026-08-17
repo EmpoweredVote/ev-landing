@@ -18,6 +18,38 @@ python3 -m http.server 5173
 # then visit http://localhost:5173
 ```
 
+## Analytics
+
+We use PostHog to see how many people visit each page and how long they stay.
+
+**Adding a new page? Put this line near the top of its `<head>`:**
+
+```html
+<script src="/analytics.js"></script>
+```
+
+That's the whole setup. Everything about how this site measures traffic lives in
+`analytics.js`, so if it ever needs changing, change it there — not in a page.
+
+There's an automatic check that warns when a page is missing that line. It
+exists because four pages (the three maps and the briefing) were quietly
+measuring nothing at all until 2026-08-17.
+
+**That check warns, but does not block merges** (Chris Andrews, 2026-08-17).
+Our analytics setup is currently understood by only a small number of people, so
+we don't want to block someone because they can't fix a warning on their own.
+That's intentional — for now. Please ask before changing it.
+
+### Two easy ways to misread the numbers
+
+- **PostHog's "avg time on page" isn't really an average.** It leans toward the
+  longest visits, and a browser tab left open counts the whole time — one visit
+  measured 63 days. Use the
+  [Time on page — median](https://us.posthog.com/project/444996/insights/aYA2KCir)
+  report instead; it shows the typical visit.
+- **Pages that instantly forward you elsewhere still get counted**, and show up
+  as visits lasting a fraction of a second. That's real, not a mistake.
+
 ## Deploy
 
 Configured for Render as a static site via `render.yaml`. Connect the repo on Render and it will publish `./` (root) on every push to `main`.
