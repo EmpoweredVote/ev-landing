@@ -1197,6 +1197,15 @@
             line-height: 1.55;
             font-style: italic;
         }
+        /* a Bobit talking in his own words (the hero greeter): no quote marks, not italic,
+           and no attribution line under it. Tap anywhere on it to dismiss (it has no link
+           to protect, unlike a quote), hence the pointer. */
+        .ev-quote .say {
+            margin: 0;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+        .ev-quote.ev-say { cursor: pointer; }
         .ev-quote .attrib { margin-top: 11px; font-size: 0.8rem; }
         .ev-quote .attrib a {
             color: var(--tone, var(--teal));

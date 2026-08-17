@@ -238,38 +238,55 @@
     h.tailIn.style.left = (tx - 8) + "px";
   }
 
+  // Two shapes of bubble, told apart by whether the line has a `who` to credit: a QUOTE (a
+  // reader citing a president — italic <q>, attribution, link to the source) or a Bobit SAYING
+  // something in his own words (the hero greeter — plain text, no attribution; an empty "— "
+  // under a greeting reads like a bug). Tail, placement, clamping and dismissal are shared.
   function open(anchor) {
     var el = document.createElement("div");
-    el.className = "ev-quote";
+    el.className = anchor.quote.who ? "ev-quote" : "ev-quote ev-say";
     el.setAttribute("role", "note");
     el.style.setProperty("--tone", anchor.tone);
 
-    var q = document.createElement("q");
-    q.textContent = anchor.quote.text;
+    if (anchor.quote.who) {
+      var q = document.createElement("q");
+      q.textContent = anchor.quote.text;
 
-    var at = document.createElement("div");
-    at.className = "attrib";
-    at.appendChild(document.createTextNode("— "));
-    var a = document.createElement("a");
-    a.href = anchor.quote.href;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.title = "Open the source";
-    a.textContent = anchor.quote.who;
-    at.appendChild(a);
-    var where = document.createElement("span");
-    where.className = "where";
-    where.textContent = anchor.quote.where;
-    at.appendChild(where);
+      var at = document.createElement("div");
+      at.className = "attrib";
+      at.appendChild(document.createTextNode("— "));
+      var a = document.createElement("a");
+      a.href = anchor.quote.href;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.title = "Open the source";
+      a.textContent = anchor.quote.who;
+      at.appendChild(a);
+      var where = document.createElement("span");
+      where.className = "where";
+      where.textContent = anchor.quote.where;
+      at.appendChild(where);
+
+      el.appendChild(q);
+      el.appendChild(at);
+    } else {
+      var say = document.createElement("p");
+      say.className = "say";
+      say.textContent = anchor.quote.text;
+      el.appendChild(say);
+    }
 
     var tail = document.createElement("span"); tail.className = "tail";
     var tailIn = document.createElement("span"); tailIn.className = "tail-in";
-
-    el.appendChild(q);
-    el.appendChild(at);
     el.appendChild(tail);
     el.appendChild(tailIn);
 
+    return mount(el, tail, tailIn, anchor);
+  }
+
+  // Shared by both bubble shapes: make the handle, wire the pause/dismiss listeners,
+  // place it above the head and fade it in.
+  function mount(el, tail, tailIn, anchor) {
     var h = {
       el: el, tail: tail, tailIn: tailIn,
       headX: anchor.headX, headY: anchor.headY,
@@ -278,8 +295,12 @@
       setHeld: function (v) { h.held = !!v; }
     };
 
-    // a click inside the bubble must not read as a click-off-to-dismiss
-    el.addEventListener("click", function (ev) { ev.stopPropagation(); });
+    // A quote bubble swallows clicks: it holds a link to the source, and closing the bubble
+    // out from under the finger reaching for that link would be maddening. A plain say-bubble
+    // has nothing to click, so it does the opposite and lets the click through to the
+    // document dismissal — on a phone it covers the very card it is talking about, and a tap
+    // on it that did nothing would be a trap.
+    if (anchor.quote.who) el.addEventListener("click", function (ev) { ev.stopPropagation(); });
     el.addEventListener("mouseenter", function () { h.pointerIn = true; });
     el.addEventListener("mouseleave", function () { h.pointerIn = false; });
     el.addEventListener("focusin", function () { h.focusIn = true; });

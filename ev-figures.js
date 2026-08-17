@@ -29,22 +29,55 @@
     var mx = -1e4, my = -1e4;
     document.addEventListener('mousemove', function (ev) { mx = ev.clientX; my = ev.clientY; }, { passive: true });
 
+    // ── THE GREETER, part 1: when to keep quiet ─────────────────────────────────────────
+    // Scroll into the hero having never highlighted a tool and the presenter Bobit flags you
+    // down — see drawPresenter for the gesture itself. These are the reasons he does not:
+    // anyone who has ever touched a tool, or who is signed in, has already found them.
+    var GREET_KEY = 'ev:greeted';                     // "this browser has met the tools"
+    var greetForce = location.hash === '#greeter';    // re-see it without clearing storage
+    function greetSeen() { try { return localStorage.getItem(GREET_KEY) === '1'; } catch (err) { return false; } }
+    function markGreetSeen() { try { localStorage.setItem(GREET_KEY, '1'); } catch (err) {} }
+    // Logged in? Read it off the banner menu at FIRE time rather than caching it: the silent
+    // SSO check is a fetch with a 3s budget, so at load we genuinely do not know yet.
+    function greetLoggedIn() { var lo = document.getElementById('menu-logout'); return !!(lo && !lo.hidden); }
+    // Only greet someone on their way DOWN past him. Coming back up to the hero you are
+    // already looking at the buttons, and being flagged down then reads as nagging.
+    var scrollDown = false, lastSY = window.scrollY || window.pageYOffset || 0;
+    window.addEventListener('scroll', function () {
+      var sy = window.scrollY || window.pageYOffset || 0;
+      if (sy !== lastSY) scrollDown = sy > lastSY;
+      lastSY = sy;
+    }, { passive: true });
+
     // when a hero tool is highlighted, the presenter Bobit points straight at THAT tool
     var featureOn = false, featureCX = 0, featureCY = 0;
+    var featureEverOn = false;   // ...and once you have, he never flags you down
     var logosWrap = document.querySelector('.showcase-logos');
     if (logosWrap) {
-      var aimAt = function (el) { var r = el.getBoundingClientRect(); featureOn = true; featureCX = r.left + r.width / 2; featureCY = r.top + r.height / 2; };
+      var aimAt = function (el) {
+        var r = el.getBoundingClientRect(); featureOn = true; featureCX = r.left + r.width / 2; featureCY = r.top + r.height / 2;
+        noteToolsFound();
+      };
       logosWrap.addEventListener('mouseleave', function () { featureOn = false; });
       logosWrap.addEventListener('focusout', function () { featureOn = false; });
       logosWrap.querySelectorAll('.logo-trigger').forEach(function (tr) {
         tr.addEventListener('mouseenter', function () { aimAt(tr); });
         tr.addEventListener('focus', function () { aimAt(tr); });
+        // a tap on a phone never produces a hover, so the tap itself has to count
+        tr.addEventListener('click', function () { noteToolsFound(); });
       });
+    }
+    // You found them yourself. Remember it for next visit, and if he is mid-sentence about
+    // it, let him drop the bubble and hand his arm back to pointing at what you highlighted.
+    function noteToolsFound() {
+      featureEverOn = true;
+      markGreetSeen();
+      entries.forEach(function (e) { if (e.gh) greetDismiss(e); });
     }
 
     // click to shove a rope Bobit / tip over a toddler
     document.addEventListener('click', function (ev) {
-      var hitQuote = false;
+      var hitBubble = false;
       entries.forEach(function (e) {
         // toddler: click him and he falls; the adult turns and throws up an arm
         if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
@@ -92,11 +125,21 @@
             return;   // ignore clicks landing mid-transition
           }
         }
+        // the greeter, mid-greeting: click him and he drops the bubble and stands down. The
+        // click-off branch below would close it anyway, but he needs the state change too, and
+        // clicking the Bobit who is talking to you is the obvious way to say "got it".
+        if (e.spec.presenter && e.gh && e._prSX != null) {
+          if (Math.abs(ev.clientX - e._prSX) < 40 && ev.clientY > e._prFY - 104 && ev.clientY < e._prFY + 8) {
+            hitBubble = true;                 // his own dismissal; don't double-handle it below
+            greetDismiss(e);
+            return;
+          }
+        }
         // seated reader: click → he looks up and his bubble opens; click again → back to his
         // book. No quote reached him → an apologetic shrug instead.
         if (e.spec.mode === 'seat' && e.spec.anim === 'read' && !e.spec.phone && e._qSX != null) {
           if (Math.abs(ev.clientX - e._qSX) < 40 && ev.clientY > e._qFY - 104 && ev.clientY < e._qFY + 8) {
-            hitQuote = true;
+            hitBubble = true;
             if (e.qs === 'read') {
               if (e.spec.quote) { e.qs = 'lookup'; e.qsT = 0; }
               else { e.qs = 'shrug'; e.qsT = 0; }
@@ -116,26 +159,31 @@
           e.scramble = 1;                                 // startled — scrambles like he might fall
         }
       });
-      // NB: the `return`s above only exit the forEach callback, so dismissal has to happen
-      // out here. Clicking anywhere that isn't a reader (or a bubble, which stops
-      // propagation) closes every open quote and sends those readers back to their books.
-      if (!hitQuote && window.EVQuotes && window.EVQuotes.openCount()) {
-        window.EVQuotes.closeAll();
-        entries.forEach(function (e) {
-          if (e.qh) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
-        });
-      }
+      // NB: the `return`s above only exit the forEach callback, so dismissal has to happen out
+      // here. Clicking anywhere that isn't the Bobit whose bubble it is — or a quote bubble,
+      // which stops propagation to protect its source link; a greeting bubble deliberately does
+      // not — closes every open bubble and sends its Bobit back to what he was doing.
+      if (!hitBubble) dismissBubbles();
     }, { passive: true });
 
-    // Esc dismisses every open quote bubble
+    // Esc dismisses every open bubble
     document.addEventListener('keydown', function (ev) {
       if (ev.key !== 'Escape') return;
+      dismissBubbles();
+    });
+
+    // Every dismissal path — click-off, Escape, a poof — closes every open bubble and has to
+    // reset the Bobit it belonged to: a dangling handle leaves a reader stuck out of his book,
+    // or the greeter stuck holding a point at nothing. This was three copies of the same
+    // forEach and the third one was written by hand each time; it is one function now.
+    function dismissBubbles() {
       if (!window.EVQuotes || !window.EVQuotes.openCount()) return;
       window.EVQuotes.closeAll();
       entries.forEach(function (e) {
         if (e.qh) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
+        if (e.gh) { e.gh = null; greetSettle(e); }
       });
-    });
+    }
 
     // ══ POOF & EXODUS ═══════════════════════════════════════════════════════════════════
     // Hold the right mouse button (or one finger) on any Bobit for 3s: smoke gathers, he
@@ -1413,14 +1461,9 @@
             POOF.victim.ab = null; POOF.victim.abPrevH = null; POOF.victim.abProp = null;
             if (POOF.victim.c.parentNode) POOF.victim.c.parentNode.removeChild(POOF.victim.c);
           }
-          if (window.EVQuotes) {
-            window.EVQuotes.closeAll();
-            // same reset as the click/Escape dismiss paths: a closed bubble must not leave a
-            // dangling handle on a reader, or he never goes back to his book
-            entries.forEach(function (e) {
-              if (e.qh) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
-            });
-          }
+          // same reset as the click/Escape dismiss paths: a closed bubble must not leave a
+          // dangling handle on its Bobit, or he never goes back to what he was doing
+          dismissBubbles();
         }
       } else if (POOF.phase === 'fizzle') {
         if (POOF.t >= 0.4) { POOF.phase = 'idle'; POOF.t = 0; POOF.victim = null; }
@@ -2952,6 +2995,153 @@
       return p;
     }
 
+    // ── THE PRESENTER (the hero host, standing on .meta-row) ─────────────────────────────
+    // He has three things he can be doing, in priority order: running the greeting, waving
+    // back at a pointer on him, or pointing at whichever tool is highlighted. Otherwise he
+    // just stands by under the EV logo. The greeting is the only one that takes him over
+    // completely — being flagged down and then interrupted mid-sentence reads as a glitch.
+    var GREET_WAVE = 1.5;     // raise-in (0.9s) plus a full wave cycle, and no longer: every
+                              // extra tenth is more scrolling he has to survive before he speaks
+    var GREET_TURN = 0.35;    // blend wave -> point, and point -> standing at the end
+    var GREET_SAY = 'Hi there! If you want to start off exploring our features, you can press one of those buttons up there!';
+    // WHEN he can speak up. He stands on .meta-row, at the very bottom of the hero and below
+    // the fold at rest, with the whole button column above him — so his moment is just after
+    // he scrolls INTO view, while the buttons are still up there to point at. Measured on a
+    // 1280x900 viewport, that window is roughly 60-400px of scroll; past it the column has
+    // left the screen and "one of those buttons up there" is a lie told while pointing at the
+    // banner. The first version fired when HE was on his way out and read exactly that badly.
+    var GREET_MIN_SCROLL = 60;   // they are moving, not just nudging the page
+    var GREET_HEAD_CLEAR = 70;   // px of viewport above his head, so the bubble has somewhere to go
+    var GREET_FOOT_CLEAR = 8;    // ...and all of him on screen: half a Bobit waving reads as a glitch
+    var GREET_BTN_FRAC = 0.45;   // to START, the column's bottom must be this far down the viewport
+    var GREET_BTN_MIN = 40;      // to CARRY ON, this many px of it must still be showing
+
+    // A straight arm aimed at a point on SCREEN. Both of his pointing jobs use it: the
+    // highlighted tool, and the whole button column when he is flagging you down.
+    function presentPose(tt, cr, w, oyS, tx, ty) {
+      var ox = cr.left + w / 2, oy = cr.top + oyS - 26;   // ~shoulder
+      // 0deg points straight DOWN in the rig, and he is drawn flipped, so dx is negated
+      var deg = Math.atan2(-(tx - ox), (ty - oy)) * 180 / Math.PI;
+      var p = Object.assign({}, R.REST);
+      p.lean = -3; p.headTilt = -8; p.bob = 1 + Math.sin(tt * 2) * 1.2;
+      p.armRU = deg - p.lean; p.armRF = deg - p.lean + Math.sin(tt * 3) * 2;
+      p.armLU = -12; p.armLF = -7;              // other arm at his side
+      return p;
+    }
+
+    // Where the buttons are on screen — or rather, where the part of them you can still SEE
+    // is. Pointing at the column's true centre is only right while all of it is showing; once
+    // you have scrolled most of it off the top he has to point at what is left. Returns null
+    // when there is nothing left worth pointing at.
+    //
+    // Also records the aim in DOCUMENT coords (`giAimDoc`), because once he is talking he must
+    // keep pointing at the buttons even after they leave — reprojecting that each frame keeps
+    // his arm on them (rising as they get further away), which is what a person does when you
+    // scroll past the thing they are pointing at. Freezing screen coords would swing his arm
+    // with the page instead.
+    // `vis` is how many px of the column are showing; callers decide what is enough.
+    function greetAim(e) {
+      var sx = window.scrollX || window.pageXOffset || 0;
+      var sy = window.scrollY || window.pageYOffset || 0;
+      if (!e._logosEl) return null;
+      var r = e._logosEl.getBoundingClientRect(), ih = window.innerHeight;
+      var top = Math.max(0, r.top), bot = Math.min(ih, r.bottom);
+      var vis = Math.max(0, bot - top);
+      if (vis >= GREET_BTN_MIN) {
+        var aim = { x: r.left + r.width / 2, y: (top + bot) / 2, vis: vis };
+        e.giAimDoc = { x: aim.x + sx, y: aim.y + sy };
+        return aim;
+      }
+      if (!e.giAimDoc) return null;
+      return { x: e.giAimDoc.x - sx, y: e.giAimDoc.y - sy, vis: vis };   // gone, but he knows where
+    }
+
+    // Has he been walked past by someone who never looked at the buttons? Every clause here
+    // is a reason to keep quiet, which is the point: he is a nudge for a first-timer who
+    // missed them, not a greeter for everyone.
+    function greetReady(e, cr) {
+      if (e.gi || e.giDone) return false;                 // already said it, or mid-sentence
+      if (featureEverOn) return false;                    // you found them yourself
+      if (!scrollDown) return false;                      // coming back up: you can see them
+      if ((window.scrollY || window.pageYOffset || 0) < GREET_MIN_SCROLL) return false;
+      var ih = window.innerHeight;
+      if (cr.top < GREET_HEAD_CLEAR) return false;        // no room above him for a bubble
+      if (cr.bottom > ih - GREET_FOOT_CLEAR) return false;   // he is still half below the fold
+      var aim = greetAim(e);
+      if (!aim || aim.vis < GREET_BTN_MIN) return false;   // nothing left to point at
+      if (e._logosEl.getBoundingClientRect().bottom < ih * GREET_BTN_FRAC) return false;   // too late to start
+      if (POOF.phase !== 'idle') return false;            // the page is busy vanishing
+      if (greetForce) return true;                        // #greeter — re-see it on demand
+      return !greetSeen() && !greetLoggedIn();
+    }
+
+    function greetOpen(e, cr, w, feetY, col) {
+      if (!window.EVQuotes) return;
+      var sx = window.scrollX || window.pageXOffset || 0;
+      var sy = window.scrollY || window.pageYOffset || 0;
+      // head top in DOCUMENT coords: pelvis is 112*S above his feet, head top another
+      // (128 + R)*S above that — same measurement the readers' bubbles use
+      e.gh = window.EVQuotes.open({
+        headX: cr.left + sx + w / 2,
+        headY: cr.top + sy + feetY - (112 + 128 + CFG.R) * S,
+        tone: col,
+        quote: { text: GREET_SAY }          // no `who`: he is speaking for himself
+      });
+    }
+
+    // Dismissed (clicked, clicked off, Escape, or you went and highlighted a tool): drop the
+    // arm back to standing from wherever it is now, then he is an ordinary host again.
+    function greetSettle(e) {
+      e.giFrom = e._giLast || null;
+      e.gi = 'settle'; e.giT = 0;
+    }
+    function greetDismiss(e) {
+      if (e.gh) { window.EVQuotes.close(e.gh); e.gh = null; }
+      greetSettle(e);
+    }
+
+    function drawPresenter(e, ctx, w, h, feetY, oyS, tt, col, shadow, dt, cr) {
+      if (!('_logosEl' in e)) e._logosEl = document.querySelector('.showcase-logos');
+      R.drawShadow(ctx, w / 2, feetY, 16, shadow);
+      e._prSX = cr.left + w / 2; e._prFY = cr.top + h;   // click hitbox anchor (screen coords)
+
+      if (greetReady(e, cr)) {
+        e.gi = 'wave'; e.giT = 0; e.giFrom = null;
+        markGreetSeen();                                  // once per browser, not once per visit
+      }
+
+      var pose;
+      if (e.gi) {
+        e.giT += dt;
+        // where the buttons are RIGHT NOW — the page keeps moving under him while he talks
+        var aim = greetAim(e);
+        var point = aim ? presentPose(tt, cr, w, oyS, aim.x, aim.y) : A.standstill.frame(tt);
+        if (e.gi === 'wave') {
+          pose = A.greet.frame(e.giT, e._wave);
+          // still scrolling hard? if the buttons go before he has said anything, drop it
+          // quietly — better than finishing a gesture at something that is no longer there
+          if (!aim || aim.vis < GREET_BTN_MIN) { e._giLast = pose; greetSettle(e); }
+          else if (e.giT >= GREET_WAVE) { e.gi = 'turn'; e.giFrom = pose; e.giT = 0; }
+        } else if (e.gi === 'turn') {
+          pose = lerpPose(e.giFrom, point, smooth01(e.giT / GREET_TURN));
+          if (e.giT >= GREET_TURN) { e.gi = 'hold'; e.giT = 0; greetOpen(e, cr, w, feetY, col); }
+        } else if (e.gi === 'hold') {
+          pose = point;
+        } else {
+          pose = lerpPose(e.giFrom || point, A.standstill.frame(tt), smooth01(e.giT / GREET_TURN));
+          if (e.giT >= GREET_TURN) { e.gi = null; e.giDone = true; e.giFrom = null; }
+        }
+      } else if (e.greet) {
+        pose = A[e.spec.hoverAnim || 'greet'].frame(e.greet, e._wave);
+      } else if (featureOn) {
+        pose = presentPose(tt, cr, w, oyS, featureCX, featureCY);
+      } else {
+        pose = A.standstill.frame(tt);   // arms at side while the EV logo is up
+      }
+      e._giLast = pose;                  // so a dismissal can ease out of the pose on screen
+      drawFig(ctx, w / 2, oyS, S, true, pose, { color: col });
+    }
+
     function drawReader(e, ctx, w, h, tt, col, dt, cr) {
       if (e.qs == null) { e.qs = 'read'; e.qsT = 0; e.qGlance = 0; e.qWave = 0; e.qh = null; }
       e.qsT += dt;
@@ -3502,24 +3692,7 @@
           if (spec.balance) { drawBalancer(e, ctx, w, h, feetY, tt, col, shadow, dt); return; }
           if (spec.peeker) { drawPeeker(e, ctx, w, h, feetY, tt, col, shadow, dt, cr); return; }
           var oyS = feetY - 112 * S;
-          if (spec.presenter) {
-            R.drawShadow(ctx, w / 2, feetY, 16, shadow);
-            if (e.greet) {
-              drawFig(ctx, w / 2, oyS, S, true, A[spec.hoverAnim || 'greet'].frame(e.greet, e._wave), { color: col });
-            } else if (featureOn) {
-              // aim a straight arm directly at the highlighted tool's on-screen position
-              var ox = cr.left + w / 2, oy = cr.top + oyS - 26;   // ~shoulder
-              var Adeg = Math.atan2(-(featureCX - ox), (featureCY - oy)) * 180 / Math.PI;
-              var pp = Object.assign({}, R.REST);
-              pp.lean = -3; pp.headTilt = -8; pp.bob = 1 + Math.sin(tt * 2) * 1.2;
-              pp.armRU = Adeg - pp.lean; pp.armRF = Adeg - pp.lean + Math.sin(tt * 3) * 2;
-              pp.armLU = -12; pp.armLF = -7;              // other arm at his side
-              drawFig(ctx, w / 2, oyS, S, true, pp, { color: col });
-            } else {
-              drawFig(ctx, w / 2, oyS, S, true, A.standstill.frame(tt), { color: col });   // arms at side while the EV logo is up
-            }
-            return;
-          }
+          if (spec.presenter) { drawPresenter(e, ctx, w, h, feetY, oyS, tt, col, shadow, dt, cr); return; }
           var animSt, ptSt, flipSt = false;
           if (spec.hover === 'jump') {
             if (e.greet) { animSt = A.jump; ptSt = e.greet; }
@@ -3928,9 +4101,15 @@
     setInterval(reposition, 700);
     window.addEventListener('resize', reposition);
 
-    // opt-in debug handle (no effect unless the page is loaded with #figdebug)
-    if (location.hash === '#figdebug') window.__evFigDebug = {
+    // opt-in debug handle (no effect unless the page is loaded with #figdebug, or with
+    // #greeter — which also makes the greeter ignore "you have been here before")
+    if (location.hash === '#figdebug' || greetForce) window.__evFigDebug = {
       entries: entries, footWalk: footWalk, footStand: footStand,
+      greet: {
+        SAY: GREET_SAY, WAVE: GREET_WAVE, TURN: GREET_TURN, KEY: GREET_KEY, force: greetForce,
+        window: { MIN_SCROLL: GREET_MIN_SCROLL, HEAD_CLEAR: GREET_HEAD_CLEAR, FOOT_CLEAR: GREET_FOOT_CLEAR, BTN_FRAC: GREET_BTN_FRAC }
+      },
+      toolsFound: function () { return featureEverOn; },
       quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
       poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay,
       sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
