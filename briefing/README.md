@@ -142,5 +142,28 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   A real seat carries geography; a placeholder carries none.  The two rules pull
   in opposite directions and the map needs **both**, in this order — that is why
   they are written down together.
+- **Rebuilding the coverage table: it is an EXCLUSIVE partition, and the map is
+  not.**  Each politician with at least one answer lands in exactly one bucket,
+  by the resolution order above — first match wins: placeholder occupancy →
+  *no seat*; current term → its government's state (or *national* if that
+  government is the federal one); else legacy `office_id`; else
+  `representing_state`; else *no seat*.  The map's `byState` is a **union**, so a
+  politician linked to two states shades both tiles and the two counts differ by
+  design — on 2026-08-17 the table read California 373 where the tile read 374.
+  Do not "fix" that by making them match; check the sum instead.  Rebuild every
+  row from **one query run** and confirm the 14 rows sum to the two headline
+  `data-auto` spans (3,894 politicians / 32,729 stances on 2026-08-17), then
+  re-sort rows by stances descending — Washington passed Arizona that day.
+- **The headshot backlog figure is hand-maintained and its definition is not
+  settled.**  `backend/scripts/auditHeadshots.ts` (EV-Accounts) counts
+  politicians with no `essentials.politician_images` row of `type='default'`,
+  which is ~79,557 across the whole table and 2,564 among curated officials —
+  neither is the published 1,118.  The closest reproduction is *seated on a
+  current term, non-placeholder, no default image*: that reads 1,198 today, of
+  which 1,182 are records that already existed on the 15th, so it is **not** the
+  definition behind 1,118 either.  Until someone pins it down, date the figure
+  ("to 1,118 by the 15th") rather than restating it as current, and report
+  verified deltas beside it — the 16 Kitsap/Bainbridge seats are the only seats
+  added since 08-16 with no portrait, and that is exact.
 - Update narrative sections in a strategy session (or by hand) whenever the
   story changes, not just the numbers.
