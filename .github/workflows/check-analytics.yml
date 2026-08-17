@@ -1,0 +1,65 @@
+name: Check PostHog analytics coverage
+
+# ev-landing is plain static HTML with no build step, so it can't consume the
+# shared @empoweredvote/analytics npm package the React apps use. Instead every
+# page loads /analytics.js with a single <script src> line in its <head>.
+#
+# This check fails the build if a page-rendering HTML file is missing that
+# include, so "forgot to add tracking on the new page" gets caught at PR time
+# instead of being discovered months later. That is exactly how the /maps/
+# pages and briefing/index.html ended up dark.
+#
+# Redirect stubs (meta-refresh pages that immediately bounce to a subdomain
+# with its own tracking, e.g. donate.html -> financials.empowered.vote) are
+# auto-skipped — they never render, so there is nothing to instrument.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify every page-rendering HTML file includes /analytics.js
+        run: |
+          missing=()
+          while IFS= read -r -d '' file; do
+            # Skip instant-redirect stubs — they never render content.
+            if grep -q 'http-equiv="refresh"' "$file"; then
+              continue
+            fi
+            if ! grep -q 'src="/analytics.js"' "$file"; then
+              missing+=("$file")
+            fi
+          done < <(find . -iname "*.html" -not -path "./node_modules/*" -not -path "./tools/*" -print0)
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::The following page(s) do not load /analytics.js:"
+            printf '  - %s\n' "${missing[@]}"
+            echo ""
+            echo 'Add this line to the page'"'"'s <head>, as early as possible:'
+            echo '    <script src="/analytics.js"></script>'
+            echo ""
+            echo 'If a page is intentionally excluded (e.g. a redirect stub), give it an'
+            echo 'http-equiv="refresh" meta tag so this check recognizes it, or update the'
+            echo 'skip logic in this workflow.'
+            exit 1
+          fi
+
+          echo "All page-rendering HTML files load /analytics.js."
+
+      - name: Verify the shared analytics module still initializes PostHog
+        run: |
+          # Guards against analytics.js being gutted/renamed while every page
+          # still "passes" the include check above.
+          for needle in "posthog.init(" "posthog.register(" "phEnvironment"; do
+            if ! grep -qF "$needle" analytics.js; then
+              echo "::error::analytics.js is missing expected code: $needle"
+              exit 1
+            fi
+          done
+          echo "analytics.js looks intact."
