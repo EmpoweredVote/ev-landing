@@ -1241,7 +1241,12 @@
             user-select: none;
         }
     </style>
-    <script src="/analytics.js"></script>
+    <!-- Relative, not "/analytics.js": this page is at the root so the two resolve identically
+         on the deploy, but a root-absolute path under file:// resolves to C:/analytics.js and
+         404s, leaving `posthog` undefined so every tracked click throws. That broke the "no page
+         errors" assertion in six Playwright suites. Pages in subdirectories (briefing/, maps/)
+         still need the absolute form. -->
+    <script src="analytics.js"></script>
 </head>
 <body>
     <header class="site-banner">
