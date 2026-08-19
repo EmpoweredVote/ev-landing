@@ -183,6 +183,20 @@ for (const abbr of Object.keys(stateNames)) {
   if (tiers[t] !== undefined) tiers[t]++;
 }
 
+// A jurisdiction can have researched stances and no tile to shade, and nothing above would say
+// so: the tile writer only rewrites tiles that already exist, and the tier loop only walks
+// stateNames.  Puerto Rico is the live case - 161 seats seeded 2026-08-12, no stances yet, no
+// tile, no entry here - so the day its research starts it would silently miss this map, exactly
+// how Wisconsin sat in the palest tier for a month.  Warn instead of dropping it.
+const untiled = Object.entries(counts)
+  .filter(([st, n]) => n > 0 && !(st in stateNames))
+  .sort((a, b) => b[1] - a[1]);
+if (untiled.length) {
+  console.log('WARNING: researched officials in a jurisdiction with no map tile.  Add a tile and');
+  console.log('         a stateNames entry, or they are invisible on the page:');
+  for (const [st, n] of untiled) console.log(`           ${st}: ${n}`);
+}
+
 const asof = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 const values = {
   asof,

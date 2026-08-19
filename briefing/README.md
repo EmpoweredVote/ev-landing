@@ -94,6 +94,16 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 
 - Map tiers: Deep = 100+ researched state/local officials, Growing = 10 to 99,
   Seeded = 1 to 9.  DC stays special-cased until it has stance rows.
+- **Puerto Rico is seeded but unresearched, and the map has no tile for it.** 161 seats landed
+  2026-08-12 (Governor, 81 legislators, the Resident Commissioner, and all 78 municipios with
+  their alcaldes), 91 with portraits, all on dated terms — and **0 stances**, so it belongs in
+  neither the map nor the coverage table today. Its offices carry `chamber_id` NULL and
+  `representing_state = 'PR'`, so `byState` finds them through the third link the moment any
+  stance is written. `stateNames` has no PR entry and the grid has no PR tile, so that day it
+  would silently vanish; `refresh.mjs` now prints a WARNING for any jurisdiction that has
+  researched officials and no tile. Add both when research starts. The territory also proves
+  the parties rule: PNP and PPD each contain both US national parties, so party is stored
+  verbatim in Spanish and must never be translated to Democrat/Republican.
 - If the database is unreachable the script exits without touching the page.
 - The script raises `statement_timeout` to 15 min on connect.  The server default
   is 30s and the campaign-finance aggregate needs about 4 minutes; without the
@@ -154,6 +164,17 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   row from **one query run** and confirm the 14 rows sum to the two headline
   `data-auto` spans (3,894 politicians / 32,729 stances on 2026-08-17), then
   re-sort rows by stances descending — Washington passed Arizona that day.
+
+  🔴 **The `US Congress + national` row is a STRUCTURAL test, and it was missing from this
+  recipe.** Federal seats are found by `essentials.districts.district_type IN
+  ('NATIONAL_UPPER','NATIONAL_LOWER')`, checked BEFORE the state fallbacks. Nothing else
+  reproduces it: only **9** offices hang off the United States Federal Government, so no walk
+  through office → chamber → government will ever find Congress, and federal members carry
+  `representing_state` = the state they represent. Rebuilding without the national test on
+  2026-08-19 smeared all 560 of them into their home states (California read 424, not 373) and
+  deleted the row — the table still summed perfectly, which is this check's known blind spot.
+  Ten of the thirteen rows reproduce to the row with the test in place; that agreement is how
+  you know the resolution order is right before you publish.
 - **The headshot backlog figure is hand-maintained and its definition is not
   settled.**  `backend/scripts/auditHeadshots.ts` (EV-Accounts) counts
   politicians with no `essentials.politician_images` row of `type='default'`,
