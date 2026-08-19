@@ -94,13 +94,16 @@ async function assertGone(page, label) {
     const page = await greeted(browser);
     await page.waitForTimeout(900);
     const w = await page.evaluate(PROBE, null);
-    assert.strictEqual(w.gi, 'wave', 'he should be waving 0.9s in, not ' + w.gi);
-    assert.strictEqual(w.bubbles, 0, 'the bubble must wait until he has waved and turned');
+    assert.strictEqual(w.gi, 'wave', 'he should still be waving 0.9s in, not ' + w.gi);
+    assert.strictEqual(w.bubbles, 1, 'he should already be talking 0.9s in, mid-wave');
     assert.ok(w.highestHand < w.shoulderY - 15,
       'a wave needs a hand up: highest hand ' + w.highestHand + ' vs shoulder ' + w.shoulderY);
 
-    // ── then he points at the buttons, and only then does he speak
-    await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
+    // ── the wave finishes and he turns to point at the buttons, still talking
+    await page.waitForFunction(function () {
+      var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
+      return e.gi === 'hold';
+    }, { timeout: 6000 });
     const p = await page.evaluate(PROBE, '.showcase-logos');
     assert.strictEqual(p.gi, 'hold', 'he holds the point while talking');
     assert.ok(p.aimErr < 12, 'his arm must point at the button column, off by ' + p.aimErr + ' deg');

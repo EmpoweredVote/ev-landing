@@ -73,8 +73,24 @@ async function scrollIntoWindow(page) {
 
   assert.ok(await scrollIntoWindow(page), 'could not reach the greeting window');
 
-  // wave (1.8s) + turn (0.35s) before the bubble opens
+  // He speaks a beat into the wave (GREET_SAY_AT = 0.55s), not after the whole gesture.
+  // Assert that directly: the bubble must be open while he is still waving, because the
+  // whole point of the change is that a reader who does not stop scrolling still sees it.
+  const t0 = Date.now();
   await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
+  const openedAfter = Date.now() - t0;
+  const stateAtOpen = await page.evaluate(function () {
+    var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
+    return e.gi;
+  });
+  assert.strictEqual(stateAtOpen, 'wave', 'the bubble must open mid-wave, not after the point');
+  assert.ok(openedAfter < 2000, 'text took ' + openedAfter + 'ms to appear; it should be ~0.6s');
+
+  // then he finishes the wave and turns to point, and the bubble stays up through it
+  await page.waitForFunction(function () {
+    var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
+    return e.gi === 'hold';
+  }, { timeout: 6000 });
 
   const fired = await page.evaluate(function () {
     // Ask the pixels where he actually is rather than re-deriving the rig's geometry (the

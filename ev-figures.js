@@ -3000,8 +3000,11 @@
     // back at a pointer on him, or pointing at whichever tool is highlighted. Otherwise he
     // just stands by under the EV logo. The greeting is the only one that takes him over
     // completely — being flagged down and then interrupted mid-sentence reads as a glitch.
-    var GREET_WAVE = 1.5;     // raise-in (0.9s) plus a full wave cycle, and no longer: every
-                              // extra tenth is more scrolling he has to survive before he speaks
+    var GREET_SAY_AT = 0.55;  // he starts talking a beat into the wave, not after the point.  The
+                              // bubble used to wait for the whole gesture (1.85s), which meant only
+                              // a reader who stopped scrolling ever saw it.  0.55s is mid-raise:
+                              // the wave has visibly started, and "Hi there!" lands with it.
+    var GREET_WAVE = 1.2;     // wave runs on while the bubble is up, then he points at the buttons
     var GREET_TURN = 0.35;    // blend wave -> point, and point -> standing at the end
     var GREET_SAY = 'Hi there! If you want to start off exploring our features, you can press one of those buttons up there!';
     // WHEN he can speak up. He stands on .meta-row, at the very bottom of the hero and below
@@ -3118,13 +3121,16 @@
         var point = aim ? presentPose(tt, cr, w, oyS, aim.x, aim.y) : A.standstill.frame(tt);
         if (e.gi === 'wave') {
           pose = A.greet.frame(e.giT, e._wave);
-          // still scrolling hard? if the buttons go before he has said anything, drop it
-          // quietly — better than finishing a gesture at something that is no longer there
-          if (!aim || aim.vis < GREET_BTN_MIN) { e._giLast = pose; greetSettle(e); }
-          else if (e.giT >= GREET_WAVE) { e.gi = 'turn'; e.giFrom = pose; e.giT = 0; }
+          // The bubble opens mid-wave, so the abort only applies while he is still silent: once
+          // he has spoken, scrolling the buttons off is handled by the remembered aim instead.
+          if (!e.gh && (!aim || aim.vis < GREET_BTN_MIN)) { e._giLast = pose; greetSettle(e); }
+          else {
+            if (!e.gh && e.giT >= GREET_SAY_AT) greetOpen(e, cr, w, feetY, col);
+            if (e.giT >= GREET_WAVE) { e.gi = 'turn'; e.giFrom = pose; e.giT = 0; }
+          }
         } else if (e.gi === 'turn') {
           pose = lerpPose(e.giFrom, point, smooth01(e.giT / GREET_TURN));
-          if (e.giT >= GREET_TURN) { e.gi = 'hold'; e.giT = 0; greetOpen(e, cr, w, feetY, col); }
+          if (e.giT >= GREET_TURN) { e.gi = 'hold'; e.giT = 0; }
         } else if (e.gi === 'hold') {
           pose = point;
         } else {
@@ -4106,7 +4112,7 @@
     if (location.hash === '#figdebug' || greetForce) window.__evFigDebug = {
       entries: entries, footWalk: footWalk, footStand: footStand,
       greet: {
-        SAY: GREET_SAY, WAVE: GREET_WAVE, TURN: GREET_TURN, KEY: GREET_KEY, force: greetForce,
+        SAY: GREET_SAY, SAY_AT: GREET_SAY_AT, WAVE: GREET_WAVE, TURN: GREET_TURN, KEY: GREET_KEY, force: greetForce,
         window: { MIN_SCROLL: GREET_MIN_SCROLL, HEAD_CLEAR: GREET_HEAD_CLEAR, FOOT_CLEAR: GREET_FOOT_CLEAR, BTN_FRAC: GREET_BTN_FRAC }
       },
       toolsFound: function () { return featureEverOn; },
