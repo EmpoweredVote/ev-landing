@@ -9,11 +9,17 @@ name: Check PostHog analytics coverage
 #   - Pages in a subdirectory (briefing/, maps/) MUST use the absolute
 #     src="/analytics.js". A relative path there resolves against the page's own
 #     directory — /maps/analytics.js — and 404s.
-#   - Pages at the repo root may use either form. They resolve identically on
-#     the deploy, and the relative form additionally survives file://, where a
-#     root-absolute path resolves to C:/analytics.js, 404s, and leaves `posthog`
-#     undefined so every tracked click throws. That is why index.html uses the
-#     relative form (see the comment beside its include).
+#   - Pages at the repo root MUST use the relative src="analytics.js". Both forms
+#     resolve identically on the deploy, so this is not about production: under
+#     file:// a root-absolute path resolves to C:/analytics.js, 404s, and leaves
+#     `posthog` undefined, so every tracked click throws. That broke the
+#     no-page-errors assertion in six Playwright suites, all of which load
+#     index.html straight off disk. Requiring the relative form at the root keeps
+#     any future page testable the same way.
+#
+# The depth rule exists because the suites run from file:// with no server. If we
+# ever serve them over localhost instead, every page can use the absolute form
+# and this whole distinction collapses back to a single grep.
 #
 # This check fails the build if a page-rendering HTML file is missing that
 # include, so "forgot to add tracking on the new page" gets caught at PR time
@@ -61,8 +67,13 @@ jobs:
             fi
 
             if [ "$(dirname "$file")" = "." ]; then
-              # Root-level page: either form resolves correctly.
-              if ! grep -qE 'src="/?analytics\.js"' "$file"; then
+              # Root-level page: the relative form is required so the page stays
+              # loadable from file://.
+              if grep -qE 'src="analytics\.js"' "$file"; then
+                :
+              elif grep -qE 'src="/analytics\.js"' "$file"; then
+                wrongform+=("$file")
+              else
                 missing+=("$file")
               fi
             else
@@ -75,7 +86,11 @@ jobs:
                 missing+=("$file")
               fi
             fi
-          done < <(find . -iname "*.html" -not -path "./node_modules/*" -not -path "./tools/*" -print0)
+            # Enumerate committed pages via git rather than find: it needs no
+            # exclusion list, so node_modules, nested worktrees and scratch files
+            # never produce a false failure, and a committed page in a directory
+            # nobody thought to exclude still gets checked.
+          done < <(git ls-files -z -- '*.html' ':(exclude)tools/*')
 
           status=0
 
@@ -86,7 +101,7 @@ jobs:
             echo 'Add this line to the page'"'"'s <head>, as early as possible.'
             echo 'In a subdirectory, the leading slash is required:'
             echo '    <script src="/analytics.js"></script>'
-            echo 'At the repo root, either form works:'
+            echo 'At the repo root, omit it:'
             echo '    <script src="analytics.js"></script>'
             echo ""
             echo 'If a page is intentionally excluded (e.g. a redirect stub), give it an'
@@ -96,11 +111,15 @@ jobs:
           fi
 
           if [ "${#wrongform[@]}" -gt 0 ]; then
-            echo "::error::The following page(s) are in a subdirectory but load analytics.js relatively:"
+            echo "::error::The following page(s) load analytics.js with the wrong src form for their location:"
             printf '  - %s\n' "${wrongform[@]}"
             echo ""
-            echo 'A relative src resolves against the page'"'"'s own directory, so it 404s.'
-            echo 'Use the absolute form on any page below the repo root:'
+            echo 'At the repo root, use the relative form so the page still works'
+            echo 'under file:// (where a leading slash resolves off the drive root):'
+            echo '    <script src="analytics.js"></script>'
+            echo ""
+            echo 'In a subdirectory, use the absolute form (a relative src there'
+            echo 'resolves against the page'"'"'s own directory and 404s):'
             echo '    <script src="/analytics.js"></script>'
             status=1
           fi
