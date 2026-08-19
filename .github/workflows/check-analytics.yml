@@ -2,7 +2,18 @@ name: Check PostHog analytics coverage
 
 # ev-landing is plain static HTML with no build step, so it can't consume the
 # shared @empoweredvote/analytics npm package the React apps use. Instead every
-# page loads /analytics.js with a single <script src> line in its <head>.
+# page loads analytics.js with a single <script src> line in its <head>.
+#
+# Two src forms are correct, depending on where the page lives:
+#
+#   - Pages in a subdirectory (briefing/, maps/) MUST use the absolute
+#     src="/analytics.js". A relative path there resolves against the page's own
+#     directory — /maps/analytics.js — and 404s.
+#   - Pages at the repo root may use either form. They resolve identically on
+#     the deploy, and the relative form additionally survives file://, where a
+#     root-absolute path resolves to C:/analytics.js, 404s, and leaves `posthog`
+#     undefined so every tracked click throws. That is why index.html uses the
+#     relative form (see the comment beside its include).
 #
 # This check fails the build if a page-rendering HTML file is missing that
 # include, so "forgot to add tracking on the new page" gets caught at PR time
@@ -39,33 +50,66 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify every page-rendering HTML file includes /analytics.js
+      - name: Verify every page-rendering HTML file includes analytics.js
         run: |
           missing=()
+          wrongform=()
           while IFS= read -r -d '' file; do
             # Skip instant-redirect stubs — they never render content.
             if grep -q 'http-equiv="refresh"' "$file"; then
               continue
             fi
-            if ! grep -q 'src="/analytics.js"' "$file"; then
-              missing+=("$file")
+
+            if [ "$(dirname "$file")" = "." ]; then
+              # Root-level page: either form resolves correctly.
+              if ! grep -qE 'src="/?analytics\.js"' "$file"; then
+                missing+=("$file")
+              fi
+            else
+              # Subdirectory page: only the absolute form resolves.
+              if grep -qE 'src="/analytics\.js"' "$file"; then
+                :
+              elif grep -qE 'src="analytics\.js"' "$file"; then
+                wrongform+=("$file")
+              else
+                missing+=("$file")
+              fi
             fi
           done < <(find . -iname "*.html" -not -path "./node_modules/*" -not -path "./tools/*" -print0)
 
+          status=0
+
           if [ "${#missing[@]}" -gt 0 ]; then
-            echo "::error::The following page(s) do not load /analytics.js:"
+            echo "::error::The following page(s) do not load analytics.js:"
             printf '  - %s\n' "${missing[@]}"
             echo ""
-            echo 'Add this line to the page'"'"'s <head>, as early as possible:'
+            echo 'Add this line to the page'"'"'s <head>, as early as possible.'
+            echo 'In a subdirectory, the leading slash is required:'
             echo '    <script src="/analytics.js"></script>'
+            echo 'At the repo root, either form works:'
+            echo '    <script src="analytics.js"></script>'
             echo ""
             echo 'If a page is intentionally excluded (e.g. a redirect stub), give it an'
             echo 'http-equiv="refresh" meta tag so this check recognizes it, or update the'
             echo 'skip logic in this workflow.'
-            exit 1
+            status=1
           fi
 
-          echo "All page-rendering HTML files load /analytics.js."
+          if [ "${#wrongform[@]}" -gt 0 ]; then
+            echo "::error::The following page(s) are in a subdirectory but load analytics.js relatively:"
+            printf '  - %s\n' "${wrongform[@]}"
+            echo ""
+            echo 'A relative src resolves against the page'"'"'s own directory, so it 404s.'
+            echo 'Use the absolute form on any page below the repo root:'
+            echo '    <script src="/analytics.js"></script>'
+            status=1
+          fi
+
+          if [ "$status" -eq 0 ]; then
+            echo "All page-rendering HTML files load analytics.js."
+          fi
+
+          exit "$status"
 
       - name: Verify the shared analytics module still initializes PostHog
         run: |
