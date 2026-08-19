@@ -354,7 +354,10 @@
     [data-theme="light"] .theme-toggle::before { content: "☽"; }
     [data-theme="dark"]  .theme-toggle::before { content: "☀"; }
   </style>
-  <script src="/analytics.js"></script>
+  <!-- Relative, not "/analytics.js": see the note beside index.html's include.
+       Root pages use the relative form so they also work under file://; pages in
+       subdirectories (briefing/, maps/) need the absolute form. -->
+  <script src="analytics.js"></script>
 </head>
 <body>
   <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color scheme"></button>
