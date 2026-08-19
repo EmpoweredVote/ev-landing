@@ -354,7 +354,7 @@
   Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
   a rolling window with internal/test traffic excluded (filterTestAccounts).  refresh.mjs
   does NOT touch these — it only reads the platform Postgres DB.  Last pulled: 30 and 90
-  days ending August 15, 2026, via ad-hoc trends queries rather than the Compass — Top of
+  days ending August 19, 2026, via ad-hoc trends queries rather than the Compass — Top of
   Funnel dashboard, because this section is no longer Compass-shaped: it now compares every
   app on arrival vs. the one action that app exists for.  See briefing/README.md for the
   exact events behind each row.
@@ -362,8 +362,8 @@
 <div class="h2row"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
 <div class="push">
   <h3 class="serif">Small, and not shallow</h3>
-    <p><b>535 people used the platform in the last 90 days.</b>  That is the whole audience, across every app.  What they do once they arrive is genuinely good &mdash; the average session runs <b>just under eight minutes</b> and <b>7 in 10 don&rsquo;t bounce</b> &mdash; so the constraint is arrival, not engagement.</p>
-    <p style="margin-top:10px"><b>A claim from the last briefing does not survive this pull.</b>  We wrote that the gap was the hand-off from the main site into the tools.  It isn&rsquo;t: <b>92 of the 252 people who landed on empowered.vote clicked through into an app</b> &mdash; 37% in the quarter, 41% in the last 30 days.  The front door works.  What varies enormously is what happens on the other side of it, which is what the two cards below measure.</p>
+    <p><b>570 people used the platform in the last 90 days.</b>  That is the whole audience, across every app, over 1,823 sessions.  What they do once they arrive is genuinely good &mdash; the average session runs <b>just under eight minutes</b> and <b>7 in 10 don&rsquo;t bounce</b> &mdash; so the constraint is arrival, not engagement.</p>
+    <p style="margin-top:10px"><b>The front door works, and this pull found a second app being counted as two.</b>  <b>95 of the 299 people who reached the main site clicked through into an app</b> &mdash; 32% in the quarter, 38% in the last 30 days.  Those 299 now include <i>alpha.empowered.vote</i>, which serves the same landing page from a second hostname: exactly the error this page corrected for Treasury Tracker last cycle, one row further down.  Every app is now counted once across every hostname that serves it, so the arrival numbers below are not comparable row-for-row with briefings before today &mdash; the main site alone reads 274 on the old basis.</p>
     <p style="margin-top:10px"><b>Read every figure here as an order of magnitude, not a trend line.</b>  At this volume a couple of people either side is the entire swing.  No work this cycle was aimed at traffic.</p>
 </div>
 <div class="cols" style="margin-top:18px">
@@ -373,41 +373,41 @@
     <div class="funnel">
       <div class="fhead"><span class="fcol">30d</span><span class="fcol">90d</span></div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Compass &mdash; completed a calibration <span style="color:var(--dim);font-weight:400">(of 97)</span></span><span class="fcount"><span class="fcol f30">13</span><span class="fcol f90">26</span></span></div>
-        <div class="ftrack"><div class="fbar b3" style="width:27%">27%</div></div>
+        <div class="frow"><span class="flabel">Compass &mdash; completed a calibration <span style="color:var(--dim);font-weight:400">(of 105)</span></span><span class="fcount"><span class="fcol f30">14</span><span class="fcol f90">27</span></span></div>
+        <div class="ftrack"><div class="fbar b3" style="width:26%">26%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Read &amp; Rank &mdash; revealed a ballot <span style="color:var(--dim);font-weight:400">(of 49)</span></span><span class="fcount"><span class="fcol f30">4</span><span class="fcol f90">10</span></span></div>
-        <div class="ftrack"><div class="fbar b4" style="width:20%">20%</div></div>
-      </div>
-      <div class="fstep">
-        <div class="frow"><span class="flabel">Essentials &mdash; looked up an official <span style="color:var(--dim);font-weight:400">(of 126)</span></span><span class="fcount"><span class="fcol f30">12</span><span class="fcol f90">24</span></span></div>
+        <div class="frow"><span class="flabel">Essentials &mdash; looked up an official <span style="color:var(--dim);font-weight:400">(of 132)</span></span><span class="fcount"><span class="fcol f30">14</span><span class="fcol f90">25</span></span></div>
         <div class="ftrack"><div class="fbar b2" style="width:19%">19%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Civic Trivia &mdash; finished a game <span style="color:var(--dim);font-weight:400">(of 70)</span></span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">5</span></span></div>
-        <div class="ftrack"><div class="fbar b1" style="width:7%">7%</div></div>
+        <div class="frow"><span class="flabel">Read &amp; Rank &mdash; revealed a ballot <span style="color:var(--dim);font-weight:400">(of 51)</span></span><span class="fcount"><span class="fcol f30">4</span><span class="fcol f90">9</span></span></div>
+        <div class="ftrack"><div class="fbar b4" style="width:18%">18%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Treasury &mdash; drilled into the budget chart <span style="color:var(--dim);font-weight:400">(of an unmeasured denominator &mdash; see below)</span></span><span class="fcount"><span class="fcol f30">7</span><span class="fcol f90">7</span></span></div>
+        <div class="frow"><span class="flabel">Civic Trivia &mdash; finished a game <span style="color:var(--dim);font-weight:400">(of 79)</span></span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">5</span></span></div>
+        <div class="ftrack"><div class="fbar b1" style="width:6%">6%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Treasury &mdash; anything past the front page <span style="color:var(--dim);font-weight:400">(of 159 &mdash; see below)</span></span><span class="fcount"><span class="fcol f30">8</span><span class="fcol f90">8</span></span></div>
         <div class="ftrack"><div class="fbar b5" style="width:5%">n/a</div></div>
       </div>
     </div>
-    <p class="fcap"><b>Two of these are start problems, not finish problems.</b>  Only 7 people <i>started</i> a trivia game in a quarter and 5 finished &mdash; a 71% finish rate on almost no starts.  Read &amp; Rank is the same shape: 18 races started, 10 ballots revealed.  The Compass is the opposite: 67 of its 97 visitors opened the quiz and 26 saw it through.</p>
+    <p class="fcap"><b>Two of these are start problems, not finish problems.</b>  Only 8 people <i>started</i> a trivia game in a quarter and 5 finished.  Read &amp; Rank is the same shape: 18 races started, 9 ballots revealed.  The Compass is the opposite &mdash; 71 of its 105 visitors opened the quiz and 27 saw it through, so two thirds start and a quarter finish.</p>
   </div>
   <div class="card">
     <h3 class="serif">How many arrive</h3>
-    <p>Unique visitors per app, last 30 days and the full quarter.  Bars scale to the 90-day count.  Treasury Tracker is counted once here across both of its hostnames &mdash; earlier briefings split <i>financials</i> and <i>treasurytracker</i> into two rows and so read one app as two small ones.</p>
+    <p>Unique visitors per app, last 30 days and the full quarter.  Bars scale to the 90-day count.  <b>Each app is counted once across every hostname that serves it</b> &mdash; Treasury Tracker has three, and the main site turned out to have three as well.</p>
     <div class="eco">
       <div class="ecohead"><span></span><span></span><span class="eh">30d</span><span class="eh">90d</span></div>
-      <div class="ecorow"><span class="ehost">empowered.vote</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">116</span><span class="eval">252</span></div>
-      <div class="ecorow me"><span class="ehost">treasury</span><span class="etrack"><span class="ebar" style="width:60.3%"></span></span><span class="eval e30">47</span><span class="eval">152</span></div>
-      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:50%"></span></span><span class="eval e30">43</span><span class="eval">126</span></div>
-      <div class="ecorow"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:38.5%"></span></span><span class="eval e30">46</span><span class="eval">97</span></div>
-      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:27.8%"></span></span><span class="eval e30">48</span><span class="eval">70</span></div>
-      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:19.4%"></span></span><span class="eval e30">23</span><span class="eval">49</span></div>
+      <div class="ecorow"><span class="ehost">main site</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">123</span><span class="eval">299</span></div>
+      <div class="ecorow me"><span class="ehost">treasury</span><span class="etrack"><span class="ebar" style="width:53.2%"></span></span><span class="eval e30">44</span><span class="eval">159</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:44.1%"></span></span><span class="eval e30">41</span><span class="eval">132</span></div>
+      <div class="ecorow"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:35.1%"></span></span><span class="eval e30">46</span><span class="eval">105</span></div>
+      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:26.4%"></span></span><span class="eval e30">51</span><span class="eval">79</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:17.1%"></span></span><span class="eval e30">22</span><span class="eval">51</span></div>
     </div>
-    <p class="fcap"><b>Treasury Tracker is the second most-visited thing we run</b> and holds the largest dataset on the platform &mdash; 2.3 million budget line items.  Whether those 152 people <i>reached a budget</i> was the one thing this page could not tell you; the instrumentation that answers it shipped on the 16th &mdash; see the note below.</p>
+    <p class="fcap"><b>Treasury Tracker is the second most-visited thing we run</b> and holds the largest dataset on the platform &mdash; 2.3 million budget line items.  Whether those 159 people <i>reached a budget</i> was the one thing this page could not tell you; the instrumentation that answers it shipped on the 16th &mdash; see the note below.</p>
   </div>
 </div>
 <div class="card" style="margin-top:18px;border-left:3px solid var(--amber)">
@@ -450,7 +450,7 @@
 </div>
 
 <footer>
-  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">August 19, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 30 and 90 days ending August 15, 2026, with internal and test traffic excluded.  &ldquo;Visitors&rdquo; and the per-app action counts are both unique people over the same window, so a rate between them is a fair comparison but not a strict funnel.  Stance area groupings combine state and local coverage; the 949 candidate rows are records not linked to an office by any of the three jurisdiction links.  A politician's state is resolved from his current <code>office_terms</code> row, falling back to the legacy <code>office_id</code> and then to the office's own <code>representing_state</code>, with placeholder occupancy excluded.  Federal seats are identified structurally, by a district typed national rather than state or local, which is why they form one row instead of appearing under each state.  The coverage table's rows sum <b>exactly</b> to the headline totals &mdash; a check that catches missing rows, though not misplaced ones.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
+  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live from the platform database on <span data-auto="asof">August 19, 2026</span>.  Reach and engagement figures are from PostHog product analytics &mdash; the 30 and 90 days ending August 19, 2026, with internal and test traffic excluded, and each app counted once across every hostname that serves it.  &ldquo;Visitors&rdquo; and the per-app action counts are both unique people over the same window, so a rate between them is a fair comparison but not a strict funnel.  Stance area groupings combine state and local coverage; the 949 candidate rows are records not linked to an office by any of the three jurisdiction links.  A politician's state is resolved from his current <code>office_terms</code> row, falling back to the legacy <code>office_id</code> and then to the office's own <code>representing_state</code>, with placeholder occupancy excluded.  Federal seats are identified structurally, by a district typed national rather than state or local, which is why they form one row instead of appearing under each state.  The coverage table's rows sum <b>exactly</b> to the headline totals &mdash; a check that catches missing rows, though not misplaced ones.  In keeping with the platform's anti-partisan commitment, nothing in this report is colored red or blue.
 </footer>
 
 </div>

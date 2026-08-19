@@ -42,11 +42,32 @@ The per-app actions are:
 
 Two traps in that table, both already paid for:
 
-- **Treasury Tracker lives on two hostnames.**  `financials.empowered.vote` and
-  `treasurytracker.empowered.vote` are the same app, and a `$host` breakdown
-  splits it into two rows that each look like a minor app.  Briefings before
-  2026-08-15 published it that way.  Union the hosts (`tt.empowered.vote` too)
-  before comparing it to anything.
+- **EVERY app has more than one hostname.  Union them, or an app reads as two small ones.**
+  This was written down for Treasury Tracker after 2026-08-15 published it split; on
+  2026-08-19 the main site turned out to have the same problem — `alpha.empowered.vote`
+  serves the identical landing page (checked: same `<title>`, and only `/` and `/feedback`
+  are ever requested on it) and had been silently dropped, which is 25 people over a
+  quarter, plus 8 more on the Render default host.  A `$host` breakdown is a **discovery**
+  tool, never the published figure: run it first, decide which hosts are the same app, then
+  re-query one `dau` series per app with an `exact` host filter so people are deduped rather
+  than summed (summing Treasury's three hosts gives 180 where the union is 159).  The map as
+  of 2026-08-19:
+
+  | Row | Hostnames |
+  | --- | --- |
+  | main site | `empowered.vote`, `alpha.empowered.vote`, `www.empowered.vote`, `ev-landing.onrender.com` |
+  | treasury | `financials.empowered.vote`, `treasurytracker.empowered.vote`, `tt.empowered.vote`, `treasury-tracker-frontend.onrender.com` |
+  | essentials | `essentials.empowered.vote`, `essentials-b1e0.onrender.com` |
+  | compass | `compass.empowered.vote`, `compass-frontend-mtj4.onrender.com` |
+  | civic trivia | `ctc.empowered.vote`, `civic-trivia-frontend.onrender.com` |
+  | readrank | `readrank.empowered.vote`, `read-rank-frontend.onrender.com` |
+
+  Re-run the `$host` breakdown every cycle and reconcile it against this table — a new
+  hostname is how the next undercount arrives.  When the basis changes, say so on the page:
+  the arrival numbers are not comparable row-for-row across the change (main site 299 unioned
+  vs 274 on `empowered.vote` alone).
+- Start events, for the start-vs-finish caption: `compass_quiz_started`,
+  `readrank_race_started`, `ctc_game_started`.
 - **Comparing a per-event count to a per-app total is a rate, not a funnel.**
   Both sides are unique people over the same window, which makes the ratio fair,
   but a person can fire the action without a `$pageview` attributed to that
