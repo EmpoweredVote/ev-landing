@@ -150,6 +150,41 @@ try {
   console.warn(`WARNING: campaign-finance query failed, leaving those figures untouched: ${e.message}`);
 }
 
+// Map inputs, computed here because they need the connection: which jurisdictions the map
+// draws, how many researched officials each has, and the seat count for any with none.
+const stateNames = { AK:'Alaska', AL:'Alabama', AR:'Arkansas', AZ:'Arizona', CA:'California', CO:'Colorado', CT:'Connecticut', DE:'Delaware', FL:'Florida', GA:'Georgia', HI:'Hawaii', IA:'Iowa', ID:'Idaho', IL:'Illinois', IN:'Indiana', KS:'Kansas', KY:'Kentucky', LA:'Louisiana', MA:'Massachusetts', MD:'Maryland', ME:'Maine', MI:'Michigan', MN:'Minnesota', MO:'Missouri', MS:'Mississippi', MT:'Montana', NC:'North Carolina', ND:'North Dakota', NE:'Nebraska', NH:'New Hampshire', NJ:'New Jersey', NM:'New Mexico', NV:'Nevada', NY:'New York', OH:'Ohio', OK:'Oklahoma', OR:'Oregon', PA:'Pennsylvania', RI:'Rhode Island', SC:'South Carolina', SD:'South Dakota', TN:'Tennessee', TX:'Texas', UT:'Utah', VA:'Virginia', VT:'Vermont', WA:'Washington', WI:'Wisconsin', WV:'West Virginia', WY:'Wyoming', DC:'District of Columbia', PR:'Puerto Rico' };
+const counts = Object.fromEntries(byState.map(r => [r.st, Number(r.pols)]));
+// How many officials a jurisdiction has SEATED, for the tooltip on a tile with nothing researched
+// yet.  Runs only for the jurisdictions that need it (normally just Puerto Rico) and starts from
+// the OFFICES rather than the people — filtering 161 offices beats scanning 85k politicians, which
+// is what the first version did, and it never finished.  The count is queried rather than typed
+// into the caption, which is how DC's tooltip came to claim 27 seats long after that changed.
+const unresearched = Object.keys(stateNames).filter((abbr) => !counts[abbr]);
+let seeded = {};
+if (unresearched.length) {
+  const list = unresearched.map((s) => `'${s}'`).join(',');
+  const rows = await all(`
+    WITH tgt AS (
+      SELECT o.id, upper(btrim(coalesce(g.state, o.representing_state))) AS st
+      FROM essentials.offices o
+      LEFT JOIN essentials.chambers ch ON ch.id = o.chamber_id
+      LEFT JOIN essentials.governments g ON g.id = ch.government_id
+      WHERE upper(btrim(coalesce(g.state, o.representing_state, ''))) IN (${list})
+    )
+    SELECT t.st, count(DISTINCT p.id) AS seats
+    FROM tgt t
+    JOIN essentials.office_terms ot ON ot.office_id = t.id
+         AND (ot.term_end IS NULL OR ot.term_end >= current_date)
+    JOIN essentials.politicians p ON p.id = ot.politician_id
+    WHERE NOT EXISTS (SELECT 1 FROM essentials.politician_occupancy_evidence e
+                      WHERE e.politician_id = p.id AND e.is_placeholder_occupancy)
+    GROUP BY 1`);
+  seeded = Object.fromEntries(rows.map((r) => [r.st, Number(r.seats)]));
+  for (const abbr of unresearched) {
+    console.log(`note: ${abbr} has ${seeded[abbr] ?? 0} seats seeded and no researched stances yet.`);
+  }
+}
+
 await client.end();
 
 // ---------- commits in the last 30 days across local repos (best effort) ----------
@@ -170,10 +205,16 @@ for (const r of REPOS) {
 }
 
 // ---------- compute values ----------
-const stateNames = { AK:'Alaska', AL:'Alabama', AR:'Arkansas', AZ:'Arizona', CA:'California', CO:'Colorado', CT:'Connecticut', DE:'Delaware', FL:'Florida', GA:'Georgia', HI:'Hawaii', IA:'Iowa', ID:'Idaho', IL:'Illinois', IN:'Indiana', KS:'Kansas', KY:'Kentucky', LA:'Louisiana', MA:'Massachusetts', MD:'Maryland', ME:'Maine', MI:'Michigan', MN:'Minnesota', MO:'Missouri', MS:'Mississippi', MT:'Montana', NC:'North Carolina', ND:'North Dakota', NE:'Nebraska', NH:'New Hampshire', NJ:'New Jersey', NM:'New Mexico', NV:'Nevada', NY:'New York', OH:'Ohio', OK:'Oklahoma', OR:'Oregon', PA:'Pennsylvania', RI:'Rhode Island', SC:'South Carolina', SD:'South Dakota', TN:'Tennessee', TX:'Texas', UT:'Utah', VA:'Virginia', VT:'Vermont', WA:'Washington', WI:'Wisconsin', WV:'West Virginia', WY:'Wyoming', DC:'District of Columbia' };
-const counts = Object.fromEntries(byState.map(r => [r.st, Number(r.pols)]));
+
+// How many officials a jurisdiction has SEATED, for the tooltip on a tile with no research yet.
+// Only queried for the jurisdictions that need it (normally just Puerto Rico), so this costs
+// nothing on a normal run — and it is a real count rather than a number typed into a caption,
+// which is how DC's tooltip came to claim 27 seats long after that stopped being true.
 const tier = (n) => n >= 100 ? 't3' : n >= 10 ? 't2' : n >= 1 ? 't1' : 't0';
-const tiers = { t3: 0, t2: 0, t1: 0 };
+// t0 is counted now that a jurisdiction can be on the map with seats and no research (Puerto
+// Rico, from 2026-08-19).  Leaving it out is what let DC be shaded on the map while the legend
+// accounted for one tile fewer than the map plainly showed.
+const tiers = { t3: 0, t2: 0, t1: 0, t0: 0 };
 // DC used to be skipped here because it had no stance rows and was captioned by hand.  It has 16
 // now, so it is tallied like anywhere else — otherwise the legend would claim four Growing
 // jurisdictions while the map plainly shows five shaded that way.  The legend labels say
@@ -214,6 +255,7 @@ const values = {
   t_cities: fmt(treasury.t_cities), t_counties: fmt(treasury.t_counties),
   t_states: fmt(treasury.t_states), t_towns: fmt(treasury.t_towns),
   tier_deep: String(tiers.t3), tier_growing: String(tiers.t2), tier_seeded: String(tiers.t1),
+  tier_none: String(tiers.t0),
   commits30: reposCounted ? '~' + fmt(Math.round(commits30 / 100) * 100) : null,
   ...(finance ? {
     fin_contribs_m: fmtM(finance.fin_contribs),
@@ -244,9 +286,14 @@ html = html.replace(
   (m, style, _ds, abbr) => {
     const n = counts[abbr] ?? 0;
     let t = tier(n), title;
-    if (abbr === 'DC' && n === 0) {
-      t = 't1';
-      title = 'District of Columbia: 27 officials seeded, stance research in progress';
+    if (n === 0) {
+      // Seeded but unresearched.  The seat count comes from the database rather than being
+      // written into the caption by hand — DC's used to say 27 and had no way to notice when
+      // that changed.  If the count is unavailable, say nothing rather than guess a number.
+      const seats = seeded[abbr];
+      title = seats
+        ? `${stateNames[abbr] ?? abbr}: ${fmt(seats)} officials seeded, stance research not started`
+        : `${stateNames[abbr] ?? abbr}: stance research not started`;
     } else {
       title = `${stateNames[abbr] ?? abbr}: ${fmt(n)} researched official${n === 1 ? '' : 's'}`;
     }

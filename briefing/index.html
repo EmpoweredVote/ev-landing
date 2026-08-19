@@ -67,6 +67,7 @@
   .t3{background:var(--gold);color:#14202E}
   .t2{background:rgba(227,181,74,.48);color:var(--text)}
   .t1{background:rgba(227,181,74,.13);color:var(--dim);border:1px solid rgba(227,181,74,.22)}
+  .t0{background:transparent;color:var(--dim);border:1px dashed rgba(155,164,174,.45)}
   .legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12.5px;color:var(--dim)}
   .legend span{display:inline-flex;align-items:center;gap:7px}
   .sw{width:13px;height:13px;border-radius:2px;display:inline-block}
@@ -288,7 +289,7 @@
 
 <div class="card" style="margin-top:18px">
   <h3 class="serif">Stance research across the map</h3>
-  <p>Every state now has at least one researched official, and all 50 congressional delegations are covered at the national level.  Shading shows the depth of <b>state and local</b> research per state.  <b>Puerto Rico is not on this map yet, and should not be</b> &mdash; its 161 seats are seeded but carry no researched stances, so there is nothing to shade; the refresh script now warns if a jurisdiction with stances has no tile, so it cannot go missing once research starts.</p>
+  <p>Every state now has at least one researched official, and all 50 congressional delegations are covered at the national level.  Shading shows the depth of <b>state and local</b> research per state.  <b>Puerto Rico joins the map as an outlined tile</b> &mdash; 161 seats seeded and mostly portraited, with no researched stances yet, so the territory is visible without being shaded as though it had been researched.  The refresh script captions a tile like that from its real seat count, and warns if a jurisdiction ever has researched officials and no tile at all.</p>
   <div class="usmap">
     <div class="st t1" style="grid-row:1;grid-column:1" title="Alaska: 2 researched officials">AK</div>
     <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 186 researched officials">ME</div>
@@ -341,11 +342,13 @@
     <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 2 researched officials">HI</div>
     <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 262 researched officials">TX</div>
     <div class="st t1" style="grid-row:8;grid-column:9" title="Florida: 4 researched officials">FL</div>
+    <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: 161 officials seeded, stance research not started">PR</div>
   </div>
   <div class="legend">
     <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">10</span> jurisdictions)</span>
     <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">5</span> jurisdictions)</span>
     <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">36</span>)</span>
+    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>Seats seeded, research not started (<span data-auto="tier_none">1</span>)</span>
   </div>
   <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deeper tiers add legislatures, counties and cities.  The admin console goes county by county; this is the state rollup.</p>
 </div>

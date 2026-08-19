@@ -113,16 +113,22 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 
 ## Notes
 
-- Map tiers: Deep = 100+ researched state/local officials, Growing = 10 to 99,
-  Seeded = 1 to 9.  DC stays special-cased until it has stance rows.
-- **Puerto Rico is seeded but unresearched, and the map has no tile for it.** 161 seats landed
+- Map tiers, by researched state/local officials: Deep = 100+, Growing = 10 to 99, Seeded = 1
+  to 9, and **t0 = seated but nothing researched** — an outlined tile, deliberately not a
+  paler gold, because gold on this map means research.  Its tooltip carries the real seat
+  count, queried for exactly the jurisdictions that need it; DC's used to be the string "27
+  officials seeded" and had no way to notice when that stopped being true.  t0 is counted in
+  the legend like every other tier — leaving a shaded tier out of the count is what once had
+  the legend accounting for one tile fewer than the map plainly showed.
+- **Puerto Rico is seeded but unresearched, and has an outlined t0 tile as of 2026-08-19.** 161 seats landed
   2026-08-12 (Governor, 81 legislators, the Resident Commissioner, and all 78 municipios with
   their alcaldes), 91 with portraits, all on dated terms — and **0 stances**, so it belongs in
   neither the map nor the coverage table today. Its offices carry `chamber_id` NULL and
   `representing_state = 'PR'`, so `byState` finds them through the third link the moment any
-  stance is written. `stateNames` has no PR entry and the grid has no PR tile, so that day it
-  would silently vanish; `refresh.mjs` now prints a WARNING for any jurisdiction that has
-  researched officials and no tile. Add both when research starts. The territory also proves
+  stance is written, at which point the tile shades itself from t0 up through the normal tiers
+  with no further edit. `refresh.mjs` also prints a WARNING for any jurisdiction that has
+  researched officials and no tile at all, which is the case this does not cover. The
+  territory also proves
   the parties rule: PNP and PPD each contain both US national parties, so party is stored
   verbatim in Spanish and must never be translated to Democrat/Republican.
 - If the database is unreachable the script exits without touching the page.
