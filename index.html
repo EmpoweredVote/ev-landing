@@ -90,17 +90,21 @@
             --header: color-mix(in srgb, var(--cobalt) var(--tint), #FFFFFF);
             --coral: #FF5740;
             --yellow: #FED12E;
-            /* Rims only, light mode only. --yellow is the right FILL accent but the wrong rim: at
-               #FED12E a yellow border lands at 1.36-1.41 against its own tint AND against the cream
-               band, so the one card whose fill barely separates from the band was also the one whose
-               rim couldn't be seen — the yellow note effectively lost its edge on both sides. This
-               gold measures 3.03-3.14 on the warm surfaces and 2.56 on the blue band, putting it
-               just past the coral rim's 2.55, which is the level already proven to read here.
-               #B8860B is not a new colour on this page: it is exactly what the why-card Bobit is
-               drawn in (measured, 12,094px of it), so the yellow card's rim and its own figure are
-               now the same gold. Teal and coral rims stay on their base accents — they measure
-               5.03 and 2.55 and never had this problem. */
-            --yellow-rim: #B8860B;
+            /* Rims only. --yellow is the right FILL accent but the wrong rim: at #FED12E a yellow
+               border measures 1.36-1.41 against its own tint, so the one card whose fill barely
+               separates from its section was also the one whose rim could not be seen — it lost its
+               edge on both sides at once. Teal and coral never had this problem and stay on their
+               base accents.
+               This tracks the why-card figure, which is the point of the value: rim and figure are
+               the same colour, so the card reads as one deliberate object rather than two warm
+               tones that nearly match. It was #B8860B while that figure was gold and follows it to
+               #9C4A1E now the figure is chestnut — see ev-figures.js, which owns that colour.
+               The move is also strictly better as a rim, which is why it needed no trade-off:
+                             why card  yellow note  band   white
+                 #B8860B       2.49       3.08      2.56   3.25
+                 #9C4A1E       4.70       5.83      4.84   6.16
+               If the figure colour ever changes again, this should follow it again. */
+            --yellow-rim: #9C4A1E;
 
             /* Derived tints — ONE dial, because the reference is one rule: accent at 6% into the
                surface behind the card. What differs between the two families is only WHICH surface
