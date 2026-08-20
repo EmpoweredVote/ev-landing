@@ -79,6 +79,15 @@
                reads this directly (ev-figures.js). */
             --border: #535964;
             --teal: #00657C;
+            /* Cobalt exists for exactly one surface: the header bar. It is NOT a general accent and
+               nothing else should reach for it — the page's colour vocabulary is still teal/coral/
+               yellow. Kept as a named token rather than a hex in the rule so it is findable.
+               --header runs it at var(--tint), the page's own card-fill strength, which resolves to
+               #DBE5F3 at 14%. That coupling is deliberate: the header is tinted "as much as
+               everything else is". It does mean moving --tint moves the header too — to decouple,
+               swap var(--tint) below for a literal percentage. */
+            --cobalt: #0047AB;
+            --header: color-mix(in srgb, var(--cobalt) var(--tint), #FFFFFF);
             --coral: #FF5740;
             --yellow: #FED12E;
             /* Rims only, light mode only. --yellow is the right FILL accent but the wrong rim: at
@@ -1115,6 +1124,7 @@
             --bg: #111113;
             --card: #1C1C1F;
             --surface-alt: #1C1C1F;   /* unchanged — what .why/.watch already resolved to here */
+            --header:      #1C1C1F;   /* unchanged — what .site-banner already resolved to here */
             --heading: #F2F2F2;
             --body: #A8B0BC;
             --muted: #8B949E;
@@ -1152,7 +1162,11 @@
             justify-content: space-between;
             height: 60px;
             padding: 0 24px;
-            background: var(--card);
+            /* --header, not --card: the bar is its own surface now. The .theme-toggle and
+               .profile-btn inside it stay on --card, so they read as white controls sitting ON the
+               bar rather than dissolving into it (#FFFFFF on #DBE5F3, plus their --border rims).
+               The showcase tiles deliberately do NOT follow this — they stay --card white. */
+            background: var(--header);
             border-bottom: 1px solid var(--border);
         }
         .banner-logo { display: inline-flex; align-items: center; }
