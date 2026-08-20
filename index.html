@@ -532,6 +532,17 @@
         }
         .logo-trigger {
             position: relative;
+            /* --card at REST, not just on hover/.is-active below, and in BOTH themes. These tiles
+               had no background at all, so whatever band they sat on showed through: they read
+               cream in light while .site-banner/.theme-toggle/.profile-btn were #FFFFFF, and
+               #111113 in dark while the same header was #1C1C1F. One control, two surfaces,
+               depending on where it sat. --card in both themes is what makes them agree.
+               Nothing was relying on the transparency: the resting stick figures live in
+               .preview-rest on the preview panel, not behind these, and ev-figures.js only ever
+               touches these tiles for hover aim and a wordmark fallback.
+               Hover/.is-active resolve to --card too, so state is carried by --shadow-sm, the
+               yellow ::before bar and the sibling dimming rather than by a background change. */
+            background: var(--card);
             display: flex;
             align-items: center;
             justify-content: flex-end;   /* content hugs the right edge */
@@ -544,19 +555,6 @@
             transition: opacity 0.18s ease, filter 0.18s ease, background 0.18s ease,
                         border-color 0.18s ease, box-shadow 0.18s ease;
         }
-        /* --card at REST, not just on hover/.is-active below. These tiles had no background at
-           all, so the band showed through and they read cream while .site-banner, .theme-toggle
-           and .profile-btn were all #FFFFFF -- the same control reading as two different surfaces
-           depending on where it sat. Nothing was relying on the transparency: the resting stick
-           figures live in .preview-rest on the preview panel, not behind these, and ev-figures.js
-           only ever touches these tiles for hover aim and a wordmark fallback.
-           LIGHT ONLY. Unscoped, this moved the tiles from #111113 to #1C1C1F in dark mode --
-           measured as 169,479 changed pixels -- and dark mode is not in scope here. The same
-           tile-vs-header mismatch does exist in dark; fixing it there is a separate call.
-           Hover/.is-active still resolve to --card too, so state is carried by --shadow-sm, the
-           yellow ::before bar and the sibling dimming rather than by a background change. */
-        :root:not([data-theme="dark"]) .logo-trigger { background: var(--card); }
-
         /* Dim the other tools only once one is actually highlighted */
         .showcase-logos.has-active .logo-trigger:not(.is-active) {
             opacity: 0.45;
