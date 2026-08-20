@@ -62,9 +62,10 @@
             --faint: #9CA3AF;
             /* Dark in light mode, on purpose. At #E5E7EB the greeter's line (.meta-row's
                border-top) and the ghost-button rims were effectively invisible, and every rim the
-               inversion adds routes through here. This is also what retires --fig-furniture's
-               reason to exist: that token was added only because --border was too light to see
-               against a tinted why card. */
+               inversion adds routes through here. It also retired --fig-furniture, which existed
+               only because --border was too light to see against a tinted why card: with --border
+               dark the two held the same value in both themes, so the seated why-Bobit's furniture
+               reads this directly (ev-figures.js). */
             --border: #535964;
             --teal: #00657C;
             --coral: #FF5740;
@@ -126,12 +127,6 @@
 
             /* Recolor filter for pale/grey resting stick figures (light theme) */
             --fig-filter: grayscale(1) brightness(0.55);
-
-            /* Desk/chair/monitor frame for the seated why-Bobit (problem 03). These used to take
-               --border straight, which was fine on white but vanished once the why card picked up
-               a coral tint — #E5E7EB on #FFE1DD is nothing. Dark in light mode, on purpose.
-               Read by ev-figures.js; dark mode keeps what --border already resolved to. */
-            --fig-furniture: #535964;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1109,7 +1104,6 @@
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
             --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
             --fig-filter: grayscale(1) brightness(1.7);
-            --fig-furniture: #2D2D32;   /* unchanged — what --border already resolved to here */
             color-scheme: dark;
         }
 
