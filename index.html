@@ -129,14 +129,26 @@
                worst, so there is headroom here now — 20% still holds the line if the colour wants
                to come back up. */
             --tint: 14%;
-            /* -soft mixes into --surface-alt, NOT --card: these are the why cards, and the band is
-               what is behind them. That is what lets one percentage serve both families, and it is
-               why the cards land only 13-19 RGB units off the band — close enough that the 1px
-               accent rim, not the fill, is what separates card from section. The reference does the
-               same. Dark overrides these three explicitly, so this base change is light-only. */
-            --yellow-soft: color-mix(in srgb, var(--yellow) var(--tint), var(--surface-alt));
-            --teal-soft:   color-mix(in srgb, var(--teal)   var(--tint), var(--surface-alt));
-            --coral-soft:  color-mix(in srgb, var(--coral)  var(--tint), var(--surface-alt));
+            /* -soft tints from --card (WHITE), not from --surface-alt, and this is the whole point:
+               mixing an accent INTO a 15.75% teal band drags every hue toward the band. Measured on
+               the shipped page — yellow came out #DCE4D0, which reads GREEN, and coral came out
+               #DCD3D3, which reads purple-grey. Only the teal card escaped, because it already
+               agreed with the band. Tinting from white keeps each card its own hue: #FFF5D1 is
+               yellow, #FFDAD5 is coral, full stop.
+               This is the same trap the older palette comment recorded ("the yellow note went
+               olive"). It is a property of the band being strongly tinted, so it will come back if
+               anyone re-points these at --surface-alt.
+               --tint-on-band, not --tint: a card sitting ON the band has to out-distance a surface
+               that is itself coloured, so it needs MORE tint than a card on white, not less. At the
+               notes' 14% the teal card lands 6 RGB units off the band and reads as unfilled. 22%
+               puts it at 20, which is the point it reads as a filled card again. Yellow and coral
+               separate on hue regardless (45+) — the teal card is the binding constraint, and it is
+               why this dial exists at all.
+               Dark overrides these three explicitly, so all of this is light-only. */
+            --tint-on-band: 22%;
+            --yellow-soft: color-mix(in srgb, var(--yellow) var(--tint-on-band), var(--card));
+            --teal-soft:   color-mix(in srgb, var(--teal)   var(--tint-on-band), var(--card));
+            --coral-soft:  color-mix(in srgb, var(--coral)  var(--tint-on-band), var(--card));
             --yellow-wash: color-mix(in srgb, var(--yellow) var(--tint), var(--card));
             --teal-wash:   color-mix(in srgb, var(--teal)   var(--tint), var(--card));
             --coral-wash:  color-mix(in srgb, var(--coral)  var(--tint), var(--card));
@@ -428,10 +440,9 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-card);
         }
-        /* -soft, which tints from --surface-alt: these cards sit ON the band, so the reference's
-           6% is measured into the band, not into white. That is what puts them 13-19 RGB units
-           off the section behind them — close enough that the 1px accent rim, not the fill, is
-           what separates card from section. The rim is load-bearing here, not decoration. */
+        /* -soft, which tints from --card at --tint-on-band: these cards sit ON the band, so they
+           are tinted from WHITE (or the band's teal contaminates their hue — see :root) and at a
+           higher strength than the notes (or they do not out-distance the band). */
         :root:not([data-theme="dark"]) .why-item:nth-of-type(1) { background: var(--yellow-soft); border-color: var(--yellow-rim); }
         :root:not([data-theme="dark"]) .why-item:nth-of-type(2) { background: var(--teal-soft);   border-color: var(--teal); }
         :root:not([data-theme="dark"]) .why-item:nth-of-type(3) { background: var(--coral-soft);  border-color: var(--coral); }

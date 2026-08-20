@@ -3627,7 +3627,17 @@
           // LIGHT ONLY — dark falls through to figColor(2), the palette's bright #FFD740, which
           // reads fine on #111113 and was never the colour at issue. figColor(2) itself is
           // untouched: the letter carriers, the v-carrier and the lamp gag all still draw from it.
-          var whyYellow = document.documentElement.dataset.theme === 'dark' ? figColor(2) : '#9C4A1E';
+          // figColor(3), the palette's green, for the --yellow card in LIGHT. Measured against the
+          // corrected card fill #FFF5D1: green 3.12, versus gold 2.98, bold gold 2.08 and the brand
+          // yellow 1.34 — so it is the most legible option that is not a brown, and it is a colour
+          // the page already owns rather than a new one.
+          // Rotating the three figures instead (teal on yellow, coral on teal, yellow on coral) was
+          // measured and rejected: it fixes card 1 (6.10) but drops card 2 from 4.72 to 2.22 and
+          // leaves card 3 needing a yellow figure at 1.13-2.52. That moves the problem, not fixes it.
+          // DARK is deliberately untouched at figColor(2)'s #FFD740. Dark never had this problem —
+          // its why cards have no fill at all, so the figure sits on #111113 where bright yellow
+          // reads fine and still matches the card's yellow accent.
+          var whyYellow = document.documentElement.dataset.theme === 'dark' ? figColor(2) : figColor(3);
           var color = spec.color === '--yellow' ? whyYellow : cssVar(spec.color, ink);
           var anim = A[spec.anim];
           var ws = 0.62;
