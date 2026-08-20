@@ -1187,7 +1187,15 @@
             height: 36px;
             border-radius: 50%;
             border: 1.5px solid var(--border);
-            background: var(--card);
+            /* --header, not --card: these two controls sit ON the header bar, so they take the
+               bar's own surface and read as ghost buttons — the 1.5px --border rim and --shadow-sm
+               are what make them buttons, not a contrasting fill. White pills were tried first and
+               read as applied on top of the bar rather than part of it.
+               No theme scoping needed: dark defines --header and --card as the same #1C1C1F, so
+               this resolves identically there and dark mode does not move.
+               .profile-dropdown deliberately stays --card — it is a panel that floats OVER the
+               page when opened, not part of the bar. */
+            background: var(--header);
             color: var(--heading);
             cursor: pointer;
             display: grid;
@@ -1259,7 +1267,7 @@
             height: 36px;
             border-radius: 50%;
             border: 1.5px solid var(--border);
-            background: var(--card);
+            background: var(--header);   /* same reasoning as .profile-btn above */
             color: var(--heading);
             font-size: 1rem;
             line-height: 1;
