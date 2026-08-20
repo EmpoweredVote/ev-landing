@@ -20,19 +20,20 @@
     <style>
         :root {
             /* Design system tokens (from ev-ui) */
-            /* Light-mode palette sampled from Aditi's pass, Figma node 4197:519 ("Style Guide"
-               canvas > Section 4 > frame "4"). She kept our type colours and accents exactly
-               (#1C1C1C ink, #00657C teal, #FF5740 coral) and changed only the surfaces, so the
-               upgrade here is band + tint values — no geometry, no new selectors.
-               --bg is the tinted band: it already alternates against --card white section by
-               section (hero/how/footer tinted, why/talks white), so cooling this one value
-               reproduces her banding.
-               The band is its own dial, on the same principle as --tint below: her #F2F7F8 is
-               teal mixed into white at 5.21% (solved per channel: 5.10/5.19/5.34). --band runs it
-               at 3x for the same reason the cards do — at her value the bands read washed out
-               next to the dialed-up cards. The note -soft tints mix INTO --bg, so they follow
-               this automatically and the section stays coherent. */
-            --band: 15.6%;
+            /* Light-mode palette matched to Figma node 4258:519, measured off a raw decode of the
+               node rather than read off the screen. Type colours and accents are ours unchanged
+               (#1C1C1C ink, #00657C teal, #FF5740 coral); only surfaces come from the reference.
+               THE WHOLE REFERENCE IS ONE RULE: every card fill is its own accent mixed at 6% into
+               whatever surface sits behind it. Four of the six fills reproduce exactly from that
+               rule and the other two land 1 off in a single channel, which is export rounding.
+               So this palette is two numbers — --band and --tint — not eight hexes.
+               Sections alternate WHITE (hero/how/footer, --bg) against this faint cool band
+               (why/talks, --surface-alt). 3.15% solves the reference's #F7FAFB per channel
+               (3.14/3.25/3.05); anything from 3.0 to 3.3 rounds to the same hex.
+               History, because it explains why these numbers moved so far: an earlier pass ran the
+               band at 15.6% and the cards at 18%/9% to give them more punch, and a cream --bg was
+               tried on top of that. Both were louder than the reference and are gone. */
+            --band: 3.15%;
             /* THE INVERSION (2026-08). The band and the plain surface swapped jobs, so the old
                --bg value moves to a name that says what it actually is now: the alternating
                SECTION fill (.why, .watch) and nothing else. Three reasons it is a new token and
@@ -44,17 +45,18 @@
                    comments below was computed against. None of that math has to be redone.
                  - --*-wash / --*-soft mix INTO --card, so pinning it to white keeps all six
                    derived tints exactly where they were.
-               --bg is now the cream the tinted bands used to be, and it is one dial for the same
-               reason --band is: the brand yellow mixed into white, so it tracks the accent
-               instead of being a stray hex nobody can re-derive. */
+               --bg is plain #FFFFFF, matching the reference's hero/how/footer. It resolves the
+               same as --card in light and is still a separate token because dark splits them
+               (#111113 vs #1C1C1F) and because they mean different things: --bg is the page,
+               --card is a raised surface on it. White cards on the white sections are delineated
+               by their rim alone, which is exactly what the reference does. */
             --surface-alt: color-mix(in srgb, var(--teal) var(--band), #FFFFFF);
             /* 6%, down from 10%. At 10% the band read as a colour in its own right rather than as
                a warm white, which is not the job -- the accents and the rims are what should carry
                colour here. 6% keeps ~13 RGB units between the band and the #FFFFFF surfaces on it,
                which is enough now that every one of those surfaces also carries a --border rim.
                This is the one number to turn if it wants to go warmer or cooler. */
-            --cream: 6%;
-            --bg: color-mix(in srgb, var(--yellow) var(--cream), #FFFFFF);
+            --bg: #FFFFFF;
             --card: #FFFFFF;
             --heading: #1C1C1C;
             --body: #535964;
@@ -82,30 +84,27 @@
                5.03 and 2.55 and never had this problem. */
             --yellow-rim: #B8860B;
 
-            /* Derived tints. Aditi's pass turned out to be a single number: every card fill in her
-               frame is one of OUR accents mixed into the surface behind it at ~6% (measured off a
-               raw decode of node 4197:519 — #F3F5EC, #E4EEF0, #F3EDED on the band; #FBF8F1,
-               #F0F6F7, #FFF5F4 on white). Our previous hand-picked values sat at 10–24%, which is
-               why hers read so much quieter. So this is one dial, not six hexes.
-               -soft = on the --bg band (the notes). -wash = on --card white (the why cards).
-               We run at 18% rather than her 6% on purpose: adopting her literal values drained the
-               two cards that already had colour (n-money was ~24%, n-follow ~14%) and the page read
-               washed out. 18% keeps her structure and hue direction at roughly the old punch.
-               Raising this further is safe until the teal note crosses AA — it measures 4.98 here
-               against --body, so ~20% is the ceiling before contrast needs rechecking. */
-            --tint: 18%;
-            /* Notes tint from WHITE, not from the band, and at a lighter setting. Once --band went
-               3x, mixing accent INTO the band dragged the cards toward it — the yellow note went
-               olive and the teal note landed at #B0D0D7, failing AA at 4.31. Tinting from white at
-               18% fixes the colour but puts the teal note at #D1E3E7 against a #D7E7EB band: 14
-               units apart, so that card effectively disappears. 9% from white keeps every card
-               lighter than the band it sits on (min separation 35) and every ink ratio >= 6.14.
-               Rule of thumb: cards on white tint DOWN (--tint), cards on the band tint UP toward
-               white (--tint-note). */
-            --tint-note: 9%;
-            --yellow-soft: color-mix(in srgb, var(--yellow) var(--tint-note), var(--card));
-            --teal-soft:   color-mix(in srgb, var(--teal)   var(--tint-note), var(--card));
-            --coral-soft:  color-mix(in srgb, var(--coral)  var(--tint-note), var(--card));
+            /* Derived tints — ONE dial, because the reference is one rule: accent at 6% into the
+               surface behind the card. What differs between the two families is only WHICH surface
+               that is, so they are the same percentage over different bases:
+                 -wash = 6% into --card        -> the NOTES, on the white how section
+                 -soft = 6% into --surface-alt -> the WHY CARDS, on the cool band
+               Verified against a raw decode of node 4258:519. Notes: coral #FFF5F4 and teal
+               #F0F6F7 reproduce exactly, yellow lands #FFFCF2 against the node's #FFFCF3. Why
+               cards: teal #E8F1F3 and coral #F7F0F0 exact, yellow #F7F8EF against #F7F8EE.
+               There used to be a second percentage (--tint-note, 9%) because both families tinted
+               from the same base and needed different strengths to stay apart. Now that -soft
+               tints from the band it actually sits on, one number covers both and that token is
+               gone. */
+            --tint: 6%;
+            /* -soft mixes into --surface-alt, NOT --card: these are the why cards, and the band is
+               what is behind them. That is what lets one percentage serve both families, and it is
+               why the cards land only 13-19 RGB units off the band — close enough that the 1px
+               accent rim, not the fill, is what separates card from section. The reference does the
+               same. Dark overrides these three explicitly, so this base change is light-only. */
+            --yellow-soft: color-mix(in srgb, var(--yellow) var(--tint), var(--surface-alt));
+            --teal-soft:   color-mix(in srgb, var(--teal)   var(--tint), var(--surface-alt));
+            --coral-soft:  color-mix(in srgb, var(--coral)  var(--tint), var(--surface-alt));
             --yellow-wash: color-mix(in srgb, var(--yellow) var(--tint), var(--card));
             --teal-wash:   color-mix(in srgb, var(--teal)   var(--tint), var(--card));
             --coral-wash:  color-mix(in srgb, var(--coral)  var(--tint), var(--card));
@@ -389,11 +388,10 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-card);
         }
-        /* -soft (9%), not -wash (18%): these cards used to sit on white and tint DOWN. On the
-           blue band the rule stated in :root inverts — cards on the band tint UP toward white.
-           That leaves the teal card only ~17 units off the band, which is precisely the "card
-           effectively disappears" trap --tint-note documents, so the rim is not decoration here:
-           it is what carries the separation the fill no longer can. */
+        /* -soft, which tints from --surface-alt: these cards sit ON the band, so the reference's
+           6% is measured into the band, not into white. That is what puts them 13-19 RGB units
+           off the section behind them — close enough that the 1px accent rim, not the fill, is
+           what separates card from section. The rim is load-bearing here, not decoration. */
         :root:not([data-theme="dark"]) .why-item:nth-of-type(1) { background: var(--yellow-soft); border-color: var(--yellow-rim); }
         :root:not([data-theme="dark"]) .why-item:nth-of-type(2) { background: var(--teal-soft);   border-color: var(--teal); }
         :root:not([data-theme="dark"]) .why-item:nth-of-type(3) { background: var(--coral-soft);  border-color: var(--coral); }
@@ -783,12 +781,12 @@
            browns/teals (#2A2400, #2B1410...), so an unscoped rule here would repaint three dark
            cards nobody asked to change. :root:not([data-theme="dark"]) rather than
            [data-theme="light"] so the tints survive if the inline theme script never runs. */
-        /* -wash (18%), not -soft (9%): the mirror of the why cards. These left the band for the
-           cream, so they tint DOWN again. n-follow and n-money are listed even though their own
-           rules already set a fill — those rules are UNSCOPED (they feed dark mode, where -soft
-           resolves to deep browns), so the light-only correction has to happen here rather than
-           by editing them. The :root:not() prefix outranks the later plain .note.n-* rules, so
-           source order does not matter. */
+        /* -wash, which tints from --card: the mirror of the why cards above. These sit on the
+           WHITE how section, so the same 6% is measured into white instead of into the band.
+           n-follow and n-money are listed even though their own rules already set a fill — those
+           rules are UNSCOPED (they feed dark mode, where -soft resolves to deep browns), so the
+           light-only correction has to happen here rather than by editing them. The :root:not()
+           prefix outranks the later plain .note.n-* rules, so source order does not matter. */
         :root:not([data-theme="dark"]) .note.n-alpha  { background: var(--coral-wash);  border-color: var(--coral); }
         :root:not([data-theme="dark"]) .note.n-team   { background: var(--yellow-wash); border-color: var(--yellow-rim); }
         :root:not([data-theme="dark"]) .note.n-ai     { background: var(--teal-wash);   border-color: var(--teal); }
