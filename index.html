@@ -28,12 +28,15 @@
                rule and the other two land 1 off in a single channel, which is export rounding.
                So this palette is two numbers — --band and --tint — not eight hexes.
                Sections alternate WHITE (hero/how/footer, --bg) against this faint cool band
-               (why/talks, --surface-alt). 3.15% solves the reference's #F7FAFB per channel
-               (3.14/3.25/3.05); anything from 3.0 to 3.3 rounds to the same hex.
-               History, because it explains why these numbers moved so far: an earlier pass ran the
-               band at 15.6% and the cards at 18%/9% to give them more punch, and a cream --bg was
-               tried on top of that. Both were louder than the reference and are gone. */
-            --band: 3.15%;
+               (why/talks, --surface-alt).
+               3.15% is the value that solves the reference's #F7FAFB per channel (3.14/3.25/3.05).
+               WE RUN 5x THAT, on purpose: at the reference's own value the coloured band sat 1.27
+               contrast off the white sections and barely read as a band at all. 15.75% puts it at
+               #D7E7EA. Note where that lands — within a hair of the 15.6% an earlier pass had
+               arrived at independently, which is some evidence it is the right neighbourhood for
+               this page even though it is not what the reference specifies.
+               To go back to literal reference fidelity, set this to 3.15% and --tint to 6%. */
+            --band: 15.75%;
             /* THE INVERSION (2026-08). The band and the plain surface swapped jobs, so the old
                --bg value moves to a name that says what it actually is now: the alternating
                SECTION fill (.why, .watch) and nothing else. Three reasons it is a new token and
@@ -95,8 +98,18 @@
                There used to be a second percentage (--tint-note, 9%) because both families tinted
                from the same base and needed different strengths to stay apart. Now that -soft
                tints from the band it actually sits on, one number covers both and that token is
-               gone. */
-            --tint: 6%;
+               gone.
+               6% is the reference's value; WE RUN 5x IT, to match the band's 5x above, so cards
+               and sections stay in proportion to each other. At 30% the fills are:
+                 why cards (into the band)  yellow #E3E0B2  teal #96C0C9  coral #E3BCB7
+                 notes     (into white)     coral #FFCDC6  yellow #FFF1C0  teal #B3D1D8
+               ACCESSIBILITY, measured, because 30% is past where this stops being free: --heading
+               (#1C1C1C) clears AA everywhere, 8.66 at worst. But --body (#535964) now FAILS AA on
+               three fills — teal why card 3.58, coral why card 4.06, teal note 4.36 — and --muted
+               (#6B7280) fails on all six, 2.46 to 4.28. The note markers already moved to --body
+               for an earlier version of this problem; that fix is no longer sufficient for the
+               teal cards. Lowering this to ~12% is where --body clears 4.5 again. */
+            --tint: 30%;
             /* -soft mixes into --surface-alt, NOT --card: these are the why cards, and the band is
                what is behind them. That is what lets one percentage serve both families, and it is
                why the cards land only 13-19 RGB units off the band — close enough that the 1px
@@ -281,6 +294,14 @@
             color: #fff;
         }
         .btn-primary:hover { transform: translateY(-1px); background: #000; }
+        /* Newsletter submit in teal rather than ink. LIGHT ONLY: in dark, .btn-primary is an
+           INVERTED button — --heading (#F2F2F2) behind #111113 text — so painting it #00657C there
+           would put near-black text on mid-teal. White on #00657C measures 5.46, comfortably AA.
+           This is the class, not the one button, so it also covers the footer's "Subscribe" (the
+           only other .btn-primary on the page, behind the Newsletter toggle) — deliberate, so the
+           two newsletter submits do not end up different colours. */
+        :root:not([data-theme="dark"]) .btn-primary { background: var(--teal); }
+        :root:not([data-theme="dark"]) .btn-primary:hover { background: #004E5F; }
         .btn-primary .arr { transition: transform 0.2s ease; }
         .btn-primary:hover .arr { transform: translateX(3px); }
 
