@@ -33,16 +33,48 @@
                next to the dialed-up cards. The note -soft tints mix INTO --bg, so they follow
                this automatically and the section stays coherent. */
             --band: 15.6%;
-            --bg: color-mix(in srgb, var(--teal) var(--band), #FFFFFF);
+            /* THE INVERSION (2026-08). The band and the plain surface swapped jobs, so the old
+               --bg value moves to a name that says what it actually is now: the alternating
+               SECTION fill (.why, .watch) and nothing else. Three reasons it is a new token and
+               not a swap of these two values:
+                 - --card is overloaded. It fills .why/.watch AND every real card, input, banner,
+                   dropdown and speech bubble. Swapping the values would have painted the cards
+                   the same blue as the section under them.
+                 - --card staying #FFFFFF keeps the base that every AA ratio measured in the
+                   comments below was computed against. None of that math has to be redone.
+                 - --*-wash / --*-soft mix INTO --card, so pinning it to white keeps all six
+                   derived tints exactly where they were.
+               --bg is now the cream the tinted bands used to be, and it is one dial for the same
+               reason --band is: the brand yellow mixed into white, so it tracks the accent
+               instead of being a stray hex nobody can re-derive. */
+            --surface-alt: color-mix(in srgb, var(--teal) var(--band), #FFFFFF);
+            --cream: 10%;
+            --bg: color-mix(in srgb, var(--yellow) var(--cream), #FFFFFF);
             --card: #FFFFFF;
             --heading: #1C1C1C;
             --body: #535964;
             --muted: #6B7280;
             --faint: #9CA3AF;
-            --border: #E5E7EB;
+            /* Dark in light mode, on purpose. At #E5E7EB the greeter's line (.meta-row's
+               border-top) and the ghost-button rims were effectively invisible, and every rim the
+               inversion adds routes through here. This is also what retires --fig-furniture's
+               reason to exist: that token was added only because --border was too light to see
+               against a tinted why card. */
+            --border: #535964;
             --teal: #00657C;
             --coral: #FF5740;
             --yellow: #FED12E;
+            /* Rims only, light mode only. --yellow is the right FILL accent but the wrong rim: at
+               #FED12E a yellow border lands at 1.36-1.41 against its own tint AND against the cream
+               band, so the one card whose fill barely separates from the band was also the one whose
+               rim couldn't be seen — the yellow note effectively lost its edge on both sides. This
+               gold measures 3.03-3.14 on the warm surfaces and 2.56 on the blue band, putting it
+               just past the coral rim's 2.55, which is the level already proven to read here.
+               #B8860B is not a new colour on this page: it is exactly what the why-card Bobit is
+               drawn in (measured, 12,094px of it), so the yellow card's rim and its own figure are
+               now the same gold. Teal and coral rims stay on their base accents — they measure
+               5.03 and 2.55 and never had this problem. */
+            --yellow-rim: #B8860B;
 
             /* Derived tints. Aditi's pass turned out to be a single number: every card fill in her
                frame is one of OUR accents mixed into the surface behind it at ~6% (measured off a
@@ -330,7 +362,7 @@
         }
 
         /* ---------------- WHY ---------------- */
-        .why { background: var(--card); }
+        .why { background: var(--surface-alt); }
         .why-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -352,12 +384,19 @@
         :root:not([data-theme="dark"]) .why-grid { gap: 24px; }
         :root:not([data-theme="dark"]) .why-item {
             padding: 32px 28px 36px;
-            border-top: none;
+            /* was border-top: none — the flush-column divider is gone, but the card now needs a
+               rim on all four sides, so the base border-top is replaced rather than removed. */
+            border: 1px solid var(--border);
             border-radius: var(--radius-card);
         }
-        :root:not([data-theme="dark"]) .why-item:nth-of-type(1) { background: var(--yellow-wash); }
-        :root:not([data-theme="dark"]) .why-item:nth-of-type(2) { background: var(--teal-wash); }
-        :root:not([data-theme="dark"]) .why-item:nth-of-type(3) { background: var(--coral-wash); }
+        /* -soft (9%), not -wash (18%): these cards used to sit on white and tint DOWN. On the
+           blue band the rule stated in :root inverts — cards on the band tint UP toward white.
+           That leaves the teal card only ~17 units off the band, which is precisely the "card
+           effectively disappears" trap --tint-note documents, so the rim is not decoration here:
+           it is what carries the separation the fill no longer can. */
+        :root:not([data-theme="dark"]) .why-item:nth-of-type(1) { background: var(--yellow-soft); border-color: var(--yellow-rim); }
+        :root:not([data-theme="dark"]) .why-item:nth-of-type(2) { background: var(--teal-soft);   border-color: var(--teal); }
+        :root:not([data-theme="dark"]) .why-item:nth-of-type(3) { background: var(--coral-soft);  border-color: var(--coral); }
         .why-item .idx {
             font-size: 0.72rem;
             font-weight: 700;
@@ -553,7 +592,9 @@
             border-color: var(--border);
             box-shadow: var(--shadow-md);
         }
-        .showcase-preview.is-active .preview-screen { background: var(--bg); }
+        /* --surface-alt, not --bg: this is a mock of the live app, whose chrome is blue-tinted.
+           Following --bg would have turned the fake screen cream once --bg became the cream. */
+        .showcase-preview.is-active .preview-screen { background: var(--surface-alt); }
         /* While a screenshot is showing, hide the resting layer so it can't peek
            through the letterbox bars of a contained image. */
         .showcase-preview.is-active .preview-rest { opacity: 0; }
@@ -731,9 +772,17 @@
            browns/teals (#2A2400, #2B1410...), so an unscoped rule here would repaint three dark
            cards nobody asked to change. :root:not([data-theme="dark"]) rather than
            [data-theme="light"] so the tints survive if the inline theme script never runs. */
-        :root:not([data-theme="dark"]) .note.n-alpha { background: var(--coral-soft); }
-        :root:not([data-theme="dark"]) .note.n-team  { background: var(--yellow-soft); }
-        :root:not([data-theme="dark"]) .note.n-ai    { background: var(--teal-soft); }
+        /* -wash (18%), not -soft (9%): the mirror of the why cards. These left the band for the
+           cream, so they tint DOWN again. n-follow and n-money are listed even though their own
+           rules already set a fill — those rules are UNSCOPED (they feed dark mode, where -soft
+           resolves to deep browns), so the light-only correction has to happen here rather than
+           by editing them. The :root:not() prefix outranks the later plain .note.n-* rules, so
+           source order does not matter. */
+        :root:not([data-theme="dark"]) .note.n-alpha  { background: var(--coral-wash);  border-color: var(--coral); }
+        :root:not([data-theme="dark"]) .note.n-team   { background: var(--yellow-wash); border-color: var(--yellow-rim); }
+        :root:not([data-theme="dark"]) .note.n-ai     { background: var(--teal-wash);   border-color: var(--teal); }
+        :root:not([data-theme="dark"]) .note.n-follow { background: var(--coral-wash);  border-color: var(--coral); }
+        :root:not([data-theme="dark"]) .note.n-money  { background: var(--yellow-wash); border-color: var(--yellow-rim); }
         /* Measured: --muted markers land at 4.09–4.39 against these tints, under AA's 4.5 (they
            were 4.83 on white), so they move to --body (~6.0) — the same swap .note.n-follow
            already documents. n-money is in the list because it was ALREADY failing at 4.44 on
@@ -750,7 +799,7 @@
         }
 
         /* ---------------- WATCH ---------------- */
-        .watch { background: var(--card); border-top: 1px solid var(--border); }
+        .watch { background: var(--surface-alt); border-top: 1px solid var(--border); }
         .watch-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1024,6 +1073,7 @@
         [data-theme="dark"] {
             --bg: #111113;
             --card: #1C1C1F;
+            --surface-alt: #1C1C1F;   /* unchanged — what .why/.watch already resolved to here */
             --heading: #F2F2F2;
             --body: #A8B0BC;
             --muted: #8B949E;
