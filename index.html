@@ -941,15 +941,15 @@
         .follow-note-body h3 { margin-bottom: 8px; }
         .follow-note-body > div > p { color: var(--body); font-size: 0.98rem; max-width: 46ch; }
         .how-signup-form { display: flex; gap: 8px; min-width: 0; }
-        /* --card, matching .footer-form input, which was already white. As --bg this put a cream
-           field inside a coral-tinted note and made the site's two signup inputs two different
-           colours. LIGHT ONLY for the same reason as the tiles above: in dark, --bg and --card are
-           #111113 vs #1C1C1F, so an unscoped change repaints a dark surface nobody asked about. */
-        :root:not([data-theme="dark"]) .how-signup-form input { background: var(--card); }
         .how-signup-form input {
             flex: 1; min-width: 0;
             font-family: inherit; font-size: 0.98rem;
-            color: var(--heading); background: var(--bg);
+            /* --card in BOTH themes, matching .footer-form input, which always was. As --bg this
+               was a cream field inside a coral-tinted note in light and #111113 against a #2B1410
+               note in dark -- either way, the site's two signup inputs were two different colours.
+               Same reasoning as .logo-trigger: a field is a field wherever it sits, so it takes the
+               card surface rather than whatever band happens to be behind it. */
+            color: var(--heading); background: var(--card);
             border: 1.5px solid var(--border);
             border-radius: var(--radius-pill);
             padding: 12px 18px;
