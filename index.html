@@ -62,7 +62,13 @@
             --bg: #FFFFFF;
             --card: #FFFFFF;
             --heading: #1C1C1C;
-            --body: #535964;
+            /* #3F4653, darkened from #535964. The tinted cards are what forced it: at the card
+               strengths this page runs, the old ink sat at 4.55-4.79 against the teal and coral
+               fills, i.e. right on the AA line. Applied to the token rather than scoped to those
+               cards on purpose — a page with two different body colours depending on which surface
+               the paragraph landed on is the same inconsistency the buttons and inputs had. It now
+               measures 6.13 at worst anywhere on the page. */
+            --body: #3F4653;
             --muted: #6B7280;
             --faint: #9CA3AF;
             /* Dark in light mode, on purpose. At #E5E7EB the greeter's line (.meta-row's
@@ -99,17 +105,17 @@
                from the same base and needed different strengths to stay apart. Now that -soft
                tints from the band it actually sits on, one number covers both and that token is
                gone.
-               6% is the reference's value; WE RUN 5x IT, to match the band's 5x above, so cards
-               and sections stay in proportion to each other. At 30% the fills are:
-                 why cards (into the band)  yellow #E3E0B2  teal #96C0C9  coral #E3BCB7
-                 notes     (into white)     coral #FFCDC6  yellow #FFF1C0  teal #B3D1D8
-               ACCESSIBILITY, measured, because 30% is past where this stops being free: --heading
-               (#1C1C1C) clears AA everywhere, 8.66 at worst. But --body (#535964) now FAILS AA on
-               three fills — teal why card 3.58, coral why card 4.06, teal note 4.36 — and --muted
-               (#6B7280) fails on all six, 2.46 to 4.28. The note markers already moved to --body
-               for an earlier version of this problem; that fix is no longer sufficient for the
-               teal cards. Lowering this to ~12% is where --body clears 4.5 again. */
-            --tint: 30%;
+               6% is the reference's value. This runs well above it, like --band does, so the cards
+               keep their weight against a band that is itself 5x the reference. It went to 30%
+               first and came back down: at 30% the fills were strong enough that --body failed AA
+               on three of them (teal why card 3.58), which is the ceiling this dial actually has.
+               14% is the settled value. Fills:
+                 why cards (into the band)  yellow #DCE4D0  teal #B9D5DB  coral #DCD3D3
+                 notes     (into white)     coral #FFE7E4  yellow #FFF9E2  teal #DBE9ED
+               Every one of those clears AA against the darkened --body by a wide margin, 6.13 at
+               worst, so there is headroom here now — 20% still holds the line if the colour wants
+               to come back up. */
+            --tint: 14%;
             /* -soft mixes into --surface-alt, NOT --card: these are the why cards, and the band is
                what is behind them. That is what lets one percentage serve both families, and it is
                why the cards land only 13-19 RGB units off the band — close enough that the 1px

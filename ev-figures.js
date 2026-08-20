@@ -3619,7 +3619,16 @@
         }
 
         if (spec.mode === 'why') {
-          var color = spec.color === '--yellow' ? figColor(2) : cssVar(spec.color, ink);   // legible gold instead of faint --yellow
+          // The --yellow card's figure is deliberately NOT figColor(2), the shared gold. Teal was
+          // the other option floated, but card 2's figure is already --teal, so a rich chestnut is
+          // what keeps the three why figures distinct: it measures 4.70 against this card's own
+          // fill where the gold managed 2.48, and sits 105 RGB units off the coral figure beside it
+          // so the two warm ones do not read as the same man.
+          // LIGHT ONLY — dark falls through to figColor(2), the palette's bright #FFD740, which
+          // reads fine on #111113 and was never the colour at issue. figColor(2) itself is
+          // untouched: the letter carriers, the v-carrier and the lamp gag all still draw from it.
+          var whyYellow = document.documentElement.dataset.theme === 'dark' ? figColor(2) : '#9C4A1E';
+          var color = spec.color === '--yellow' ? whyYellow : cssVar(spec.color, ink);
           var anim = A[spec.anim];
           var ws = 0.62;
           // ground line shared with the standing why-figures (their feet land at ~h-8);
