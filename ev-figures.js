@@ -2330,8 +2330,9 @@
     // ── CARTWHEEL scene (occasionally replaces the footer meet pair): one Bobit walks around
     //    and throws in the odd cartwheel; click him → he's flagged, and at the END of his next
     //    cartwheel he collapses into a heap (~10s wriggle), then gets up and shakes it off. On
-    //    the spill the corner Bobit runs over and kneels by him; rises when he rises; and when
-    //    he starts wheeling again, throws up his hands and trudges back to his corner. ──
+    //    the spill the corner Bobit runs over and kneels by him; rises when he rises; heads back
+    //    to his corner; and at the man's next cartwheel — the thing he was just picked up from —
+    //    throws up his hands, wherever he has got to by then. ──
     var HEAP_SECS = 5;      // both of them down together; 10s was twice as long as the beat wants
     function cwStar() { var p = A.standstill.frame(0); p.hunch = 0; p.bob = 0; p.headTilt = 0; p.armRU = 142; p.armRF = 150; p.armLU = -142; p.armLF = -150; p.legRU = 30; p.legRF = 26; p.legLU = -30; p.legLF = -26; return p; }
     function cwHeap(t) { var p = A.standstill.frame(0); var wr = Math.sin(t * 7) * 4, wr2 = Math.sin(t * 5.3 + 1) * 5; p.hunch = -46 + wr; p.bob = 10; p.lean = 6 + wr2; p.headTilt = -22 + wr; p.legRU = 66 + Math.sin(t * 6) * 12; p.legRF = -38; p.legLU = 58 + wr2; p.legLF = -32; p.armRU = 52 + Math.sin(t * 8) * 14; p.armRF = 40; p.armLU = -56; p.armLF = -38 + wr; return p; }
@@ -2354,7 +2355,7 @@
     // An earlier measurement put their closest approach at 87px and cleared the overlap idea, but it
     // sampled the untouched cycle, where the helper never leaves his corner at all.
     var CW_CLEAR = 58;                                        // gap at which the two silhouettes separate
-    var CW_WATCH_MAX = 2.0;                                   // how long he will stand over him before giving up
+    var CW_WATCH_MAX = 2.0;                                   // how long he will stand over him before heading home
     function cwHelperOut(e) { return e.hp && e.hp !== 'corner'; }
     function drawCartwheel(e, ctx, w, h, feetY, tt, colA, colB, shadow, dt, cr) {
       var baseY = feetY - 112 * S, cornerX = 46, roamL = 128, roamR = w - 74;
@@ -2444,11 +2445,24 @@
       drawFig(ctx, e.cwX, baseY + cwYoff, S, cwFlip, cwPose, { color: colA, rot: cwRot });
 
       // ---- helper (corner Bobit) ----
+      // The arms-up is a reaction to the man WHEELING again — "you're doing THAT again?" — so it
+      // fires on the wheel and on nothing else. Keyed to the walk as well it went off the instant he
+      // took his first step after being picked up, which reads as the helper getting fed up over
+      // nothing. It also cannot be a state of the watch: while the helper is out on the floor the
+      // cartwheeler is hemmed in by the keep-apart rules and hardly ever wheels — traced at 390 wide,
+      // both a mid-lane and a wall spill had him standing or walking for the whole rescue and only
+      // wheeling seconds AFTER the helper was back in his corner. So the reaction is owed from the
+      // moment he runs out (hpOwed) and is paid at the first wheel wherever he has got to by then —
+      // still standing over him, trudging home, or already back at his post. Once per spill: hpOwed
+      // is only re-armed by the next collapse, so the wheels of an untouched cycle are ignored.
       var hpPose, hpFlip = false, hpRot = 0, hpYoff = 0;
+      if (e.hpOwed && e.cw === 'cwheel' && (e.hp === 'watch' || e.hp === 'runback' || e.hp === 'corner')) {
+        e.hpOwed = false; e.hp = 'frustrated'; e.hpT = 0;
+      }
       switch (e.hp) {
         case 'corner':
           hpPose = A.standstill.frame(tt + 1.1); e.hpX = cornerX;
-          if (e.cw === 'heap') { e.hp = 'runto'; }
+          if (e.cw === 'heap') { e.hp = 'runto'; e.hpOwed = true; }
           break;
         case 'runto': {
           var tgt = e.cwX - 30, d = tgt > e.hpX ? 1 : -1; e.hpX += d * 196 * dt; hpFlip = d < 0; hpPose = A.scurry.frame(tt);
@@ -2466,13 +2480,12 @@
         }
         case 'watch':
           e.hpT += dt; hpPose = A.standstill.frame(tt); hpFlip = e.cwX < e.hpX;
-          // He waits to see the man back on his feet, and gives up on him the moment he goes off
-          // again — wheeling OR walking. Keyed to the wheel alone, he stood there through the whole
-          // 1.6-3.8s walk leg first, which on a phone is the width of the entire roam, and that is
-          // when he was being walked through. The timeout is the other half of that: a man cornered
-          // against a wall waits for him to move rather than walking through him, so the watch has
-          // to end on its own or the two of them stand there forever.
-          if (e.cw === 'cwheel' || e.cw === 'walk' || e.hpT > CW_WATCH_MAX) { e.hp = 'frustrated'; e.hpT = 0; }
+          // He sees the man back on his feet and then heads home on his own — the timeout is the
+          // only way out of here, and it has to be, because a man cornered against a wall waits for
+          // the helper to move rather than walking through him. Anything that kept the helper
+          // standing until the man did something (the wheel he is owed a reaction to, say) deadlocks
+          // that pair. He is still owed it on the way home; see the hpOwed check above.
+          if (e.hpT > CW_WATCH_MAX) { e.hp = 'runback'; }
           break;
         case 'frustrated':
           e.hpT += dt; hpPose = cwFrust(e.hpT); hpFlip = e.cwX < e.hpX;
