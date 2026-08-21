@@ -2329,11 +2329,20 @@
 
     // ── CARTWHEEL scene (occasionally replaces the footer meet pair): one Bobit walks around
     //    and throws in the odd cartwheel; click him → he's flagged, and at the END of his next
-    //    cartwheel he collapses into a heap (~10s wriggle), then gets up and shakes it off. On
-    //    the spill the corner Bobit runs over and kneels by him; rises when he rises; heads back
-    //    to his corner; and at the man's next cartwheel — the thing he was just picked up from —
-    //    throws up his hands, wherever he has got to by then. ──
-    var HEAP_SECS = 5;      // both of them down together; 10s was twice as long as the beat wants
+    //    cartwheel he collapses into a heap, where he stays until he has been helped up — 5s on a
+    //    phone, longer on a wide screen where the helper has further to run — and then gets up and
+    //    shakes it off. The corner Bobit drops whatever he is doing the moment the man goes down,
+    //    runs over and kneels by him, rises when he rises, and heads back to his corner; then at
+    //    the man's next cartwheel — the thing he was just picked up from — he throws up his hands,
+    //    wherever he has got to by then. ──
+    // How long he stays down. HEAP_SECS is the floor and the beat that was tuned on a phone, where
+    // the helper reaches him in about a second; 10s of lying there was twice as long as it wants.
+    // Past the floor he waits to have been knelt beside for HEAP_TOGETHER, because a fixed timer
+    // had him up and walking before the helper had crossed a wide footer at all — the corner is at
+    // x=46 and the run is 196px/s, so the trip is 1.2s at 390 wide but 6.6s at 1440 and 12.3s at
+    // 2560, and against 5s flat the rescue arrived at an empty patch of floor. HEAP_CAP is the
+    // backstop for a helper who never comes at all (poofed mid-run), so he cannot be left there.
+    var HEAP_SECS = 5, HEAP_TOGETHER = 3, HEAP_CAP = 18;
     function cwStar() { var p = A.standstill.frame(0); p.hunch = 0; p.bob = 0; p.headTilt = 0; p.armRU = 142; p.armRF = 150; p.armLU = -142; p.armLF = -150; p.legRU = 30; p.legRF = 26; p.legLU = -30; p.legLF = -26; return p; }
     function cwHeap(t) { var p = A.standstill.frame(0); var wr = Math.sin(t * 7) * 4, wr2 = Math.sin(t * 5.3 + 1) * 5; p.hunch = -46 + wr; p.bob = 10; p.lean = 6 + wr2; p.headTilt = -22 + wr; p.legRU = 66 + Math.sin(t * 6) * 12; p.legRF = -38; p.legLU = 58 + wr2; p.legLF = -32; p.armRU = 52 + Math.sin(t * 8) * 14; p.armRF = 40; p.armLU = -56; p.armLF = -38 + wr; return p; }
     // crouched over the fallen one — knelt low, one arm reaching in. Drawn with a y-offset so it sits on the ground.
@@ -2428,7 +2437,8 @@
         case 'heap':
           e.cwT += dt; cwPose = cwHeap(e.cwT); cwRot = lieRot + Math.sin(e.cwT * 6) * 0.12; cwYoff = lieY;
           pushBeacon(cr.left + e.cwX, cr.top + feetY, 'collapse');   // someone crashed down below
-          if (e.cwT > HEAP_SECS) { e.cw = 'getup'; e.cwT = 0; }
+          var helped = e.hp === 'kneel' && e.hpT > HEAP_TOGETHER;
+          if ((e.cwT > HEAP_SECS && helped) || e.cwT > HEAP_CAP) { e.cw = 'getup'; e.cwT = 0; }
           break;
         case 'getup': {
           e.cwT += dt; var gp = smooth01(e.cwT / 1.2); cwRot = lieRot * (1 - gp); cwYoff = lieY * (1 - gp); cwPose = lerpPose(cwHeap(0), A.standstill.frame(0), gp);
@@ -2456,13 +2466,22 @@
       // still standing over him, trudging home, or already back at his post. Once per spill: hpOwed
       // is only re-armed by the next collapse, so the wheels of an untouched cycle are ignored.
       var hpPose, hpFlip = false, hpRot = 0, hpYoff = 0;
-      if (e.hpOwed && e.cw === 'cwheel' && (e.hp === 'watch' || e.hp === 'runback' || e.hp === 'corner')) {
+      // A man on the ground outranks anything else the helper is doing. This used to be a branch of
+      // the corner state alone, so a collapse that happened while he was walking home was not even
+      // looked at until he had trudged the whole way back to his spot and gone idle: on a desktop
+      // that is several seconds of walking away from the man, and then the run out to him is several
+      // more. The heap would not wait that long, so he arrived and squatted beside someone who was
+      // already up and walking around — the rescue played out with nobody left to rescue. He drops
+      // the walk home, the watch, even the arms-up mid-gesture, and heads straight for him.
+      if (e.cw === 'heap' && (e.hp === 'corner' || e.hp === 'watch' || e.hp === 'runback' || e.hp === 'frustrated')) {
+        e.hp = 'runto'; e.hpOwed = true;
+      }
+      else if (e.hpOwed && e.cw === 'cwheel' && (e.hp === 'watch' || e.hp === 'runback' || e.hp === 'corner')) {
         e.hpOwed = false; e.hp = 'frustrated'; e.hpT = 0;
       }
       switch (e.hp) {
         case 'corner':
           hpPose = A.standstill.frame(tt + 1.1); e.hpX = cornerX;
-          if (e.cw === 'heap') { e.hp = 'runto'; e.hpOwed = true; }
           break;
         case 'runto': {
           var tgt = e.cwX - 30, d = tgt > e.hpX ? 1 : -1; e.hpX += d * 196 * dt; hpFlip = d < 0; hpPose = A.scurry.frame(tt);
