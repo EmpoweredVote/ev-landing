@@ -206,18 +206,12 @@
     // painted ink — an actual figure, not the empty box around him — and any mode added later
     // inherits this for free. These canvases draw vectors only, so they are never tainted.
     // Page CHROME rather than inhabitants: not hit-tested, not dropped, never fled or abducted.
-    //  - 'why' figures are content inside the cards, and always were.
-    //  - 'banner' joined them 2026-08-20, the same day he joined the cast. He rides a
-    //    position:sticky header, so unlike every other figure his canvas's document position is NOT
-    //    cr.top + scrollY — for a stuck element that expression returns roughly the scroll offset.
-    //    The flee machinery rebases into document space, so it ran him thousands of px down the
-    //    page: tests/poof/08-flee-floor caught a floor at screen y 2776 while his ink bottom was
-    //    at 74. Teaching the flee about sticky containment is a far bigger change than admitting
-    //    he is furniture — and a figure perched on the header arguably should not run off with the
-    //    crowd anyway.
-    // If a mode is ever added that attaches to chrome rather than to the document flow, it belongs
-    // here: the poof assumes document-flow geometry throughout.
-    function isChrome(spec) { return spec.mode === 'why' || spec.mode === 'banner'; }
+    // Only the 'why' figures, which are content inside the cards. The predicate exists rather than
+    // six inline mode checks because 'banner' briefly needed it too — and if a mode is ever attached
+    // to chrome rather than to the document flow, it belongs here: the poof assumes document-flow
+    // geometry throughout, and a canvas whose containing block is a sticky element gets flung down
+    // the page by it.
+    function isChrome(spec) { return spec.mode === 'why'; }
 
     function bobitAt(px, py) {
       for (var i = entries.length - 1; i >= 0; i--) {          // topmost first
@@ -1638,14 +1632,19 @@
       var add = function (s) { if (s) out.push(s); };
       add({ mode: 'beam', anchor: '.hero', edge: 'bottom', tone: 0 });                                    // hero crew — always
       add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.9, anim: 'present', tone: 4, presenter: true });  // proud host under the logo — purple, so he's distinct from the blue beam crew
-      // Perched on the header: sits on .site-banner's bottom edge with his legs over the page and
-      // his head tracking the cursor. The anchor is forced by the mode itself — its canvas CSS is
-      // hardcoded (left:26%, bottom:-30px) and appended INTO the anchor rather than the body, so it
-      // only makes sense on the banner. Safe there: .site-banner is position:sticky, which gives an
-      // absolute child its containing block, and sets no overflow, so he is not clipped. Because
-      // the banner is sticky he rides along with it, which is why this is occasional rather than
-      // always — he is on screen the whole time he exists.
-      if (chance(0.3)) add({ mode: 'banner', anchor: '.site-banner', tone: takeTone() });
+      // NOT CAST, on purpose. The 'banner' mode — a figure sitting on .site-banner's bottom edge
+      // with his legs over the page — was cast here at 30% for a day and taken out again on
+      // 2026-08-20: nobody should be in the header, and no Bobit should be visible before you have
+      // scrolled at all. He was the only one who could be, because the banner is position:sticky, so
+      // he rode the viewport and was on screen from the first paint and never left.
+      // The draw code stays (see the 'banner' branch) but has no anchor that makes sense other than
+      // the header, since its canvas CSS is hardcoded (left:26%, bottom:-30px) and appended INTO the
+      // anchor rather than the body. Reviving it means finding it a non-sticky home first.
+      // Two flee bugs found while he WAS cast are worth knowing if he ever comes back, because both
+      // are latent in any mode parented to chrome: the poof positions a fleeing canvas in document
+      // coords, which is wrong when its containing block is a sticky element (it flung him ~2700px
+      // down the page); and surfaceFloorDoc reads the anchor's TOP as the perch, while he sat on its
+      // bottom edge. tests/poof/08-flee-floor caught both.
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' });       // fixed (content)
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
