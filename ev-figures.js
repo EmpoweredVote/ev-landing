@@ -1666,31 +1666,56 @@
         else {
           // 2. no seats at all this load. Recast one note-card figure as a reader, keeping
           //    its anchor, position and colour so the population stays the same size.
-          // Skip the rare things. They all live on `.note.n-alpha`, which is the FIRST
-          // note-anchored spec, so an unguarded search here recasts whatever is standing on the
-          // rarest slot on the page every single time this branch runs. Any other note slot serves
-          // as a reader just as well.
-          //  - the kite flyer (chance(0.25)) reached the page on ~3% of loads instead of ~25%
-          //    before he was skipped here.
-          //  - the parent-and-toddler is the same bug found again, 2026-08-20, reported as "I
-          //    haven't seen the toddler walking scene in a while". Measured over 299 loads with
-          //    ev-quotes blocked so this function could not run: the toddler is CAST on 8.4% of
-          //    loads, this branch fires on 51.8% of them, and the victim was the toddler on 4.7%
-          //    — so 56% of the toddlers ever cast were overwritten before being drawn, landing him
-          //    on ~4% of loads. `allowToddler` is passed at exactly one anchor (.note.n-alpha), so
-          //    he has nowhere else to appear.
-          // NOTE the shape of this list: it grows every time something rare is added to n-alpha,
-          // because the search takes the FIRST match rather than the least interesting one. If a
-          // third rarity lands there, it needs adding too — or this should be inverted to prefer a
-          // common victim instead.
-          var i = -1, j;
+          // Take the LEAST INTERESTING note-anchored spec, not the first one. Taking the first
+          // always meant taking whatever stood on `.note.n-alpha` — the rarest slot on the page —
+          // and that produced the same bug twice: the kite flyer reached ~3% of loads instead of
+          // ~25%, and the parent-and-toddler was overwritten on 56% of the loads that cast him,
+          // landing him on 4% (reported as "I haven't seen the toddler walking scene in a while").
+          // Both were patched by hand-writing a skip for that one mode, so the guard grew each
+          // time and the NEXT rarity added to n-alpha would have been eaten too.
+          //
+          // So this scores STRUCTURE instead of naming modes, and anything added later is covered
+          // without touching this code:
+          //   two bodies / a partner or prop colour (toddler, tone2)  4   kite, paddlepair, yoyo
+          //   carries a hover routine (balance, peeker, presenter)    2   the n-team balancer
+          //   a small gag (phone), or a sitter whose pose would go    1
+          //   a plain walker or idler                                0   patrol, stand
+          // Ties go to the LATER slot, so n-alpha survives an equal score. Nothing scoring 4+ is
+          // ever recast — if that is all that is left, a reader is ADDED on a free note instead of
+          // something distinctive being destroyed.
+          //
+          // Measured over 300 loads, with ev-quotes blocked so this function could not run and
+          // both rules then replayed on the IDENTICAL casts. Old rule: patrol 29.5%, seat+phone
+          // 26.0%, stand 19.2%, paddlepair 12.3%, yoyo 11.0%, balancer 2.1% — i.e. 23.3% of its
+          // recasts destroyed a one-per-page special. New rule: patrol 54.1%, stand 30.1%,
+          // balancer 8.9%, seat+phone 6.8%, and 0% on the specials.
+          // The balancer going 2.1% -> 8.9% is the deliberate cost: it is the only thing left to
+          // take when every other note slot holds a rarity, and unlike the specials it is cast on
+          // every single load.
+          var interest = function (sp) {
+            var v = 0;
+            if (sp.toddler || sp.tone2 != null) v += 4;
+            if (sp.balance || sp.peeker || sp.presenter) v += 2;
+            if (sp.phone) v += 1;
+            if (sp.mode === 'seat') v += 1;
+            return v;
+          };
+          var i = -1, j, best = 99, sc;
           for (j = 0; j < SPECS.length; j++) {
-            if (SPECS[j].anchor && SPECS[j].anchor.indexOf('.note') === 0 &&
-                SPECS[j].mode !== 'kite' && !SPECS[j].toddler) { i = j; break; }
+            if (!SPECS[j].anchor || SPECS[j].anchor.indexOf('.note') !== 0) continue;
+            sc = interest(SPECS[j]);
+            if (sc <= best) { best = sc; i = j; }        // <= so a later slot wins a tie
           }
+          if (i >= 0 && best >= 4) i = -1;               // all that is left is distinctive: add, don't replace
+          // If we are adding rather than replacing, land on a note nobody is standing on — the old
+          // fallback hardcoded '.note.n-alpha', which is exactly where the rarity we just protected
+          // usually is, and both would have been drawn at x 0.5.
+          var freeNote = ['.note.n-money', '.note.n-ai', '.note.n-alpha'].filter(function (a) {
+            return !SPECS.some(function (sp) { return sp.anchor === a; });
+          })[0] || '.note.n-money';
           var seat = {
             mode: 'seat', edge: 'top', anim: 'read',
-            anchor: i >= 0 ? SPECS[i].anchor : '.note.n-alpha',
+            anchor: i >= 0 ? SPECS[i].anchor : freeNote,
             x: i >= 0 && SPECS[i].x != null ? SPECS[i].x : 0.5,
             tone: i >= 0 && SPECS[i].tone != null ? SPECS[i].tone : takeTone()
           };
