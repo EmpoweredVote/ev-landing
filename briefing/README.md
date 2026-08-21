@@ -72,7 +72,14 @@ Two traps in that table, both already paid for:
   Both sides are unique people over the same window, which makes the ratio fair,
   but a person can fire the action without a `$pageview` attributed to that
   host.  Say "of 152", never "converted".
-- 🔴 **Treasury has no usable denominator, so do not publish a rate for it.**
+- 🔴 **Treasury still has no publishable denominator, though it now has a measurable one.**
+  The navigation fix shipped 2026-08-16 and is capturing: budget views arrive as their own URLs
+  (`?entity=austin-tx&year=2025&dataset=operating`), and in the five days to 2026-08-21, 10 of the
+  13 people on the Treasury hosts reached one.  **Do not publish that as a rate** — the entities in
+  that sample are Austin, Travis County, Los Angeles and Colorado Springs, i.e. our own onboarding
+  checks.  `$pathname` is useless here (it is `/` for every one of them); break down by
+  `$current_url` and filter on `?entity=` instead.  The history below is why the rate was withdrawn
+  and why it stays withdrawn until traffic that is not ours accumulates.
   This one was published wrong on 2026-08-15 and withdrawn the next day.  The
   *events* are sound — `treasury_category_drilled` is driven off the chart's
   `navigationPath`, so the icicle (`BudgetIcicle.onPathClick`), the sunburst and
@@ -85,8 +92,7 @@ Two traps in that table, both already paid for:
   while Essentials and Read & Rank show `/politician/…`, `/results?…`,
   `/race/…/read`.  On top of that the app opens on an *entity picker*
   (`selectedEntity` starts `null`), so an unknown share of its visitors never
-  had a chart to drill.  Until Treasury sends a pageview on navigation, report
-  it as **unmeasured, not low** — and check the raw event counts before calling
+  had a chart to drill.  Report it as **unmeasured, not low** — and check the raw event counts before calling
   anything quiet: in the 90 days to 2026-08-16 those few users produced 56
   drills, 29 line-item views, 41 entity selections and 13 year changes.
 
@@ -179,6 +185,11 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   A real seat carries geography; a placeholder carries none.  The two rules pull
   in opposite directions and the map needs **both**, in this order — that is why
   they are written down together.
+- **The coverage table has a query now: `briefing/coverage-table.sql`.** It encodes the resolution
+  order below, prints the thirteen named rows plus the "N more jurisdictions" remainder, and ends
+  with the two rows that are the check — TOTAL(partition) against TOTAL(headline). Run it and read
+  the numbers off it rather than rebuilding the logic by hand; the header comment says how. Editing
+  which jurisdictions get their own row is the one editorial decision, in its `named` CTE.
 - **Rebuilding the coverage table: it is an EXCLUSIVE partition, and the map is
   not.**  Each politician with at least one answer lands in exactly one bucket,
   by the resolution order above — first match wins: placeholder occupancy →
