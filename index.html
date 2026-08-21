@@ -2102,7 +2102,12 @@
         })();
 
         // Theme management
-        // Priority: account preference (future) → ev:color-scheme in localStorage → prefers-color-scheme → dark
+        // Priority: account preference (future) → ev:color-scheme in localStorage → dark.
+        // prefers-color-scheme is NOT read on load: the anti-FOUC script in <head> takes the stored
+        // key or falls straight to dark, because dark is the house look and the thing to show when
+        // we have no preference to go on. The matchMedia listener below is the one place the OS gets
+        // a say — with nothing stored, flipping the OS scheme mid-session flips the page. The
+        // asymmetry with the load path is deliberate, not a leftover.
         // TODO: after load, GET /auth/me, check user.color_scheme_preference, apply + write back to
         //       localStorage['ev:color-scheme']. Uncomment when account preferences land in the schema.
         (function () {
