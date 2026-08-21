@@ -1608,6 +1608,14 @@
       var add = function (s) { if (s) out.push(s); };
       add({ mode: 'beam', anchor: '.hero', edge: 'bottom', tone: 0 });                                    // hero crew — always
       add({ mode: 'stand', anchor: '.hero .meta-row', edge: 'top', x: 0.9, anim: 'present', tone: 4, presenter: true });  // proud host under the logo — purple, so he's distinct from the blue beam crew
+      // Perched on the header: sits on .site-banner's bottom edge with his legs over the page and
+      // his head tracking the cursor. The anchor is forced by the mode itself — its canvas CSS is
+      // hardcoded (left:26%, bottom:-30px) and appended INTO the anchor rather than the body, so it
+      // only makes sense on the banner. Safe there: .site-banner is position:sticky, which gives an
+      // absolute child its containing block, and sets no overflow, so he is not clipped. Because
+      // the banner is sticky he rides along with it, which is why this is occasional rather than
+      // always — he is on screen the whole time he exists.
+      if (chance(0.3)) add({ mode: 'banner', anchor: '.site-banner', tone: takeTone() });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(1) .why-icon', anim: 'spent', color: '--yellow' });       // fixed (content)
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(2) .why-icon', anim: 'notlistening', color: '--teal' });
       add({ mode: 'why', anchor: '.why-grid .why-item:nth-of-type(3) .why-icon', anim: 'witsend', color: '--coral' });
@@ -1618,9 +1626,22 @@
         add({ mode: 'kite', anchor: '.note.n-alpha', edge: 'top', x: 0.72, tone: kg, tone2: kk });
       } else add(noteSlot('.note.n-alpha', { allowToddler: true, always: true }));
       add(noteSlot('.note.n-ai', {}));
+      // Rope climber on n-ai's RIGHT edge — ratchets up in five pulls, settles, then rappels down
+      // in kick-off bounces. n-ai on purpose: the mode clamps its canvas to 200-300px tall and
+      // centres it on the anchor vertically, and n-ai is the tallest note at every width measured
+      // (301/354/381 at 1440/900/390). n-money would have overflowed it at 153.
+      // He shares the card with whatever noteSlot put on its TOP edge — different edges, so they do
+      // not collide — and he is protected from the quote dealer by scoring 4 in `interest` above.
+      if (chance(0.3)) add({ mode: 'vclimb', anchor: '.note.n-ai', tone: takeTone() });
       // Note 2 (n-team): the one-foot balancer — hover him for the wave → windmill → collapse routine
       add({ mode: 'stand', anchor: '.note.n-team', edge: 'top', x: 0.5, balance: true, tone: takeTone() });
       add(noteSlot('.note.n-money', {}));
+      // Someone walks the whole width of the page along the why→how divider, at a random gait and
+      // in a random direction, then waits 14-36s off-screen and comes back. Hover him mid-crossing
+      // and he stops to greet you. `section.how`'s top edge because it is the one full-width
+      // boundary with nothing else on it — the watch split below already hosts the elder, and this
+      // canvas is the full viewport width, so it wants a clear line.
+      if (chance(0.35)) add({ mode: 'crosser', anchor: 'section.how', edge: 'top', tone: takeTone() });
       // watch top (the 02/How-we-work ↔ 03/Talks split) — was getting crowded with samey walkers;
       // keep only the distinctive elder here, and often leave the split clear
       if (chance(0.4)) add({ mode: 'patrol', anchor: 'section.watch', edge: 'top', anim: 'elder', speed: 15, tone: takeTone(), hoverAnim: 'elderangry' });
@@ -1692,8 +1713,15 @@
           // The balancer going 2.1% -> 8.9% is the deliberate cost: it is the only thing left to
           // take when every other note slot holds a rarity, and unlike the specials it is cast on
           // every single load.
+          // Default-protect: anything that is NOT one of the three interchangeable modes is a
+          // bespoke set-piece and scores 4 immediately. The direction matters more than the number
+          // — a mode added later is now protected by default instead of eaten by default, which is
+          // the exact failure this block exists to stop. vclimb is the first beneficiary: it
+          // anchors to a note card, so without this it would have scored 0 and been the FIRST
+          // thing recast, every single time.
+          var PLAIN = { patrol: 1, stand: 1, seat: 1 };
           var interest = function (sp) {
-            var v = 0;
+            var v = PLAIN[sp.mode] ? 0 : 4;
             if (sp.toddler || sp.tone2 != null) v += 4;
             if (sp.balance || sp.peeker || sp.presenter) v += 2;
             if (sp.phone) v += 1;
@@ -1937,10 +1965,24 @@
         var spec = e.spec;
         if (spec.mode === 'why') { sizeCanvas(e, 190, 215); return; }
         if (spec.mode === 'banner') { sizeCanvas(e, 120, 96); return; }
-        // innerWidth includes the vertical scrollbar; clientWidth does not, so fitW is what
-        // keeps a full-width canvas from being wider than the space it has
-        if (spec.mode === 'crosser') { sizeCanvas(e, fitW(window.innerWidth), 110); return; }
         var r = e.el.getBoundingClientRect();
+        if (spec.mode === 'crosser') {
+          // This used to sit above `var r`, grouped with 'why' and 'banner' — but those two are
+          // appended INTO their anchor and inherit its position, whereas the crosser is appended to
+          // the body and has to be placed. So it was sized and never positioned: no left, no top,
+          // parked at the document's bottom edge, permanently out of view. The draw loop only runs
+          // for entries in view, so its branch never executed, which is also why `e.wait` stayed
+          // undefined forever. The mode had never been castable, so nothing ever caught it.
+          // innerWidth includes the vertical scrollbar; clientWidth does not, so fitW is what keeps
+          // a full-width canvas from being wider than the space it has.
+          var hC = 110;
+          sizeCanvas(e, fitW(window.innerWidth), hC);
+          e.c.style.left = fitLeft(0, e.w, sx) + 'px';        // viewport-wide: pinned to the left edge
+          // same convention as the generic edge case below: the canvas bottom lands 6px past the
+          // anchor edge, so feetY (h - 6) puts his feet exactly on it
+          e.c.style.top = ((spec.edge === 'bottom' ? r.bottom : r.top) + sy - (hC - 6)) + 'px';
+          return;
+        }
         if (spec.mode === 'vclimb') {
           var h = Math.min(300, Math.max(200, r.height));
           sizeCanvas(e, fitW(150), h);
@@ -3716,6 +3758,11 @@
         }
         if (spec.mode === 'crosser') {
           if (!e.active) {
+            // `wait` was only ever assigned on EXIT (further down), so on the very first frame it
+            // was undefined: `undefined - dt` is NaN, `NaN <= 0` is false, and he could never set
+            // off. The mode had never been cast, so nothing ever exercised this line. Seeded short
+            // so the first crossing happens soon after load rather than up to 36s in.
+            if (e.wait == null || e.wait !== e.wait) e.wait = 1.5 + Math.random() * 4;
             e.wait -= dt;
             if (e.wait <= 0) {
               var gaits = ['stroll', 'shuffle', 'strut', 'scurry', 'trudge', 'sneak', 'march'];
@@ -4073,6 +4120,12 @@
           // Climb UP (limbs synced to the rise, so each pull ratchets him up a notch),
           // pause at the top, then RAPPEL down in kick-off bounces (limb cycle reversed).
           var topY = 48, botY = h - 46, travel = botY - topY;
+          // THE ROPE. This branch drew the figure and nothing else, so he climbed thin air — which
+          // nobody had ever seen, because the mode was not in buildCast until 2026-08-20. Styled to
+          // match 'rope' below (--border, 3.5px, round cap) so the two read as the same prop, and
+          // drawn BEFORE the figure so his hands sit on top of it. It runs from the canvas top —
+          // reading as a rope from somewhere above — down past his lowest reach, so there is a
+          // hanging end rather than a line that stops where he does.
           var STEPS = 5;
           var upDur = STEPS * 1.7, topPause = 0.6, downDur = 1.9;
           var Tc = upDur + topPause + downDur;
@@ -4091,6 +4144,13 @@
             var seg = pd * 2, si = Math.floor(seg), sf = seg - si;
             y3 = topY + ((si + (1 - (1 - sf) * (1 - sf))) / 2) * travel;   // two kick-off drops
           }
+          ctx.strokeStyle = cssVar('--border', '#C9C6BE');
+          ctx.lineCap = 'round';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(w / 2, 0);
+          ctx.lineTo(w / 2, botY + 26);
+          ctx.stroke();
           drawFig(ctx, w / 2, y3, S, false, poseC, { color: col });
           return;
         }
