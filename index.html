@@ -986,6 +986,27 @@
         }
         .note.n-follow .marker { color: var(--body); } /* darker than default muted for AA contrast on the coral tint */
         .note.n-follow .marker .glyph { background: var(--coral); color: #fff; }
+
+        /* Glyph ink has to be picked against the BADGE, and the badge is an accent that changes
+           per theme — which is exactly how these came to fail. Measured, white vs dark ink:
+                                   white   dark ink
+             light  --coral        3.14      6.01     <- white failed
+             light  --teal         6.66      2.83     white is right
+             light  --heading     17.04      1.11     white is right
+             light  --yellow       1.46     12.91     already dark via --heading
+             dark   --coral        2.81      6.72     <- all four dark-mode
+             dark   --teal         2.81      6.71        badges failed, because
+             dark   --yellow       1.40     13.51        dark's accents are all
+             dark   --heading      1.12     16.85        BRIGHT by design
+           So: in dark every badge takes dark ink; in light only the coral one does. The two worst
+           (1.12 and 1.25) were a white/near-white glyph on a near-white chip — both rules paired a
+           light foreground with a background that only becomes light when dark flips --heading from
+           #1C1C1C to #F2F2F2. Any rule pairing --heading with a light foreground has that hazard.
+           A literal #111113 rather than var(--heading) on purpose: --heading is the token that
+           inverts, so using it here would reintroduce the bug in the other theme. */
+        :root:not([data-theme="dark"]) .note.n-alpha .marker .glyph,
+        :root:not([data-theme="dark"]) .note.n-follow .marker .glyph { color: #111113; }
+        [data-theme="dark"] .note .marker .glyph { color: #111113; }
         .follow-note-body {
             display: grid;
             grid-template-columns: 1fr;

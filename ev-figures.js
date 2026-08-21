@@ -1666,14 +1666,27 @@
         else {
           // 2. no seats at all this load. Recast one note-card figure as a reader, keeping
           //    its anchor, position and colour so the population stays the same size.
-          // Skip the kite flyer. He is the rarest thing in the cast (chance(0.25)) and he lives on
-          // `.note.n-alpha`, which is the FIRST note-anchored spec — so an unguarded search recast
-          // him every time this branch ran, and he reached the page on only ~3% of loads instead of
-          // ~25%. Any other note slot serves as a reader just as well.
+          // Skip the rare things. They all live on `.note.n-alpha`, which is the FIRST
+          // note-anchored spec, so an unguarded search here recasts whatever is standing on the
+          // rarest slot on the page every single time this branch runs. Any other note slot serves
+          // as a reader just as well.
+          //  - the kite flyer (chance(0.25)) reached the page on ~3% of loads instead of ~25%
+          //    before he was skipped here.
+          //  - the parent-and-toddler is the same bug found again, 2026-08-20, reported as "I
+          //    haven't seen the toddler walking scene in a while". Measured over 299 loads with
+          //    ev-quotes blocked so this function could not run: the toddler is CAST on 8.4% of
+          //    loads, this branch fires on 51.8% of them, and the victim was the toddler on 4.7%
+          //    — so 56% of the toddlers ever cast were overwritten before being drawn, landing him
+          //    on ~4% of loads. `allowToddler` is passed at exactly one anchor (.note.n-alpha), so
+          //    he has nowhere else to appear.
+          // NOTE the shape of this list: it grows every time something rare is added to n-alpha,
+          // because the search takes the FIRST match rather than the least interesting one. If a
+          // third rarity lands there, it needs adding too — or this should be inverted to prefer a
+          // common victim instead.
           var i = -1, j;
           for (j = 0; j < SPECS.length; j++) {
             if (SPECS[j].anchor && SPECS[j].anchor.indexOf('.note') === 0 &&
-                SPECS[j].mode !== 'kite') { i = j; break; }
+                SPECS[j].mode !== 'kite' && !SPECS[j].toddler) { i = j; break; }
           }
           var seat = {
             mode: 'seat', edge: 'top', anim: 'read',
