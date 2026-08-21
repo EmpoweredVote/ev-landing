@@ -909,6 +909,19 @@
             margin-bottom: 4px;
             display: block;
         }
+        /* --body, not --muted, in light. Five of these labels sit on --surface-alt (#D7E7EA), where
+           --muted measures 3.80 — under AA's 4.5, and at 11.5-12px they are small text, nowhere
+           near WCAG's large-text threshold of 18.66px bold. --body is 7.45 on that band. This is
+           the same swap the note markers already make for the identical problem on tinted notes.
+           The measured cases were "01 / Why", "03 / Talks" and "Talk 01/02/03". ".how"'s
+           "02 / How we work" is included even though it sits on white and passed at 4.83 — so the
+           three section eyebrows stay ONE colour instead of two, which is worth more than keeping
+           a passing label 1.5 ratios lighter than its siblings.
+           Light only: dark's --muted (#8B949E) on #1C1C1F is fine and out of scope.
+           Not a regression from the palette work — --muted was under 4.5 on tinted surfaces before
+           it too. The band simply got strong enough for it to matter. */
+        :root:not([data-theme="dark"]) .section-num,
+        :root:not([data-theme="dark"]) .watch-num { color: var(--body); }
         .watch-card h3 {
             font-size: 1.05rem;
             font-weight: 700;
