@@ -205,10 +205,24 @@
     // convert the point into canvas space and read its alpha. Non-zero means the pointer is on
     // painted ink — an actual figure, not the empty box around him — and any mode added later
     // inherits this for free. These canvases draw vectors only, so they are never tainted.
+    // Page CHROME rather than inhabitants: not hit-tested, not dropped, never fled or abducted.
+    //  - 'why' figures are content inside the cards, and always were.
+    //  - 'banner' joined them 2026-08-20, the same day he joined the cast. He rides a
+    //    position:sticky header, so unlike every other figure his canvas's document position is NOT
+    //    cr.top + scrollY — for a stuck element that expression returns roughly the scroll offset.
+    //    The flee machinery rebases into document space, so it ran him thousands of px down the
+    //    page: tests/poof/08-flee-floor caught a floor at screen y 2776 while his ink bottom was
+    //    at 74. Teaching the flee about sticky containment is a far bigger change than admitting
+    //    he is furniture — and a figure perched on the header arguably should not run off with the
+    //    crowd anyway.
+    // If a mode is ever added that attaches to chrome rather than to the document flow, it belongs
+    // here: the poof assumes document-flow geometry throughout.
+    function isChrome(spec) { return spec.mode === 'why' || spec.mode === 'banner'; }
+
     function bobitAt(px, py) {
       for (var i = entries.length - 1; i >= 0; i--) {          // topmost first
         var e = entries[i];
-        if (!e.w || e.gone || e.spec.mode === 'why') continue; // why figures are content, not inhabitants
+        if (!e.w || e.gone || isChrome(e.spec)) continue;
         var r = e.c.getBoundingClientRect();
         if (px < r.left || px > r.right || py < r.top || py > r.bottom) continue;
         var kx = e.c.width / r.width, ky = e.c.height / r.height;
@@ -1341,7 +1355,7 @@
     function stunDropAll() {
       var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
       entries.forEach(function (e) {
-        if (e.gone || e.spec.mode === 'why' || e.propGone) return;
+        if (e.gone || isChrome(e.spec) || e.propGone) return;
         var p = propOf(e);
         if (!p) return;
         var ink = scanInk(e);
@@ -1483,14 +1497,14 @@
           // them. Document coords, so it stays valid however the page is scrolled during the run.
           POOF.breakLines = sectionBreakLines();
           entries.forEach(function (e) {
-            if (e.gone || e.spec.mode === 'why') return;
+            if (e.gone || isChrome(e.spec)) return;
             poofArmFlee(e);
           });
         }
       } else if (POOF.phase === 'fleeing') {
         var left = 0;
         entries.forEach(function (e) {
-          if (e.spec.mode === 'why') return;
+          if (isChrome(e.spec)) return;
           if (!e.gone) left++;
         });
         if (!left) { POOF.phase = 'cleared'; POOF.t = 0; }
@@ -1505,11 +1519,27 @@
 
     // Brand-derived figure palettes — no hard red/blue.
     // Light mode: brighter, vivid set. Dark mode: the dark-theme brand variants.
-    // 0 teal · 1 coral · 2 gold · 3 green · 4 purple · 5 orange — tuned per theme for legibility.
-    // Light values are deep enough to read on the near-white bg (esp. the gold, ~3:1);
-    // dark values are bright.
+    // 0 teal · 1 coral · 2 yellow · 3 green · 4 purple · 5 orange — tuned per theme for legibility.
+    // Light values are deep enough to read on the near-white bg; dark values are bright.
+    //
+    // EXCEPT slot 2, which is deliberately NOT deep. It was #B8860B gold, chosen for ~3:1 on white,
+    // and replaced 2026-08-20 with #FFD426 — the yellow of the magnifying glass in the Essentials
+    // logo (icons/essentials-symbol-light.svg; the same value the style guide calls yellow/57).
+    // That one array slot is every gold artifact on the page: the dog ball (drawBall, the thrower's
+    // hand, the air/ground ball, the dog's own ball), the v-carrier, the beam crew's carried line,
+    // and any bobit that draws tone 2.
+    //
+    // #FFD426 measures 1.12-1.43 against the light surfaces, far under the 3:1 a graphic element is
+    // supposed to need — and it reads FINE anyway. Worth writing down, because a contrast check will
+    // flag it and the instinct will be to "fix" it back to gold: WCAG contrast is a LUMINANCE
+    // metric built for text, and these figures are large solid saturated silhouettes where hue
+    // difference does the work. Checked by eye on the four cases that could have failed: a figure on
+    // the coral note, a figure on a YELLOW note (the one case where hue cannot help — still clearly
+    // separated, because the note fill is only a 14% tint against a full-saturation figure), the
+    // ball on the talks band, and the carried line on white. Do not re-derive this from the ratio
+    // alone; look at it.
     var FIG_COLORS = {
-      light: ['#007D99', '#FF5740', '#B8860B', '#2E9E5B', '#7A4FD0', '#E0641C'],
+      light: ['#007D99', '#FF5740', '#FFD426', '#2E9E5B', '#7A4FD0', '#E0641C'],
       dark:  ['#1DA8C6', '#FF6B52', '#FFD740', '#43D07E', '#B49BFF', '#FF9A4D']
     };
     function figColor(i) {
@@ -3629,7 +3659,7 @@
         // otherwise. The whole room going still for a beat reads better than content figures
         // bobbing on while every inhabitant is rooted to the spot. They resume afterwards.
         var dt = (POOF.phase === 'stunned') ? 0 : dtFrame;
-        if (e.fl && spec.mode !== 'why') {
+        if (e.fl && !isChrome(spec)) {
           ctx.clearRect(0, 0, w, h);
           drawFlee(e, ctx, w, figColor(spec.tone != null ? spec.tone : e.ci), dt);
           return;
@@ -3638,7 +3668,7 @@
         // stop drawing its own prop — his mode simply is not running. Uses dtFrame, not dt: he is the
         // one figure who must keep moving through the stun, and in any case the stun only starts after
         // he is gone.
-        if (e.ab && spec.mode !== 'why') {
+        if (e.ab && !isChrome(spec)) {
           ctx.clearRect(0, 0, w, h);
           drawAbduct(e, ctx, w, figColor(spec.tone != null ? spec.tone : e.ci), dtFrame);
           return;

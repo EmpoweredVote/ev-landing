@@ -1,6 +1,18 @@
 const { chromium } = require('playwright');
 const assert = require('assert');
 
+// CHROME, not just 'why'. The rule this enforces is unchanged — nothing that is an INHABITANT of
+// the page may still be here once the room has emptied — but the set of things that are not
+// inhabitants grew on 2026-08-20 when the 'banner' figure joined the cast. He sits on the sticky
+// header, and ev-figures' isChrome() excludes him from the flee for the same reason it excludes the
+// why figures: his canvas is attached to chrome, not to the document flow, so the flee's
+// document-space geometry does not apply to him (it sent him 2700px down the page — see
+// tests/poof/08-flee-floor).
+// Asserted as "nothing outside the chrome set remains" rather than an exact set match, because the
+// banner is only cast ~30% of the time, so an exact match would fail on whichever loads did not
+// include him. This is still strict: any real inhabitant left behind fails.
+const CHROME = ['banner', 'why'];
+
 const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
 
 async function run(browser, width) {
@@ -106,8 +118,8 @@ async function run(browser, width) {
       whyStillThere: d.entries.filter(function (e) { return e.spec.mode === 'why' && e.c.parentNode; }).length
     };
   });
-  assert.deepStrictEqual([...new Set(end.remainingModes)], ['why'],
-    width + 'px: only the why figures may remain, found ' + end.remainingModes.join(','));
+  assert.deepStrictEqual(end.remainingModes.filter(function (m) { return CHROME.indexOf(m) < 0; }), [],
+    width + 'px: only chrome (why/banner) may remain, found ' + end.remainingModes.join(','));
   assert.strictEqual(end.whyStillThere, 3, width + 'px: all three why illustrations must stay');
 
   await page.close();
@@ -245,8 +257,8 @@ async function runResize(browser) {
       whyStillThere: d.entries.filter(function (e) { return e.spec.mode === 'why' && e.c.parentNode; }).length
     };
   });
-  assert.deepStrictEqual([...new Set(end.remainingModes)], ['why'],
-    'resize mid-flee: only the why figures may remain, found ' + end.remainingModes.join(','));
+  assert.deepStrictEqual(end.remainingModes.filter(function (m) { return CHROME.indexOf(m) < 0; }), [],
+    'resize mid-flee: only chrome (why/banner) may remain, found ' + end.remainingModes.join(','));
   assert.strictEqual(end.whyStillThere, 3, 'resize mid-flee: all three why illustrations must stay');
 
   await page.close();
