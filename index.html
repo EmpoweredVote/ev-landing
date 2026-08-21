@@ -86,6 +86,17 @@
                #DBE5F3 at 14%. That coupling is deliberate: the header is tinted "as much as
                everything else is". It does mean moving --tint moves the header too — to decouple,
                swap var(--tint) below for a literal percentage. */
+            /* Things the Bobits hold, sit on and climb — ropes, strings, the bench, the desk. NOT
+               a hairline: --border is tuned to be a quiet edge against its own surface, and props
+               have the opposite job, so sharing that token left every one of them invisible in dark
+               (#2D2D32 measures 1.24 against a #1C1C1F card — the vclimb rope read as a man
+               climbing thin air). Light keeps exactly what --border resolves to, so nothing in light
+               mode moves; dark lifts to what --faint already uses there, which is the palette's
+               existing "quiet but legible" tier: 3.70 on a card and 4.11 on the page, clear of the
+               3:1 a graphic element needs. Brighter reads as glowing wire rather than rope.
+               The Fallacy Finders button card deliberately stays on --border — it is imitating a
+               real UI card, so its outline should track real card borders, not props. */
+            --fig-prop: #535964;
             --cobalt: #0047AB;
             --header: color-mix(in srgb, var(--cobalt) var(--tint), #FFFFFF);
             --coral: #FF5740;
@@ -1174,6 +1185,7 @@
             --card: #1C1C1F;
             --surface-alt: #1C1C1F;   /* unchanged — what .why/.watch already resolved to here */
             --header:      #1C1C1F;   /* unchanged — what .site-banner already resolved to here */
+            --fig-prop:    #6E7681;   /* lifted off --border (#2D2D32) so props are visible here */
             --heading: #F2F2F2;
             --body: #A8B0BC;
             --muted: #8B949E;

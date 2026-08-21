@@ -2798,7 +2798,7 @@
       }
       function kiteString(hand, kx, ky, ang, slack) {
         var bp = bottomPt(kx, ky, ang);
-        ctx.strokeStyle = cssVar('--border', '#B0AEA6'); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.strokeStyle = cssVar('--fig-prop', '#535964'); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.quadraticCurveTo((hand.x + bp.x) / 2, (hand.y + bp.y) / 2 + (slack || 6), bp.x, bp.y); ctx.stroke();
       }
 
@@ -2955,7 +2955,7 @@
       drawFig(ctx, gx0, guyBaseY, S, false, pose, { color: colGuy });
       // string from the hand down to the yo-yo
       if (!e.propGone) {                              // dropped: the string and the yo-yo go with it
-        ctx.strokeStyle = cssVar('--border', '#B0AEA6'); ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+        ctx.strokeStyle = cssVar('--fig-prop', '#535964'); ctx.lineWidth = 1.2; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.lineTo(yoX, yoY); ctx.stroke();
         // the yo-yo — a spinning disc; a streak + hub sell the spin
         ctx.save(); ctx.translate(yoX, yoY); ctx.rotate(e.yoSpin);
@@ -3728,15 +3728,16 @@
           var ox = anim.chair ? (w / 2 - 18) : w / 2;
           if (anim.seated && !anim.chair) {
             // simple bench under the seated figure
-            ctx.fillStyle = cssVar('--border', '#E5E7EB');
+            ctx.fillStyle = cssVar('--fig-prop', '#535964');
             ctx.fillRect(w / 2 - 16, h - 10, 32, 8);
           }
           // furniture (desk/chair/monitor frame); screen picks up --bg so it still reads as a screen.
-          // Was --fig-furniture, which existed only because --border used to be #E5E7EB and vanished
-          // against the coral why card. --border is now dark in light mode too, so the two tokens held
-          // the same value in both themes and the indirection was dead weight. Fallback matches the
-          // light --border rather than the old pale grey, for the stylesheet-missing case.
-          var furn = cssVar('--border', '#535964');
+          // Was --fig-furniture, then briefly --border once that went dark in light mode. Now
+          // --fig-prop, along with everything else a figure holds or sits on: --border is a hairline
+          // token, and it stayed invisible in DARK (#2D2D32 on a #1C1C1F card measures 1.24) — the
+          // exact mirror of the problem --fig-furniture was invented for in light. Same value as
+          // --border in light, so nothing moved there.
+          var furn = cssVar('--fig-prop', '#535964');
           drawFig(ctx, ox, py0, ws, false, anim.frame(tt),
             { color: color, swirl: anim.swirl, laptop: anim.laptop, book: anim.book, time: tt,
               chair: anim.chair, desk: anim.desk, chairColor: furn, deskColor: furn,
@@ -4144,7 +4145,7 @@
             var seg = pd * 2, si = Math.floor(seg), sf = seg - si;
             y3 = topY + ((si + (1 - (1 - sf) * (1 - sf))) / 2) * travel;   // two kick-off drops
           }
-          ctx.strokeStyle = cssVar('--border', '#C9C6BE');
+          ctx.strokeStyle = cssVar('--fig-prop', '#535964');
           ctx.lineCap = 'round';
           ctx.lineWidth = 3.5;
           ctx.beginPath();
@@ -4158,7 +4159,7 @@
           // Two-step: he sits on a horizontal frame bar; click BREAKS it and he grabs
           // the rope and dangles; then clicking/pushing him swings him (pendulum).
           var pivotX = 250, barY = 46, barLen = 145;   // pivot far right (over the chasm); frame extends LEFT
-          var grey = cssVar('--border', '#C9C6BE');
+          var grey = cssVar('--fig-prop', '#535964');
           ctx.strokeStyle = grey; ctx.lineCap = 'round';
           e.rphase = e.rphase || 'sit';
           var handAbove = 148 * S;                        // hands sit this far above the pelvis in the rope pose
