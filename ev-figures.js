@@ -52,10 +52,18 @@
     }
     // Only greet someone on their way DOWN past him. Coming back up to the hero you are
     // already looking at the buttons, and being flagged down then reads as nagging.
-    var scrollDown = false, lastSY = window.scrollY || window.pageYOffset || 0;
+    //
+    // THREE states, not two. This was a boolean initialised to false, which made "nobody has
+    // scrolled yet this page load" indistinguishable from "the last move was upward" — and the
+    // two deserve opposite answers. Reload the page and the browser RESTORES your scroll
+    // position without firing a scroll event, so a reload landed in the silent state forever
+    // and #greeter could not get you out of it (see greetReady). Incognito was the only way
+    // to see the greeting again, which is how Chris found this.
+    //   0 = no scroll yet this load (unknown), 1 = last move was down, -1 = last move was up
+    var scrollDir = 0, lastSY = window.scrollY || window.pageYOffset || 0;
     window.addEventListener('scroll', function () {
       var sy = window.scrollY || window.pageYOffset || 0;
-      if (sy !== lastSY) scrollDown = sy > lastSY;
+      if (sy !== lastSY) scrollDir = sy > lastSY ? 1 : -1;
       lastSY = sy;
     }, { passive: true });
 
@@ -3160,7 +3168,10 @@
     // Times since the greeting BEGAN, which needs its own clock: e.giT is reset to 0 on
     // every state transition, so it cannot express "2.35s into the whole gesture". Hence
     // e.giTotal, accumulated alongside it and never reset.
-    var BEAT_MIN_DWELL = 1.8;   // beat 1 is never yanked away faster than this
+    // Beat 1 is never yanked away faster than this. Was 1.8, which measured as 1.81s of
+    // reading time on screen and read as too fast — the welcome went while you were still
+    // finishing it. 2.3 is that plus the half second Chris asked for.
+    var BEAT_MIN_DWELL = 2.3;
     // Written as a max() rather than as 2.35 because it encodes two separate intents: never
     // say "those buttons up there" before the arm gets there, and never cut beat 1 short.
     // With today's constants the dwell rule is the binding one, so he holds the point for a
@@ -3240,8 +3251,11 @@
     // denied a greeting. Neither is being signed in.
     function greetReady(e, cr) {
       if (e.gi || e.giDone) return false;                 // already said it, or mid-sentence
-      if (!scrollDown) return false;                      // coming back up: you can see them
-      if ((window.scrollY || window.pageYOffset || 0) < GREET_MIN_SCROLL) return false;
+      if (scrollDir < 0) return false;                    // coming back up: you can see them
+
+      // CAN HE BE SEEN, AND IS THERE ANYTHING TO POINT AT. True for everyone, #greeter
+      // included: these are not about intent, they are about whether the bubble would land
+      // somewhere a person can actually read it. Forcing past them would put him off-screen.
       var ih = window.innerHeight;
       if (cr.top < GREET_HEAD_CLEAR) return false;        // no room above him for a bubble
       if (cr.bottom > ih - GREET_FOOT_CLEAR) return false;   // he is still half below the fold
@@ -3249,7 +3263,18 @@
       if (!aim || aim.vis < GREET_BTN_MIN) return false;   // nothing left to point at
       if (e._logosEl.getBoundingClientRect().bottom < ih * GREET_BTN_FRAC) return false;   // too late to start
       if (POOF.phase !== 'idle') return false;            // the page is busy vanishing
-      if (greetForce) return true;                        // #greeter — re-see it on demand
+
+      // #greeter — re-see it on demand. Checked HERE, above the intent gates, because the
+      // whole point of the flag is to reach a greeting the intent gates would refuse. It used
+      // to sit at the bottom, below `!scrollDown`, so a reload — which restores your scroll
+      // without firing a scroll event — silenced it. It still cannot defeat the direction
+      // check above: arriving from below is nagging whether you asked for it or not.
+      if (greetForce) return true;
+
+      // INTENT. He is a nudge for someone travelling down PAST him, not for anyone who
+      // happens to be parked in front of him.
+      if (scrollDir === 0) return false;                   // nobody has scrolled yet this load
+      if ((window.scrollY || window.pageYOffset || 0) < GREET_MIN_SCROLL) return false;
       return !greetSeen();
     }
 
