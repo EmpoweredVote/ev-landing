@@ -8,8 +8,14 @@
 const { chromium } = require('playwright');
 const assert = require('assert');
 
-const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
-const SAY = 'Hi there! If you want to start off exploring our features, you can press one of those buttons up there!';
+// ?evlines= pins the tags: without it this suite would assert the wrong greeting for
+// anyone running it in the afternoon, or in October.
+const URL = 'file:///C:/ev-landing/ev-landing-main/index.html?evlines=first-visit,guest#figdebug';
+// Read from the catalog rather than copied here. This assertion is "he says the greeting",
+// not "the greeting is this string" — pasting a copy of it made every wording change a test
+// failure. tests/lines/01-select.cjs is where the wording itself is pinned.
+const BEAT1 = 'Hi there. Welcome to Empowered Vote.';
+const BEAT2 = 'Press one of those buttons up there to start exploring.';
 
 async function makePage(browser, width, init) {
   const page = await browser.newPage({ viewport: { width: width, height: 900 } });
@@ -79,18 +85,27 @@ async function scrollIntoWindow(page) {
   const t0 = Date.now();
   await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
   const openedAfter = Date.now() - t0;
-  const stateAtOpen = await page.evaluate(function () {
+  const atOpen = await page.evaluate(function () {
     var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
-    return e.gi;
+    return { gi: e.gi, beat: e.giBeat, text: document.querySelector('.ev-quote .say').textContent };
   });
-  assert.strictEqual(stateAtOpen, 'wave', 'the bubble must open mid-wave, not after the point');
+  assert.strictEqual(atOpen.gi, 'wave', 'the bubble must open mid-wave, not after the point');
+  assert.strictEqual(atOpen.beat, 1, 'the first bubble is beat 1');
+  assert.strictEqual(atOpen.text, BEAT1, 'beat 1 must be the welcome, got: ' + atOpen.text);
   assert.ok(openedAfter < 2000, 'text took ' + openedAfter + 'ms to appear; it should be ~0.6s');
 
-  // then he finishes the wave and turns to point, and the bubble stays up through it
+  // Beat 2 swaps in at GREET_SAY2_AT (2.35s from the start of the wave). Wait past it
+  // rather than sampling at the 'hold' transition, which happens at 1.55s and would race.
   await page.waitForFunction(function () {
     var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
-    return e.gi === 'hold';
+    return e.giBeat === 2;
   }, { timeout: 6000 });
+  // greetBeat2 closes beat 1's bubble and opens beat 2's in the same tick, but EVQuotes.close()
+  // only drops the outgoing element's ".in" class immediately and removes it from the DOM 260ms
+  // later (ev-quotes.js:324) so its fade-out can play. For that window there are genuinely two
+  // ".ev-quote" nodes in the document; querying right on the giBeat flip races that removal and
+  // reads the outgoing (beat 1) node. Clear the window before asserting on "the" bubble below.
+  await page.waitForTimeout(300);
 
   const fired = await page.evaluate(function () {
     // Ask the pixels where he actually is rather than re-deriving the rig's geometry (the
@@ -126,7 +141,7 @@ async function scrollIntoWindow(page) {
 
   assert.strictEqual(fired.gi, 'hold', 'he holds the point while the bubble is open');
   assert.ok(fired.hasHandle, 'the entry must keep the bubble handle so it can dismiss it');
-  assert.strictEqual(fired.text, SAY, 'greeting text must be exact, got: ' + fired.text);
+  assert.strictEqual(fired.text, BEAT2, 'beat 2 must be the nudge, got: ' + fired.text);
   assert.ok(!fired.hasAttrib, 'a greeting has no source to attribute');
   assert.strictEqual(fired.count, 1, 'exactly one bubble');
 

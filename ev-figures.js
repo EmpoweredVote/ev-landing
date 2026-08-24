@@ -30,16 +30,26 @@
     document.addEventListener('mousemove', function (ev) { mx = ev.clientX; my = ev.clientY; }, { passive: true });
 
     // ── THE GREETER, part 1: when to keep quiet ─────────────────────────────────────────
-    // Scroll into the hero having never highlighted a tool and the presenter Bobit flags you
-    // down — see drawPresenter for the gesture itself. These are the reasons he does not:
-    // anyone who has ever touched a tool, or who is signed in, has already found them.
-    var GREET_KEY = 'ev:greeted';                     // "this browser has met the tools"
+    // Scroll into the hero and the presenter Bobit flags you down — see drawPresenter for
+    // the gesture. He greets anyone, ONCE PER VISIT: a returning or signed-in visitor is
+    // exactly who a contextual line ("Good morning", "Welcome back") is for, and the old
+    // once-per-browser rule silenced precisely those people.
+    //
+    // Two keys, because they answer two different questions, and conflating them has a bug
+    // in it. MET is "this browser has been here before" and feeds the returning/first-visit
+    // predicates in ev-lines.js; it is also written by noteToolsFound(). SESSION is "he has
+    // already spoken this visit" and is the only thing that stops him. If noteToolsFound()
+    // wrote SESSION, hovering a tool before scrolling would silence the welcome as well as
+    // the nudge — putting back, by the side door, the suppression this design removed.
+    var GREET_KEY = 'ev:greeted';                     // MET
+    var GREET_SESSION_KEY = 'ev:greeted:session';     // SESSION
     var greetForce = location.hash === '#greeter';    // re-see it without clearing storage
-    function greetSeen() { try { return localStorage.getItem(GREET_KEY) === '1'; } catch (err) { return false; } }
-    function markGreetSeen() { try { localStorage.setItem(GREET_KEY, '1'); } catch (err) {} }
-    // Logged in? Read it off the banner menu at FIRE time rather than caching it: the silent
-    // SSO check is a fetch with a 3s budget, so at load we genuinely do not know yet.
-    function greetLoggedIn() { var lo = document.getElementById('menu-logout'); return !!(lo && !lo.hidden); }
+    function greetSeen() { try { return sessionStorage.getItem(GREET_SESSION_KEY) === '1'; } catch (err) { return false; } }
+    function markMetTools() { try { localStorage.setItem(GREET_KEY, '1'); } catch (err) {} }
+    function markGreeted() {
+      try { sessionStorage.setItem(GREET_SESSION_KEY, '1'); } catch (err) {}
+      markMetTools();
+    }
     // Only greet someone on their way DOWN past him. Coming back up to the hero you are
     // already looking at the buttons, and being flagged down then reads as nagging.
     var scrollDown = false, lastSY = window.scrollY || window.pageYOffset || 0;
@@ -71,7 +81,7 @@
     // it, let him drop the bubble and hand his arm back to pointing at what you highlighted.
     function noteToolsFound() {
       featureEverOn = true;
-      markGreetSeen();
+      markMetTools();      // NOT markGreeted(): finding the tools must not silence the welcome
       entries.forEach(function (e) { if (e.gh) greetDismiss(e); });
     }
 
@@ -3147,7 +3157,18 @@
                               // the wave has visibly started, and "Hi there!" lands with it.
     var GREET_WAVE = 1.2;     // wave runs on while the bubble is up, then he points at the buttons
     var GREET_TURN = 0.35;    // blend wave -> point, and point -> standing at the end
-    var GREET_SAY = 'Hi there! If you want to start off exploring our features, you can press one of those buttons up there!';
+    // Times since the greeting BEGAN, which needs its own clock: e.giT is reset to 0 on
+    // every state transition, so it cannot express "2.35s into the whole gesture". Hence
+    // e.giTotal, accumulated alongside it and never reset.
+    var BEAT_MIN_DWELL = 1.8;   // beat 1 is never yanked away faster than this
+    // Written as a max() rather than as 2.35 because it encodes two separate intents: never
+    // say "those buttons up there" before the arm gets there, and never cut beat 1 short.
+    // With today's constants the dwell rule is the binding one, so he holds the point for a
+    // beat before the nudge lands — he gestures, then explains.
+    var GREET_SAY2_AT = Math.max(GREET_WAVE + GREET_TURN, GREET_SAY_AT + BEAT_MIN_DWELL);
+    // Only reached if ev-lines.js or ev-copy.en.js failed to load. A missing script should
+    // degrade to a plain hello, not to a Bobit who waves at you in silence.
+    var GREET_FALLBACK = 'Hi there. Welcome to Empowered Vote.';
     // WHEN he can speak up. He stands on .meta-row, at the very bottom of the hero and below
     // the fold at rest, with the whole button column above him — so his moment is just after
     // he scrolls INTO view, while the buttons are still up there to point at. Measured on a
@@ -3200,12 +3221,25 @@
       return { x: e.giAimDoc.x - sx, y: e.giAimDoc.y - sy, vis: vis };   // gone, but he knows where
     }
 
-    // Has he been walked past by someone who never looked at the buttons? Every clause here
-    // is a reason to keep quiet, which is the point: he is a nudge for a first-timer who
-    // missed them, not a greeter for everyone.
+    // What the engine cannot see for itself. ev-lines.js knows nothing about canvas by
+    // design, so the facts that only this file can observe are reported to it per call.
+    function greetFacts(aim) {
+      return { toolsFound: featureEverOn, buttonsVisible: !!aim && aim.vis >= GREET_BTN_MIN };
+    }
+
+    // 'wave' → the welcome, 'point' → the nudge. null means the data file has nothing for
+    // this beat in this context, which is a legitimate answer and not an error.
+    function greetText(at, aim) {
+      if (!window.EVLines) return at === 'wave' ? GREET_FALLBACK : null;
+      return window.EVLines.say('greeter', at, greetFacts(aim));
+    }
+
+    // Is this the moment? Every clause is a reason to keep quiet. `featureEverOn` is
+    // deliberately NOT one of them any more: having found the tools yourself is a reason to
+    // skip the NUDGE, which ev-lines.js handles via the tools-found tag, not a reason to be
+    // denied a greeting. Neither is being signed in.
     function greetReady(e, cr) {
       if (e.gi || e.giDone) return false;                 // already said it, or mid-sentence
-      if (featureEverOn) return false;                    // you found them yourself
       if (!scrollDown) return false;                      // coming back up: you can see them
       if ((window.scrollY || window.pageYOffset || 0) < GREET_MIN_SCROLL) return false;
       var ih = window.innerHeight;
@@ -3216,11 +3250,15 @@
       if (e._logosEl.getBoundingClientRect().bottom < ih * GREET_BTN_FRAC) return false;   // too late to start
       if (POOF.phase !== 'idle') return false;            // the page is busy vanishing
       if (greetForce) return true;                        // #greeter — re-see it on demand
-      return !greetSeen() && !greetLoggedIn();
+      return !greetSeen();
     }
 
-    function greetOpen(e, cr, w, feetY, col) {
-      if (!window.EVQuotes) return;
+    // Open a bubble carrying one beat's line. Returns false when there is nothing to say —
+    // the caller must not assume a handle exists afterwards.
+    function greetOpen(e, cr, w, feetY, col, at, aim, beat) {
+      if (!window.EVQuotes) return false;
+      var text = greetText(at, aim);
+      if (!text) return false;
       var sx = window.scrollX || window.pageXOffset || 0;
       var sy = window.scrollY || window.pageYOffset || 0;
       // head top in DOCUMENT coords: pelvis is 112*S above his feet, head top another
@@ -3229,8 +3267,23 @@
         headX: cr.left + sx + w / 2,
         headY: cr.top + sy + feetY - (112 + 128 + CFG.R) * S,
         tone: col,
-        quote: { text: GREET_SAY }          // no `who`: he is speaking for himself
+        quote: { text: text }               // no `who`: he is speaking for himself
       });
+      e.giBeat = beat;
+      return true;
+    }
+
+    // ASK FIRST, THEN SWAP. Closing beat 1 before knowing whether beat 2 has anything to
+    // say would take a visitor's welcome away and leave them looking at an empty head —
+    // which is exactly what happens to someone who already found the tools.
+    //
+    // Note there is no `if (featureEverOn)` here. Whether the nudge is said, and how it is
+    // worded, is the data file's call; this loop only asks at the right moment.
+    function greetBeat2(e, cr, w, feetY, col, aim) {
+      var text = greetText('point', aim);
+      if (!text) { e.giBeat = 2; return; }       // marked done so it is not asked again
+      if (e.gh) { window.EVQuotes.close(e.gh); e.gh = null; }
+      greetOpen(e, cr, w, feetY, col, 'point', aim, 2);
     }
 
     // Dismissed (clicked, clicked off, Escape, or you went and highlighted a tool): drop the
@@ -3250,13 +3303,14 @@
       e._prSX = cr.left + w / 2; e._prFY = cr.top + h;   // click hitbox anchor (screen coords)
 
       if (greetReady(e, cr)) {
-        e.gi = 'wave'; e.giT = 0; e.giFrom = null;
-        markGreetSeen();                                  // once per browser, not once per visit
+        e.gi = 'wave'; e.giT = 0; e.giTotal = 0; e.giFrom = null; e.giBeat = 0;
+        markGreeted();                                    // once per visit, not once per browser
       }
 
       var pose;
       if (e.gi) {
         e.giT += dt;
+        e.giTotal = (e.giTotal || 0) + dt;
         // where the buttons are RIGHT NOW — the page keeps moving under him while he talks
         var aim = greetAim(e);
         var point = aim ? presentPose(tt, cr, w, oyS, aim.x, aim.y) : A.standstill.frame(tt);
@@ -3266,7 +3320,7 @@
           // he has spoken, scrolling the buttons off is handled by the remembered aim instead.
           if (!e.gh && (!aim || aim.vis < GREET_BTN_MIN)) { e._giLast = pose; greetSettle(e); }
           else {
-            if (!e.gh && e.giT >= GREET_SAY_AT) greetOpen(e, cr, w, feetY, col);
+            if (!e.giBeat && e.giT >= GREET_SAY_AT) greetOpen(e, cr, w, feetY, col, 'wave', aim, 1);
             if (e.giT >= GREET_WAVE) { e.gi = 'turn'; e.giFrom = pose; e.giT = 0; }
           }
         } else if (e.gi === 'turn') {
@@ -3277,6 +3331,13 @@
         } else {
           pose = lerpPose(e.giFrom || point, A.standstill.frame(tt), smooth01(e.giT / GREET_TURN));
           if (e.giT >= GREET_TURN) { e.gi = null; e.giDone = true; e.giFrom = null; }
+        }
+        // Beat 2, once the arm has arrived and beat 1 has had its dwell. Gated on 'turn' and
+        // 'hold' so every dismissal path cancels it for free: a click, a click-off, Escape or
+        // a poof all route through greetSettle(), which moves him to 'settle'. Without that,
+        // dismissing at t=1.0s would get a bubble popping back at t=2.35s.
+        if (e.giBeat === 1 && e.giTotal >= GREET_SAY2_AT && (e.gi === 'turn' || e.gi === 'hold')) {
+          greetBeat2(e, cr, w, feetY, col, aim);
         }
       } else if (e.greet) {
         pose = A[e.spec.hoverAnim || 'greet'].frame(e.greet, e._wave);
@@ -4293,7 +4354,14 @@
     if (location.hash === '#figdebug' || greetForce) window.__evFigDebug = {
       entries: entries, footWalk: footWalk, footStand: footStand,
       greet: {
-        SAY: GREET_SAY, SAY_AT: GREET_SAY_AT, WAVE: GREET_WAVE, TURN: GREET_TURN, KEY: GREET_KEY, force: greetForce,
+        SAY_AT: GREET_SAY_AT, SAY2_AT: GREET_SAY2_AT, WAVE: GREET_WAVE, TURN: GREET_TURN,
+        KEY: GREET_KEY, SESSION_KEY: GREET_SESSION_KEY, force: greetForce,
+        // What he would say right now, and why. There is no single SAY constant to report
+        // any more — that is the point of the change.
+        lines: function () {
+          return { wave: greetText('wave', null), point: greetText('point', null) };
+        },
+        tags: function () { return window.EVLines ? window.EVLines.context(greetFacts(null)).tags : []; },
         window: { MIN_SCROLL: GREET_MIN_SCROLL, HEAD_CLEAR: GREET_HEAD_CLEAR, FOOT_CLEAR: GREET_FOOT_CLEAR, BTN_FRAC: GREET_BTN_FRAC }
       },
       toolsFound: function () { return featureEverOn; },

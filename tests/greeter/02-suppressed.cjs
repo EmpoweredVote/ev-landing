@@ -77,51 +77,39 @@ async function quiet(page, label) {
 (async function () {
   const browser = await chromium.launch();
 
-  // ── 1. you hovered a tool before scrolling: you found them yourself
+  // ── 1. he already greeted you THIS visit. Once per session, not once per browser: a
+  //      returning visitor is exactly who "Good morning" and "Welcome back" are for.
   {
-    const page = await makePage(browser);
-    await page.hover('.showcase-logos .logo-trigger');
-    await page.waitForTimeout(150);
-    assert.ok(await page.evaluate(function () { return window.__evFigDebug.toolsFound(); }),
-      'a hover on a tool must register as "found"');
+    const page = await makePage(browser, function () {
+      try { sessionStorage.setItem('ev:greeted:session', '1'); } catch (e) {}
+    });
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
-    await quiet(page, 'after hovering a tool');
-    assert.strictEqual(await page.evaluate(function () { return localStorage.getItem('ev:greeted'); }), '1',
-      'finding the tools yourself must be remembered for next visit');
+    await quiet(page, 'already greeted this session');
     await page.close();
   }
 
-  // ── 2. a TAP on a tool counts too — a phone never produces a hover
-  {
-    const page = await makePage(browser);
-    await page.click('.showcase-logos .logo-trigger:nth-child(2)');
-    await page.waitForTimeout(150);
-    assert.ok(await page.evaluate(function () { return window.__evFigDebug.toolsFound(); }),
-      'a tap on a tool must register as "found" even without a hover');
-    assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
-    await quiet(page, 'after tapping a tool');
-    await page.close();
-  }
-
-  // ── 3. you have been here before
+  // ── 2. ...and having been here on a PREVIOUS visit is no longer a reason to stay quiet.
+  //      This is the inverse of the case above and guards the change from being reverted.
   {
     const page = await makePage(browser, function () {
       try { localStorage.setItem('ev:greeted', '1'); } catch (e) {}
     });
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
-    await quiet(page, 'already greeted on a previous visit');
+    await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
     await page.close();
   }
 
-  // ── 4. you are signed in, so you have used this before. Read off the banner menu, which is
-  //      what the auth code actually flips (and it may flip late, after the silent SSO check).
+  // ── 3. nor is being signed in. It used to silence him entirely, which silenced exactly
+  //      the visitor a personalized greeting is for.
   {
-    const page = await makePage(browser);
-    await page.evaluate(function () { document.getElementById('menu-logout').hidden = false; });
+    const page = await makePage(browser, function () {
+      window.addEventListener('load', function () {
+        window.EVSession = { loggedIn: true, name: 'Chris' };
+        window.dispatchEvent(new CustomEvent('ev:session'));
+      });
+    });
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
-    await quiet(page, 'signed in');
-    assert.strictEqual(await page.evaluate(function () { return localStorage.getItem('ev:greeted'); }), null,
-      'a signed-in visitor should not have the flag written behind his back');
+    await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
     await page.close();
   }
 
