@@ -123,6 +123,38 @@ function tagsAt(page, y, m, d, h) {
     'a flag written AFTER load must not turn a first-timer into a returning visitor');
   await late.close();
 
+  // ── locale-aware get() — pickLocale() triggers setLocale() on every context call
+  const de = await browser.newPage({ locale: 'de-DE' });
+  await de.route('**/*', function (r) {
+    return /^https?:/.test(r.request().url()) ? r.abort() : r.continue();
+  });
+  await de.goto(BASE);
+  await de.evaluate(function () {
+    window.EVCopy.register('de', { 'greet.hello': 'Guten Tag' });
+    window.EVLines.context();  // triggers pickLocale(), which should call setLocale('de')
+  });
+  const deHello = await de.evaluate(function () {
+    return window.EVCopy.get('greet.hello');
+  });
+  assert.strictEqual(deHello, 'Guten Tag', 'de locale should return German string');
+  await de.close();
+
+  // ── negative: en-US page with de pack should still get English
+  const enStable = await browser.newPage();
+  await enStable.route('**/*', function (r) {
+    return /^https?:/.test(r.request().url()) ? r.abort() : r.continue();
+  });
+  await enStable.goto(BASE);
+  await enStable.evaluate(function () {
+    window.EVCopy.register('de', { 'greet.hello': 'Guten Tag' });
+    window.EVLines.context();
+  });
+  const enHello = await enStable.evaluate(function () {
+    return window.EVCopy.get('greet.hello');
+  });
+  assert.strictEqual(enHello, 'Hi there. Welcome to Empowered Vote.', 'en-US locale should return English despite de pack');
+  await enStable.close();
+
   console.log('02-predicates: PASS');
   await browser.close();
 })();

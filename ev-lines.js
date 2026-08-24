@@ -69,8 +69,15 @@
   function pickLocale() {
     var lang = (window.navigator && (navigator.language || navigator.userLanguage)) || 'en';
     var base = String(lang).toLowerCase().split('-')[0];
-    if (window.EVCopy && window.EVCopy.has(base)) return base;
-    return (window.EVCopy && window.EVCopy.BASE) || 'en';
+    var locale = base;
+    if (!(window.EVCopy && window.EVCopy.has(base))) {
+      locale = (window.EVCopy && window.EVCopy.BASE) || 'en';
+    }
+    // Apply the picked locale so get() resolves against it, not the default.
+    if (window.EVCopy) {
+      window.EVCopy.setLocale(locale);
+    }
+    return locale;
   }
 
   // Facts, not decisions. `facts` is what only the caller can know, merged over the ambient
