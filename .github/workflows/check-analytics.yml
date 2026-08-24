@@ -30,6 +30,9 @@ name: Check PostHog analytics coverage
 # with its own tracking, e.g. donate.html -> financials.empowered.vote) are
 # auto-skipped — they never render, so there is nothing to instrument.
 #
+# So is anything under tests/ or tools/. Those hold Playwright fixtures and
+# generators, not pages a visitor can reach; see the git ls-files line below.
+#
 # ─────────────────────────────────────────────────────────────────────────────
 # THIS CHECK WARNS. IT DOES NOT BLOCK MERGES. That's intentional—for now.
 # Chris Andrews, 2026-08-17
@@ -90,7 +93,14 @@ jobs:
             # exclusion list, so node_modules, nested worktrees and scratch files
             # never produce a false failure, and a committed page in a directory
             # nobody thought to exclude still gets checked.
-          done < <(git ls-files -z -- '*.html' ':(exclude)tools/*')
+            #
+            # tests/ is excluded because a Playwright fixture is not a page. The
+            # first one (tests/lines/fixture.html) failed this check on
+            # 2026-08-24. Instrumenting it would have been the wrong fix twice
+            # over: it would send test traffic to PostHog, and it would give a
+            # harness whose entire purpose is to load two files and nothing else
+            # a third file plus a network call.
+          done < <(git ls-files -z -- '*.html' ':(exclude)tools/*' ':(exclude)tests/*')
 
           status=0
 
