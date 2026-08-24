@@ -100,12 +100,21 @@ async function scrollIntoWindow(page) {
     var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
     return e.giBeat === 2;
   }, { timeout: 6000 });
-  // greetBeat2 closes beat 1's bubble and opens beat 2's in the same tick, but EVQuotes.close()
-  // only drops the outgoing element's ".in" class immediately and removes it from the DOM 260ms
-  // later (ev-quotes.js:324) so its fade-out can play. For that window there are genuinely two
-  // ".ev-quote" nodes in the document; querying right on the giBeat flip races that removal and
-  // reads the outgoing (beat 1) node. Clear the window before asserting on "the" bubble below.
-  await page.waitForTimeout(300);
+
+  // The swap must be clean the INSTANT it happens, with no settling time: exactly one
+  // ".ev-quote" node in the document (not merely one that is visible — a stale outgoing node
+  // sitting there mid fade-out would still count), and its text must already be beat 2's, not
+  // beat 1's. Sampled with no wait after the flip above; if this needs one, the swap isn't
+  // actually instant and greetBeat2() has a bug.
+  const atSwap = await page.evaluate(function () {
+    var nodes = document.querySelectorAll('.ev-quote');
+    return {
+      count: nodes.length,
+      text: nodes.length ? (nodes[0].querySelector('.say') || nodes[0].querySelector('q')).textContent : null
+    };
+  });
+  assert.strictEqual(atSwap.count, 1, 'exactly one bubble node must exist right at the swap, found ' + atSwap.count);
+  assert.strictEqual(atSwap.text, BEAT2, 'the single node must already carry beat 2, got: ' + atSwap.text);
 
   const fired = await page.evaluate(function () {
     // Ask the pixels where he actually is rather than re-deriving the rig's geometry (the

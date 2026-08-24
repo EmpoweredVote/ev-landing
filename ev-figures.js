@@ -3282,7 +3282,19 @@
     function greetBeat2(e, cr, w, feetY, col, aim) {
       var text = greetText('point', aim);
       if (!text) { e.giBeat = 2; return; }       // marked done so it is not asked again
-      if (e.gh) { window.EVQuotes.close(e.gh); e.gh = null; }
+      if (e.gh) {
+        window.EVQuotes.close(e.gh);
+        // close() only drops the "in" class; it leaves the node mounted for 260ms so an
+        // ordinary dismissal can fade out (right everywhere else a bubble closes — the seated
+        // readers fade into nothing). A beat swap is the one case where something else opens
+        // in the SAME spot in the SAME frame: for that 260ms window the outgoing beat-1 node
+        // and the incoming beat-2 node would both be live at once, at different widths (the
+        // two lines are different lengths) — visible ghosting under the new bubble. Take the
+        // outgoing node out right now instead; close()'s deferred removal is already guarded
+        // with `if (h.el.parentNode)`, so finding it already gone just makes that a no-op.
+        if (e.gh.el && e.gh.el.parentNode) e.gh.el.parentNode.removeChild(e.gh.el);
+        e.gh = null;
+      }
       greetOpen(e, cr, w, feetY, col, 'point', aim, 2);
     }
 
