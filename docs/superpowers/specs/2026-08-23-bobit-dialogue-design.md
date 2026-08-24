@@ -16,7 +16,9 @@ keys, and takes Spanish by adding a file.
 Two things beyond plumbing change for the visitor:
 
 - He speaks in **two beats** instead of one — a short welcome while he waves, then the button nudge when
-  his arm lands on the buttons. Copy now tracks what his body is doing.
+  his arm lands on the buttons. Copy now tracks what his body is doing, and the nudge's wording adapts:
+  a stranger is told where the buttons are, a returning visitor is simply encouraged to explore, and
+  someone who already found the tools is not nudged at all.
 - He greets **anyone, once per visit**, instead of first-timers-only-forever. That is what makes
   "Good morning" and "welcome back" reachable at all; today the people those lines are for are exactly
   the people the gate silences.
@@ -57,7 +59,9 @@ EVCopy.register('en', {
   'greet.halloween': "Happy Halloween. Welcome to Empowered Vote.",
   'greet.holidays':  "Happy holidays. Welcome to Empowered Vote.",
   'greet.back':      "Welcome back, {name}.",
-  'greet.buttons':   "Press one of those buttons up there to start exploring."
+  'greet.buttons':      "Press one of those buttons up there to start exploring.",
+  'greet.buttons.back': "There is plenty up there to explore whenever you are ready.",
+  'greet.buttons.gone': "The tools are back up the page whenever you want a look."
 });
 ```
 
@@ -80,11 +84,17 @@ canvas, poses, or DOM.
 The public interface is one registration call and three reads:
 
 ```js
-EVLines.register('greeter', { beats: […] })  // a speaker's beats and conditions (see Selection)
-EVLines.say('greeter', 'wave')          // → "Hi there. Welcome to Empowered Vote." | null
-EVLines.context()                        // → { hour, locale, loggedIn, name, returning, …, tags: [] }
-EVLines.force(['halloween', 'evening'])  // author/test override: pin the active tags
+EVLines.register('greeter', { beats: […] })   // a speaker's beats and conditions (see Selection)
+EVLines.say('greeter', 'wave', facts)        // → "Hi there. Welcome to Empowered Vote." | null
+EVLines.context()                             // → { hour, locale, loggedIn, name, returning, …, tags: [] }
+EVLines.force(['halloween', 'evening'])       // author/test override: pin the active tags
 ```
+
+`facts` is what only the *caller* can know — whether a tool has been highlighted, whether the button
+column is still on screen. It is merged over the ambient context for that one call. This matters for the
+boundary: without it, `EVLines` would have to reach into `ev-figures.js` for `featureEverOn`, which is
+backwards for a module whose whole claim is that it knows nothing about canvas. The figures layer reports
+what it sees; the engine decides what that means.
 
 `EVCopy` mirrors that shape: `register(locale, map)` and `get(id)`, where `get()` resolves against the
 active locale and falls back to `en`.
@@ -151,7 +161,13 @@ The 'ev:session' event name follows the `ev:` prefix already used for storage ke
 | `locale` | `EVCopy` has a catalog for `navigator.language`'s base; else `en` |
 | `loggedIn`, `name` | `window.EVSession` |
 | `returning` | `localStorage ev:greeted` was already set on arrival |
+
+Two more arrive per call, from the caller, because only it can see them:
+
+| Fact | Reported by |
+|---|---|
 | `toolsFound` | the greeter's `featureEverOn` |
+| `buttonsVisible` | `greetAim().vis >= GREET_BTN_MIN` |
 
 **Predicates** are named boolean functions over the context, in one table:
 
@@ -160,7 +176,8 @@ morning / afternoon / evening      hour < 12 / 12–17 / ≥ 17
 halloween / holidays / mlk-day     date windows over ctx.now
 first-visit / returning            ctx.returning
 logged-in / guest / named          ctx.loggedIn, ctx.name
-tools-found                        ctx.toolsFound
+tools-found                        ctx.toolsFound      (per call)
+buttons-gone                       !ctx.buttonsVisible (per call)
 ```
 
 The true ones become `ctx.tags`. "It's a leap year" or "they have three or more Compass sessions" is one
@@ -192,6 +209,10 @@ EVLines.register('greeter', {
         { id: 'greet.hello' }
     ]},
     { at: 'point', lines: [
+        { id: null,                 when: ['tools-found'] },   // they found them; say nothing
+        { id: 'greet.buttons.gone', when: ['buttons-gone'] },
+        { id: 'greet.buttons.back', when: ['returning'] },
+        { id: 'greet.buttons.back', when: ['logged-in'] },
         { id: 'greet.buttons' }
     ]}
   ]
@@ -204,6 +225,11 @@ reciting an identical greeting every visit:
 ```js
 { id: ['greet.hello.a', 'greet.hello.b', 'greet.hello.c'] }
 ```
+
+`id: null` is a deliberate silence — a matched line that says nothing, which is how a beat is suppressed
+by context rather than by a branch in `ev-figures.js`. It is distinct from *no line matching*, which also
+yields no bubble but means the author left a gap. Both are silent to the visitor; only the second is a
+smell, and keeping them separate is what lets the tests tell them apart.
 
 An id with no catalog entry resolves to `null` and logs a `console.warn` naming the id. Silent muting
 would make a typo very hard to find; throwing would take the canvas down over a copy error.
@@ -241,18 +267,42 @@ never say "those buttons up there" before the arm gets there, and never yank bea
 1.8 seconds. With today's constants the dwell rule binds, so he holds the point for a beat before the
 second line lands — he gestures, then explains.
 
-Three conditions on beat 2:
+**The swap is unconditional.** At `GREET_SAY2_AT`, beat 1 closes and beat 2 is asked for. Whether beat 2
+has anything to say is a *selection* question, answered by the data file — not a branch in the drawing
+code. That is the whole point of the split: "who deserves a nudge, and worded how" becomes a list a copy
+author can read, instead of a condition buried at `ev-figures.js:3211`.
 
-- **Dismissal cancels it.** Today `greetDismiss()` closes the bubble and eases him to standing. With two
-  beats, a click at t=1.0s would otherwise get a bubble popping back at t=2.35s, just after you dismissed
-  one. This is the one genuinely new failure mode the beat split introduces, and it gets its own test.
-- **`featureEverOn` suppresses beat 2 only.** It currently silences the whole greeting
-  (`ev-figures.js:3211`). That is right for "press one of those buttons" — condescending to someone who
-  already found them — and wrong for "Good morning". So it moves out of the eligibility gate and onto
-  beat 2. Someone who fiddled with the tool logos and scrolled down gets the welcome without the tutorial.
-- **It needs a remembered aim.** Beat 2 opens if `giAimDoc` exists, without requiring the column still be
-  visible — matching what he already does after speaking, where the remembered document-space aim keeps
-  his arm on the buttons as they scroll off. "Up there" stays true while he is pointing up off-screen.
+What the selector does with it:
+
+| highlighted a tool | signed in / returning | button column | beat 2 |
+|---|---|---|---|
+| no | no | on screen | `greet.buttons` — teaches where they are |
+| no | yes | on screen | `greet.buttons.back` — encourages, does not teach |
+| no | either | scrolled off | `greet.buttons.gone` — does not say "press" an invisible button |
+| yes | either | either | `id: null` — silence |
+
+`tools-found` sits at the top of the beat-2 list, so it wins over every other condition. That resolves
+the one place the two rules conflict — signed in *and* having highlighted a tool. Highlighting wins,
+because it is the stronger evidence: they did not presumably know where the buttons were, they
+demonstrably did.
+
+**`featureEverOn` moves out of the eligibility gate.** It currently silences the whole greeting
+(`ev-figures.js:3211`). That is right for the nudge and wrong for "Good morning", so it becomes the
+`tools-found` fact and only ever suppresses beat 2.
+
+**Beat 2 does not require the column to be visible**, only that his head still is — a bubble opened at a
+head above the viewport is invisible and yet live, so the next tap would dismiss something the visitor
+never saw. The arm keeps its remembered document-space aim (`giAimDoc`) and stays on the buttons as they
+scroll off, which is what he already does after speaking today; `greet.buttons.gone` is the wording that
+makes that honest.
+
+**Dismissal cancels the pending swap.** Today `greetDismiss()` closes the bubble and eases him to
+standing. With two beats, a click at t=1.0s would otherwise get a bubble popping back at t=2.35s, just
+after you dismissed one. This is the one genuinely new failure mode the beat split introduces, and it
+gets its own test.
+
+**When beat 2 is silent, beat 1 stays up** until dismissed, matching `EVQuotes.LIFE = 0` — bubbles on this
+page wait for a tap rather than expiring. Nothing closes beat 1 just to leave an empty head.
 
 Beat 1's abort path is unchanged: if the column leaves before he has spoken at all, he settles and says
 nothing.
@@ -284,6 +334,13 @@ Lines follow `docs/voice-and-tone.md`: plain language, short sentences, no hype,
 Welcome to Empowered Vote." over an exclamation-stacked version of the same thing; the current
 `GREET_SAY` has two exclamation marks in one sentence and reads louder than the rest of the site.
 
+The nudge's three wordings are a tone decision, not a phrasing exercise. `greet.buttons` teaches, which
+is right exactly once — for someone who has never seen the page. `greet.buttons.back` drops the
+instruction and keeps the invitation, because telling a returning visitor where the buttons are implies
+they failed to notice. `greet.buttons.gone` exists because "press one of those buttons up there" is a
+small lie once the column has scrolled off, and the guide is explicit that we do not ask people to act on
+something we have not actually shown them.
+
 Seasonal lines stay neutral about *whose* holiday it is — "Happy Halloween" is safe, and a December line
 says "Happy holidays" rather than naming one. This is the same reason the tool copy avoids assuming a
 party: the site is for people who disagree with each other.
@@ -301,13 +358,16 @@ New:
   a global, so it cannot be `require()`d; running it in Playwright against a fixture with no canvas keeps
   these assertions fast and honest at the same time. Covers first-match-wins, `when` as an AND, the
   no-`when` fallback, an unknown id resolving to `null` with a warning, array-of-ids picking within the
-  set and holding for the session, `{name}` substitution, and locale falling back to `en`.
+  set and holding for the session, `{name}` substitution, locale falling back to `en`, and `id: null`
+  being distinguishable from no-line-matched.
 - **`tests/lines/02-predicates.cjs`** — `?evlines=` tag forcing, and each hour and date window resolving
   correctly at its boundaries (23:59 on 31 October is still `halloween`; 12:00 is `afternoon`, not
   `morning`).
 - **`tests/greeter/04-beats.cjs`** — beat 1 during the wave, beat 2 at 2.35s, never two bubbles live at
-  once, a dismissal at t=1.0s leaving nothing behind at t=3.0s, and `featureEverOn` yielding beat 1 with
-  no beat 2.
+  once, a dismissal at t=1.0s leaving nothing behind at t=3.0s, and each row of the beat-2 table above:
+  `featureEverOn` leaving beat 1 up with no beat 2, a signed-in visitor getting `greet.buttons.back`, a
+  visitor who scrolled the column off getting `greet.buttons.gone`, and signed-in-plus-highlighted
+  resolving to silence rather than to `greet.buttons.back`.
 - **`tests/greeter/02-suppressed.cjs`** — updated: the same session stays quiet, a fresh session greets
   again, and a signed-in visitor now *does* get greeted.
 - **`tests/greeter/05-session.cjs`** — `EVSession` published, `ev:session` invalidating the context memo,
