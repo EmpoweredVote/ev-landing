@@ -3,7 +3,7 @@
 // been found. Writes screenshots/greeter-<theme>-<width>-<phase>.png.
 const { chromium } = require('playwright');
 
-const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#greeter';   // #greeter ignores "seen before"
+const URL = 'file:///C:/ev-landing/ev-landing-main/index.html?evlines=first-visit,guest#greeter';   // #greeter ignores "seen this visit"
 
 (async function () {
   const browser = await chromium.launch();
@@ -40,13 +40,29 @@ const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#greeter';   // #gr
         var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
         return e.gi === 'wave';
       }, { timeout: 6000 });
-      await page.waitForTimeout(1000);   // mid-wave
+      await page.waitForTimeout(1000);   // mid-wave, with beat 1 up
       await page.screenshot({ path: 'screenshots/' + tag + '-wave.png' });
 
-      await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
-      await page.waitForTimeout(500);
+      // Arm on the buttons, beat 1 still up. Waits for the STATE rather than sleeping:
+      // this used to be waitForSelector('.ev-quote.in') + 500ms, which resolved instantly
+      // because the wave shot had already opened the bubble, so what it caught was a
+      // timing accident. Now that a second bubble follows, an accident would catch the
+      // wrong one.
+      await page.waitForFunction(function () {
+        var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
+        return e.gi === 'hold' && e.giBeat === 1;
+      }, { timeout: 6000 });
       await page.screenshot({ path: 'screenshots/' + tag + '-point.png' });
-      console.log('wrote screenshots/' + tag + '-{wave,point}.png');
+
+      // ...and the nudge that replaces it at GREET_SAY2_AT. A fixed wait here is what
+      // makes screenshot suites flake under load, so wait for the beat itself.
+      await page.waitForFunction(function () {
+        var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
+        return e.giBeat === 2;
+      }, { timeout: 8000 });
+      await page.waitForTimeout(400);    // let the fade finish
+      await page.screenshot({ path: 'screenshots/' + tag + '-nudge.png' });
+      console.log('wrote screenshots/' + tag + '-{wave,point,nudge}.png');
       await page.close();
     }
   }
