@@ -1667,13 +1667,18 @@
                 </article>
 
                 <!--
-                  NEWSLETTER SIGN-UP — NOT YET CONNECTED TO GIVEBUTTER.
-                  To go live (~15 min): in GiveButter create a Sign-up form with an
-                  Email field (tag new contacts e.g. "newsletter"), copy the embed,
-                  and either replace the <form> below with it or point this form's
-                  handler at your GiveButter form. Then delete the placeholder
-                  <script> block near </footer>. Until then, submitting shows a
-                  friendly "not switched on yet" note — no visitor is told they subscribed.
+                  NEWSLETTER SIGN-UP — LIVE. Submissions POST to the Lambda in
+                  SIGNUP_ENDPOINT (near </footer>), which adds the address to
+                  GiveButter contacts. That script block is the live handler, not a
+                  placeholder — deleting it silently breaks sign-up.
+
+                  The "sign-ups go live once we connect the form" branch in
+                  submitEmail() only fires if SIGNUP_ENDPOINT is empty or still
+                  starts with "PASTE", so it is a guard against a half-finished
+                  edit rather than the current state.
+
+                  Three places share this endpoint and payload shape: this form, the
+                  footer form, and newsletter.html. Change one, change all three.
                 -->
                 <article class="note n-follow">
                     <span class="marker"><span class="glyph">&#9993;&#65038;</span> Note 04 — Newsletter</span>
