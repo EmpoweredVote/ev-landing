@@ -73,7 +73,19 @@
     if (!(window.EVCopy && window.EVCopy.has(base))) {
       locale = (window.EVCopy && window.EVCopy.BASE) || 'en';
     }
-    // Apply the picked locale so get() resolves against it, not the default.
+    // Apply the picked locale so get() resolves against it, not the default. Without this
+    // call the seam looks finished and silently is not: a second language file can register
+    // an 'es' pack, has(), ids() and everything else will see it exists, and EVCopy.get()
+    // will still resolve every id against 'en' forever, because nothing ever told it the
+    // active locale changed. That failure mode is the dangerous kind — no error, no warning,
+    // just English text under a Spanish navigator.language, discovered only by someone
+    // reading Spanish and noticing it never arrives.
+    //
+    // Side effect worth being honest about: context() is documented above as facts, not
+    // decisions — but this line mutates EVCopy's active locale as a side effect of merely
+    // building a facts object. That is a real deviation from the stated contract, tolerated
+    // here because pickLocale() has to run before resolve() calls get(), and context() is
+    // the only function that runs on every call to resolve().
     if (window.EVCopy) {
       window.EVCopy.setLocale(locale);
     }
@@ -166,6 +178,13 @@
 
   function say(who, at, facts) { return resolve(who, at, facts).text; }
 
+  // PREDICATES is exported even though nothing in shipped code or in the test suites reads
+  // it back off window.EVLines — resolve()/context() close over the local variable directly.
+  // It is public on purpose, for two reasons that are not "an accident nobody cleaned up":
+  // it is the debug handle a person opens in devtools to see the exact live tag functions
+  // (not a description of them, the functions), and the README points a future author here
+  // as the place to add a new condition. If a later change makes this genuinely private,
+  // that is fine, but it should be a deliberate removal, not a drive-by "unused export" cut.
   window.EVLines = {
     context: context, force: force, PREDICATES: PREDICATES,
     register: register, resolve: resolve, say: say

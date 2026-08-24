@@ -1,12 +1,20 @@
-// The greeter's whole point is that he only nudges someone who missed the buttons. Each case
-// here is a reason he must stay quiet. Every one of them parks him INSIDE his firing window
-// (asserted, not assumed) and waits out the whole wave+turn, so a pass means he genuinely
-// chose not to speak — not that the page was scrolled somewhere he never speaks from.
+// The greeter used to have a single once-per-BROWSER rule that silenced him for anyone who
+// had ever been seen before — signed in or not. This suite covers what replaced it: he now
+// stays quiet for reasons about THIS VISIT and THIS SCROLL (cases 1, 4, 5), and a set of
+// explicit inverses proving old reasons to stay quiet no longer apply (cases 2, 3) — a
+// returning or signed-in visitor is exactly who a contextual "Welcome back" line is for, so
+// those two cases assert he DOES speak, guarding the old behaviour from being reintroduced by
+// accident. Case 6 is the control: with none of the above in play, he greets — without it the
+// quiet cases could all be passing on a greeter that never works at all.
+//
+// Every case parks him INSIDE his firing window (asserted, not assumed) and waits out the
+// whole wave+turn, so a "quiet" pass means he genuinely chose not to speak — not that the
+// page was scrolled somewhere he never speaks from.
 const { chromium } = require('playwright');
 const assert = require('assert');
 
 const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
-const SEQ = 2600;   // GREET_WAVE (1.8s) + GREET_TURN (0.35s) + slack
+const SEQ = 2600;   // GREET_WAVE (1.2s) + GREET_TURN (0.35s) + slack
 
 async function makePage(browser, init) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -113,7 +121,7 @@ async function quiet(page, label) {
     await page.close();
   }
 
-  // ── 5. coming back UP to the hero: you are already looking at the buttons
+  // ── 4. coming back UP to the hero: you are already looking at the buttons
   {
     const page = await makePage(browser);
     assert.ok(await scrollUpInto(page), 'could not bring him back into view from below');
@@ -121,7 +129,7 @@ async function quiet(page, label) {
     await page.close();
   }
 
-  // ── 6. flicked past at speed. He starts to wave, the buttons leave the top of the screen
+  // ── 5. flicked past at speed. He starts to wave, the buttons leave the top of the screen
   //      mid-gesture, and he stands down without saying anything rather than finish a point at
   //      something that is no longer there. (He must actually have STARTED, or this is testing
   //      nothing — the trigger window and the abort are different conditions.)
@@ -163,7 +171,7 @@ async function quiet(page, label) {
     await page.close();
   }
 
-  // ── 7. and the control: with none of the above, he does greet. Without this the six
+  // ── 6. and the control: with none of the above, he does greet. Without this the
   //      assertions above would all pass on a greeter that never works at all.
   {
     const page = await makePage(browser);

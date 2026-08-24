@@ -1953,8 +1953,14 @@
             // every auth path ends in (hash token, stored token, silent SSO, a 401, logout),
             // so publishing here covers all of them without touching the fetch logic.
             //
-            // Resolution is asynchronous and silent SSO has a 3s budget, so listeners must
-            // assume this can change AFTER they first read it — hence the event.
+            // Resolution is asynchronous and silent SSO has a 3s budget, so a snapshot read at
+            // load time can be stale by the time it matters. The `ev:session` dispatch below is
+            // NOT load-bearing today — nothing in this codebase listens for it. ev-lines.js reads
+            // window.EVSession pull-style, at the moment it is about to speak, which sidesteps
+            // the staleness problem entirely and is why the greeter works with zero listeners.
+            // The event exists as an announced contract for whatever future consumer needs to
+            // react to a change in place (a header re-render, an analytics hook) rather than
+            // poll — deliberately published, deliberately not depended on by anything here.
             window.EVSession = { loggedIn: false, name: null };
             function publishSession(loggedIn, name) {
                 window.EVSession = { loggedIn: !!loggedIn, name: name || null };
@@ -2019,7 +2025,20 @@
             }
 
             function activate(token) {
-                showLoggedIn(decodeName(token) || 'Account');
+                // Do NOT fall back to 'Account' here. That placeholder belongs to the menu —
+                // showLoggedIn() already renders it for a falsy name — and feeding it into
+                // showLoggedIn's argument makes it the identity too, because showLoggedIn also
+                // calls publishSession(true, name). ev-lines.js's `named` predicate is `!!c.name`,
+                // so the string 'Account' satisfies it and fires "Welcome back, Account." A
+                // returning signed-in visitor whose token carries no name claim (a JWT with only
+                // sub/exp/scope, or any opaque non-JWT token where decodeName's own try/catch
+                // swallows the throw) would get exactly that, forever — refreshName only
+                // corrects it on a successful /account/me call, and deliberately keeps the
+                // JWT-derived name on CORS failure, offline, or any non-401 error. Passing the
+                // real (possibly null) name through lets publishSession(true, null) mean what it
+                // says — signed in, name unknown — so beat 1 falls through to the time-of-day
+                // line instead of a lie.
+                showLoggedIn(decodeName(token));
                 refreshName(token);
             }
 

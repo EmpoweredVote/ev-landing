@@ -20,10 +20,21 @@
 
   // Resolve against the active locale, then English. A missing id is null, never undefined
   // and never a throw: a copy typo should be visible and harmless, not fatal to the page.
+  //
+  // hasOwnProperty is required, not decoration: `packs[active][id] != null` alone also finds
+  // Object.prototype's own members. An id authored as 'toString' (this file is explicitly the
+  // one a non-engineer opens, so an accidental collision is plausible) would resolve to the
+  // built-in Function, which is non-null, so it would sail past this function AND past the
+  // warn in resolve()'s caller — and then fill()'s `text.replace(...)` throws, because a
+  // Function has no .replace. That throw lands inside ev-lines.js's resolve(), inside
+  // ev-figures.js's greetOpen(), inside the animation tick — stalling the whole canvas for
+  // every figure on the page, not just the one that spoke. Unreachable with the dotted ids
+  // this catalog actually uses ('greet.hello', etc.), but ids() two functions up already
+  // guards this correctly; leaving get() inconsistent with it is the actual bug being closed.
   function get(id) {
     if (!id) return null;
-    if (packs[active] && packs[active][id] != null) return packs[active][id];
-    if (packs[BASE] && packs[BASE][id] != null) return packs[BASE][id];
+    if (packs[active] && Object.prototype.hasOwnProperty.call(packs[active], id) && packs[active][id] != null) return packs[active][id];
+    if (packs[BASE] && Object.prototype.hasOwnProperty.call(packs[BASE], id) && packs[BASE][id] != null) return packs[BASE][id];
     return null;
   }
 

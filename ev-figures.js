@@ -4370,10 +4370,23 @@
         KEY: GREET_KEY, SESSION_KEY: GREET_SESSION_KEY, force: greetForce,
         // What he would say right now, and why. There is no single SAY constant to report
         // any more — that is the point of the change.
+        //
+        // aim = null was the bug here, not a placeholder: greetFacts(null) always reports
+        // buttonsVisible: false, so buttons-gone was ALWAYS active, no matter where the
+        // button column actually was on screen. lines().point always claimed
+        // 'greet.buttons.gone' and tags() always listed buttons-gone — even with the column
+        // plainly in view — because nothing computed the real aim. Look up the presenter
+        // the same way the test suites do and ask IT where it is pointing.
         lines: function () {
-          return { wave: greetText('wave', null), point: greetText('point', null) };
+          var p = entries.find(function (x) { return x.spec.presenter; });
+          var aim = p ? greetAim(p) : null;
+          return { wave: greetText('wave', aim), point: greetText('point', aim) };
         },
-        tags: function () { return window.EVLines ? window.EVLines.context(greetFacts(null)).tags : []; },
+        tags: function () {
+          var p = entries.find(function (x) { return x.spec.presenter; });
+          var aim = p ? greetAim(p) : null;
+          return window.EVLines ? window.EVLines.context(greetFacts(aim)).tags : [];
+        },
         window: { MIN_SCROLL: GREET_MIN_SCROLL, HEAD_CLEAR: GREET_HEAD_CLEAR, FOOT_CLEAR: GREET_FOOT_CLEAR, BTN_FRAC: GREET_BTN_FRAC }
       },
       toolsFound: function () { return featureEverOn; },

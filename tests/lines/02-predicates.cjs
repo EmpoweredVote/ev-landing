@@ -76,11 +76,16 @@ function tagsAt(page, y, m, d, h) {
   const cf = await page.evaluate(function () {
     return {
       found: window.EVLines.context({ toolsFound: true }).tags,
+      notFound: window.EVLines.context({ toolsFound: false }).tags,
       gone: window.EVLines.context({ buttonsVisible: false }).tags,
       shown: window.EVLines.context({ buttonsVisible: true }).tags
     };
   });
   assert.ok(cf.found.includes('tools-found'), 'toolsFound must produce tools-found');
+  // The other direction of the same predicate, so an always-true implementation (one that
+  // ignores its argument) cannot slip through. buttons-gone already gets both directions
+  // below; tools-found only had the positive one, which is the gap this closes.
+  assert.ok(!cf.notFound.includes('tools-found'), 'toolsFound:false must not produce tools-found');
   assert.ok(cf.gone.includes('buttons-gone'), 'buttonsVisible:false must produce buttons-gone');
   assert.ok(!cf.shown.includes('buttons-gone'), 'buttonsVisible:true must not produce buttons-gone');
 

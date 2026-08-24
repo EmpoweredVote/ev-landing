@@ -137,12 +137,27 @@ registered; if a given id is missing from that catalog — a translation not wri
 it falls back to English for that id alone rather than breaking the sentence around it.
 Selection in `ev-lines.js` never needs to know a second language exists.
 
+**Landmine: guard your new file on its OWN pack, not on `EVCopy` existing.**
+`ev-copy.en.js` conflates the two — its top-of-file guard is `if (window.EVCopy) return;`,
+which is really "define `EVCopy` and register `en`" collapsed into one check. The natural
+way to write `ev-copy.es.js` is to copy that file, which copies the guard too — and then
+your new file is a silent no-op forever, because `window.EVCopy` is already truthy by the
+time it runs. Worse, if `ev-copy.es.js`'s script tag happens to land BEFORE `ev-copy.en.js`'s
+in the page, the *English* file is the one that bails out on that same guard, so `EVCopy`
+exists with no packs registered at all and every `get(id)` returns null — muting the
+greeter site-wide, not just in Spanish. Guard a new language file on whether its own pack
+is already registered instead: `if (!window.EVCopy || window.EVCopy.has('es')) return;`.
+
 **Two storage keys track two different questions, and merging them would reintroduce a
 bug this design removed.** `localStorage['ev:greeted']` means "this browser has been here
 before" — it feeds the `returning`/`first-visit` predicates, and outlives the tab.
 `sessionStorage['ev:greeted:session']` means "he has already greeted you this visit," and
-is the *only* thing `greetReady()` checks to decide whether to stay quiet — it's the sole
-suppression switch. Hovering a tool writes only the first of the two. If it wrote the
+is the *only stored signal* `greetReady()` checks to decide whether to stay quiet — of the
+two keys, it is the sole suppression switch. (`greetReady()` itself has several other
+early-outs beyond the two keys — scroll direction, scroll distance, head/foot clearance,
+no visible aim, the POOF phase, already mid-greeting — but those are all about *where you
+are right now*, not what is *remembered* between visits; the keys are the only part of the
+gate with memory.) Hovering a tool writes only the first of the two. If it wrote the
 second as well, finding the tools on your own — by hovering one on your way down the
 page, before he ever gets a chance to speak — would silence the welcome along with the
 nudge it's meant to make redundant: you'd never see him greet you at all, just because you

@@ -144,6 +144,7 @@ async function scrollIntoWindow(page) {
       btnBottom: document.querySelector('.showcase-logos').getBoundingClientRect().bottom,
       winW: window.innerWidth, winH: window.innerHeight,
       seen: localStorage.getItem('ev:greeted'),
+      sessionSeen: sessionStorage.getItem('ev:greeted:session'),
       count: document.querySelectorAll('.ev-quote').length
     };
   });
@@ -174,6 +175,14 @@ async function scrollIntoWindow(page) {
     ' of ' + fired.winH);
 
   assert.strictEqual(fired.seen, '1', 'greeting must be remembered so he does not do it again');
+  // markGreeted() writes two keys (see the MET/SESSION comment in ev-figures.js); the
+  // localStorage assertion above only ever exercised the first. Without this one,
+  // deleting the sessionStorage.setItem call out of markGreeted() would leave all 38
+  // suites green while shipping a greeter that re-greets on every reload — the once-per-visit
+  // key would be written nowhere, so nothing would ever be there to suppress him. Assert it
+  // is actually written, not just that the (unrelated) localStorage key is.
+  assert.strictEqual(fired.sessionSeen, '1',
+    'the once-per-visit session key must also be written, not just the once-per-browser one');
 
   // ...and he only does it once per page load, even if you scroll back and forth
   await page.evaluate(function () { window.scrollTo(0, 0); });
@@ -184,6 +193,22 @@ async function scrollIntoWindow(page) {
     return document.querySelectorAll('.ev-quote').length;
   });
   assert.ok(again <= 1, 'he must not stack a second bubble, found ' + again);
+
+  // The assertion above proves the key gets WRITTEN; it does not prove the key SUPPRESSES
+  // anything, because nothing reloaded the page to make it matter. sessionStorage (unlike an
+  // in-memory flag) survives a reload in a real tab, which is the entire reason ev-figures.js
+  // uses it instead of a plain JS variable — so reload here and confirm the session key alone
+  // is enough to keep him quiet on the next load, with no scroll-history or in-page state
+  // carried over from the first pass.
+  await page.reload();
+  await page.waitForTimeout(400);
+  assert.ok(await scrollIntoWindow(page), 'could not reach the greeting window after reload');
+  await page.waitForTimeout(2600);   // past the full wave+turn+point gesture, same as the other suites
+  const afterReload = await page.evaluate(function () {
+    return document.querySelectorAll('.ev-quote').length;
+  });
+  assert.strictEqual(afterReload, 0,
+    'the session key must suppress the greeting after a reload, found ' + afterReload + ' bubble(s)');
 
   console.log('01-fires: PASS');
   await browser.close();

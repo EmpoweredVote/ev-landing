@@ -90,6 +90,14 @@ async function makePage(browser, init) {
   }
 
   // ── a name arriving late must not rewrite a bubble already on screen
+  //
+  // Forward guard, not a live test: nothing shipped listens for `ev:session` today (see the
+  // comment on the dispatch in index.html — ev-lines.js reads window.EVSession pull-style, at
+  // speak time, rather than subscribing). With no listener able to touch an open bubble, this
+  // case cannot fail regardless of what changes here. Keep it for the day a listener exists —
+  // an analytics hook or a header re-render reacting to the event — so that whoever adds one
+  // inherits this assertion instead of having to write it from scratch; but do not read a
+  // green run of this case today as proof the claim in its name is currently tested.
   {
     const page = await makePage(browser);
     // put a say-bubble up by hand, then flip the session under it

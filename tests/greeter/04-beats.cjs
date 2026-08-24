@@ -32,6 +32,35 @@ async function makePage(browser, tags, init) {
   return page;
 }
 
+// A page with NO ?evlines= at all, used only by the real-wire case below. ev-lines.js's
+// `forced` short-circuit in context() is a full REPLACEMENT of the tag array, not a merge —
+// `if (forced) { c.tags = forced.slice(); return c; }` returns before the predicate loop runs
+// at all. That means ?evlines=first-visit,guest, or any other forced list, makes it IMPOSSIBLE
+// for `tools-found` to ever appear in tags, no matter what a real hover does to featureEverOn —
+// forcing any tags and exercising the real tools-found wire are mutually exclusive on this
+// page. So the real-wire case cannot pin the tags; it has to let them derive for real, which
+// also means beat 1's exact wording is whatever the wall clock's time-of-day predicate
+// currently picks, not a fixed string — see the comment at that case for how it copes.
+async function makeUnforcedPage(browser) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await page.route('**/*', function (r) {
+    return /^https?:/.test(r.request().url()) ? r.abort() : r.continue();
+  });
+  await page.addInitScript(function () {
+    try { sessionStorage.removeItem('ev:greeted:session'); } catch (e) {}
+    try { localStorage.removeItem('ev:greeted'); } catch (e) {}
+    document.addEventListener('DOMContentLoaded', function () {
+      document.documentElement.style.scrollBehavior = 'auto';
+      document.addEventListener('click', function (ev) {
+        if (ev.target.closest && ev.target.closest('.logo-trigger')) ev.preventDefault();
+      }, true);
+    });
+  });
+  await page.goto(BASE + '#figdebug');
+  await page.waitForTimeout(400);
+  return page;
+}
+
 const STATE = function () {
   var e = window.__evFigDebug.entries.find(function (x) { return x.spec.presenter; });
   var el = document.querySelector('.ev-quote .say');
@@ -137,6 +166,46 @@ async function untilBeat(page, n, ms) {
 
   // ── 4. found the tools: he still greets, and then says nothing more. Beat 1 must STAY —
   //      closing it to open nothing would take the welcome away for no reason.
+  //
+  //      Forcing the 'tools-found' tag with ?evlines= (as this case used to) bypasses
+  //      greetFacts() entirely, so it never exercises the actual wire: a hover setting
+  //      featureEverOn -> greetFacts() reporting toolsFound -> ev-lines.js turning that into
+  //      the tools-found tag -> the beat-2 line list matching `{ id: null }` first. A stub or
+  //      a typo anywhere in that chain would still pass a test that only ever forces the tag
+  //      at the end of it. So instead: no ?evlines= at all (see makeUnforcedPage above for why
+  //      pinning ANY tag here would have silently defeated this case), then hover the real
+  //      trigger element before scrolling — the exact setup a since-deleted case in
+  //      02-suppressed.cjs used, so it is proven to reach the firing window from here.
+  //
+  //      With tags deriving for real, beat 1's exact wording depends on the wall clock (one of
+  //      greet.morning/afternoon/evening — see PREDICATES in ev-lines.js), so this case cannot
+  //      pin it to the BEAT1 constant the way the other cases do. It captures whatever beat 1
+  //      actually said instead, and asserts that the SAME text is still showing after beat 2's
+  //      window passes — which is the thing "beat 1 survives" actually means, and does not
+  //      depend on which greeting the clock picked.
+  {
+    const page = await makeUnforcedPage(browser);
+    await page.hover('.showcase-logos .logo-trigger');
+    // Confirm the hover actually registered on the canvas side before trusting anything
+    // downstream of it — the same debug hook the deleted case asserted against.
+    const hovered = await page.evaluate(function () { return window.__evFigDebug.toolsFound(); });
+    assert.ok(hovered, 'the hover must register as featureEverOn before we scroll');
+    assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
+    await untilBeat(page, 1);
+    const one = await page.evaluate(STATE);
+    assert.strictEqual(one.bubbles, 1, 'beat 1 must still open');
+    assert.ok(one.text, 'beat 1 must have said something');
+    await page.waitForTimeout(2600);
+    const s = await page.evaluate(STATE);
+    assert.strictEqual(s.beat, 2, 'beat 2 must be marked done so it is not asked every frame');
+    assert.strictEqual(s.bubbles, 1, 'beat 1 must stay up when there is no nudge');
+    assert.strictEqual(s.text, one.text, 'the surviving bubble must still be beat 1\'s welcome, unchanged: ' + s.text);
+    await page.close();
+  }
+
+  // ── 4b. the forced-tag version kept alongside the real-wire case above: quick to read,
+  //       and still worth having so a change to the line-selection table itself is caught
+  //       without needing a working hover setup.
   {
     const page = await makePage(browser, 'first-visit,guest,tools-found');
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
