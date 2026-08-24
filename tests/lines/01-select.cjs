@@ -37,11 +37,26 @@ async function makePage(browser) {
   assert.ok(/\{name\}/.test(cat.back), 'the welcome-back line must carry the {name} token');
   assert.strictEqual(cat.missing, null, 'an unknown id must be null, not undefined or a throw');
 
-  // ── no line may shout. The site does not, and neither does he.
-  const shouty = await page.evaluate(function () {
-    return window.EVCopy.ids().filter(function (id) { return /!/.test(window.EVCopy.get(id)); });
+  // ── Tone, as it stands today. This is a RECORD OF A DECISION, not a law: Chris is exploring
+  //    the greeter's voice and asked that this rule track that exploration rather than fence
+  //    it. It began as "no exclamation marks anywhere", which was too strict once the tips
+  //    arrived — a tip can be warm. Two rules survive that change:
+  //      - a greeting never shouts. "Hi there!" is the register the whole site avoids, and it
+  //        is the first thing a stranger reads.
+  //      - no line stacks them. The old hardcoded greeting had two in one sentence, which is
+  //        what made it read louder than everything around it.
+  //    When the tone moves, move these numbers with it.
+  const tone = await page.evaluate(function () {
+    var loud = [], stacked = [];
+    window.EVCopy.ids().forEach(function (id) {
+      var n = (window.EVCopy.get(id).match(/!/g) || []).length;
+      if (n > 0 && id.indexOf('greet.') === 0) loud.push(id);
+      if (n > 1) stacked.push(id);
+    });
+    return { loud: loud, stacked: stacked };
   });
-  assert.deepStrictEqual(shouty, [], 'exclamation marks in: ' + shouty.join(', '));
+  assert.deepStrictEqual(tone.loud, [], 'a greeting must not shout: ' + tone.loud.join(', '));
+  assert.deepStrictEqual(tone.stacked, [], 'more than one "!" in: ' + tone.stacked.join(', '));
 
   // ── an unknown locale falls back to English rather than going silent
   const fb = await page.evaluate(function () {
@@ -129,13 +144,23 @@ async function makePage(browser) {
       hello:   say(['first-visit', 'guest'], 'wave'),
       morning: say(['morning', 'guest'], 'wave'),
       spooky:  say(['halloween', 'morning'], 'wave'),
-      buttons: say([], 'point'),
-      gone:    say(['buttons-gone'], 'point'),
-      found:   say(['tools-found'], 'point'),
-      bothFG:  say(['tools-found', 'buttons-gone'], 'point'),
-      // regression guard: a returning or signed-in visitor gets the SAME nudge as a
-      // stranger. A personalized one was tried and cut; it is the obvious thing to add back.
-      backNudge: say(['returning', 'logged-in', 'named'], 'point')
+      // Beat 2 is the nudge ONLY for a first-time visitor who has not touched a tool.
+      // Everyone else gets a tip, so these tag sets are now specific on purpose.
+      buttons: say(['first-visit', 'needs-tools'], 'point'),
+      gone:    say(['first-visit', 'needs-tools', 'buttons-gone'], 'point'),
+      // Having found the tools used to mean silence. It now means a tip: the nudge is the
+      // thing they no longer need, not the conversation.
+      found:   say(['first-visit', 'tools-found'], 'point'),
+      foundId: window.EVLines.resolve('greeter', 'point').id,
+      // Still the guard it always was, restated for the new gate: when the nudge IS shown,
+      // it is the same sentence for everyone. A personalized nudge was tried and cut, and it
+      // is the obvious thing for someone to add back.
+      sameNudge: say(['first-visit', 'needs-tools', 'logged-in', 'named'], 'point'),
+      // A returning visitor is past the nudge entirely.
+      returningId: (function () {
+        window.EVLines.force(['returning', 'needs-tools', 'guest']);
+        return window.EVLines.resolve('greeter', 'point').id;
+      })()
     };
   });
   assert.strictEqual(g.hello, 'Hi there. Welcome to Empowered Vote.');
@@ -144,10 +169,11 @@ async function makePage(browser) {
     'the season must outrank the time of day');
   assert.strictEqual(g.buttons, 'Press one of those buttons up there to start exploring.');
   assert.ok(/back up the page/.test(g.gone), 'a scrolled-off column changes the nudge');
-  assert.strictEqual(g.found, null, 'having found the tools means no nudge at all');
-  assert.strictEqual(g.bothFG, null, 'tools-found must outrank buttons-gone');
-  assert.strictEqual(g.backNudge, 'Press one of those buttons up there to start exploring.',
-    'a known visitor must get the same nudge as a stranger');
+  assert.ok(g.found && g.found.length, 'having found the tools must yield a tip, not silence');
+  assert.ok(/^tip\./.test(g.foundId), 'expected a tip id, got: ' + g.foundId);
+  assert.strictEqual(g.sameNudge, 'Press one of those buttons up there to start exploring.',
+    'the nudge must read the same for a known visitor as for a stranger');
+  assert.ok(/^tip\./.test(g.returningId), 'a returning visitor must be past the nudge, got: ' + g.returningId);
   await greeter.close();
 
   console.log('01-select: PASS');

@@ -165,6 +165,30 @@ found the buttons yourself first. The two keys stay separate so "have we met bef
 "have I already said hello this visit" can keep answering different questions, and only
 the second one ever stops him from talking.
 
+**Beat 2 is the nudge or a tip, and a pool is the second selection shape.** He speaks
+twice: a welcome while he waves, then something useful once his arm lands. That second
+thing is the button nudge only for a first-time visitor who has not touched a tool —
+the one person it helps. Everyone else gets one of the `tip.*` lines, which are the
+organization's values, the things the site can do, and a few asides in his own voice.
+
+Tips live in a `pool`, and a pool is the *only* place selection stops being
+first-match-wins: its entries are unordered, and one of the ones that fit is drawn at
+random per page load. That is the point — a returning visitor should get a different
+line, not the same sentence again. Members can still carry a `when`, so the poof tip has
+a desktop wording and a touch wording and a phone is never told to press a right mouse
+button. Within one page load the draw is held, so the bubble and his arm can both ask
+what he is saying and get the same answer.
+
+**A line can name what he points at.** Add `aim: '#profile-btn'` to a line and his arm
+goes there instead of to the tool buttons, which is how the tip about the Feedback menu
+can say "up there in the top right corner" and actually indicate it. The selector is
+looked up every frame, so a sticky target stays tracked as the page scrolls, and one
+that matches nothing falls back to the buttons rather than leaving him pointing at
+nowhere. One caution learned the hard way: a target only needs to be *visible* to be
+worth pointing at, not 40px tall like the button column. Pointing at the 36px account
+menu silently failed that older threshold and left him standing with his arms down while
+the bubble promised otherwise — which no assertion caught, and a screenshot did.
+
 ## Deploy
 
 Configured for Render as a static site via `render.yaml`. Connect the repo on Render and it will publish `./` (root) on every push to `main`.

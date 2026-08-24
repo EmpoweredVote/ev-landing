@@ -101,7 +101,7 @@ async function untilBeat(page, n, ms) {
 
   // ── 1. the full sequence, and never two bubbles at once
   {
-    const page = await makePage(browser, 'first-visit,guest');
+    const page = await makePage(browser, 'first-visit,guest,needs-tools');
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
     await untilBeat(page, 1);
     const one = await page.evaluate(STATE);
@@ -137,7 +137,7 @@ async function untilBeat(page, n, ms) {
   // ── 2. dismissal cancels the pending swap. This is the failure mode the split invents:
   //      a click at 1.0s getting a bubble back at 2.35s, just after you got rid of one.
   {
-    const page = await makePage(browser, 'first-visit,guest');
+    const page = await makePage(browser, 'first-visit,guest,needs-tools');
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
     await untilBeat(page, 1);
     await page.mouse.click(5, 5);          // click-off: nowhere near him or the bubble
@@ -155,7 +155,7 @@ async function untilBeat(page, n, ms) {
 
   // ── 3. Escape, same rule
   {
-    const page = await makePage(browser, 'first-visit,guest');
+    const page = await makePage(browser, 'first-visit,guest,needs-tools');
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
     await untilBeat(page, 1);
     await page.keyboard.press('Escape');
@@ -180,9 +180,13 @@ async function untilBeat(page, n, ms) {
   //      With tags deriving for real, beat 1's exact wording depends on the wall clock (one of
   //      greet.morning/afternoon/evening — see PREDICATES in ev-lines.js), so this case cannot
   //      pin it to the BEAT1 constant the way the other cases do. It captures whatever beat 1
-  //      actually said instead, and asserts that the SAME text is still showing after beat 2's
-  //      window passes — which is the thing "beat 1 survives" actually means, and does not
-  //      depend on which greeting the clock picked.
+  //      actually said and asserts beat 2 is neither that nor the nudge.
+  //
+  //      What tools-found PRODUCES has changed: it used to mean silence, and this case
+  //      asserted beat 1 survived untouched. It now means a tip. The wire under test is the
+  //      same one — a real hover must still keep the nudge away — but the evidence moved from
+  //      "nothing replaced it" to "a tip replaced it". The ask-before-swap guarantee that used
+  //      to ride along here has its own case now, 4c, with a deliberately silent beat 2.
   {
     const page = await makeUnforcedPage(browser);
     await page.hover('.showcase-logos .logo-trigger');
@@ -195,32 +199,72 @@ async function untilBeat(page, n, ms) {
     const one = await page.evaluate(STATE);
     assert.strictEqual(one.bubbles, 1, 'beat 1 must still open');
     assert.ok(one.text, 'beat 1 must have said something');
-    await page.waitForTimeout(2600);
+    await untilBeat(page, 2);
     const s = await page.evaluate(STATE);
-    assert.strictEqual(s.beat, 2, 'beat 2 must be marked done so it is not asked every frame');
-    assert.strictEqual(s.bubbles, 1, 'beat 1 must stay up when there is no nudge');
-    assert.strictEqual(s.text, one.text, 'the surviving bubble must still be beat 1\'s welcome, unchanged: ' + s.text);
+    assert.strictEqual(s.bubbles, 1, 'exactly one bubble');
+    assert.notStrictEqual(s.text, BEAT2,
+      'a real hover must keep the button nudge away, but it was said anyway');
+    assert.notStrictEqual(s.text, one.text, 'beat 2 must have replaced beat 1 with a tip');
+    assert.ok(s.text && s.text.length > 0, 'beat 2 resolved to nothing');
     await page.close();
   }
 
-  // ── 4b. the forced-tag version kept alongside the real-wire case above: quick to read,
-  //       and still worth having so a change to the line-selection table itself is caught
-  //       without needing a working hover setup.
+  // ── 4b. Having found the tools now yields a TIP, not silence. The nudge is the thing they
+  //       no longer need; the conversation continues.
   {
     const page = await makePage(browser, 'first-visit,guest,tools-found');
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
+    await untilBeat(page, 2);
+    const s = await page.evaluate(STATE);
+    assert.strictEqual(s.bubbles, 1, 'exactly one bubble');
+    assert.notStrictEqual(s.text, BEAT2, 'someone who found the tools must not be nudged to them');
+    assert.notStrictEqual(s.text, BEAT1, 'beat 2 must have replaced the welcome with a tip');
+    assert.ok(s.text && s.text.length > 0, 'beat 2 resolved to nothing');
+    await page.close();
+  }
+
+  // ── 4c. ASK BEFORE SWAP. Beat 1 must survive a beat 2 that has nothing to say — closing it
+  //       to open nothing would take the welcome away and leave an empty head.
+  //
+  //       This used to happen naturally, because tools-found resolved to a deliberate silence.
+  //       It no longer does: every visitor now reaches a tip, so nothing in the shipped tables
+  //       produces a silent beat 2 and the guarantee would go untested. Pin one on purpose
+  //       instead, by re-registering the greeter with a silent second beat.
+  {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.route('**/*', function (r) {
+      return /^https?:/.test(r.request().url()) ? r.abort() : r.continue();
+    });
+    await page.addInitScript(function () {
+      try { sessionStorage.removeItem('ev:greeted:session'); } catch (e) {}
+      try { localStorage.removeItem('ev:greeted'); } catch (e) {}
+      document.addEventListener('DOMContentLoaded', function () {
+        document.documentElement.style.scrollBehavior = 'auto';
+        var t = setInterval(function () {
+          if (!window.EVLines) return;
+          clearInterval(t);
+          window.EVLines.register('greeter', { beats: [
+            { at: 'wave',  lines: [{ id: 'greet.hello' }] },
+            { at: 'point', lines: [{ id: null }] }        // matched, and deliberately silent
+          ]});
+        }, 5);
+      });
+    });
+    await page.goto(BASE + '?evlines=first-visit,guest#figdebug');
+    await page.waitForTimeout(400);
+    assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
     await untilBeat(page, 1);
-    await page.waitForTimeout(2600);
+    await page.waitForTimeout(2900);                       // well past GREET_SAY2_AT
     const s = await page.evaluate(STATE);
     assert.strictEqual(s.beat, 2, 'beat 2 must be marked done so it is not asked every frame');
-    assert.strictEqual(s.bubbles, 1, 'beat 1 must stay up when there is no nudge');
+    assert.strictEqual(s.bubbles, 1, 'beat 1 must stay up when beat 2 has nothing to say');
     assert.strictEqual(s.text, BEAT1, 'the surviving bubble must be the welcome: ' + s.text);
     await page.close();
   }
 
   // ── 5. the column has scrolled off: the nudge stops telling them to press it
   {
-    const page = await makePage(browser, 'first-visit,guest,buttons-gone');
+    const page = await makePage(browser, 'first-visit,guest,needs-tools,buttons-gone');
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
     await untilBeat(page, 2);
     const s = await page.evaluate(STATE);
@@ -228,9 +272,10 @@ async function untilBeat(page, n, ms) {
     await page.close();
   }
 
-  // ── 6. a signed-in visitor is greeted by name, and gets the SAME nudge as a stranger.
-  //      The second half is the regression guard: a personalized nudge is the obvious
-  //      thing for someone to add back, and it was tried and cut.
+  // ── 6. a signed-in returning visitor is greeted by name, and is past the nudge entirely.
+  //      The guard that used to live here — "the nudge is not personalized" — moved to
+  //      tests/lines/01-select.cjs, because a returning visitor no longer sees the nudge at
+  //      all and so cannot demonstrate anything about its wording.
   //
   //      window.EVSession is NOT set via an init script here. index.html's auth block calls
   //      showLoggedOut() when the silent-SSO fetch fails — and every http(s) request in these
@@ -239,7 +284,7 @@ async function untilBeat(page, n, ms) {
   //      after the page has settled (the aborted fetch rejects immediately, well within
   //      makePage's 400ms wait) and before we scroll avoids that race entirely.
   {
-    const page = await makePage(browser, 'returning,logged-in,named');
+    const page = await makePage(browser, 'returning,logged-in,named,needs-tools');
     await page.evaluate(function () {
       window.EVSession = { loggedIn: true, name: 'Chris' };
     });
@@ -248,8 +293,10 @@ async function untilBeat(page, n, ms) {
     assert.strictEqual((await page.evaluate(STATE)).text, 'Welcome back, Chris.',
       'a known visitor is greeted by name');
     await untilBeat(page, 2);
-    assert.strictEqual((await page.evaluate(STATE)).text, BEAT2,
-      'the nudge must not be personalized');
+    const s = await page.evaluate(STATE);
+    assert.notStrictEqual(s.text, BEAT2,
+      'a returning visitor is past the nudge and must get a tip instead');
+    assert.ok(s.text && s.text.length > 0, 'beat 2 resolved to nothing');
     await page.close();
   }
 

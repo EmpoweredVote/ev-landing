@@ -9,8 +9,10 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 
 // ?evlines= pins the tags: without it this suite would assert the wrong greeting for
-// anyone running it in the afternoon, or in October.
-const URL = 'file:///C:/ev-landing/ev-landing-main/index.html?evlines=first-visit,guest#figdebug';
+// anyone running it in the afternoon, or in October. needs-tools is in the list because beat 2
+// is the button nudge ONLY for a first-timer who has not touched a tool; everyone else gets a
+// tip, and this suite is about the nudge.
+const URL = 'file:///C:/ev-landing/ev-landing-main/index.html?evlines=first-visit,guest,needs-tools#figdebug';
 // Read from the catalog rather than copied here. This assertion is "he says the greeting",
 // not "the greeting is this string" — pasting a copy of it made every wording change a test
 // failure. tests/lines/01-select.cjs is where the wording itself is pinned.

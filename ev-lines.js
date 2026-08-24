@@ -62,7 +62,17 @@
     'named':        function (c) { return !!c.name; },
 
     'tools-found':  function (c) { return !!c.toolsFound; },
-    'buttons-gone': function (c) { return c.buttonsVisible === false; }
+    // The inverse, as its own name, so the button nudge can be written as a positive
+    // condition. `when` is an AND with no negation, by design — there is nothing to reason
+    // about in a list of things that must all be true — so an inverse needs its own entry.
+    'needs-tools':  function (c) { return !c.toolsFound; },
+    'buttons-gone': function (c) { return c.buttonsVisible === false; },
+
+    // A fine pointer means a mouse. Asked once at load: a device does not sprout a mouse
+    // mid-visit, and a hybrid laptop reports fine while the trackpad is in use, which is the
+    // answer we want for "can you press a right mouse button".
+    'desktop':      function (c) { return !!c.finePointer; },
+    'touch':        function (c) { return !c.finePointer; }
   };
 
   // The locale we have copy for. navigator.language is "en-US"; we key on the base.
@@ -95,9 +105,17 @@
   // Facts, not decisions. `facts` is what only the caller can know, merged over the ambient
   // ones — without it this file would have to reach into ev-figures.js for featureEverOn,
   // which a module claiming to know nothing about canvas cannot do.
+  // Read once at load, like wasReturning: matchMedia is cheap but this never changes within a
+  // page, and asking once keeps context() a plain read of stored values.
+  var finePointer = (function () {
+    try { return !!(window.matchMedia && window.matchMedia('(pointer: fine)').matches); }
+    catch (err) { return true; }   // no matchMedia: assume a mouse, the older-browser case
+  })();
+
   function context(facts) {
     var sess = window.EVSession || {};
     var c = {
+      finePointer: finePointer,
       now: (facts && facts.now) || new Date(),
       locale: pickLocale(),
       loggedIn: !!sess.loggedIn,
@@ -155,25 +173,55 @@
     return text.replace(/\{name\}/g, c.name || '');
   }
 
+  // A POOL is the second and last selection shape: the entries in it are unordered, and one
+  // of the ones that fit is drawn at random. Ordinary `lines` stay first-match-wins, because
+  // the button nudge is a priority decision. A pool is for the tips, where nothing outranks
+  // anything and the point is that a returning visitor gets a different line.
+  //
+  // The draw is held for the page's lifetime, keyed by beat and position, for a reason that
+  // is not tidiness: resolve() is called again by the debug surface and could be called again
+  // by a future caller. Re-drawing would let the text and its pointing target disagree.
+  function pickPool(members, tags, key) {
+    if (key in picks) return picks[key];
+    var fit = [], i;
+    for (i = 0; i < members.length; i++) if (matches(members[i], tags)) fit.push(members[i]);
+    if (!fit.length) return null;
+    picks[key] = fit[Math.floor(Math.random() * fit.length)];
+    return picks[key];
+  }
+
   // `matched` distinguishes a deliberate silence (a line with id:null) from no line having
   // matched at all. Both are quiet to the visitor; only the second is an authoring gap.
+  //
+  // `aim` is a CSS selector naming what the speaker should point at while saying this line.
+  // null means "whatever you point at by default" — for the greeter, the tool buttons.
   function resolve(who, at, facts) {
     var c = context(facts);
     var beat = beatOf(who, at);
-    if (!beat || !beat.lines) return { id: null, text: null, matched: false };
+    if (!beat || !beat.lines) return { id: null, text: null, matched: false, aim: null };
     for (var i = 0; i < beat.lines.length; i++) {
-      if (!matches(beat.lines[i], c.tags)) continue;
-      var id = pickId(beat.lines[i].id, who + '|' + at + '|' + i);
-      if (!id) return { id: null, text: null, matched: true };
+      var line = beat.lines[i];
+      if (line.pool) {
+        // A pool entry matches when at least one of its members does; the draw picks among
+        // exactly those. An empty fit falls through to the next line rather than going silent,
+        // so a pool whose every member is gated off is a gap, not a hidden mute.
+        var drawn = pickPool(line.pool, c.tags, who + '|' + at + '|' + i);
+        if (!drawn) continue;
+        line = drawn;
+      } else if (!matches(line, c.tags)) {
+        continue;
+      }
+      var id = pickId(line.id, who + '|' + at + '|' + i + '|id');
+      if (!id) return { id: null, text: null, matched: true, aim: null };
       var text = window.EVCopy ? window.EVCopy.get(id) : null;
       if (text == null) {
         // A copy typo should be findable, not silent, and not fatal.
         if (window.console && console.warn) console.warn('EVLines: no copy for id "' + id + '"');
-        return { id: id, text: null, matched: true };
+        return { id: id, text: null, matched: true, aim: null };
       }
-      return { id: id, text: fill(text, c), matched: true };
+      return { id: id, text: fill(text, c), matched: true, aim: line.aim || null };
     }
-    return { id: null, text: null, matched: false };
+    return { id: null, text: null, matched: false, aim: null };
   }
 
   function say(who, at, facts) { return resolve(who, at, facts).text; }
@@ -210,10 +258,48 @@
       // demonstrated knowledge here, as against the assumed kind. A signed-in or returning
       // visitor deliberately gets the same nudge as a stranger — being on the site before
       // is not evidence of having seen the buttons.
+      // Beat 2 is the nudge OR a tip. The nudge is for a first-time visitor who has not
+      // touched a tool: that is the only person it helps, and telling anyone else where the
+      // buttons are implies they failed to notice. Everyone else gets a tip, drawn at random.
+      //
+      // `first-visit` is read from storage at page load, so hovering a tool part-way down
+      // cannot flip someone out of it mid-visit and skip their nudge.
       { at: 'point', lines: [
-          { id: null,                 when: ['tools-found'] },
-          { id: 'greet.buttons.gone', when: ['buttons-gone'] },
-          { id: 'greet.buttons' }
+          { id: 'greet.buttons.gone', when: ['first-visit', 'needs-tools', 'buttons-gone'] },
+          { id: 'greet.buttons',      when: ['first-visit', 'needs-tools'] },
+          { pool: [
+              // One idea, two devices. A phone has no right mouse button, and telling someone
+              // to press one is the small wrongness that makes the rest sound careless.
+              { id: 'tip.poof.desktop', when: ['desktop'] },
+              { id: 'tip.poof.touch',   when: ['touch'] },
+
+              { id: 'tip.compass.calibrate' },
+              { id: 'tip.compass.visual' },
+              { id: 'tip.compass.what' },
+              { id: 'tip.readrank' },
+
+              { id: 'tip.privacy' },
+              { id: 'tip.citizens-first' },
+              // He points at the hero headline while saying it — the line ends on "right up
+              // there at the top", which is a promise to indicate something.
+              { id: 'tip.values', aim: '.hero h1' },
+              { id: 'tip.equation' },
+
+              { id: 'tip.oversight' },
+              { id: 'tip.local' },
+              { id: 'tip.wealth' },
+
+              // The banner is position:sticky, so this target is on screen whenever he speaks.
+              { id: 'tip.feedback', aim: '#profile-btn' },
+              { id: 'tip.briefing' },
+              { id: 'tip.mindmap' },
+              { id: 'tip.newsletter' },
+
+              { id: 'tip.readers' },
+              { id: 'tip.gig' },
+              { id: 'tip.wip' },
+              { id: 'tip.best' }
+          ]}
       ]}
     ]
   });

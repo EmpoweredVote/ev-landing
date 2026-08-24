@@ -3219,11 +3219,28 @@
     function greetAim(e) {
       var sx = window.scrollX || window.pageXOffset || 0;
       var sy = window.scrollY || window.pageYOffset || 0;
-      if (!e._logosEl) return null;
-      var r = e._logosEl.getBoundingClientRect(), ih = window.innerHeight;
+      // Which element he is pointing at. The tool buttons by default; a line may name its own
+      // target instead (see the `aim` field in ev-lines.js) so a tip that says "up there in
+      // the top right corner" can actually indicate the thing it names. A selector that
+      // matches nothing falls back rather than leaving him pointing at nowhere.
+      var target = e._logosEl, named = false;
+      if (e.giAimSel) {
+        var el = document.querySelector(e.giAimSel);
+        if (el) { target = el; named = true; }
+      }
+      if (!target) return null;
+      var r = target.getBoundingClientRect(), ih = window.innerHeight;
       var top = Math.max(0, r.top), bot = Math.min(ih, r.bottom);
       var vis = Math.max(0, bot - top);
-      if (vis >= GREET_BTN_MIN) {
+      // How much has to be showing before it is worth pointing at. GREET_BTN_MIN is 40px, and
+      // it answers a question about the BUTTON COLUMN: that column is hundreds of px tall, so
+      // a sliver left at the top of the screen means you have scrolled past it. A named target
+      // is a different question. The account menu button is 36px tall in total, so the column's
+      // threshold rejected it outright and he stood with his arms down while the bubble said
+      // "up there in the top right corner" — which is how this was found, by looking.
+      // For a named target the only sensible test is whether any of it is on screen.
+      var minVis = named ? 1 : GREET_BTN_MIN;
+      if (vis >= minVis) {
         var aim = { x: r.left + r.width / 2, y: (top + bot) / 2, vis: vis };
         e.giAimDoc = { x: aim.x + sx, y: aim.y + sy };
         return aim;
@@ -3234,15 +3251,27 @@
 
     // What the engine cannot see for itself. ev-lines.js knows nothing about canvas by
     // design, so the facts that only this file can observe are reported to it per call.
-    function greetFacts(aim) {
-      return { toolsFound: featureEverOn, buttonsVisible: !!aim && aim.vis >= GREET_BTN_MIN };
+    // How much of the button column is on screen, measured directly. This used to be read off
+    // whatever he was pointing at, which was the same number right up until a tip could send
+    // his arm somewhere else (see the `aim` field in ev-lines.js). "How much of the aim target
+    // is showing" and "how much of the button column is showing" are different questions, and
+    // `buttons-gone` only ever meant the second one.
+    function buttonsVis() {
+      var el = document.querySelector('.showcase-logos');
+      if (!el) return 0;
+      var r = el.getBoundingClientRect(), ih = window.innerHeight;
+      return Math.max(0, Math.min(ih, r.bottom) - Math.max(0, r.top));
+    }
+
+    function greetFacts() {
+      return { toolsFound: featureEverOn, buttonsVisible: buttonsVis() >= GREET_BTN_MIN };
     }
 
     // 'wave' → the welcome, 'point' → the nudge. null means the data file has nothing for
     // this beat in this context, which is a legitimate answer and not an error.
-    function greetText(at, aim) {
+    function greetText(at) {
       if (!window.EVLines) return at === 'wave' ? GREET_FALLBACK : null;
-      return window.EVLines.say('greeter', at, greetFacts(aim));
+      return window.EVLines.say('greeter', at, greetFacts());
     }
 
     // Is this the moment? Every clause is a reason to keep quiet. `featureEverOn` is
@@ -3282,7 +3311,7 @@
     // the caller must not assume a handle exists afterwards.
     function greetOpen(e, cr, w, feetY, col, at, aim, beat) {
       if (!window.EVQuotes) return false;
-      var text = greetText(at, aim);
+      var text = greetText(at);
       if (!text) return false;
       var sx = window.scrollX || window.pageXOffset || 0;
       var sy = window.scrollY || window.pageYOffset || 0;
@@ -3305,8 +3334,14 @@
     // Note there is no `if (featureEverOn)` here. Whether the nudge is said, and how it is
     // worded, is the data file's call; this loop only asks at the right moment.
     function greetBeat2(e, cr, w, feetY, col, aim) {
-      var text = greetText('point', aim);
-      if (!text) { e.giBeat = 2; return; }       // marked done so it is not asked again
+      // resolve() rather than say(), because a tip may name what he should point at while
+      // saying it. Resolving here and again inside greetOpen is safe and deliberate: the pool
+      // draw is held for the page's lifetime, so both calls return the same line. Without that
+      // guarantee the bubble and the arm could disagree about which tip is being told.
+      var line = window.EVLines
+        ? window.EVLines.resolve('greeter', 'point', greetFacts())
+        : { text: null, aim: null };
+      if (!line.text) { e.giBeat = 2; return; }  // marked done so it is not asked again
       if (e.gh) {
         window.EVQuotes.close(e.gh);
         // close() only drops the "in" class; it leaves the node mounted for 260ms so an
@@ -3320,6 +3355,10 @@
         if (e.gh.el && e.gh.el.parentNode) e.gh.el.parentNode.removeChild(e.gh.el);
         e.gh = null;
       }
+      // Point at what this line names, if it names anything. Clearing the remembered aim is
+      // the part that matters: giAimDoc holds the button column's document position, and
+      // keeping it would leave his arm on the buttons while the bubble talks about the menu.
+      if (line.aim) { e.giAimSel = line.aim; e.giAimDoc = null; }
       greetOpen(e, cr, w, feetY, col, 'point', aim, 2);
     }
 
@@ -3340,7 +3379,10 @@
       e._prSX = cr.left + w / 2; e._prFY = cr.top + h;   // click hitbox anchor (screen coords)
 
       if (greetReady(e, cr)) {
+        // giAimSel/giAimDoc reset with the rest: a tip from a previous run could otherwise
+        // leave his arm aimed at the menu while this run talks about the tool buttons.
         e.gi = 'wave'; e.giT = 0; e.giTotal = 0; e.giFrom = null; e.giBeat = 0;
+        e.giAimSel = null; e.giAimDoc = null;
         markGreeted();                                    // once per visit, not once per browser
       }
 
@@ -4396,22 +4438,14 @@
         // What he would say right now, and why. There is no single SAY constant to report
         // any more — that is the point of the change.
         //
-        // aim = null was the bug here, not a placeholder: greetFacts(null) always reports
-        // buttonsVisible: false, so buttons-gone was ALWAYS active, no matter where the
-        // button column actually was on screen. lines().point always claimed
-        // 'greet.buttons.gone' and tags() always listed buttons-gone — even with the column
-        // plainly in view — because nothing computed the real aim. Look up the presenter
-        // the same way the test suites do and ask IT where it is pointing.
+        // greetFacts() measures the button column itself, so this no longer has to work out
+        // where he is pointing — which is just as well, because the old version called
+        // greetAim() and that has a SIDE EFFECT: it writes giAimDoc on the entry. A debug
+        // getter that moves the thing it reports on is a trap.
         lines: function () {
-          var p = entries.find(function (x) { return x.spec.presenter; });
-          var aim = p ? greetAim(p) : null;
-          return { wave: greetText('wave', aim), point: greetText('point', aim) };
+          return { wave: greetText('wave'), point: greetText('point') };
         },
-        tags: function () {
-          var p = entries.find(function (x) { return x.spec.presenter; });
-          var aim = p ? greetAim(p) : null;
-          return window.EVLines ? window.EVLines.context(greetFacts(aim)).tags : [];
-        },
+        tags: function () { return window.EVLines ? window.EVLines.context(greetFacts()).tags : []; },
         window: { MIN_SCROLL: GREET_MIN_SCROLL, HEAD_CLEAR: GREET_HEAD_CLEAR, FOOT_CLEAR: GREET_FOOT_CLEAR, BTN_FRAC: GREET_BTN_FRAC }
       },
       toolsFound: function () { return featureEverOn; },
