@@ -87,6 +87,69 @@ That's intentional — for now. Please ask before changing it.
   with an hourly interval when you're checking whether something that shipped this
   morning is capturing.
 
+## Dialogue
+
+The hero's greeter — and any future talking Bobit — draws on two files that split
+cleanly along one line: what he says, and which of those things he says right now.
+
+**`ev-copy.en.js` is the words, and holds no logic at all.** It is a flat id-to-string
+catalog — `'greet.halloween': "Happy Halloween. Welcome to Empowered Vote."` — with no
+conditions, no nesting, nothing to execute. That is deliberate: changing what a Bobit
+says should never mean reading a condition, just editing a string next to the id whose
+wording you want to fix. The one piece of logic the catalog format supports is `{name}`
+substitution, filled in from the visitor's session.
+
+**`ev-lines.js` is the choosing, and the one rule worth carrying around is FILE ORDER IS
+PRIORITY.** Each beat (`wave`, `point`, …) is a list of candidate lines, walked top to
+bottom; the first line whose `when` tags are all currently active wins, and a line with
+no `when` is the fallback that catches everyone else. `when` is always an AND — there is
+no OR, no weighting, no score. That absence is the point: if a Bobit says something
+unexpected, you debug it by reading down the list until you find the line that matched,
+not by reasoning about which of several candidates would have scored highest. Order the
+list the way you'd want the priority explained out loud, and the code and the explanation
+stay the same document.
+
+**To look at a line that isn't true right now, pin it with `?evlines=`.** Appending
+`?evlines=halloween,evening` to a page URL forces exactly those tags active for that one
+load, bypassing the clock and the visitor's real state entirely — which is the thing you
+need on the day you're writing the December greeting in August. The full set of tag names
+selection currently knows about: `morning`, `afternoon`, `evening`, `halloween`,
+`holidays`, `mlk-day`, `first-visit`, `returning`, `logged-in`, `guest`, `named`,
+`tools-found`, `buttons-gone`. Add `#greeter` to the URL as well and he'll also ignore
+having already greeted you this session, so you don't have to clear storage between
+reloads while you're iterating on a line.
+
+**Adding a new condition is two small edits, not a refactor.** Give it one entry in the
+`PREDICATES` map (a name and a function from context to true/false) and one fact in
+`context()` for that predicate to read. Most facts are ambient — the time, the session —
+but some are things only the *caller* can see, and those arrive as per-call facts instead
+of being computed inside `ev-lines.js`. `toolsFound` and `buttonsVisible` are the existing
+example to copy: only `ev-figures.js` knows whether a tool has been highlighted or whether
+the button column is still on screen, so it reports those two facts on every call rather
+than `ev-lines.js` reaching into the canvas to check for itself. Keeping that boundary is
+what lets the dialogue engine claim, truthfully, to know nothing about drawing.
+
+**A second language is one new file and one script tag — nothing else changes.** Add
+`ev-copy.es.js` calling `EVCopy.register('es', { 'greet.hello': "...", ... })` for every id
+you want translated, then add its `<script>` tag next to the English one. The locale is
+picked up automatically from `navigator.language` when a catalog for it has been
+registered; if a given id is missing from that catalog — a translation not written yet —
+it falls back to English for that id alone rather than breaking the sentence around it.
+Selection in `ev-lines.js` never needs to know a second language exists.
+
+**Two storage keys track two different questions, and merging them would reintroduce a
+bug this design removed.** `localStorage['ev:greeted']` means "this browser has been here
+before" — it feeds the `returning`/`first-visit` predicates, and outlives the tab.
+`sessionStorage['ev:greeted:session']` means "he has already greeted you this visit," and
+is the *only* thing `greetReady()` checks to decide whether to stay quiet — it's the sole
+suppression switch. Hovering a tool writes only the first of the two. If it wrote the
+second as well, finding the tools on your own — by hovering one on your way down the
+page, before he ever gets a chance to speak — would silence the welcome along with the
+nudge it's meant to make redundant: you'd never see him greet you at all, just because you
+found the buttons yourself first. The two keys stay separate so "have we met before" and
+"have I already said hello this visit" can keep answering different questions, and only
+the second one ever stops him from talking.
+
 ## Deploy
 
 Configured for Render as a static site via `render.yaml`. Connect the repo on Render and it will publish `./` (root) on every push to `main`.
