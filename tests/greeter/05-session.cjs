@@ -109,6 +109,39 @@ async function makePage(browser, init) {
     await page.close();
   }
 
+  // ── a refined name from /account/me must reach EVSession too, not just the menu
+  //
+  // Every other case in this file aborts all http(s) so silent SSO/refresh can never run.
+  // This one path is unreachable under that convention, so it gets the one exception: the
+  // /api/account/me request is fulfilled with a mock response instead of aborted. Everything
+  // else is still aborted — register the abort-all route first so the specific one (added
+  // after) wins for that URL, per Playwright's route precedence.
+  {
+    const t = token({ display_name: 'JWT Name' });
+    const p3 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await p3.route('**/*', function (r) {
+      return /^https?:/.test(r.request().url()) ? r.abort() : r.continue();
+    });
+    await p3.route('**/api/account/me', function (r) {
+      return r.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ display_name: 'Refined Name' })
+      });
+    });
+    await p3.addInitScript(function (tok) {
+      try { localStorage.setItem('ev_token', tok); } catch (e) {}
+    }, t);
+    await p3.goto(URL);
+    await p3.waitForTimeout(600);
+    const s = await p3.evaluate(function () {
+      return { name: window.EVSession.name, menuText: document.getElementById('menu-username').textContent };
+    });
+    assert.strictEqual(s.name, 'Refined Name', 'the refined /account/me name must reach EVSession, not just the menu');
+    assert.strictEqual(s.menuText, 'Refined Name', 'the menu must show the refined name');
+    await p3.close();
+  }
+
   console.log('05-session: PASS');
   await browser.close();
 })();

@@ -2007,7 +2007,14 @@
                     if (res.status === 401) { clearToken(); showLoggedOut(); return null; }
                     return res.ok ? res.json() : null;
                 })
-                .then(function (data) { if (data && data.display_name && nameEl) nameEl.textContent = data.display_name; })
+                .then(function (data) {
+                    // Route the refined name through the same funnel every other path uses,
+                    // not a direct DOM write — a direct write updates the menu but leaves
+                    // EVSession (and therefore anything reading it) on the stale JWT name.
+                    // signin/logout are already in the logged-in state here, so this is
+                    // idempotent visually; it exists to publish, not to re-render.
+                    if (data && data.display_name) showLoggedIn(data.display_name);
+                })
                 .catch(function () { /* CORS or offline — keep the JWT-derived name */ });
             }
 
