@@ -105,5 +105,97 @@
     return c;
   }
 
-  window.EVLines = { context: context, force: force, PREDICATES: PREDICATES };
+  var speakers = {};
+  var picks = {};   // an id array's chosen index, held for the session
+
+  function register(who, def) { speakers[who] = def; }
+
+  function beatOf(who, at) {
+    var def = speakers[who];
+    if (!def || !def.beats) return null;
+    for (var i = 0; i < def.beats.length; i++) if (def.beats[i].at === at) return def.beats[i];
+    return null;
+  }
+
+  function matches(line, tags) {
+    if (!line.when || !line.when.length) return true;    // no condition: the fallback
+    for (var i = 0; i < line.when.length; i++) {
+      if (tags.indexOf(line.when[i]) === -1) return false;   // `when` is an AND
+    }
+    return true;
+  }
+
+  // Which of an id array to use. Chosen once and held, so he does not change his mind
+  // between beats or on a re-render — but does vary between visits.
+  function pickId(id, key) {
+    if (!id) return null;
+    if (typeof id === 'string') return id;
+    if (!id.length) return null;
+    if (!(key in picks)) picks[key] = Math.floor(Math.random() * id.length);
+    return id[picks[key]];
+  }
+
+  // The one substitution the catalog supports. A single named token, so a translator can
+  // move it within the sentence — Spanish and German both need to — without this file
+  // having to parse anything.
+  function fill(text, c) {
+    if (!text) return text;
+    return text.replace(/\{name\}/g, c.name || '');
+  }
+
+  // `matched` distinguishes a deliberate silence (a line with id:null) from no line having
+  // matched at all. Both are quiet to the visitor; only the second is an authoring gap.
+  function resolve(who, at, facts) {
+    var c = context(facts);
+    var beat = beatOf(who, at);
+    if (!beat || !beat.lines) return { id: null, text: null, matched: false };
+    for (var i = 0; i < beat.lines.length; i++) {
+      if (!matches(beat.lines[i], c.tags)) continue;
+      var id = pickId(beat.lines[i].id, who + '|' + at + '|' + i);
+      if (!id) return { id: null, text: null, matched: true };
+      var text = window.EVCopy ? window.EVCopy.get(id) : null;
+      if (text == null) {
+        // A copy typo should be findable, not silent, and not fatal.
+        if (window.console && console.warn) console.warn('EVLines: no copy for id "' + id + '"');
+        return { id: id, text: null, matched: true };
+      }
+      return { id: id, text: fill(text, c), matched: true };
+    }
+    return { id: null, text: null, matched: false };
+  }
+
+  function say(who, at, facts) { return resolve(who, at, facts).text; }
+
+  window.EVLines = {
+    context: context, force: force, PREDICATES: PREDICATES,
+    register: register, resolve: resolve, say: say
+  };
+
+  // ── THE GREETER ──────────────────────────────────────────────────────────────────────
+  // Two beats, matching what his body does: a welcome while he waves, then a nudge toward
+  // the tool buttons when his arm lands on them. ORDER IS PRIORITY — the first line whose
+  // tags are all active wins, so a season outranks a time of day because it is listed
+  // above it. There is no scoring to reason about.
+  register('greeter', {
+    beats: [
+      { at: 'wave', lines: [
+          { id: 'greet.halloween', when: ['halloween'] },
+          { id: 'greet.holidays',  when: ['holidays'] },
+          { id: 'greet.back',      when: ['named', 'returning'] },
+          { id: 'greet.morning',   when: ['morning'] },
+          { id: 'greet.afternoon', when: ['afternoon'] },
+          { id: 'greet.evening',   when: ['evening'] },
+          { id: 'greet.hello' }
+      ]},
+      // tools-found is FIRST, so it beats everything: highlighting a tool is the only
+      // demonstrated knowledge here, as against the assumed kind. A signed-in or returning
+      // visitor deliberately gets the same nudge as a stranger — being on the site before
+      // is not evidence of having seen the buttons.
+      { at: 'point', lines: [
+          { id: null,                 when: ['tools-found'] },
+          { id: 'greet.buttons.gone', when: ['buttons-gone'] },
+          { id: 'greet.buttons' }
+      ]}
+    ]
+  });
 })();
