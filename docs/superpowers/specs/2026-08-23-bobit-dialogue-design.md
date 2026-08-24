@@ -16,9 +16,9 @@ keys, and takes Spanish by adding a file.
 Two things beyond plumbing change for the visitor:
 
 - He speaks in **two beats** instead of one — a short welcome while he waves, then the button nudge when
-  his arm lands on the buttons. Copy now tracks what his body is doing, and the nudge's wording adapts:
-  a stranger is told where the buttons are, a returning visitor is simply encouraged to explore, and
-  someone who already found the tools is not nudged at all.
+  his arm lands on the buttons. Copy now tracks what his body is doing. Someone who already found the
+  tools is not nudged at all, and someone who has scrolled the buttons off screen is not told to press
+  something they cannot see.
 - He greets **anyone, once per visit**, instead of first-timers-only-forever. That is what makes
   "Good morning" and "welcome back" reachable at all; today the people those lines are for are exactly
   the people the gate silences.
@@ -60,7 +60,6 @@ EVCopy.register('en', {
   'greet.holidays':  "Happy holidays. Welcome to Empowered Vote.",
   'greet.back':      "Welcome back, {name}.",
   'greet.buttons':      "Press one of those buttons up there to start exploring.",
-  'greet.buttons.back': "There is plenty up there to explore whenever you are ready.",
   'greet.buttons.gone': "The tools are back up the page whenever you want a look."
 });
 ```
@@ -211,8 +210,6 @@ EVLines.register('greeter', {
     { at: 'point', lines: [
         { id: null,                 when: ['tools-found'] },   // they found them; say nothing
         { id: 'greet.buttons.gone', when: ['buttons-gone'] },
-        { id: 'greet.buttons.back', when: ['returning'] },
-        { id: 'greet.buttons.back', when: ['logged-in'] },
         { id: 'greet.buttons' }
     ]}
   ]
@@ -274,17 +271,20 @@ author can read, instead of a condition buried at `ev-figures.js:3211`.
 
 What the selector does with it:
 
-| highlighted a tool | signed in / returning | button column | beat 2 |
-|---|---|---|---|
-| no | no | on screen | `greet.buttons` — teaches where they are |
-| no | yes | on screen | `greet.buttons.back` — encourages, does not teach |
-| no | either | scrolled off | `greet.buttons.gone` — does not say "press" an invisible button |
-| yes | either | either | `id: null` — silence |
+| highlighted a tool | button column | beat 2 |
+|---|---|---|
+| no | on screen | `greet.buttons` — teaches where they are |
+| no | scrolled off | `greet.buttons.gone` — does not say "press" an invisible button |
+| yes | either | `id: null` — silence |
 
-`tools-found` sits at the top of the beat-2 list, so it wins over every other condition. That resolves
-the one place the two rules conflict — signed in *and* having highlighted a tool. Highlighting wins,
-because it is the stronger evidence: they did not presumably know where the buttons were, they
-demonstrably did.
+**Signed in and returning do not change the nudge.** A variant that encouraged a known visitor to explore
+rather than telling them where to press was tried in an earlier draft of this design and cut: it read as
+filler next to the plain instruction, and there is no evidence a returning visitor has actually seen the
+tool buttons — only that they have been on the site. Beat 1 is where knowing who someone is pays off; the
+nudge stays one sentence that is true for everyone who has not touched a tool.
+
+`tools-found` sits at the top of the list, so highlighting a tool beats everything else. It is the only
+*demonstrated* knowledge in the table, as against the assumed kind.
 
 **`featureEverOn` moves out of the eligibility gate.** It currently silences the whole greeting
 (`ev-figures.js:3211`). That is right for the nudge and wrong for "Good morning", so it becomes the
@@ -334,12 +334,10 @@ Lines follow `docs/voice-and-tone.md`: plain language, short sentences, no hype,
 Welcome to Empowered Vote." over an exclamation-stacked version of the same thing; the current
 `GREET_SAY` has two exclamation marks in one sentence and reads louder than the rest of the site.
 
-The nudge's three wordings are a tone decision, not a phrasing exercise. `greet.buttons` teaches, which
-is right exactly once — for someone who has never seen the page. `greet.buttons.back` drops the
-instruction and keeps the invitation, because telling a returning visitor where the buttons are implies
-they failed to notice. `greet.buttons.gone` exists because "press one of those buttons up there" is a
-small lie once the column has scrolled off, and the guide is explicit that we do not ask people to act on
-something we have not actually shown them.
+`greet.buttons.gone` is the one nudge variant that earns its place, and the reason is honesty rather than
+tone: "press one of those buttons up there" is a small lie once the column has scrolled off, and the guide
+is explicit that we do not ask people to act on something we have not actually shown them. Every other
+visitor gets the same single sentence.
 
 Seasonal lines stay neutral about *whose* holiday it is — "Happy Halloween" is safe, and a December line
 says "Happy holidays" rather than naming one. This is the same reason the tool copy avoids assuming a
@@ -365,9 +363,10 @@ New:
   `morning`).
 - **`tests/greeter/04-beats.cjs`** — beat 1 during the wave, beat 2 at 2.35s, never two bubbles live at
   once, a dismissal at t=1.0s leaving nothing behind at t=3.0s, and each row of the beat-2 table above:
-  `featureEverOn` leaving beat 1 up with no beat 2, a signed-in visitor getting `greet.buttons.back`, a
-  visitor who scrolled the column off getting `greet.buttons.gone`, and signed-in-plus-highlighted
-  resolving to silence rather than to `greet.buttons.back`.
+  `featureEverOn` leaving beat 1 up with no beat 2, a visitor who scrolled the column off getting
+  `greet.buttons.gone`, and a signed-in visitor getting the *same* `greet.buttons` as a stranger — that
+  last one is a regression guard, since a personalized nudge is exactly the thing a later contributor
+  would think to add back.
 - **`tests/greeter/02-suppressed.cjs`** — updated: the same session stays quiet, a fresh session greets
   again, and a signed-in visitor now *does* get greeted.
 - **`tests/greeter/05-session.cjs`** — `EVSession` published, `ev:session` invalidating the context memo,
