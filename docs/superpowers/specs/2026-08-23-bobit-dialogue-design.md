@@ -258,16 +258,24 @@ Timing falls out of gestures he already performs:
 2.35   beat 2 swaps in     ← GREET_SAY2_AT
 ```
 
+These are times since the greeting *began*, which needs a new clock: `e.giT` is reset to 0 on every state
+transition (`ev-figures.js:3270`, `:3274`), so it cannot express "2.35s into the whole gesture". The entry
+gains `e.giTotal`, accumulated alongside `giT` and never reset.
+
 `GREET_SAY2_AT = max(GREET_WAVE + GREET_TURN, GREET_SAY_AT + BEAT_MIN_DWELL)`, with
 `BEAT_MIN_DWELL = 1.8`. Derived rather than written as `2.35` because it encodes two separate intents:
 never say "those buttons up there" before the arm gets there, and never yank beat 1 away in under
 1.8 seconds. With today's constants the dwell rule binds, so he holds the point for a beat before the
 second line lands — he gestures, then explains.
 
-**The swap is unconditional.** At `GREET_SAY2_AT`, beat 1 closes and beat 2 is asked for. Whether beat 2
-has anything to say is a *selection* question, answered by the data file — not a branch in the drawing
-code. That is the whole point of the split: "who deserves a nudge, and worded how" becomes a list a copy
-author can read, instead of a condition buried at `ev-figures.js:3211`.
+**The swap is unconditional in the sense that matters: the drawing code always asks.** At
+`GREET_SAY2_AT` it calls the selector for beat 2 and swaps if it gets a line. There is no branch on
+`featureEverOn` in the draw loop — "who deserves a nudge, and worded how" is a list a copy author reads,
+not a condition buried at `ev-figures.js:3211`.
+
+Order matters: **ask first, then swap.** Closing beat 1 before knowing whether beat 2 has anything to say
+would leave a visitor who already found the tools staring at an empty head, having had their welcome taken
+away for nothing.
 
 What the selector does with it:
 
@@ -315,10 +323,22 @@ nothing.
 | `localStorage ev:greeted` | *is* the suppression gate | still written; now only feeds `returning` / `first-visit` |
 | signed in | suppressed entirely (`ev-figures.js:42`) | greeted; becomes the `logged-in` / `named` tags |
 
-`markGreetSeen()` writes **both** stores when the greeting fires: `sessionStorage` to suppress a repeat
-this visit, `localStorage` so a later visit knows they are `returning`. `ctx.returning` is snapshotted
-from `localStorage` when the context is first built — before any greeting can have written it — so a
-first-time visitor is not told "welcome back" by their own arrival.
+The two stores get **two separate writers**, because they answer different questions and the existing
+single `markGreetSeen()` conflates them:
+
+- `markMetTools()` writes `localStorage ev:greeted`. Called both when the greeting fires *and* from
+  `noteToolsFound()` at `ev-figures.js:74`, which is what it already does today.
+- `markGreeted()` writes `sessionStorage ev:greeted:session`, and is called **only** when the greeting
+  actually fires.
+
+Keeping these apart is load-bearing, not tidiness. `noteToolsFound()` runs when someone hovers a tool
+logo. If it wrote the session key, hovering a tool before scrolling would silence beat 1 as well as
+beat 2 — reintroducing exactly the suppression this design removes, through the back door.
+
+`ctx.returning` is read from `localStorage` **eagerly, at script load**, not lazily on first use. Lazily
+is wrong for the same reason: the context is first built when beat 1 speaks, by which point a visitor who
+hovered a tool on the way down has already had `ev:greeted` written by `noteToolsFound()`, and would be
+told "welcome back" on their first ever visit.
 
 Every other clause of `greetReady()` stays exactly as it is: downward scroll, 60px of travel, head and
 foot clearance, the button column still on screen, POOF idle.
