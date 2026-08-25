@@ -702,6 +702,16 @@
         }
         @media (max-width: 900px) {
             .hero > .wrap { max-width: 720px; }
+            /* THE GREETER'S HEADROOM. Below 901px the tool buttons become one full-width
+               column that ends directly above the .meta-row he stands on, so 48px of margin
+               put his upper body across the last card and his bubble squarely on top of it —
+               the Civic Trivia card was completely hidden whenever he spoke.
+               190px is derived, not chosen: his feet sit 6px below this row's top edge, his
+               bubble's bottom edge sits 106px above his feet, and a one- or two-line bubble
+               is 78px tall, which leaves 12px of daylight under the card. The four longest
+               tips (up to 144px, tip.readrank) still reach into the card's bottom edge; they
+               no longer cover it. Trim this and he climbs back onto the cards. */
+            .hero .meta-row { margin-top: 190px; }
             .showcase { grid-template-columns: 1fr; gap: 14px; max-width: 560px; }
             .showcase-preview { display: none; }
             .showcase-logos { align-items: stretch; }   /* full-width cards, not right-aligned */
