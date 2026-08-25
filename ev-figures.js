@@ -94,7 +94,14 @@
     function noteToolsFound() {
       featureEverOn = true;
       markMetTools();      // you have been here now, which is what returning/first-visit read
-      entries.forEach(function (e) { if (e.gh) greetDismiss(e); });
+      entries.forEach(function (e) {
+        // Clicking him brings back the last line he said (see greetReplay). The button nudge
+        // is the one line that must NOT survive that way once you have found the tools
+        // yourself: it is the same staleness the data file avoids when it declines to nudge
+        // someone who got there on their own. A welcome or a tip is still worth re-reading.
+        if (e.giSaid && /^greet\.buttons/.test(e.giSaid.id || '')) e.giSaid = null;
+        if (e.gh) greetDismiss(e);
+      });
     }
 
     // click to shove a rope Bobit / tip over a toddler
@@ -147,14 +154,24 @@
             return;   // ignore clicks landing mid-transition
           }
         }
-        // the greeter, mid-greeting: click him and he drops the bubble and stands down. The
-        // click-off branch below would close it anyway, but he needs the state change too, and
-        // clicking the Bobit who is talking to you is the obvious way to say "got it".
-        if (e.spec.presenter && e.gh && e._prSX != null) {
+        // The greeter is a SWITCH: click him and what he said goes away, click him again and
+        // it comes back. Clicking the Bobit who is talking to you is the obvious way to say
+        // "got it" — but that used to be a one-way door, so a line you were still reading when
+        // you tapped was gone for the rest of the page load. He remembers it now.
+        //
+        // Re-opening is left to the draw loop rather than done here, because only the draw
+        // loop knows where his head is this frame, and that is where a bubble is anchored.
+        if (e.spec.presenter && e._prSX != null && POOF.phase === 'idle') {
           if (Math.abs(ev.clientX - e._prSX) < 40 && ev.clientY > e._prFY - 104 && ev.clientY < e._prFY + 8) {
-            hitBubble = true;                 // his own dismissal; don't double-handle it below
-            greetDismiss(e);
-            return;
+            // hitBubble is set only when the click DID something, so the branch below does
+            // not double-handle it. The fall-through at the end is the point of writing this
+            // as three returns rather than an if/else chain.
+            if (e.gh) { hitBubble = true; greetDismiss(e); return; }              // OFF, and remembered
+            if (e.giSaid) { hitBubble = true; dismissBubbles(); e.giReplay = true; return; }   // ON
+            if (!e.gi && !e.giDone) { hitBubble = true; e.giStart = true; return; }  // never spoke: start him
+            // He greeted you and the line has gone stale, so there is nothing to switch. NOT
+            // marked as a hit: the click should still close whatever else is open, the way a
+            // click on any other quiet patch of the page does.
           }
         }
         // seated reader: click → he looks up and his bubble opens; click again → back to his
@@ -3271,12 +3288,16 @@
       return { toolsFound: featureEverOn, buttonsVisible: buttonsVis() >= GREET_BTN_MIN };
     }
 
-    // 'wave' → the welcome, 'point' → the nudge. null means the data file has nothing for
-    // this beat in this context, which is a legitimate answer and not an error.
-    function greetText(at) {
-      if (!window.EVLines) return at === 'wave' ? GREET_FALLBACK : null;
-      return window.EVLines.say('greeter', at, greetFacts());
+    // 'wave' → the welcome, 'point' → the nudge or a tip. A null text means the data file has
+    // nothing for this beat in this context, which is a legitimate answer and not an error.
+    //
+    // resolve() rather than say() because the ID comes back with the text, and the id is what
+    // lets noteToolsFound() tell a stale nudge from a welcome that is still worth re-reading.
+    function greetLine(at) {
+      if (!window.EVLines) return { id: null, text: at === 'wave' ? GREET_FALLBACK : null, aim: null };
+      return window.EVLines.resolve('greeter', at, greetFacts());
     }
+    function greetText(at) { return greetLine(at).text; }
 
     // Is this the moment? Every clause is a reason to keep quiet. `featureEverOn` is
     // deliberately NOT one of them any more: having found the tools yourself is a reason to
@@ -3318,12 +3339,10 @@
       return (window.scrollY || window.pageYOffset || 0) >= GREET_MIN_SCROLL;
     }
 
-    // Open a bubble carrying one beat's line. Returns false when there is nothing to say —
-    // the caller must not assume a handle exists afterwards.
-    function greetOpen(e, cr, w, feetY, col, at, aim, beat) {
-      if (!window.EVQuotes) return false;
-      var text = greetText(at);
-      if (!text) return false;
+    // The bubble itself, over his head, carrying whatever words it is given. Split out of
+    // greetOpen so a re-show can put a REMEMBERED line back without going near the selector.
+    function greetBubble(e, cr, w, feetY, col, text) {
+      if (!window.EVQuotes || !text) return false;
       var sx = window.scrollX || window.pageXOffset || 0;
       var sy = window.scrollY || window.pageYOffset || 0;
       // head top in DOCUMENT coords: pelvis is 112*S above his feet, head top another
@@ -3334,7 +3353,20 @@
         tone: col,
         quote: { text: text }               // no `who`: he is speaking for himself
       });
+      return true;
+    }
+
+    // Open a bubble carrying one beat's line. Returns false when there is nothing to say —
+    // the caller must not assume a handle exists afterwards.
+    function greetOpen(e, cr, w, feetY, col, at, aim, beat) {
+      var line = greetLine(at);
+      if (!greetBubble(e, cr, w, feetY, col, line.text)) return false;
       e.giBeat = beat;
+      // What a later click brings back. The TEXT is stored rather than re-resolved, so he
+      // repeats himself word for word: the context can move under him while the bubble is
+      // down — the column scrolls off, a tool gets highlighted — and "what he just said"
+      // must not quietly become a different sentence.
+      e.giSaid = { at: at, id: line.id, text: line.text };
       return true;
     }
 
@@ -3379,9 +3411,34 @@
       e.giFrom = e._giLast || null;
       e.gi = 'settle'; e.giT = 0;
     }
+    // Dismissed, but not forgotten: e.giSaid is deliberately left alone, and is what a click
+    // on him brings back.
     function greetDismiss(e) {
       if (e.gh) { window.EVQuotes.close(e.gh); e.gh = null; }
       greetSettle(e);
+    }
+
+    // A fresh run, from the top. Everything the greeting owns resets here, the remembered
+    // line included — a nudge left over from an earlier run must not be re-openable in the
+    // middle of a new one, and giAimSel from a tip would otherwise leave his arm on the menu.
+    // `byClick` means a person asked for this rather than a scroll triggering it, which is
+    // the one case where he speaks even with nothing left to point at.
+    function greetBegin(e, byClick) {
+      e.gi = 'wave'; e.giT = 0; e.giTotal = 0; e.giFrom = null; e.giBeat = 0;
+      e.giAimSel = null; e.giAimDoc = null; e.giSaid = null; e.giByClick = !!byClick;
+      markMetTools();                                   // a fact for next visit, not a gate for this one
+    }
+
+    // Put the last line back on screen. NOT a replay of the greeting: he says the one thing
+    // again, in the pose that belongs to it — arm back up on whatever he was indicating for a
+    // nudge or a tip, plain standing for the welcome.
+    function greetReplay(e, cr, w, feetY, col) {
+      if (e.gh || !e.giSaid) return;
+      if (!greetBubble(e, cr, w, feetY, col, e.giSaid.text)) return;
+      // Whatever he is re-showing, the automatic swap is behind him. Marking beat 2 done is
+      // what stops a re-shown WELCOME from being replaced by the nudge on its old timer.
+      e.giBeat = 2;
+      if (e.giSaid.at === 'point') { e.giFrom = e._giLast || null; e.gi = 'turn'; e.giT = 0; }
     }
 
     function drawPresenter(e, ctx, w, h, feetY, oyS, tt, col, shadow, dt, cr) {
@@ -3389,13 +3446,12 @@
       R.drawShadow(ctx, w / 2, feetY, 16, shadow);
       e._prSX = cr.left + w / 2; e._prFY = cr.top + h;   // click hitbox anchor (screen coords)
 
-      if (greetReady(e, cr)) {
-        // giAimSel/giAimDoc reset with the rest: a tip from a previous run could otherwise
-        // leave his arm aimed at the menu while this run talks about the tool buttons.
-        e.gi = 'wave'; e.giT = 0; e.giTotal = 0; e.giFrom = null; e.giBeat = 0;
-        e.giAimSel = null; e.giAimDoc = null;
-        markMetTools();                                   // a fact for next visit, not a gate for this one
-      }
+      // A click on him asks for one of two things, and both are settled HERE rather than in
+      // the click handler: only the draw loop knows where his head is this frame, and a
+      // bubble opened anywhere else would be anchored to a guess.
+      if (e.giStart) { e.giStart = false; if (!e.gi && !e.giDone) greetBegin(e, true); }
+      else if (e.giReplay) { e.giReplay = false; greetReplay(e, cr, w, feetY, col); }
+      else if (greetReady(e, cr)) greetBegin(e, false);
 
       var pose;
       if (e.gi) {
@@ -3408,7 +3464,9 @@
           pose = A.greet.frame(e.giT, e._wave);
           // The bubble opens mid-wave, so the abort only applies while he is still silent: once
           // he has spoken, scrolling the buttons off is handled by the remembered aim instead.
-          if (!e.gh && (!aim || aim.vis < GREET_BTN_MIN)) { e._giLast = pose; greetSettle(e); }
+          // ...and not at all when a CLICK started him: you asked, so he answers. The data
+          // file already has the wording for a column that has gone (`buttons-gone`).
+          if (!e.gh && !e.giByClick && (!aim || aim.vis < GREET_BTN_MIN)) { e._giLast = pose; greetSettle(e); }
           else {
             if (!e.giBeat && e.giT >= GREET_SAY_AT) greetOpen(e, cr, w, feetY, col, 'wave', aim, 1);
             if (e.giT >= GREET_WAVE) { e.gi = 'turn'; e.giFrom = pose; e.giT = 0; }

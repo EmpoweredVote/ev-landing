@@ -207,6 +207,21 @@ worth pointing at, not 40px tall like the button column. Pointing at the 36px ac
 menu silently failed that older threshold and left him standing with his arms down while
 the bubble promised otherwise — which no assertion caught, and a screenshot did.
 
+**He is a switch, not a one-way door.** Clicking the Bobit who is talking to you says "got
+it", and it has always closed the bubble. He now *remembers* the line, so clicking him again
+puts it back: the last line he showed, word for word, with his arm returning to whatever it
+was indicating. The text is stored rather than re-resolved on the way back, because the
+context can move while the bubble is down — the column scrolls off, a tool gets highlighted —
+and "what he just said" must not quietly become a different sentence.
+
+Two consequences are worth knowing. A click on a greeter who has not spoken at all — you came
+up to him from below, so `greetReady()` kept him quiet — starts the greeting instead, since
+clicking a Bobit should never be inert. And the button nudge is the one line that does *not*
+survive: hovering a tool clears it, because telling someone where the buttons are after they
+have found them is the same staleness the data file already avoids. The re-opening itself is
+done in the draw loop rather than the click handler, as only the draw loop knows where his
+head is this frame, and that is where a bubble is anchored.
+
 ## Deploy
 
 Configured for Render as a static site via `render.yaml`. Connect the repo on Render and it will publish `./` (root) on every push to `main`.
