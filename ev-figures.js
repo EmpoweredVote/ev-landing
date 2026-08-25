@@ -31,25 +31,29 @@
 
     // ── THE GREETER, part 1: when to keep quiet ─────────────────────────────────────────
     // Scroll into the hero and the presenter Bobit flags you down — see drawPresenter for
-    // the gesture. He greets anyone, ONCE PER VISIT: a returning or signed-in visitor is
-    // exactly who a contextual line ("Good morning", "Welcome back") is for, and the old
-    // once-per-browser rule silenced precisely those people.
+    // the gesture. He greets anyone, ONCE PER PAGE LOAD. There is no stored gate at all.
     //
-    // Two keys, because they answer two different questions, and conflating them has a bug
-    // in it. MET is "this browser has been here before" and feeds the returning/first-visit
-    // predicates in ev-lines.js; it is also written by noteToolsFound(). SESSION is "he has
-    // already spoken this visit" and is the only thing that stops him. If noteToolsFound()
-    // wrote SESSION, hovering a tool before scrolling would silence the welcome as well as
-    // the nudge — putting back, by the side door, the suppression this design removed.
-    var GREET_KEY = 'ev:greeted';                     // MET
-    var GREET_SESSION_KEY = 'ev:greeted:session';     // SESSION
-    var greetForce = location.hash === '#greeter';    // re-see it without clearing storage
-    function greetSeen() { try { return sessionStorage.getItem(GREET_SESSION_KEY) === '1'; } catch (err) { return false; } }
+    // That rule has moved twice, and the direction of travel is the point. It began as once
+    // per browser forever, which silenced every returning and signed-in visitor — precisely
+    // the people a contextual line ("Good morning", "Welcome back") is written for. It then
+    // became once per visit, held in sessionStorage. That still meant a reload said nothing,
+    // and the only way to see the greeting again was a private window.
+    //
+    // What made the gate removable was not a change of mind about nagging: it was having
+    // enough to say. Every line he can repeat now draws from a pool — three openers per time
+    // of day, three welcome-backs, twenty-odd tips — so arriving twice gets you two different
+    // sentences rather than the same one twice. VARIETY is the thing doing the work the gate
+    // used to do. If those pools are ever reduced to one line each, this decision needs
+    // revisiting, because then a reload really would just repeat itself.
+    //
+    // ONE key survives, and it never gates anything. MET is "this browser has been here
+    // before" and feeds the returning / first-visit predicates in ev-lines.js, which is what
+    // decides whether beat 2 is the button nudge or a tip. It is written both when he greets
+    // and by noteToolsFound(), because finding the tools yourself also means you have been
+    // here.
+    var GREET_KEY = 'ev:greeted';                     // MET — a fact, not a gate
+    var greetForce = location.hash === '#greeter';    // re-see it on a reload the scroll restored
     function markMetTools() { try { localStorage.setItem(GREET_KEY, '1'); } catch (err) {} }
-    function markGreeted() {
-      try { sessionStorage.setItem(GREET_SESSION_KEY, '1'); } catch (err) {}
-      markMetTools();
-    }
     // Only greet someone on their way DOWN past him. Coming back up to the hero you are
     // already looking at the buttons, and being flagged down then reads as nagging.
     //
@@ -89,7 +93,7 @@
     // it, let him drop the bubble and hand his arm back to pointing at what you highlighted.
     function noteToolsFound() {
       featureEverOn = true;
-      markMetTools();      // NOT markGreeted(): finding the tools must not silence the welcome
+      markMetTools();      // you have been here now, which is what returning/first-visit read
       entries.forEach(function (e) { if (e.gh) greetDismiss(e); });
     }
 
@@ -3300,11 +3304,18 @@
       // check above: arriving from below is nagging whether you asked for it or not.
       if (greetForce) return true;
 
-      // INTENT. He is a nudge for someone travelling down PAST him, not for anyone who
-      // happens to be parked in front of him.
-      if (scrollDir === 0) return false;                   // nobody has scrolled yet this load
-      if ((window.scrollY || window.pageYOffset || 0) < GREET_MIN_SCROLL) return false;
-      return !greetSeen();
+      // INTENT. Only one clause left, and it is about position rather than travel: he stands
+      // at the bottom of the hero, so 60px of scroll is what puts him on screen at all.
+      //
+      // There used to be a `scrollDir === 0` clause here — "nobody has scrolled yet this
+      // load" — added when the direction flag became a tri-state. It was redundant and it did
+      // harm. Redundant because on a fresh load you start at scroll 0, where he is below the
+      // fold and GREET_MIN_SCROLL already refuses. Harmful because the only time it actually
+      // fired was a RELOAD: the browser restores your scroll position without firing a scroll
+      // event, so the flag stayed at 0 and he said nothing — the very silence that sent Chris
+      // to a private window in the first place. A visitor whose page reloads under them is
+      // looking straight at him; there is nothing to nudge them past.
+      return (window.scrollY || window.pageYOffset || 0) >= GREET_MIN_SCROLL;
     }
 
     // Open a bubble carrying one beat's line. Returns false when there is nothing to say —
@@ -3383,7 +3394,7 @@
         // leave his arm aimed at the menu while this run talks about the tool buttons.
         e.gi = 'wave'; e.giT = 0; e.giTotal = 0; e.giFrom = null; e.giBeat = 0;
         e.giAimSel = null; e.giAimDoc = null;
-        markGreeted();                                    // once per visit, not once per browser
+        markMetTools();                                   // a fact for next visit, not a gate for this one
       }
 
       var pose;
@@ -4434,7 +4445,7 @@
       entries: entries, footWalk: footWalk, footStand: footStand,
       greet: {
         SAY_AT: GREET_SAY_AT, SAY2_AT: GREET_SAY2_AT, WAVE: GREET_WAVE, TURN: GREET_TURN,
-        KEY: GREET_KEY, SESSION_KEY: GREET_SESSION_KEY, force: greetForce,
+        KEY: GREET_KEY, force: greetForce,
         // What he would say right now, and why. There is no single SAY constant to report
         // any more — that is the point of the change.
         //

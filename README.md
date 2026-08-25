@@ -115,9 +115,17 @@ load, bypassing the clock and the visitor's real state entirely — which is the
 need on the day you're writing the December greeting in August. The full set of tag names
 selection currently knows about: `morning`, `afternoon`, `evening`, `halloween`,
 `holidays`, `mlk-day`, `first-visit`, `returning`, `logged-in`, `guest`, `named`,
-`tools-found`, `buttons-gone`. Add `#greeter` to the URL as well and he'll also ignore
-having already greeted you this session, so you don't have to clear storage between
-reloads while you're iterating on a line.
+`tools-found`, `needs-tools`, `buttons-gone`, `desktop`, `touch`.
+
+One trap worth knowing: forcing tags **replaces** the derived set rather than adding to it.
+So `?evlines=morning` means morning is the *only* active tag — you will not also get
+`guest` or `first-visit` unless you name them. That is what makes these previews
+deterministic, and it also means a forced page can never exercise a tag that only real
+state produces, such as `tools-found` from an actual hover.
+
+`#greeter` is the other lever. Its job now is narrow but real: it skips the
+"where you are right now" checks, which matters on a reload, because the browser restores
+your scroll position without firing a scroll event.
 
 **Adding a new condition is two small edits, not a refactor.** Give it one entry in the
 `PREDICATES` map (a name and a function from context to true/false) and one fact in
@@ -148,22 +156,32 @@ exists with no packs registered at all and every `get(id)` returns null — muti
 greeter site-wide, not just in Spanish. Guard a new language file on whether its own pack
 is already registered instead: `if (!window.EVCopy || window.EVCopy.has('es')) return;`.
 
-**Two storage keys track two different questions, and merging them would reintroduce a
-bug this design removed.** `localStorage['ev:greeted']` means "this browser has been here
-before" — it feeds the `returning`/`first-visit` predicates, and outlives the tab.
-`sessionStorage['ev:greeted:session']` means "he has already greeted you this visit," and
-is the *only stored signal* `greetReady()` checks to decide whether to stay quiet — of the
-two keys, it is the sole suppression switch. (`greetReady()` itself has several other
-early-outs beyond the two keys — scroll direction, scroll distance, head/foot clearance,
-no visible aim, the POOF phase, already mid-greeting — but those are all about *where you
-are right now*, not what is *remembered* between visits; the keys are the only part of the
-gate with memory.) Hovering a tool writes only the first of the two. If it wrote the
-second as well, finding the tools on your own — by hovering one on your way down the
-page, before he ever gets a chance to speak — would silence the welcome along with the
-nudge it's meant to make redundant: you'd never see him greet you at all, just because you
-found the buttons yourself first. The two keys stay separate so "have we met before" and
-"have I already said hello this visit" can keep answering different questions, and only
-the second one ever stops him from talking.
+**He greets once per page load, and nothing stored ever stops him.** That rule has moved
+twice. It began as once per browser, forever — which silenced every returning and
+signed-in visitor, precisely the people a contextual line is written for. It then became
+once per visit, held in `sessionStorage`, which still meant a reload said nothing and a
+private window was the only way to see the greeting again. Both gates are gone.
+
+What made removing them safe was not a change of mind about nagging; it was having enough
+to say. Every line he can repeat is drawn from a pool — three openers per time of day,
+three welcome-backs, twenty-odd tips — so arriving twice gets you two different sentences.
+**Variety is what does the work the gate used to do.** If those pools are ever cut back to
+one line each, revisit this, because then a reload really would just repeat itself.
+
+**One key survives, and it is a fact rather than a gate.** `localStorage['ev:greeted']`
+means "this browser has been here before". Nothing consults it to decide whether to speak;
+it feeds the `returning` and `first-visit` predicates, which is what decides whether beat 2
+is the button nudge or a tip. It is written both when he greets and when you hover a tool,
+because finding the tools yourself also means you have been here. It is read *eagerly at
+page load*, before anything can write it, so hovering a tool halfway down the page cannot
+retroactively turn your first visit into a returning one.
+
+`greetReady()` still has several early-outs, but they are all about where you are right
+now: which way you are scrolling, how far down the page, whether all of him and the button
+column are on screen, whether the page is mid-POOF, whether he is already talking. One of
+them is worth knowing about. He will not greet you while you scroll *up* into the hero —
+being flagged down on the way up reads as nagging — and `#greeter` deliberately cannot
+override that, though it does override the rest.
 
 **Beat 2 is the nudge or a tip, and a pool is the second selection shape.** He speaks
 twice: a welcome while he waves, then something useful once his arm lands. That second

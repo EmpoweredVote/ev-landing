@@ -64,11 +64,6 @@ const BUBBLES = function () { return document.querySelectorAll('.ev-quote').leng
     const page = await makePage(browser);
     assert.ok(await scrollDownInto(page) >= 0, 'could not reach the greeting window');
     await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
-    const sess = await page.evaluate(function () {
-      try { return sessionStorage.getItem('ev:greeted:session'); } catch (e) { return null; }
-    });
-    assert.strictEqual(sess, '1', 'the first pass must have marked him as greeted this visit');
-
     await page.reload();
     await page.waitForTimeout(500);
     // Assert the precondition rather than hoping for it: he must already be in the window
@@ -85,8 +80,9 @@ const BUBBLES = function () { return document.querySelectorAll('.ev-quote').leng
     await page.close();
   }
 
-  // ── 3. ...and the session key must still silence him WITHOUT #greeter. Fixing the override
-  //      must not turn "once per visit" off for everyone.
+  // ── 3. ...and he greets after a reload WITHOUT #greeter too. The stored gate is gone: he
+  //      speaks once per page load, and the variety in the line pools is what keeps that from
+  //      being repetitive. A stale session key from the old build must not silence him.
   {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await page.route('**/*', function (r) {
@@ -98,12 +94,12 @@ const BUBBLES = function () { return document.querySelectorAll('.ev-quote').leng
         document.documentElement.style.scrollBehavior = 'auto';
       });
     });
-    await page.goto('file:///C:/ev-landing/ev-landing-main/index.html?evlines=first-visit,guest#figdebug');
+    await page.goto('file:///C:/ev-landing/ev-landing-main/index.html?evlines=first-visit,guest,needs-tools#figdebug');
     await page.waitForTimeout(400);
     assert.ok(await scrollDownInto(page) >= 0, 'could not reach the greeting window');
-    await page.waitForTimeout(3200);
-    assert.strictEqual(await page.evaluate(BUBBLES), 0,
-      'already greeted this visit and no #greeter: he must stay quiet');
+    await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
+    assert.strictEqual(await page.evaluate(BUBBLES), 1,
+      'a stale session key must not silence him now that the gate is gone');
     await page.close();
   }
 

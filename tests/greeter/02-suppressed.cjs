@@ -85,14 +85,15 @@ async function quiet(page, label) {
 (async function () {
   const browser = await chromium.launch();
 
-  // ── 1. he already greeted you THIS visit. Once per session, not once per browser: a
-  //      returning visitor is exactly who "Good morning" and "Welcome back" are for.
+  // ── 1. He greets on EVERY page load now, so there is no stored reason to stay quiet at all.
+  //      A stale session key from before that change must not silence him either — someone
+  //      with an open tab from the old build would otherwise never be greeted again.
   {
     const page = await makePage(browser, function () {
       try { sessionStorage.setItem('ev:greeted:session', '1'); } catch (e) {}
     });
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
-    await quiet(page, 'already greeted this session');
+    await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
     await page.close();
   }
 

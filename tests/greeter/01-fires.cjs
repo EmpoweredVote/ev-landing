@@ -146,7 +146,6 @@ async function scrollIntoWindow(page) {
       btnBottom: document.querySelector('.showcase-logos').getBoundingClientRect().bottom,
       winW: window.innerWidth, winH: window.innerHeight,
       seen: localStorage.getItem('ev:greeted'),
-      sessionSeen: sessionStorage.getItem('ev:greeted:session'),
       count: document.querySelectorAll('.ev-quote').length
     };
   });
@@ -176,15 +175,13 @@ async function scrollIntoWindow(page) {
     'the buttons he is pointing at have scrolled away: column bottom at ' + fired.btnBottom +
     ' of ' + fired.winH);
 
-  assert.strictEqual(fired.seen, '1', 'greeting must be remembered so he does not do it again');
-  // markGreeted() writes two keys (see the MET/SESSION comment in ev-figures.js); the
-  // localStorage assertion above only ever exercised the first. Without this one,
-  // deleting the sessionStorage.setItem call out of markGreeted() would leave all 38
-  // suites green while shipping a greeter that re-greets on every reload — the once-per-visit
-  // key would be written nowhere, so nothing would ever be there to suppress him. Assert it
-  // is actually written, not just that the (unrelated) localStorage key is.
-  assert.strictEqual(fired.sessionSeen, '1',
-    'the once-per-visit session key must also be written, not just the once-per-browser one');
+  // localStorage 'ev:greeted' is still written, but its job changed: it no longer suppresses
+  // anything. It is the only signal that says "this browser has been here before", which is
+  // what the returning / first-visit predicates read — and what decides whether beat 2 is the
+  // button nudge or a tip. If the greeting stopped writing it, every visit would look like a
+  // first visit forever and nobody would ever graduate past the nudge.
+  assert.strictEqual(fired.seen, '1',
+    'the greeting must record that this browser has been here, for the returning predicate');
 
   // ...and he only does it once per page load, even if you scroll back and forth
   await page.evaluate(function () { window.scrollTo(0, 0); });
@@ -196,21 +193,22 @@ async function scrollIntoWindow(page) {
   });
   assert.ok(again <= 1, 'he must not stack a second bubble, found ' + again);
 
-  // The assertion above proves the key gets WRITTEN; it does not prove the key SUPPRESSES
-  // anything, because nothing reloaded the page to make it matter. sessionStorage (unlike an
-  // in-memory flag) survives a reload in a real tab, which is the entire reason ev-figures.js
-  // uses it instead of a plain JS variable — so reload here and confirm the session key alone
-  // is enough to keep him quiet on the next load, with no scroll-history or in-page state
-  // carried over from the first pass.
+  // A RELOAD IS A NEW GREETING. The stored gate is gone: he speaks once per page load, and the
+  // variants in the opener and tip pools are what keep that from being repetitive rather than
+  // a stored flag keeping him quiet. This assertion is the inverse of the one it replaced, and
+  // it is the one that would catch the gate being reintroduced by accident.
+  //
+  // In-page state must not survive either: giDone lives on the entry object, which the reload
+  // destroys along with everything else on the page.
   await page.reload();
   await page.waitForTimeout(400);
   assert.ok(await scrollIntoWindow(page), 'could not reach the greeting window after reload');
-  await page.waitForTimeout(2600);   // past the full wave+turn+point gesture, same as the other suites
+  await page.waitForSelector('.ev-quote.in', { timeout: 6000 });
   const afterReload = await page.evaluate(function () {
     return document.querySelectorAll('.ev-quote').length;
   });
-  assert.strictEqual(afterReload, 0,
-    'the session key must suppress the greeting after a reload, found ' + afterReload + ' bubble(s)');
+  assert.strictEqual(afterReload, 1,
+    'a reload must greet again, found ' + afterReload + ' bubble(s)');
 
   console.log('01-fires: PASS');
   await browser.close();
