@@ -133,6 +133,9 @@ async function makePage(browser) {
     window.EVLines.register('n', { beats: [{ at: 'one', lines: [{ id: 'greet.back' }] }] });
     return window.EVLines.say('n', 'one');
   });
+  // Still exact: this registers its own speaker with the single id 'greet.back', so it tests
+  // substitution rather than the greeter's draw. The greeter's own welcome-back lines are an
+  // array now, and 03-tips covers that they vary.
   assert.strictEqual(named, 'Welcome back, Chris.', 'the {name} token must be substituted');
   await sel.close();
 
@@ -164,7 +167,11 @@ async function makePage(browser) {
     };
   });
   assert.strictEqual(g.hello, 'Hi there. Welcome to Empowered Vote.');
-  assert.strictEqual(g.morning, 'Good morning. Welcome to Empowered Vote.');
+  // One of three, not one exact string: beat 1 draws per page load so a visitor who arrives
+  // twice is not read the same sentence twice. Pinning one wording here would make adding a
+  // fourth opener a test failure, which is the opposite of what this file should encourage.
+  assert.ok(/^(Good morning\.|Morning\.)/.test(g.morning),
+    'a morning greeting must open on the morning, got: ' + g.morning);
   assert.strictEqual(g.spooky, 'Happy Halloween. Welcome to Empowered Vote.',
     'the season must outrank the time of day');
   assert.strictEqual(g.buttons, 'Press one of those buttons up there to start exploring.');

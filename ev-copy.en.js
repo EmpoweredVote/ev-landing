@@ -58,14 +58,34 @@
   // buttons when his arm lands on them (greet.buttons*). See the spec for who gets which.
   register('en', {
     'greet.hello':        "Hi there. Welcome to Empowered Vote.",
+
+    // Three openers per time of day, drawn at random per page load. One variant in each set
+    // keeps "Welcome to Empowered Vote" for a stranger; the other two are shorter, because a
+    // visitor who has been here before does not need the site introduced to them again.
+    // Repetition is the thing these exist to prevent, so they are deliberately not three
+    // rewordings of one sentence.
     'greet.morning':      "Good morning. Welcome to Empowered Vote.",
+    'greet.morning.b':    "Good morning. Glad you stopped by.",
+    'greet.morning.c':    "Morning. Take your time and have a look around.",
+
     'greet.afternoon':    "Good afternoon. Welcome to Empowered Vote.",
+    'greet.afternoon.b':  "Good afternoon. Glad you found us.",
+    'greet.afternoon.c':  "Afternoon. Make yourself at home.",
+
     'greet.evening':      "Good evening. Welcome to Empowered Vote.",
+    'greet.evening.b':    "Good evening. Thanks for stopping in.",
+    'greet.evening.c':    "Evening. There's plenty here whenever you're ready.",
     'greet.halloween':    "Happy Halloween. Welcome to Empowered Vote.",
     'greet.holidays':     "Happy holidays. Welcome to Empowered Vote.",
     // {name} is filled from the session. Only ever reached behind the `named` tag, so it
     // cannot render as "Welcome back, undefined."
+    //
+    // These get variants for the same reason the time-of-day lines do, and more urgently: a
+    // signed-in returning visitor matches this ahead of the time of day, so without alternates
+    // they would be the ONE person who hears an identical sentence every single visit.
     'greet.back':         "Welcome back, {name}.",
+    'greet.back.b':       "Good to see you again, {name}.",
+    'greet.back.c':       "Hello again, {name}.",
 
     'greet.buttons':      "Press one of those buttons up there to start exploring.",
     // Used once the button column has scrolled off the top. "Press one of those buttons up

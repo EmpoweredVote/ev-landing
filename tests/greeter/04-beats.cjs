@@ -290,8 +290,10 @@ async function untilBeat(page, n, ms) {
     });
     assert.ok(await scrollDownInto(page), 'could not reach the greeting window');
     await untilBeat(page, 1);
-    assert.strictEqual((await page.evaluate(STATE)).text, 'Welcome back, Chris.',
-      'a known visitor is greeted by name');
+    // Any of the three welcome-back openers; what matters is that his name reached the line.
+    const hi = (await page.evaluate(STATE)).text;
+    assert.ok(/Chris\./.test(hi), 'a known visitor is greeted by name, got: ' + hi);
+    assert.ok(!/\{name\}/.test(hi), 'the {name} token was left unsubstituted: ' + hi);
     await untilBeat(page, 2);
     const s = await page.evaluate(STATE);
     assert.notStrictEqual(s.text, BEAT2,

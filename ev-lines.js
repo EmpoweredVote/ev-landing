@@ -248,10 +248,14 @@
       { at: 'wave', lines: [
           { id: 'greet.halloween', when: ['halloween'] },
           { id: 'greet.holidays',  when: ['holidays'] },
-          { id: 'greet.back',      when: ['named', 'returning'] },
-          { id: 'greet.morning',   when: ['morning'] },
-          { id: 'greet.afternoon', when: ['afternoon'] },
-          { id: 'greet.evening',   when: ['evening'] },
+          // An id ARRAY draws one at random per page load and holds it for that load. Three
+          // openers per case, so a visitor who arrives twice is not read the same sentence
+          // twice. `greet.hello` stays single: in production one of morning/afternoon/evening
+          // is always true, so it is only ever reached when a test pins tags without one.
+          { id: ['greet.back', 'greet.back.b', 'greet.back.c'],                when: ['named', 'returning'] },
+          { id: ['greet.morning', 'greet.morning.b', 'greet.morning.c'],       when: ['morning'] },
+          { id: ['greet.afternoon', 'greet.afternoon.b', 'greet.afternoon.c'], when: ['afternoon'] },
+          { id: ['greet.evening', 'greet.evening.b', 'greet.evening.c'],       when: ['evening'] },
           { id: 'greet.hello' }
       ]},
       // tools-found is FIRST, so it beats everything: highlighting a tool is the only

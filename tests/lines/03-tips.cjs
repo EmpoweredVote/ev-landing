@@ -70,6 +70,39 @@ async function beat2(browser, tags, opts) {
       'the pool drew only ' + seen.size + ' distinct tips in 25 loads: ' + [...seen].join(', '));
   }
 
+  // ── 3b. Beat 1 varies too. Without this the whole point is half-done: a visitor greeted on
+  //       every page load would get a fresh tip but the identical welcome above it.
+  //
+  //       The welcome-back case matters most. It matches ahead of the time of day, so a
+  //       signed-in returning visitor is the ONE person who would otherwise hear exactly the
+  //       same sentence on every single visit.
+  {
+    for (const [label, tags, expect] of [
+      ['morning',   ['morning', 'guest', 'first-visit'],       /morning/i],
+      ['afternoon', ['afternoon', 'guest', 'first-visit'],     /afternoon/i],
+      ['evening',   ['evening', 'guest', 'first-visit'],       /evening/i],
+      ['welcome back', ['named', 'returning', 'logged-in'],    /Chris/]
+    ]) {
+      const seen = new Set();
+      for (let i = 0; i < 20; i++) {
+        const page = await makePage(browser);
+        const text = await page.evaluate(function (t) {
+          window.EVSession = { loggedIn: true, name: 'Chris' };
+          window.EVLines.force(t);
+          return window.EVLines.say('greeter', 'wave');
+        }, tags);
+        await page.close();
+        assert.ok(text, label + ': beat 1 resolved to nothing');
+        assert.ok(expect.test(text), label + ' opener is off-topic: ' + text);
+        assert.ok(!/\{name\}/.test(text), label + ': an unsubstituted {name} token: ' + text);
+        seen.add(text);
+      }
+      assert.ok(seen.size >= 2,
+        label + ' drew only one opener in 20 loads, so a repeat visitor would hear it every ' +
+        'time: ' + [...seen].join(' | '));
+    }
+  }
+
   // ── 4. ...and holds its draw WITHIN a page. The bubble and the arm both resolve beat 2
   //      separately; if the draw moved between those two calls they could disagree about
   //      which tip is being told.
