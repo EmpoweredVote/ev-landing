@@ -186,7 +186,7 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   in opposite directions and the map needs **both**, in this order — that is why
   they are written down together.
 - **The coverage table has a query now: `briefing/coverage-table.sql`.** It encodes the resolution
-  order below, prints the thirteen named rows plus the "N more jurisdictions" remainder, and ends
+  order below, prints the fourteen named rows plus the "N more jurisdictions" remainder, and ends
   with the two rows that are the check — TOTAL(partition) against TOTAL(headline). Run it and read
   the numbers off it rather than rebuilding the logic by hand; the header comment says how. Editing
   which jurisdictions get their own row is the one editorial decision, in its `named` CTE.
@@ -211,7 +211,9 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   `representing_state` = the state they represent. Rebuilding without the national test on
   2026-08-19 smeared all 560 of them into their home states (California read 424, not 373) and
   deleted the row — the table still summed perfectly, which is this check's known blind spot.
-  Ten of the thirteen rows reproduce to the row with the test in place; that agreement is how
+  Rows carried over from the previous cycle reproduce to the row with the test in place — all
+  thirteen of them did on 2026-08-25, when North Carolina was added as the fourteenth and took the
+  whole cycle's movement with it out of REST.  That agreement is how
   you know the resolution order is right before you publish.
 - **The headshot backlog figure is hand-maintained and its definition is not
   settled.**  `backend/scripts/auditHeadshots.ts` (EV-Accounts) counts

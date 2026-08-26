@@ -18,8 +18,10 @@
 --
 -- The last two output rows are the check: TOTAL(partition) must equal TOTAL(headline), which is
 -- what refresh.mjs writes into the data-auto spans.  That check catches MISSING rows, not
--- misplaced ones — the corroborating signal is that ten of the thirteen named rows reproduce
--- unchanged from the previous cycle.
+-- misplaced ones — the corroborating signal is that the named rows carried over from the previous
+-- cycle reproduce unchanged.  On 2026-08-25 ALL THIRTEEN did, to the row, and the entire cycle's
+-- movement landed in the fourteenth (North Carolina, added to `named` that day) plus REST.  That
+-- is the strongest form of this signal: it says the resolution order did not shift under you.
 WITH ans AS (
   SELECT politician_id AS pid, count(*)::int AS n FROM inform.politician_answers GROUP BY 1
 ),
@@ -60,7 +62,7 @@ agg AS (SELECT bucket, count(*)::int AS pols, sum(n)::int AS stances FROM part G
 -- The named rows are editorial: whichever jurisdictions currently earn their own line.  Everything
 -- else collapses into the "N more jurisdictions" row, and `jurisdictions` below is that N.
 named AS (SELECT * FROM agg WHERE bucket IN
-  ('national','no seat','CA','MA','TX','MD','ME','VA','OR','WI','UT','WA','AZ'))
+  ('national','no seat','CA','MA','TX','MD','ME','VA','OR','WI','UT','WA','AZ','NC'))
 SELECT 1 AS ord, bucket, pols, stances, NULL::int AS jurisdictions FROM named
 UNION ALL
 SELECT 2, 'REST', sum(pols)::int, sum(stances)::int, count(*)::int FROM agg WHERE bucket NOT IN (SELECT bucket FROM named)
