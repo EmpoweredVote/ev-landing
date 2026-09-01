@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About EmpoweredVoteBot — Empowered Vote</title>
+  <meta name="description" content="How EmpoweredVoteBot works: the fetcher Empowered Vote uses to find and verify the original sources behind our published information — how it identifies itself, how it respects robots.txt, and how to exclude it." />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Anti-FOUC: apply theme before first paint -->
+  <script>
+      (function () {
+          var s = localStorage.getItem('ev:color-scheme');
+          var t = (s === 'dark' || s === 'light') ? s : 'dark';
+          document.documentElement.dataset.theme = t;
+      })();
+  </script>
+  <style>
+    :root {
+      --bg: #F7F7F8;
+      --card: #FFFFFF;
+      --heading: #1C1C1C;
+      --body: #535964;
+      --muted: #6B7280;
+      --border: #E5E7EB;
+      --teal: #00657C;
+      --coral: #FF5740;
+      --yellow: #FED12E;
+      --radius-card: 14px;
+      --shadow-md: 0 8px 24px rgba(15,30,40,0.08);
+      color-scheme: light;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--body);
+      font-weight: 400;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 48px 16px 64px;
+    }
+
+    .back-link {
+      align-self: flex-start;
+      max-width: 620px;
+      width: 100%;
+      margin: 0 auto 24px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s ease;
+    }
+    .back-link:hover { color: var(--heading); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-md);
+      padding: 40px 36px 36px;
+      width: 100%;
+      max-width: 620px;
+    }
+
+    @media (max-width: 560px) {
+      .card { padding: 28px 20px 24px; }
+      body { padding-top: 28px; }
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .logo-dot {
+      width: 12px; height: 12px;
+      background: var(--yellow);
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .logo-text {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--heading);
+      letter-spacing: -0.01em;
+    }
+
+    h1 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--heading);
+      letter-spacing: -0.025em;
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-size: 1.12rem;
+      font-weight: 800;
+      color: var(--heading);
+      letter-spacing: -0.015em;
+      margin: 30px 0 12px;
+    }
+
+    p { margin-bottom: 14px; }
+    p:last-child { margin-bottom: 0; }
+    .prose b, .prose strong { color: var(--heading); font-weight: 700; }
+
+    /* Yellow-square bullet list — the house list style (see newsletter.html) */
+    ul.expect, ol.expect {
+      list-style: none;
+      margin: 0 0 14px;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+    }
+    ul.expect li, ol.expect li {
+      position: relative;
+      padding-left: 22px;
+      font-size: 0.96rem;
+      color: var(--body);
+    }
+    ul.expect li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.62em;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--yellow);
+    }
+    /* Ordered variant keeps a visible number in the house yellow */
+    ol.expect { counter-reset: ev-ol; }
+    ol.expect li { counter-increment: ev-ol; }
+    ol.expect li::before {
+      content: counter(ev-ol);
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--heading);
+      background: var(--yellow);
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      display: grid;
+      place-items: center;
+    }
+    ol.expect li { padding-left: 28px; }
+
+    a { color: var(--teal); font-weight: 600; }
+
+    /* Inline code + block code — monospace, tinted like an input field */
+    code {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9em;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 5px;
+      color: var(--heading);
+    }
+    pre {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 4px 0 16px;
+      overflow-x: auto;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      border-radius: 0;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--heading);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .footnote {
+      font-size: 0.86rem;
+      color: var(--muted);
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+    .footnote a { color: var(--teal); font-weight: 600; }
+
+    /* -------- DARK MODE TOKENS -------- */
+    [data-theme="dark"] {
+      --bg: #111113;
+      --card: #1C1C1F;
+      --heading: #F2F2F2;
+      --body: #A8B0BC;
+      --muted: #8B949E;
+      --border: #2D2D32;
+      --teal: #1DA8C6;
+      --coral: #FF6B52;
+      --yellow: #FFD740;
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+
+    /* -------- THEME TOGGLE -------- */
+    .theme-toggle {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      z-index: 200;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      color: var(--heading);
+      font-size: 1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+    .theme-toggle:hover { border-color: var(--heading); }
+    [data-theme="light"] .theme-toggle::before { content: "☽"; }
+    [data-theme="dark"]  .theme-toggle::before { content: "☀"; }
+  </style>
+
+  <!-- Relative, not "/analytics.js": see the note beside index.html's include.
+       Root pages use the relative form so they also work under file://; pages in
+       subdirectories (briefing/, maps/) need the absolute form. -->
+  <script src="analytics.js"></script>
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle color scheme"></button>
+
+  <a class="back-link" href="/">← Back to Empowered Vote</a>
+
+  <div class="card prose">
+    <div class="logo-row">
+      <span class="logo-dot"></span>
+      <span class="logo-text">Empowered Vote</span>
+    </div>
+
+    <h1>About EmpoweredVoteBot</h1>
+
+    <p><strong>Empowered Vote</strong> is a nonprofit, nonpartisan civic-information
+      project. We publish neutral, sourced information about elected officials and
+      candidates so that voters can make informed decisions.</p>
+
+    <p><code>EmpoweredVoteBot</code> is the automated fetcher we use to <strong>find and
+      check the original sources behind that published information</strong>. It does two
+      things:</p>
+
+    <ol class="expect">
+      <li>It reads public pages to <strong>find original sources</strong> we can cite for
+        a claim about an official — for example, the news report or public record where
+        the official said or did something.</li>
+      <li>It <strong>re-fetches those source pages to verify them</strong> — to confirm
+        the quoted text is really there and has not changed.</li>
+    </ol>
+
+    <p>In both cases the goal is the same: accurate, factual information, always published
+      with a <strong>link back to the original source</strong>. It is not a search engine
+      and not a training crawler.</p>
+
+    <h2>What the bot does</h2>
+    <ul class="expect">
+      <li>It requests <strong>public web pages</strong> — both pages we are considering as
+        a source and pages we have <strong>already cited</strong>.</li>
+      <li>It reads the visible text of a page to find, or to confirm, a quotation we
+        attribute to that source.</li>
+      <li>Everything it helps us publish carries a <strong>link back to the original
+        source</strong>, so a reader can always go and check for themselves.</li>
+      <li>It runs at a <strong>low volume</strong> — roughly a few hundred to a thousand
+        pages in a normal month.</li>
+    </ul>
+
+    <h2>What the bot does not do</h2>
+    <ul class="expect">
+      <li>It does <strong>not</strong> collect personal data about you or your readers.</li>
+      <li>It does <strong>not</strong> fill in forms, log in, or attempt to reach pages
+        behind a paywall or a login.</li>
+      <li>It does <strong>not</strong> use its data for advertising or to train
+        machine-learning models.</li>
+    </ul>
+
+    <h2>How we identify ourselves</h2>
+    <p>Our requests carry this user-agent, so you can always recognise us in your logs:</p>
+    <pre><code>EmpoweredVoteBot/1.0 (+https://empowered.vote/crawler; nonprofit civic citation verification; contact info@empowered.vote)</code></pre>
+    <p>We identify ourselves honestly. We do <strong>not</strong> disguise the bot as a
+      person's web browser.</p>
+
+    <h2>How we crawl — our commitments</h2>
+    <ul class="expect">
+      <li><strong>We respect <code>robots.txt</code>.</strong> Before we fetch a page, we
+        check your site's <code>robots.txt</code> for the <code>EmpoweredVoteBot</code>
+        user-agent. If it disallows a path, we do not fetch that page from your site.</li>
+      <li><strong>We do not use stealth tactics.</strong> We do not route requests through
+        residential or mobile proxy networks, and we do not rotate fingerprints to defeat
+        bot protection.</li>
+      <li><strong>When a site declines, we stop.</strong> If your <code>robots.txt</code>
+        excludes us, or your server blocks us, we do not try to work around it. Where a
+        public archive (such as the Internet Archive's Wayback Machine) holds a copy, we
+        may verify against that archived copy instead; otherwise we simply record that the
+        source could not be verified.</li>
+      <li><strong>We crawl gently.</strong> We fetch a small number of pages and do not
+        hammer a site.</li>
+    </ul>
+
+    <h2>How to exclude us</h2>
+    <p>If you would prefer that we do not fetch your pages, you can block us in your
+      <code>robots.txt</code>:</p>
+    <pre><code>User-agent: EmpoweredVoteBot
+Disallow: /</code></pre>
+    <p>We honour this. You can also disallow specific paths rather than the whole site.</p>
+    <p>If you would like to reach us directly — to ask us to stop, to report a problem, or
+      to ask a question — email <a href="mailto:info@empowered.vote">info@empowered.vote</a>.
+      We will respond.</p>
+
+    <h2>Why this matters to voters</h2>
+    <p>Every claim we publish about an official is meant to be traceable to a real,
+      checkable source. Verifying those sources is how we keep that promise. We do it in
+      the open, under our own name, and within the limits above.</p>
+
+    <p class="footnote">
+      Empowered Vote is a nonprofit, nonpartisan civic-information project.
+      <a href="/">Back to Empowered Vote</a>
+    </p>
+  </div>
+
+  <script>
+    // Theme management — mirrors feedback.html / newsletter.html.
+    // Priority: stored ev:color-scheme → dark. The OS scheme only gets a say mid-session
+    // when nothing is stored (the matchMedia listener below).
+    (function () {
+      var KEY = 'ev:color-scheme';
+
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem(KEY, next);
+        document.documentElement.dataset.theme = next;
+      });
+
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        var stored = localStorage.getItem(KEY);
+        if (stored !== 'dark' && stored !== 'light') {
+          document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
