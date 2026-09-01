@@ -1,0 +1,11 @@
+# robots.txt for empowered.vote
+# Empowered Vote is a nonprofit, nonpartisan civic-information project.
+
+# Our own citation-verification fetcher is explicitly welcome here.
+# About the bot: https://empowered.vote/crawler
+User-agent: EmpoweredVoteBot
+Allow: /
+
+# Everyone else: crawling is allowed by default.
+User-agent: *
+Disallow:
