@@ -210,6 +210,8 @@
     .footnote a { color: var(--teal); font-weight: 600; }
     /* Keep "EIN" and the number from wrapping onto separate lines on a phone */
     .footnote .ein { white-space: nowrap; }
+    /* Prevent Manrope turning "(c)" into a © ligature (501(c)(3)) — see index.html */
+    .nolig { font-variant-ligatures: none; }
 
     /* -------- DARK MODE TOKENS -------- */
     [data-theme="dark"] {
@@ -269,8 +271,8 @@
 
     <h1>About EmpoweredVoteBot</h1>
 
-    <p><strong>Empowered Vote</strong> is a nonprofit, nonpartisan civic-information
-      project. We publish neutral, sourced information about elected officials and
+    <p><strong>Empowered Vote</strong> is an antipartisan <span class="nolig">501(c)(3)</span>
+      nonprofit. We publish neutral, sourced information about elected officials and
       candidates so that voters can make informed decisions.</p>
 
     <p><code>EmpoweredVoteBot</code> is the automated fetcher we use to <strong>find and
