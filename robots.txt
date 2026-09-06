@@ -9,3 +9,5 @@ Allow: /
 # Everyone else: crawling is allowed by default.
 User-agent: *
 Disallow:
+
+Sitemap: https://empowered.vote/sitemap.xml
