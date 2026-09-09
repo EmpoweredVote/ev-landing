@@ -51,11 +51,13 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
 
   | Element | Sits on | `#00657C` | `#1DA8C6` |
   | --- | --- | --- | --- |
-  | 3 stacked rects (fill) | the page background | 2.20:1 ✗ | **5.22:1 ✓** |
+  | 3 stacked rects (fill) | the page background | 2.66:1 ✗ | **6.31:1 ✓** |
   | magnifier hairline strokes | the page background | — | brightened to match |
   | `$` glyph (fill) | its own yellow circle | **4.66:1 ✓** | 1.97:1 ✗ |
 
-  Contrast ratios vs `#1F2937` (the dark sidebar ground) and vs `#FFD426`. A
+  Contrast ratios vs `#111827` (Tailwind `gray-900`, the dark card ground this was
+  derived for) and vs `#FFD426`. The margin only widens on a lighter dark ground —
+  on `gray-800` `#1F2937` it is 2.20:1 vs 5.22:1, same conclusion. A
   blanket swap fixes the outer mark and **wrecks the `$` glyph** — bright teal on
   brand yellow is 1.97:1, which mushes at a 24px sidebar icon size. So the `$`
   path keeps `#00657C`; the file is 5 × `#1DA8C6` + 1 × `#00657C` by design, and
