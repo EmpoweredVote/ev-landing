@@ -55,6 +55,12 @@ const core = await one(`SELECT
   (SELECT count(*) FROM inform.politician_answers) AS stances,
   (SELECT count(DISTINCT politician_id) FROM inform.politician_answers) AS pols_with_stances,
   (SELECT count(*) FROM inform.compass_topics) AS topics,
+  -- The library is not the ladder a voter answers today.  63 topics exist; the OPEN season
+  -- serves 60 of them, and the legacy is_live flag (44) has not tracked either since Seasons
+  -- shipped.  Publishing the library count alone overstates what the Compass asks, so the page
+  -- carries both and this is the one that moves when a topic is pinned into the open season.
+  (SELECT count(DISTINCT sq.topic_id) FROM inform.season_questions sq
+     JOIN inform.seasons s ON s.id = sq.season_id WHERE s.status = 'open') AS topics_open,
   (SELECT count(*) FROM public.source_verifications) AS verified_sources,
   (SELECT count(*) FROM essentials.race_candidates) AS candidates_2026,
   (SELECT count(DISTINCT rc.politician_id) FROM essentials.race_candidates rc
@@ -243,7 +249,8 @@ const values = {
   asof,
   pols_curated: fmt(core.pols_curated), pool: fmt(core.pool),
   stances: fmt(core.stances), pols_with_stances: fmt(core.pols_with_stances),
-  topics: fmt(core.topics), verified_sources: fmt(core.verified_sources),
+  topics: fmt(core.topics), topics_open: fmt(core.topics_open),
+  verified_sources: fmt(core.verified_sources),
   candidates_2026: fmt(core.candidates_2026), candidates_with_stances: fmt(core.candidates_with_stances),
   avg_stances: String(core.avg_stances),
   districts: fmt(core.districts), leg_votes: fmt(core.leg_votes), bills: fmt(core.bills),

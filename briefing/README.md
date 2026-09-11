@@ -65,7 +65,10 @@ Two traps in that table, both already paid for:
   Re-run the `$host` breakdown every cycle and reconcile it against this table — a new
   hostname is how the next undercount arrives.  When the basis changes, say so on the page:
   the arrival numbers are not comparable row-for-row across the change (main site 299 unioned
-  vs 274 on `empowered.vote` alone).
+  vs 274 on `empowered.vote` alone).  Reconciled again on 2026-09-11: no new hostname, and two
+  known ones (`www.empowered.vote`, `treasury-tracker-frontend.onrender.com`) served nobody in
+  the window.  Keep them in the filter anyway — a host with no traffic costs nothing, and
+  dropping it is how it comes back unnoticed.
 - Start events, for the start-vs-finish caption: `compass_quiz_started`,
   `readrank_race_started`, `ctc_game_started`.
 - **Comparing a per-event count to a per-app total is a rate, not a funnel.**
@@ -95,6 +98,17 @@ Two traps in that table, both already paid for:
   had a chart to drill.  Report it as **unmeasured, not low** — and check the raw event counts before calling
   anything quiet: in the 90 days to 2026-08-16 those few users produced 56
   drills, 29 line-item views, 41 entity selections and 13 year changes.
+
+  🔑 **Four weeks on, the two bases disagree by 5x, and the split says why.**  In the 90 days to
+  2026-09-11, **52** people reached an `?entity=` URL while only **10** fired any
+  past-the-front-page *event*.  Break the 52 apart before reading anything into it: **38 of them
+  landed on `?entity=empowered-vote-ca`**, which is our own organization's budget, linked from the
+  donate flow — arriving there is one click from a fundraising page, not an act of budget
+  exploration, and it fires no `treasury_entity_selected` because nobody selected anything.  That
+  leaves **16** people on some other government's budget.  Publish neither as a rate; report the
+  split, because "52 reached a budget" and "10 used the tool" are both true and mean different
+  things.  Re-run both every cycle: the day the non-EV half outgrows the donate traffic is the day
+  this section gets a real denominator.
 
 The general lesson, worth applying to any app added here later: **a low
 unique-user count is a claim about instrumentation until you have checked the
@@ -137,6 +151,12 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   territory also proves
   the parties rule: PNP and PPD each contain both US national parties, so party is stored
   verbatim in Spanish and must never be translated to Democrat/Republican.
+- **The topic count is two numbers, and only one of them is what a voter can answer.**
+  `topics` counts the whole `inform.compass_topics` library — 63 on 2026-09-11 — but the OPEN
+  season serves 60 of them, and the legacy `is_live` flag stopped tracking either when Seasons
+  shipped (it reads 44).  Publishing the library count alone overstates the ladder, so
+  `topics_open` was added to `refresh.mjs` on 2026-09-11 and the page carries both.  Use
+  `topics_open` in any sentence about what the Compass asks today.
 - If the database is unreachable the script exits without touching the page.
 - The script raises `statement_timeout` to 15 min on connect.  The server default
   is 30s and the campaign-finance aggregate needs about 4 minutes; without the
