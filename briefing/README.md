@@ -151,6 +151,15 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   territory also proves
   the parties rule: PNP and PPD each contain both US national parties, so party is stored
   verbatim in Spanish and must never be translated to Democrat/Republican.
+- 🔴 **Check `inform.seasons` for a cutover every cycle — a season opening is a launch, and the
+  numbers do not announce it.**  Season 2 opened 2026-09-04 14:31 UTC and Season 1 closed in the
+  same motion; the 2026-09-11 refresh still described Season 2 as "being assembled", because every
+  figure the script reads moved smoothly and nothing in them says *the live ladder changed under
+  the voter*.  One query settles it: `SELECT number, status, opened_at, closed_at FROM
+  inform.seasons`.  Corroborate against what a voter is actually served —
+  `curl https://accounts-api.empowered.vote/api/compass/topics` returned 60, the Season 2 ladder,
+  where Season 1 had 44.  The general form: **a status column is a fact this page can miss in
+  silence, and only a status column will tell you.**
 - **The topic count is two numbers, and only one of them is what a voter can answer.**
   `topics` counts the whole `inform.compass_topics` library — 63 on 2026-09-11 — but the OPEN
   season serves 60 of them, and the legacy `is_live` flag stopped tracking either when Seasons
