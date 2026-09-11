@@ -160,6 +160,15 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   `curl https://accounts-api.empowered.vote/api/compass/topics` returned 60, the Season 2 ladder,
   where Season 1 had 44.  The general form: **a status column is a fact this page can miss in
   silence, and only a status column will tell you.**
+- 🔴 **A flat total cannot tell "quiet" from "stopped" — check recency, not just the count.**
+  `verified_sources` has read 2,722 for months and looks like a healthy running total.  Every row
+  in it was written in **April 2026**; it is a finished one-off sweep, and the page was printing
+  it beside live counts.  Date a figure like that, the way the headshot backlog is dated.  The
+  check is one query per dataset: `SELECT max(created_at), count(*) FILTER (WHERE created_at >=
+  now() - interval '11 days') FROM <table>`.  Two caveats found doing it on 2026-09-11:
+  `treasury.budgets.created_at` is **not maintained** (its max reads March 2026 while 158k rows
+  landed in the cycle) and `transparent_motivations.contributions` has none, so neither dataset's
+  freshness can be read that way — use the loader commits instead.
 - **The topic count is two numbers, and only one of them is what a voter can answer.**
   `topics` counts the whole `inform.compass_topics` library — 63 on 2026-09-11 — but the OPEN
   season serves 60 of them, and the legacy `is_live` flag stopped tracking either when Seasons
