@@ -4,18 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Donate — Empowered Vote</title>
-  <meta name="description" content="Support Empowered Vote, a non-partisan non-profit tool for the search for shared solutions. Funded by donations and grants — never ads. See exactly where your money goes." />
+  <meta name="description" content="Support Empowered Vote, a non-partisan non-profit funded by donations — never ads. Give once or monthly." />
   <link rel="canonical" href="https://empowered.vote/donate" />
   <link rel="icon" href="favicon.png" />
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://empowered.vote/donate" />
   <meta property="og:title" content="Donate — Empowered Vote" />
-  <meta property="og:description" content="Fund a non-partisan tool for the search for shared solutions. Our books are public — see exactly where your money goes." />
+  <meta property="og:description" content="Fund a non-partisan tool for the search for shared solutions. Our books are public." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <!-- No-flash theme boot: matches newsletter.html / feedback.html. Dark is the site default. -->
   <script>
@@ -26,81 +26,65 @@
     })();
   </script>
 
-  <!-- Givebutter widget library (loads the <givebutter-widget> custom element used below).
-       The ?acct= account code is required; it pairs with the widget id (jb95Pp) in the body.
-       Snippet from the Givebutter dashboard: Settings > Integrations > Widgets. -->
+  <!-- Givebutter widget library (loads the <givebutter-widget> element below).
+       ?acct= is required and pairs with the widget id (jb95Pp). Dashboard: Settings > Integrations > Widgets. -->
   <script async src="https://widgets.givebutter.com/latest.umd.cjs?acct=cVbIFjpnVe5a1wo1&p=other"></script>
 
   <style>
     :root {
       --bg: #F7F7F8;
       --card: #FFFFFF;
-      --panel: #F1F0EC;
       --heading: #1C1C1C;
       --body: #535964;
       --muted: #6B7280;
       --border: #E5E7EB;
-      --border-strong: #D6D8DC;
       --teal: #00657C;
       --teal-press: #005469;
-      --coral: #FF5740;
       --yellow: #FED12E;
-      --success: #0F6E56;
       --radius-card: 14px;
-      --shadow-sm: 0 1px 2px rgba(15,30,40,0.06);
-      --shadow-md: 0 8px 24px rgba(15,30,40,0.08);
-      --shadow-card: 0 1px 2px rgba(15,30,40,0.05), 0 26px 54px -28px rgba(15,30,40,0.30);
+      --shadow-card: 0 1px 2px rgba(15,30,40,0.05), 0 24px 50px -28px rgba(15,30,40,0.30);
       color-scheme: light;
     }
     [data-theme="dark"] {
       --bg: #111113;
       --card: #1C1C1F;
-      --panel: #232327;
       --heading: #F2F2F2;
       --body: #A8B0BC;
       --muted: #8B949E;
       --border: #2D2D32;
-      --border-strong: #3A3A40;
       --teal: #1DA8C6;
       --teal-press: #25B8D4;
-      --coral: #FF6B52;
       --yellow: #FFD740;
-      --success: #5DCAA5;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
-      --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
-      --shadow-card: 0 1px 2px rgba(0,0,0,0.5), 0 30px 60px -30px rgba(0,0,0,0.7);
+      --shadow-card: 0 1px 2px rgba(0,0,0,0.5), 0 28px 56px -30px rgba(0,0,0,0.7);
       color-scheme: dark;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
       font-family: 'Manrope', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--body);
-      font-weight: 400;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     a { color: inherit; }
-    h1, h2, h3 { color: var(--heading); letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; }
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
-    .eyebrow {
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em;
-      text-transform: uppercase; color: var(--teal);
-    }
-    .muted { color: var(--muted); }
+    h1 { color: var(--heading); letter-spacing: -0.025em; line-height: 1.08; text-wrap: balance; }
+    .wrap { width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+    .eyebrow { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal); }
 
-    /* theme toggle — same behaviour as other subpages */
     .theme-toggle {
       position: fixed; top: 14px; right: 16px; z-index: 200;
       width: 36px; height: 36px; border-radius: 50%;
       border: 1.5px solid var(--border); background: var(--card);
       color: var(--heading); font-size: 1rem; line-height: 1;
       cursor: pointer; display: grid; place-items: center;
-      box-shadow: var(--shadow-sm);
-      transition: border-color 0.15s ease, background 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      transition: border-color 0.15s ease;
     }
     .theme-toggle:hover { border-color: var(--heading); }
     [data-theme="light"] .theme-toggle::before { content: "☽"; }
@@ -112,58 +96,31 @@
     .back-link { font-size: 0.88rem; font-weight: 600; color: var(--muted); text-decoration: none; }
     .back-link:hover { color: var(--heading); }
 
-    /* hero */
-    .hero { display: grid; grid-template-columns: 1.02fr 0.98fr; gap: clamp(28px, 4.5vw, 60px); align-items: start; padding: 40px 0 12px; }
-    @media (max-width: 880px) { .hero { grid-template-columns: 1fr; padding-top: 24px; } }
-    h1 { font-size: clamp(2.3rem, 5.4vw, 3.6rem); font-weight: 800; margin-top: 20px; }
-    .hero .lede { font-size: clamp(1.05rem, 2vw, 1.2rem); color: var(--body); margin-top: 20px; max-width: 34ch; }
-    .hero .sub { font-size: 0.98rem; color: var(--muted); margin-top: 14px; max-width: 42ch; }
-    .chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 24px; }
-    .chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.82rem; font-weight: 600; color: var(--heading); background: var(--card); border: 1px solid var(--border-strong); border-radius: 999px; padding: 8px 13px; }
-    .chip .cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); flex: none; }
+    main { flex: 1; display: flex; align-items: center; }
+    .hero { display: grid; grid-template-columns: 1fr 0.92fr; gap: clamp(28px, 5vw, 64px); align-items: center; padding: clamp(28px, 6vw, 64px) 0; width: 100%; }
+    @media (max-width: 800px) { .hero { grid-template-columns: 1fr; align-items: start; } }
+    h1 { font-size: clamp(2.2rem, 5.2vw, 3.4rem); font-weight: 800; margin-top: 16px; }
+    .lede { font-size: clamp(1.05rem, 2vw, 1.2rem); color: var(--body); margin-top: 18px; max-width: 40ch; }
+    .ledger-line { margin-top: 20px; font-size: 0.95rem; font-weight: 600; }
+    .ledger-line a { color: var(--teal); text-decoration: none; border-bottom: 2px solid color-mix(in srgb, var(--teal) 35%, transparent); padding-bottom: 2px; }
+    .ledger-line a:hover { color: var(--teal-press); }
 
-    /* donation card (holds the Givebutter widget) */
     .give-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-card); padding: 22px; }
-    .give-card h2 { font-size: 1.3rem; font-weight: 800; }
-    .give-card .cs { font-size: 0.85rem; color: var(--muted); margin: 5px 0 16px; }
+    .give-card h2 { font-size: 1.2rem; font-weight: 800; color: var(--heading); margin-bottom: 14px; }
     .gb-slot { min-height: 120px; }
-    .gb-placeholder { border: 1px dashed var(--border-strong); border-radius: 12px; padding: 20px; text-align: center; font-size: 0.88rem; color: var(--muted); line-height: 1.55; }
-    .gb-placeholder b { color: var(--heading); font-weight: 700; }
     .fallback { display: block; margin-top: 14px; font-size: 0.85rem; font-weight: 600; color: var(--teal); text-decoration: none; }
     .fallback:hover { color: var(--teal-press); }
-    .secure { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 0.78rem; color: var(--muted); margin-top: 14px; text-align: center; }
+    .secure { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 0.78rem; color: var(--muted); margin-top: 12px; text-align: center; }
 
-    /* section band */
-    .band { padding: clamp(44px, 7vw, 78px) 0; border-top: 1px solid var(--border); }
-    .band h2 { font-size: clamp(1.55rem, 3.4vw, 2.25rem); font-weight: 800; }
-    .band .lede { font-size: 1.02rem; color: var(--body); margin-top: 14px; max-width: 62ch; }
-
-    .promises { list-style: none; display: grid; gap: 12px; margin-top: 30px; max-width: 60ch; }
-    .promises li { position: relative; padding-left: 24px; font-size: 1rem; color: var(--body); line-height: 1.5; }
-    .promises li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 9px; height: 9px; border-radius: 2px; background: var(--yellow); }
-    .ledger-cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 30px; font-weight: 700; font-size: 1rem; color: #fff; background: var(--teal); border-radius: 10px; padding: 13px 22px; text-decoration: none; transition: background 0.15s ease, transform 0.15s ease; }
-    .ledger-cta:hover { background: var(--teal-press); transform: translateY(-1px); }
-
-    .covers { display: grid; grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)); gap: 16px; margin-top: 32px; }
-    .cover { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 9px; }
-    .cover .cat { display: flex; align-items: center; gap: 9px; font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; color: var(--heading); }
-    .cover .cat::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--coral); flex: none; }
-    .cover .desc { font-size: 0.92rem; color: var(--body); line-height: 1.5; }
-
-    /* voice */
-    .voice { padding: clamp(48px, 8vw, 88px) 0; border-top: 1px solid var(--border); text-align: center; }
-    .voice blockquote { margin: 0 auto; max-width: 22ch; font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 500; font-size: clamp(1.7rem, 5vw, 2.8rem); line-height: 1.12; color: var(--heading); text-wrap: balance; }
-    .voice cite { display: block; margin-top: 20px; font-style: normal; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-
-    footer { border-top: 1px solid var(--border); padding: 38px 0 64px; }
-    .foot-grid { display: flex; flex-wrap: wrap; gap: 22px 40px; align-items: flex-start; justify-content: space-between; }
-    .foot-note { font-size: 0.85rem; color: var(--muted); max-width: 48ch; line-height: 1.6; }
-    .foot-links { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.85rem; font-weight: 600; }
+    footer { border-top: 1px solid var(--border); padding: 24px 0 32px; }
+    .foot-grid { display: flex; flex-wrap: wrap; gap: 14px 32px; align-items: center; justify-content: space-between; }
+    .foot-note { font-size: 0.82rem; color: var(--muted); max-width: 46ch; line-height: 1.55; }
+    .foot-links { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 0.84rem; font-weight: 600; }
     .foot-links a { color: var(--body); text-decoration: none; }
     .foot-links a:hover { color: var(--teal); }
 
     :focus-visible { outline: 3px solid color-mix(in srgb, var(--teal) 55%, transparent); outline-offset: 2px; border-radius: 6px; }
-    @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 
   <!-- Relative path (root page): same pattern as index.html / newsletter.html. -->
@@ -177,90 +134,36 @@
       <a class="brand" href="/"><span class="dot" aria-hidden="true"></span> Empowered Vote</a>
       <a class="back-link" href="/">← Back to Empowered Vote</a>
     </div>
-
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Donate</p>
-        <h1>Support the search for shared solutions.</h1>
-        <p class="lede">Empowered Vote is a non-profit tool that helps people find common ground, funded entirely by donations and grants.</p>
-        <p class="sub">Your gift keeps the platform anti-partisan, free to use, and independent. Give once, or become a monthly supporter.</p>
-        <div class="chips">
-          <span class="chip"><span class="cdot" aria-hidden="true"></span> Anti-partisan by charter</span>
-          <span class="chip"><span class="cdot" aria-hidden="true"></span> We never sell your data</span>
-          <span class="chip"><span class="cdot" aria-hidden="true"></span> Our books are public</span>
-        </div>
-      </div>
-
-      <div class="give-card">
-        <h2>Make a donation</h2>
-        <p class="cs">Choose an amount below. You stay on empowered.vote the whole way.</p>
-
-        <div class="gb-slot">
-          <givebutter-widget id="jb95Pp"></givebutter-widget>
-        </div>
-
-        <!-- Resilience: if the embedded form ever fails to load, donors still have a way through. -->
-        <a class="fallback" href="https://givebutter.com/g3e9u9">Trouble loading the form? Donate on our secure page →</a>
-        <p class="secure">🔒 Card handled by Givebutter — Empowered Vote never sees your card details.</p>
-      </div>
-    </section>
   </div>
 
-  <section class="band">
+  <main>
     <div class="wrap">
-      <p class="eyebrow">Radical transparency</p>
-      <h2>See exactly where your money goes</h2>
-      <p class="lede">Most donation pages ask you to trust them. We publish the whole ledger instead — every dollar in and out, kept current. Take a look before you give.</p>
-      <ul class="promises">
-        <li>Every dollar tracked to a line item.</li>
-        <li>Funded by donations and grants only — never ads or sold services.</li>
-        <li>Our books are public, and the ledger is the live source of truth.</li>
-      </ul>
-      <a class="ledger-cta" href="https://financials.empowered.vote">See our public ledger →</a>
-    </div>
-  </section>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Donate</p>
+          <h1>Support the search for shared solutions.</h1>
+          <p class="lede">A non-partisan non-profit, funded by donations and grants — never ads. Your gift keeps it free and independent.</p>
+          <p class="ledger-line"><a href="https://financials.empowered.vote">Our books are public — see the ledger →</a></p>
+        </div>
 
-  <section class="band">
-    <div class="wrap">
-      <p class="eyebrow">Where it goes</p>
-      <h2>What your gift covers</h2>
-      <p class="lede">No guilt, no pressure. Every gift, of any size, goes straight into keeping the platform running and growing.</p>
-      <div class="covers">
-        <div class="cover">
-          <div class="cat">Development</div>
-          <div class="desc">Building and improving the tools that help people find common ground.</div>
+        <div class="give-card">
+          <h2>Make a donation</h2>
+          <div class="gb-slot">
+            <givebutter-widget id="jb95Pp"></givebutter-widget>
+          </div>
+          <a class="fallback" href="https://givebutter.com/g3e9u9">Trouble loading the form? Donate on our secure page →</a>
+          <p class="secure">🔒 Card handled by Givebutter — we never see your card details.</p>
         </div>
-        <div class="cover">
-          <div class="cat">Server costs</div>
-          <div class="desc">Keeping the platform online, fast, and free for everyone to use.</div>
-        </div>
-        <div class="cover">
-          <div class="cat">Database</div>
-          <div class="desc">Storing the public-records data that powers what you see.</div>
-        </div>
-        <div class="cover">
-          <div class="cat">Reading public records</div>
-          <div class="desc">The tools that read and summarize public records, so voters do not have to.</div>
-        </div>
-      </div>
-      <p class="lede" style="margin-top:26px">Bigger picture: your support helps us grow from a part-time team with no paid staff into an organization that can do this full-time.</p>
+      </section>
     </div>
-  </section>
-
-  <div class="voice">
-    <div class="wrap">
-      <blockquote>Idea before identity.</blockquote>
-      <cite>A founding principle of Empowered Vote</cite>
-    </div>
-  </div>
+  </main>
 
   <footer>
     <div class="wrap foot-grid">
-      <p class="foot-note">Empowered Vote is a non-partisan non-profit. By charter, we raise money only from donations and grants — never ads, sold services, or subscriptions — and we never sell your data. Donations are processed securely by Givebutter.</p>
+      <p class="foot-note">Empowered Vote is a non-partisan non-profit. We never sell your data. Donations are processed securely by Givebutter.</p>
       <div class="foot-links">
         <a href="/">Home</a>
         <a href="https://financials.empowered.vote">Public financials</a>
-        <a href="/briefing">The briefing</a>
         <a href="mailto:info@empowered.vote">Contact</a>
       </div>
     </div>
