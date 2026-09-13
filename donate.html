@@ -100,10 +100,12 @@
     .hero { display: grid; grid-template-columns: 1fr 0.92fr; gap: clamp(28px, 5vw, 64px); align-items: center; padding: clamp(28px, 6vw, 64px) 0; width: 100%; }
     @media (max-width: 800px) { .hero { grid-template-columns: 1fr; align-items: start; } }
     h1 { font-size: clamp(2.2rem, 5.2vw, 3.4rem); font-weight: 800; margin-top: 16px; }
-    .lede { font-size: clamp(1.05rem, 2vw, 1.2rem); color: var(--body); margin-top: 18px; max-width: 40ch; }
-    .ledger-line { margin-top: 20px; font-size: 0.95rem; font-weight: 600; }
+    .tagline { margin-top: 12px; font-size: 0.9rem; font-weight: 600; color: var(--muted); }
+    .lede { font-size: clamp(1.02rem, 1.9vw, 1.15rem); color: var(--body); margin-top: 16px; max-width: 46ch; }
+    .ledger-line { margin-top: 18px; font-size: 0.95rem; font-weight: 600; }
     .ledger-line a { color: var(--teal); text-decoration: none; border-bottom: 2px solid color-mix(in srgb, var(--teal) 35%, transparent); padding-bottom: 2px; }
     .ledger-line a:hover { color: var(--teal-press); }
+    .reassure { margin-top: 16px; font-size: 0.85rem; color: var(--muted); max-width: 44ch; line-height: 1.55; }
 
     .give-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-card); padding: 22px; }
     .give-card h2 { font-size: 1.2rem; font-weight: 800; color: var(--heading); margin-bottom: 14px; }
@@ -141,9 +143,11 @@
       <section class="hero">
         <div>
           <p class="eyebrow">Donate</p>
-          <h1>Support the search for shared solutions.</h1>
-          <p class="lede">A non-partisan non-profit, funded by donations and grants — never ads. Your gift keeps it free and independent.</p>
-          <p class="ledger-line"><a href="https://financials.empowered.vote">Our books are public — see the ledger →</a></p>
+          <h1>Support free civic transparency.</h1>
+          <p class="tagline">All-volunteer nonprofit · No ads · No subscriptions · No catch.</p>
+          <p class="lede">We publish our own finances in full — every dollar in and out — holding ourselves to the same standard we hold cities. Your gift keeps Empowered Vote free, independent, and anti-partisan.</p>
+          <p class="ledger-line"><a href="https://financials.empowered.vote">See every dollar we raise and spend →</a></p>
+          <p class="reassure">Small monthly gifts help most. But you'll always have full access — no donation required, ever.</p>
         </div>
 
         <div class="give-card">
