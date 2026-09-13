@@ -26,15 +26,10 @@
     })();
   </script>
 
-  <!--
-    ========================================================================
-    GIVEBUTTER SETUP — two values are needed from the Givebutter dashboard:
-      1) ACCOUNT ID  → Settings > Integrations > Widgets (used in the src below)
-      2) WIDGET ID   → Sharing tab > Widgets (used in the <givebutter-widget> tag)
-    Replace GB_ACCOUNT_ID and GB_WIDGET_ID in both places, then remove the
-    .gb-placeholder note in the body. Nothing else needs to change.
-    ========================================================================
-  -->
+  <!-- Givebutter widget library. Loads the <givebutter-widget> custom element used below.
+       The ?acct= account ID is REQUIRED (verified: the library errors "Account attribute
+       is required." without it). Find it in the dashboard: Settings > Integrations > Widgets.
+       Replace GB_ACCOUNT_ID below. The widget id (jb95Pp) is already set in the body. -->
   <script async src="https://widgets.givebutter.com/latest.umd.cjs?acct=GB_ACCOUNT_ID"></script>
 
   <style>
@@ -211,15 +206,7 @@
         <p class="cs">Choose an amount below. You stay on empowered.vote the whole way.</p>
 
         <div class="gb-slot">
-          <!-- Live donation form. Replace GB_WIDGET_ID with the Widget ID from the
-               Givebutter dashboard (Sharing > Widgets). When the account/widget IDs
-               are set, delete the .gb-placeholder block below. -->
-          <givebutter-widget id="GB_WIDGET_ID"></givebutter-widget>
-
-          <div class="gb-placeholder">
-            <b>Donation form loads here.</b><br />
-            This is the embedded Givebutter form. It appears once the account and widget IDs are added.
-          </div>
+          <givebutter-widget id="jb95Pp"></givebutter-widget>
         </div>
 
         <!-- Resilience: if the embedded form ever fails to load, donors still have a way through. -->
