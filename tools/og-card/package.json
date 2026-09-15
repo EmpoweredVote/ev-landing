@@ -1,0 +1,12 @@
+{
+  "name": "ev-og-card",
+  "private": true,
+  "type": "module",
+  "description": "Reusable Open Graph share-card (og-image.png) generator for the Empowered Vote product suite.",
+  "bin": { "gen-og-card": "./gen-og-card.mjs" },
+  "scripts": { "gen": "node gen-og-card.mjs" },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@expo-google-fonts/manrope": "^0.4.1"
+  }
+}
