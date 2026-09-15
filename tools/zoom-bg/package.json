@@ -1,0 +1,8 @@
+{
+  "name": "ev-zoom-bg",
+  "private": true,
+  "type": "module",
+  "description": "Empowered Vote Zoom virtual-background generator (1920x1080, brand colours + logo).",
+  "scripts": { "gen": "node gen-zoom-bg.mjs" },
+  "dependencies": { "@resvg/resvg-js": "^2.6.2" }
+}
