@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Donate — Empowered Vote</title>
-  <meta name="description" content="Support Empowered Vote, a non-partisan non-profit funded by donations — never ads. Give once or monthly." />
-  <link rel="canonical" href="https://empowered.vote/donate" />
+  <title>Privacy Policy — Empowered Vote</title>
+  <meta name="description" content="What Empowered Vote collects, why, who helps us process it, and the choices you have — in plain language." />
+  <link rel="canonical" href="https://empowered.vote/privacy" />
   <link rel="icon" href="favicon.png" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://empowered.vote/donate" />
-  <meta property="og:title" content="Donate — Empowered Vote" />
-  <meta property="og:description" content="Fund a non-partisan tool for the search for shared solutions. Our books are public." />
+  <meta property="og:url" content="https://empowered.vote/privacy" />
+  <meta property="og:title" content="Privacy Policy — Empowered Vote" />
+  <meta property="og:description" content="We collect as little as possible, and hold the most sensitive information — your political views — with care. Here is exactly how." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- No-flash theme boot: matches newsletter.html / feedback.html. Dark is the site default. -->
+  <!-- No-flash theme boot: matches donate.html / newsletter.html / feedback.html. Dark is the site default. -->
   <script>
     (function () {
       var s = localStorage.getItem('ev:color-scheme');
@@ -25,10 +25,6 @@
       document.documentElement.dataset.theme = t;
     })();
   </script>
-
-  <!-- Givebutter widget library (loads the <givebutter-widget> element below).
-       ?acct= is required and pairs with the widget id (jb95Pp). Dashboard: Settings > Integrations > Widgets. -->
-  <script async src="https://widgets.givebutter.com/latest.umd.cjs?acct=cVbIFjpnVe5a1wo1&p=other"></script>
 
   <style>
     :root {
@@ -75,7 +71,7 @@
       flex-direction: column;
     }
     a { color: inherit; }
-    h1 { color: var(--heading); letter-spacing: -0.025em; line-height: 1.08; text-wrap: balance; }
+    h1 { color: var(--heading); letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; }
     .wrap { width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
     .eyebrow { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal); }
 
@@ -98,23 +94,39 @@
     .back-link { font-size: 0.88rem; font-weight: 600; color: var(--muted); text-decoration: none; }
     .back-link:hover { color: var(--heading); }
 
-    main { flex: 1; display: flex; align-items: center; }
-    .hero { display: grid; grid-template-columns: 1fr 0.92fr; gap: clamp(28px, 5vw, 64px); align-items: center; padding: clamp(28px, 6vw, 64px) 0; width: 100%; }
-    @media (max-width: 800px) { .hero { grid-template-columns: 1fr; align-items: start; } }
-    h1 { font-size: clamp(2.2rem, 5.2vw, 3.4rem); font-weight: 800; margin-top: 16px; }
-    .tagline { margin-top: 12px; font-size: 0.9rem; font-weight: 600; color: var(--muted); }
-    .lede { font-size: clamp(1.02rem, 1.9vw, 1.15rem); color: var(--body); margin-top: 16px; max-width: 46ch; }
-    .ledger-line { margin-top: 18px; font-size: 0.95rem; font-weight: 600; }
-    .ledger-line a { color: var(--teal); text-decoration: none; border-bottom: 2px solid color-mix(in srgb, var(--teal) 35%, transparent); padding-bottom: 2px; }
-    .ledger-line a:hover { color: var(--teal-press); }
-    .reassure { margin-top: 16px; font-size: 0.85rem; color: var(--muted); max-width: 44ch; line-height: 1.55; }
+    main { flex: 1; }
 
-    .give-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-card); padding: 22px; }
-    .give-card h2 { font-size: 1.2rem; font-weight: 800; color: var(--heading); margin-bottom: 14px; }
-    .gb-slot { min-height: 120px; }
-    .fallback { display: block; margin-top: 14px; font-size: 0.85rem; font-weight: 600; color: var(--teal); text-decoration: none; }
-    .fallback:hover { color: var(--teal-press); }
-    .secure { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 0.78rem; color: var(--muted); margin-top: 12px; text-align: center; }
+    /* ---------------- POLICY PROSE ---------------- */
+    .policy { max-width: 760px; margin: 0 auto; padding: clamp(24px, 5vw, 52px) 0 clamp(40px, 7vw, 72px); }
+    .policy h1 { font-size: clamp(2rem, 4.6vw, 2.9rem); font-weight: 800; margin-top: 14px; }
+    .policy .updated { margin-top: 12px; font-size: 0.9rem; font-weight: 600; color: var(--muted); }
+    .policy .lede { font-size: clamp(1.02rem, 1.9vw, 1.14rem); color: var(--body); margin-top: 22px; }
+    .policy .lede + .lede { margin-top: 14px; }
+    .policy h2 {
+      font-size: 1.28rem; font-weight: 800; color: var(--heading);
+      margin-top: 42px; padding-top: 22px; border-top: 1px solid var(--border);
+      letter-spacing: -0.01em; scroll-margin-top: 24px;
+    }
+    .policy h2:first-of-type { border-top: none; }
+    .policy p { margin-top: 14px; }
+    .policy ul { margin-top: 14px; padding-left: 0; list-style: none; }
+    .policy li { position: relative; padding-left: 26px; margin-top: 12px; }
+    .policy li::before {
+      content: ""; position: absolute; left: 4px; top: 0.62em;
+      width: 7px; height: 7px; border-radius: 2px; background: var(--yellow);
+    }
+    .policy strong { color: var(--heading); font-weight: 700; }
+    .policy a { color: var(--teal); text-decoration: none; border-bottom: 2px solid color-mix(in srgb, var(--teal) 32%, transparent); padding-bottom: 1px; }
+    .policy a:hover { color: var(--teal-press); border-bottom-color: var(--teal-press); }
+    /* The single most important paragraph on the page: political-opinion data. */
+    .policy .callout {
+      margin-top: 18px; padding: 16px 18px; border-radius: 12px;
+      border: 1px solid var(--teal);
+      background: color-mix(in srgb, var(--teal) 8%, transparent);
+      color: var(--heading);
+    }
+    .policy .callout strong { color: var(--heading); }
+    .policy .contact-note { margin-top: 40px; font-size: 0.92rem; color: var(--muted); }
 
     footer { border-top: 1px solid var(--border); padding: 32px 0 40px; background: var(--bg); color: var(--muted); font-size: 0.88rem; }
     .foot-grid { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -123,6 +135,7 @@
     .foot-links { display: inline-flex; align-items: center; gap: 18px; flex-wrap: wrap; }
     .foot-links a, .foot-nl-toggle { color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
     .foot-links a:hover, .foot-nl-toggle:hover, .foot-nl-toggle[aria-expanded="true"] { color: var(--heading); }
+    .foot-links a[aria-current="page"] { color: var(--heading); }
     .foot-ein { white-space: nowrap; }
     .foot-nl-toggle { font: inherit; background: none; border: none; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
     .foot-nl-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; border-radius: 4px; }
@@ -147,7 +160,8 @@
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 
-  <!-- Relative path (root page): same pattern as index.html / newsletter.html. -->
+  <!-- Relative path (root page): same pattern as index.html / donate.html. Required by
+       .github/workflows/check-analytics.yml so the page stays loadable from file://. -->
   <script src="analytics.js"></script>
 </head>
 <body>
@@ -162,25 +176,103 @@
 
   <main>
     <div class="wrap">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">Donate</p>
-          <h1>Support free civic transparency.</h1>
-          <p class="tagline">Anti-partisan nonprofit · No ads · No subscriptions · No catch.</p>
-          <p class="lede">We build Empowered Vote as a small all-volunteer team today; your donation will help us keep the lights on so we can keep building civic tools for a better democracy.</p>
-          <p class="ledger-line"><a href="https://financials.empowered.vote">See every dollar we raise and spend →</a></p>
-          <p class="reassure">Small monthly gifts help most. But you'll always have full access — no donation required, ever.</p>
-        </div>
+      <article class="policy">
+        <p class="eyebrow">Privacy</p>
+        <h1>Privacy Policy</h1>
+        <p class="updated">Last updated: September 16, 2026</p>
 
-        <div class="give-card">
-          <h2>Make a donation</h2>
-          <div class="gb-slot">
-            <givebutter-widget id="jb95Pp"></givebutter-widget>
-          </div>
-          <a class="fallback" href="https://givebutter.com/g3e9u9">Trouble loading the form? Donate on our secure page →</a>
-          <p class="secure">🔒 Card handled by Givebutter — we never see your card details.</p>
-        </div>
-      </section>
+        <p class="lede">Empowered Vote Inc (“Empowered Vote”, “EV”, “we”) is a US non-profit.
+          We build tools that help people understand where they and their representatives
+          stand, and find shared solutions. This page explains what information we collect,
+          why, who helps us process it, and the choices you have. Questions or requests:
+          <a href="mailto:info@empowered.vote">info@empowered.vote</a>.</p>
+
+        <p class="lede">We aim to collect as little as possible, and to hold the most
+          sensitive information — your political views — with care. We are actively
+          strengthening how we separate your identity from your activity; this page
+          describes how things work today, and we will update it as that work lands.</p>
+
+        <h2 id="what-we-collect">What we collect and why</h2>
+        <ul>
+          <li><strong>Your email address</strong> — to create your account and sign you in.</li>
+          <li><strong>Your address</strong> (only if you choose to enter it) — to find your
+            voting district and show your elected officials. We do <strong>not</strong>
+            display your address back to you, and it is not included in our normal data
+            responses. We store the derived location (your district and approximate
+            coordinates) to power these features.</li>
+          <li><strong>Your compass answers and stances</strong> — your positions on political
+            topics.
+            <span class="callout"><strong>These are political opinions, which privacy law
+            treats as a special, more sensitive category of personal data.</strong> We
+            collect them only because you choose to answer, and we use them to power the
+            compass and related features.</span></li>
+          <li><strong>How you use the site</strong> — aggregate, privacy-preserving analytics
+            (pages viewed, features used, errors). This is <strong>cookieless</strong>: for
+            anonymous visitors we store nothing on your device and build no personal
+            profile.</li>
+          <li><strong>Donations</strong> — if you donate, our donation partner (GiveButter)
+            processes your name, email, and payment. Card details go directly to a secure
+            payment processor; neither GiveButter nor EV stores your card number.</li>
+        </ul>
+
+        <h2 id="cookies">Cookies</h2>
+        <p>We do <strong>not</strong> use advertising or tracking cookies, and we show no
+          cookie banner because there is nothing non-essential to consent to. We set only
+          strictly necessary cookies — for example, the cookie that keeps you signed in
+          after you log in. Our analytics runs without cookies.</p>
+
+        <h2 id="account-types">Account types and how privacy differs</h2>
+        <ul>
+          <li><strong>Inform</strong> — anyone can read and use these features with no
+            account. Browsing is anonymous. If you <em>contribute</em> information (for
+            example, submitting a badge), we do keep a record of who contributed it, for
+            accountability.</li>
+          <li><strong>Connected</strong> — a verified, unique person. Our goal is that you can
+            take part while staying anonymous on the platform; we are building toward keeping
+            your identity separate from your activity. (Today these are stored separately but
+            can still be linked internally — we are honest that the stronger separation is in
+            progress.)</li>
+          <li><strong>Empowered</strong> — public civic leaders and candidates. These accounts
+            are not anonymous; transparency is expected of public leadership.</li>
+        </ul>
+
+        <h2 id="processors">Who helps us process your data</h2>
+        <p>We use trusted service providers (“processors”) who act on our instructions under
+          data-processing agreements. They are:</p>
+        <ul>
+          <li><strong>WorkOS</strong> — sign-in and identity.</li>
+          <li><strong>Supabase</strong> — our main database.</li>
+          <li><strong>PostHog</strong> — cookieless product analytics.</li>
+          <li><strong>Resend</strong> — sending account emails (such as sign-in codes and
+            password resets).</li>
+          <li><strong>Render</strong> — hosting.</li>
+          <li><strong>GiveButter</strong> — donations.</li>
+          <li>Infrastructure providers <strong>Amazon Web Services</strong> (DNS and queues)
+            and <strong>Upstash</strong> (session and rate-limit data).</li>
+        </ul>
+        <p>We do not sell your personal information, and we do not share it for advertising.</p>
+
+        <h2 id="retention">How long we keep your data</h2>
+        <p>We keep your information for as long as your account is active. You can ask us to
+          delete it at any time (see below).</p>
+
+        <h2 id="your-rights">Your choices and rights</h2>
+        <p>You can ask to see, correct, or delete your personal data. Email
+          <a href="mailto:info@empowered.vote">info@empowered.vote</a> and we will handle your
+          request. Depending on where you live, you may have additional rights under laws such
+          as the GDPR; we apply GDPR-level protections as our own standard, wherever you are.</p>
+
+        <h2 id="where-processed">Where your data is processed</h2>
+        <p>EV is based in the United States and uses some US-based providers. We apply the same
+          protections to everyone’s data regardless of location.</p>
+
+        <h2 id="changes">Changes to this policy</h2>
+        <p>We will update this page as our systems change, and we will change the “Last
+          updated” date above when we do.</p>
+
+        <p class="contact-note">Questions about this policy or your data? Email us at
+          <a href="mailto:info@empowered.vote">info@empowered.vote</a>.</p>
+      </article>
     </div>
   </main>
 
@@ -194,7 +286,7 @@
         <a href="/briefing">Briefing</a>
         <a href="https://financials.empowered.vote" target="_blank" rel="noopener">Financials</a>
         <a href="/donate">Donate</a>
-        <a href="/privacy">Privacy</a>
+        <a href="/privacy" aria-current="page">Privacy</a>
         <button type="button" class="foot-nl-toggle" id="nl-toggle" aria-expanded="false" aria-controls="nl-form">Newsletter <span class="foot-caret" aria-hidden="true">▸</span></button>
         <form class="foot-nl-form" id="nl-form" method="post" novalidate aria-hidden="true">
           <label class="sr-only" for="nl-email">Email address</label>
@@ -266,50 +358,6 @@
           })
           .catch(function () { setNote('Couldn’t reach us just now. Please try again in a moment.', true); btn.disabled = false; });
       });
-    })();
-  </script>
-
-  <script>
-    // ── Donation-funnel analytics (decision 0021; Chris Cantrell's ask) ───────
-    // PostHog here is cookieless, so these events carry NO cross-site identifier
-    // — only a plain ?src= label saying where the visit came from. PostHog also
-    // CANNOT see a completed donation: the card flow runs inside GiveButter's
-    // cross-domain iframe, and completion is recorded server-side by the
-    // givebutter-webhook into treasury — never here. So we capture two honest
-    // steps: the /donate page was viewed (with its source), and the visitor
-    // engaged the widget (the furthest client-side signal before the iframe
-    // takes over). "Engaged" is NOT "donated".
-    (function () {
-      if (typeof posthog === 'undefined') return;
-
-      // Source marker from the inbound link, e.g. /donate?src=financials. A plain
-      // URL label, not an identifier. Missing marker → a direct visit.
-      var raw = new URLSearchParams(window.location.search).get('src');
-      var source = raw ? raw.slice(0, 64) : 'direct';
-
-      posthog.capture('landing_donate_viewed', { source: source });
-
-      // First real interaction with the GiveButter embed, fired at most once. The
-      // widget may render inline (pointerdown bubbles to the slot) or as an iframe
-      // (clicking into it moves focus and blurs the window). Cover both; neither
-      // depends on GiveButter emitting a postMessage.
-      var slot = document.querySelector('.gb-slot');
-      var engaged = false;
-      function fireEngaged() {
-        if (engaged || !slot) return;
-        engaged = true;
-        posthog.capture('landing_donate_widget_engaged', { source: source });
-      }
-      if (slot) {
-        slot.addEventListener('pointerdown', fireEngaged, true);
-        window.addEventListener('blur', function () {
-          // Let activeElement settle, then see if focus went into the embed.
-          setTimeout(function () {
-            var ae = document.activeElement;
-            if (ae && ae !== slot && slot.contains(ae)) fireEngaged();
-          }, 0);
-        }, true);
-      }
     })();
   </script>
 </body>
