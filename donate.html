@@ -267,5 +267,49 @@
       });
     })();
   </script>
+
+  <script>
+    // ── Donation-funnel analytics (decision 0021; Chris Cantrell's ask) ───────
+    // PostHog here is cookieless, so these events carry NO cross-site identifier
+    // — only a plain ?src= label saying where the visit came from. PostHog also
+    // CANNOT see a completed donation: the card flow runs inside GiveButter's
+    // cross-domain iframe, and completion is recorded server-side by the
+    // givebutter-webhook into treasury — never here. So we capture two honest
+    // steps: the /donate page was viewed (with its source), and the visitor
+    // engaged the widget (the furthest client-side signal before the iframe
+    // takes over). "Engaged" is NOT "donated".
+    (function () {
+      if (typeof posthog === 'undefined') return;
+
+      // Source marker from the inbound link, e.g. /donate?src=financials. A plain
+      // URL label, not an identifier. Missing marker → a direct visit.
+      var raw = new URLSearchParams(window.location.search).get('src');
+      var source = raw ? raw.slice(0, 64) : 'direct';
+
+      posthog.capture('landing_donate_viewed', { source: source });
+
+      // First real interaction with the GiveButter embed, fired at most once. The
+      // widget may render inline (pointerdown bubbles to the slot) or as an iframe
+      // (clicking into it moves focus and blurs the window). Cover both; neither
+      // depends on GiveButter emitting a postMessage.
+      var slot = document.querySelector('.gb-slot');
+      var engaged = false;
+      function fireEngaged() {
+        if (engaged || !slot) return;
+        engaged = true;
+        posthog.capture('landing_donate_widget_engaged', { source: source });
+      }
+      if (slot) {
+        slot.addEventListener('pointerdown', fireEngaged, true);
+        window.addEventListener('blur', function () {
+          // Let activeElement settle, then see if focus went into the embed.
+          setTimeout(function () {
+            var ae = document.activeElement;
+            if (ae && ae !== slot && slot.contains(ae)) fireEngaged();
+          }, 0);
+        }, true);
+      }
+    })();
+  </script>
 </body>
 </html>

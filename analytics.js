@@ -71,8 +71,15 @@
         person_profiles: 'identified_only',
         // Exception autocapture (window.onerror + unhandledrejection) + filter.
         capture_exceptions: true,
-        // Stitch anonymous journeys across *.empowered.vote (landing is the entry point).
-        cross_subdomain_cookie: true,
+        // Cookieless analytics (decision 0021): store NOTHING on the device for
+        // anonymous visitors — no cookie, no localStorage — so no consent banner is
+        // needed; identity is a privacy-preserving server-side hash. 'always' means
+        // cookieless from startup (not 'on_reject', which only applies after a banner
+        // rejection we never collect). This REPLACES cross_subdomain_cookie, which
+        // forced a cookie and fought the goal; login uses the ev_session cookie, not
+        // this. Requires cookieless enabled in the PostHog project settings too, or
+        // events are dropped server-side. Keep in sync with @empoweredvote/analytics.
+        cookieless_mode: 'always',
         before_send: phBeforeSend,
     });
     // Stamp every event with app + environment so the shared PostHog project slices cleanly.
