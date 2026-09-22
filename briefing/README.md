@@ -2,6 +2,69 @@
 
 A volunteer-facing progress snapshot served at empowered.vote/briefing.
 
+## Each edition is a dated snapshot, and it is written fresh
+
+Since 2026-09-22 this is not one page that gets patched.  It is a series.
+
+- **`briefing/index.html` is always the current edition**, and `/briefing` serves it.
+  That URL never moves, so every link to it anywhere on the site stays correct.
+- **Every edition also has a permanent dated address**, `/briefing/YYYY-MM-DD`, which is a
+  real directory holding a frozen copy of that edition.  The dated address for the *current*
+  edition is live too — it holds a small forwarder to `/briefing` until the day it is
+  superseded, at which point the forwarder is replaced by the frozen page.  A dated link has
+  to work while people are reading that edition, not only afterwards.
+- **A published edition is never edited.**  Not for a typo, not for a number that turned out
+  wrong.  If an edition got something wrong, the *next* one says so and says what it
+  corrects.  That is the whole point of keeping them: a reader can check what we claimed in
+  August against what we claim today, and the archive is worthless if we can reach back into it.
+- **Each new edition is a fresh re-write, not a diff against the last one.**  Open the
+  previous edition for facts and for the corrections it owes you; do not open it to edit.
+  Work that spans several cycles — a statewide rollout, an audit, a pillar coming back — can
+  and should stay the headline for as long as it is the truth.  The sentences around it get
+  written again each time, because a page that is only ever patched accretes clauses until
+  nobody can read it, and stops describing anything.
+
+The archive begins at 2026-09-11.  Editions before that were published by overwriting this
+page and were not kept.
+
+### Publishing a new edition
+
+Say the current edition is dated `2026-09-22` and you are publishing `2026-10-06`.
+
+```bash
+cd ev-landing-main
+
+# 1. Freeze the outgoing edition.  Its dated folder currently holds a forwarder; this
+#    replaces it with the page itself, exactly as it stood.
+cp briefing/index.html briefing/2026-09-22/index.html
+```
+
+Then, by hand, in `briefing/2026-09-22/index.html`:
+
+- retitle it `… — September 22, 2026`,
+- point `<link rel="canonical">` at `/briefing/2026-09-22` and add `<meta name="robots" content="noindex">`,
+- insert the `.archived` banner and its CSS immediately after `<div class="wrap">`.
+
+Copy all three from `briefing/2026-09-11/index.html`; it is the worked example.
+
+```bash
+# 2. Write the new edition into briefing/index.html.  Fresh prose.  Keep the stylesheet,
+#    the data-auto spans, the map block and the page chrome — rewrite everything else.
+# 3. Give the new edition its dated address, with a forwarder to /briefing.
+mkdir -p briefing/2026-10-06
+cp briefing/2026-09-22/index.html briefing/2026-10-06/index.html   # BEFORE step 1 overwrote it
+```
+
+(Easier in practice: keep a copy of the forwarder, it is 30 lines and changes only its date.)
+
+- **4. Add the outgoing edition to the "Past briefings" list** in the new page, and move the
+  `current` tag onto the new one.  The list only ever grows; nothing is removed from it.
+- **5. Update the dated permalink named in the footer** to the new date.
+- **6. Refresh the numbers** — see below — then commit and push.
+
+The one thing that must not be skipped is step 1.  Publishing a new `index.html` over an
+unfrozen predecessor destroys that edition, and there is no copy anywhere else.
+
 ## What updates automatically vs by hand
 
 `refresh.mjs` pulls live counts from the platform database and rewrites only the
@@ -132,6 +195,29 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 (read-only queries only); any env file containing it works.  Requires Node 20+.
 
 ## Notes
+
+- 🔴 **A list of classes is a sample until it sums to the headline.**  The Treasury bullet
+  listed four entity types — cities, counties, states, towns — and printed **3,502 of 7,507**
+  entities as though that were the roster.  The missing 4,005 were townships, boroughs and
+  villages, which exist because a state hands over its governments in the classes *its own*
+  publisher uses: Pennsylvania brings boroughs, Michigan brings townships and villages.  Found
+  on 2026-09-22 by asking the database for `entity_type` instead of trusting the list.
+  `refresh.mjs` now carries all seven named classes plus a computed `t_other`, and **warns if
+  they stop summing to `budget_entities`** — the check that would have caught it.  Generalise
+  it: any breakdown on this page that claims to partition a headline must be *shown* to, and a
+  catch-all bucket is what keeps a class nobody has met yet from vanishing silently.
+- **`meetings.segments` has no `created_at`, so On the Record's freshness has to be read from
+  `meetings.meetings`.**  Relevant because the segment count fell twice with no ingest, was
+  printed unexplained for two cycles, and then rose 2,071 on 2026-09-22.  The rise is real —
+  `meetings.meetings` shows 10 rows created 2026-09-12 to 2026-09-19, and `speakers` 248 in the
+  same window — but the *segment* number could not have told you that on its own, and the
+  earlier drops are still unexplained.  Cite the dated meetings as the evidence, and do not let
+  a total climbing back past its old high be mistaken for an answer about why it fell.
+- **Check `inform.seasons` every cycle even when nothing moved, and record that it did not.**
+  On 2026-09-22 the query showed Season 2 still open and **Season 3 present as a draft**, which
+  is a fact worth publishing in its own right: a season being assembled in the open is the
+  opposite of the 2026-09-04 cutover this page missed.  `SELECT number, status, opened_at,
+  closed_at FROM inform.seasons`.
 
 - Map tiers, by researched state/local officials: Deep = 100+, Growing = 10 to 99, Seeded = 1
   to 9, and **t0 = seated but nothing researched** — an outlined tile, deliberately not a

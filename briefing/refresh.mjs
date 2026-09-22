@@ -84,7 +84,30 @@ const treasury = await one(`SELECT
   (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='city'   AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_cities,
   (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='county' AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_counties,
   (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='state'  AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_states,
-  (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='town'   AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_towns`);
+  (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='town'   AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_towns,
+  -- The four types above are NOT the whole roster, and publishing only those four under-counted
+  -- the page by 4,005 entities on 2026-09-22: the bulk state sweeps arrive as the classes their
+  -- own publisher uses, so Pennsylvania brings boroughs and Michigan brings townships and
+  -- villages.  Anything not named here lands in t_other, which is computed rather than typed so a
+  -- class nobody has seen yet still shows up somewhere instead of vanishing.
+  (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='township' AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_townships,
+  (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='borough'  AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_boroughs,
+  (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='village'  AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_villages,
+  (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type NOT IN ('city','county','state','town','township','borough','village')
+                                                   AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_other`);
+
+// The entity-class rows are a PARTITION of the headline entity count, so they have to sum to it.
+// That check is the only thing that would have caught the 2026-09-22 defect, where the page listed
+// four classes out of ten and printed 3,502 of 7,507 entities as though it were the whole roster.
+{
+  const parts = ['t_cities','t_counties','t_states','t_towns','t_townships','t_boroughs','t_villages','t_other']
+    .reduce((a, k) => a + Number(treasury[k]), 0);
+  if (parts !== Number(treasury.budget_entities)) {
+    console.log(`WARNING: entity classes sum to ${parts} but budget_entities is ${treasury.budget_entities}.`);
+    console.log('  A class is missing from the breakdown, or t_other is not catching it.  Fix the');
+    console.log('  query before publishing — the sum is what makes the list a roster and not a sample.');
+  }
+}
 
 // Which state a researched official belongs to has TWO linkages, and the map has to read both.
 // ADR 0002 moved officeholder occupancy onto dated `office_terms`; `politicians.office_id` is the
@@ -261,6 +284,8 @@ const values = {
   salaries: fmt(treasury.salaries),
   t_cities: fmt(treasury.t_cities), t_counties: fmt(treasury.t_counties),
   t_states: fmt(treasury.t_states), t_towns: fmt(treasury.t_towns),
+  t_townships: fmt(treasury.t_townships), t_boroughs: fmt(treasury.t_boroughs),
+  t_villages: fmt(treasury.t_villages), t_other: fmt(treasury.t_other),
   tier_deep: String(tiers.t3), tier_growing: String(tiers.t2), tier_seeded: String(tiers.t1),
   tier_none: String(tiers.t0),
   commits30: reposCounted ? '~' + fmt(Math.round(commits30 / 100) * 100) : null,
