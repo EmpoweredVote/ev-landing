@@ -123,6 +123,58 @@
   .archive a:hover{text-decoration:underline}
   .archive small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
   .atag{display:inline-block;margin-left:8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--live);border:1px solid rgba(114,190,120,.4);background:rgba(114,190,120,.12);padding:2px 7px;border-radius:2px;vertical-align:1px}
+  /* ---- Feature tables on a phone ----------------------------------------
+     A five-column feature table cannot fit a phone.  Measured 2026-09-23 at
+     390px: the Inform table wanted 734px inside a 348px box, so every row took
+     2.1 screens of sideways dragging, and the two columns that carry the actual
+     writing ("Where it stands", "What's next") were the ones off-screen.
+     `.tablebox{overflow-x:auto}` hid this from a page-overflow check, because
+     the PAGE never overflowed -- only the box scrolled inside it.
+
+     Below 860px each row becomes a card instead: name, then status and journey
+     on one line, then the two prose columns stacked under their own headings,
+     which come from each cell's data-label.  Nothing is hidden; the same five
+     cells are all still there, in reading order.
+
+     Scoped to .tablebox.features on purpose -- the coverage table is three
+     narrow columns and reads correctly as a table at any width. */
+  @media (max-width:860px){
+    .tablebox.features{overflow-x:visible;background:transparent;border:none}
+    .tablebox.features table{display:block}
+    .tablebox.features tbody{display:block}
+    /* These tables have no <thead>; the header is the first row of <th>. */
+    .tablebox.features tr:first-child{display:none}
+    .tablebox.features tr{display:block;background:var(--panel);border:1px solid var(--line);
+                          padding:16px 18px;margin-bottom:12px}
+    .tablebox.features tr:last-child{margin-bottom:0}
+    .tablebox.features td{display:block;border:none;padding:0;max-width:none}
+    .tablebox.features td.fname{font-size:16px;font-weight:600;white-space:normal;margin-bottom:9px}
+    /* status chip and journey meter share one line */
+    .tablebox.features td:nth-child(2),
+    .tablebox.features td:nth-child(3){display:inline-block;vertical-align:top;margin:0 16px 4px 0}
+    .tablebox.features td.fnote{margin-top:13px;font-size:13.5px}
+    .tablebox.features .clabel{display:block;font-size:11px;letter-spacing:.1em;
+      text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:4px}
+  }
+  /* The coverage table stays a table, but at 390px its three columns ran 20px
+     past the box.  Tighter side padding is all it needed. */
+  @media (max-width:430px){
+    .tablebox th,.tablebox td{padding-left:9px;padding-right:9px}
+    .tablebox.features td{padding-left:0;padding-right:0}
+  }
+  /* The coverage table sits in a grid column that can be ~305px wide even when
+     the viewport is 768px, which is why the 430px query above did not reach it:
+     a viewport query cannot see a narrow COLUMN inside a wide page.  Tighter
+     side padding fixes it at every width, and a dense numeric table reads
+     better tight anyway. */
+  .tablebox:not(.features) th,
+  .tablebox:not(.features) td{padding-left:10px;padding-right:10px}
+  /* Per-card column headings for the phone layout.  Real DOM text rather than
+     ::before + attr(), because generated content is not reliably announced by a
+     screen reader — which would have left sighted readers with a label and
+     everyone else with an unlabelled block of prose.  Hidden on desktop, where
+     the table's own header row does this job. */
+  .clabel{display:none}
 </style>
 <div class="wrap">
 
@@ -161,96 +213,96 @@
 </div>
 
 <div class="h2row"><h2>Inform Pillar: Shared Facts</h2><p>Open to everyone, no login.  Evidence-based, engaging, anti-partisan.</p></div>
-<div class="tablebox"><table>
+<div class="tablebox features"><table>
   <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
   <tr>
     <td class="fname">Empowered Essentials</td>
     <td><span class="chip c-live">Live Alpha</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote">ZIP-to-representatives with funding, votes and stances.  <b>Eight new communities got a banner.</b>  A quieter fix matters more: <b>school-district and county records had been hijacking the Local banner</b>, so a city page could show someone else&rsquo;s jurisdiction.</td>
-    <td class="fnote">Portraits for the 70 Puerto Rico alcaldes still without one, and the territory&rsquo;s first stance research.  One sourcing rule was written down: <b>VOTE411 is a pointer, never a cited source.</b>  We follow it to the original and cite that.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>ZIP-to-representatives with funding, votes and stances.  <b>Eight new communities got a banner.</b>  A quieter fix matters more: <b>school-district and county records had been hijacking the Local banner</b>, so a city page could show someone else&rsquo;s jurisdiction.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Portraits for the 70 Puerto Rico alcaldes still without one, and the territory&rsquo;s first stance research.  One sourcing rule was written down: <b>VOTE411 is a pointer, never a cited source.</b>  We follow it to the original and cite that.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Compass</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote">Season 2 has been what the Compass asks since September 4: <span data-auto="topics_open">60</span> topics from a library of <span data-auto="topics">64</span>.  A <b>surveillance technology</b> topic was added and used at once to seat eleven Nashville members, and <b>Season 3 exists as a draft</b> &mdash; assembled in the open, not switched on underneath the voter.</td>
-    <td class="fnote">Every stance row carries a season, a pinned revision and an editor, so a position can change without erasing what was true before.  <b>1,695 answers &mdash; about 5% &mdash; sit on topics the open season no longer asks</b>: history a voter can read, not a position they can compare today.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Season 2 has been what the Compass asks since September 4: <span data-auto="topics_open">60</span> topics from a library of <span data-auto="topics">64</span>.  A <b>surveillance technology</b> topic was added and used at once to seat eleven Nashville members, and <b>Season 3 exists as a draft</b> &mdash; assembled in the open, not switched on underneath the voter.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Every stance row carries a season, a pinned revision and an editor, so a position can change without erasing what was true before.  <b>1,695 answers &mdash; about 5% &mdash; sit on topics the open season no longer asks</b>: history a voter can read, not a position they can compare today.</td>
   </tr>
   <tr>
     <td class="fname">Treasury Tracker</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote">The biggest dataset we hold: <span data-auto="budget_entities">8,144</span> governments, up 637.  <b>The work was identity, not volume.</b>  A state publisher renamed a city and we ended up holding it twice, so the loader stopped keying governments on their names: it keys on the publisher&rsquo;s own stable id and runs a fork check after every load.</td>
-    <td class="fnote">Grade the rows that still read <code>unknown</code>, and close the per-year document gaps in the loaded roster.  The recurring lesson has one shape, and it repeated twice: <b>a check can pass, or fail, and still not be measuring what you think.</b></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>The biggest dataset we hold: <span data-auto="budget_entities">8,144</span> governments, up 637.  <b>The work was identity, not volume.</b>  A state publisher renamed a city and we ended up holding it twice, so the loader stopped keying governments on their names: it keys on the publisher&rsquo;s own stable id and runs a fork check after every load.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Grade the rows that still read <code>unknown</code>, and close the per-year document gaps in the loaded roster.  The recurring lesson has one shape, and it repeated twice: <b>a check can pass, or fail, and still not be measuring what you think.</b></td>
   </tr>
   <tr>
     <td class="fname">Read &amp; Rank</td>
     <td><span class="chip c-dev">In Development</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote">A blind taste test for candidates: the question, not the race, is the unit of comparison.  <b>No commits for a second cycle.</b>  It is gated on the stance pool the research waves are filling, so the three states above are the work that unblocks it.</td>
-    <td class="fnote">Candidate quote sourcing for 2026 races, once the stance pool for those races is deep enough to draw from.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>A blind taste test for candidates: the question, not the race, is the unit of comparison.  <b>No commits for a second cycle.</b>  It is gated on the stance pool the research waves are filling, so the three states above are the work that unblocks it.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Candidate quote sourcing for 2026 races, once the stance pool for those races is deep enough to draw from.</td>
   </tr>
   <tr>
     <td class="fname">Fallacy Finders</td>
     <td><span class="chip c-dev">In Development</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote">v1.1 is 4 of 6 phases done and built the <b>Fallacy Sleuth</b>, curation-time AI proposing timecoded fallacy tags on a transcript.  Its anti-partisan guarantees are mechanical rather than promised: names stripped before the model sees a word, every clip re-run with the speakers swapped and diffed, nothing published without two independent human agreements.  <b>Quiet for a third cycle</b> &mdash; but the dependency it waits on moved.</td>
-    <td class="fnote">Phase 10 finishes the US House floor clip end to end, then rights-clean clip sourcing at volume through On the Record.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>v1.1 is 4 of 6 phases done and built the <b>Fallacy Sleuth</b>, curation-time AI proposing timecoded fallacy tags on a transcript.  Its anti-partisan guarantees are mechanical rather than promised: names stripped before the model sees a word, every clip re-run with the speakers swapped and diffed, nothing published without two independent human agreements.  <b>Quiet for a third cycle</b> &mdash; but the dependency it waits on moved.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 10 finishes the US House floor clip end to end, then rights-clean clip sourcing at volume through On the Record.</td>
   </tr>
   <tr>
     <td class="fname">Civic Trivia Championships</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><b>The Featured shelf shipped</b>, and the label is finally true: the old strip was just the first ten collections in tier order, so the ones it was named for could never reach it.  <b>Then the difficulty labels turned out to be decorative.</b>  Easy questions are answered correctly 49.9% of the time and medium 50.0% &mdash; the same question wearing two labels &mdash; while <b>1,550 medium questions had never been served to anyone</b>, because the default mode draws four of five slots from the easy pool.</td>
-    <td class="fnote">A rubric now defines the three levels by <b>what the player has to bring</b>, with an easy floor of 25&ndash;33%.  Relabelling could not reach it, so 59 new easy questions were written &mdash; all in the seam every bank was missing, <b>local identity</b>.  One collection had sixty-odd questions on council restructuring and the auditor&rsquo;s office, including its room number, and none asking which river runs through the city.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span><b>The Featured shelf shipped</b>, and the label is finally true: the old strip was just the first ten collections in tier order, so the ones it was named for could never reach it.  <b>Then the difficulty labels turned out to be decorative.</b>  Easy questions are answered correctly 49.9% of the time and medium 50.0% &mdash; the same question wearing two labels &mdash; while <b>1,550 medium questions had never been served to anyone</b>, because the default mode draws four of five slots from the easy pool.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>A rubric now defines the three levels by <b>what the player has to bring</b>, with an easy floor of 25&ndash;33%.  Relabelling could not reach it, so 59 new easy questions were written &mdash; all in the seam every bank was missing, <b>local identity</b>.  One collection had sixty-odd questions on council restructuring and the auditor&rsquo;s office, including its room number, and none asking which river runs through the city.</td>
   </tr>
 </table></div>
 
 <div class="h2row"><h2>Connect Pillar: Shared Values</h2><p>Connected accounts, one human one voice.  Parked during the election push; resumes after November.</p></div>
-<div class="tablebox"><table>
+<div class="tablebox features"><table>
   <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
   <tr>
     <td class="fname">Civic Spaces</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote">Geo-scoped communities, neighborhood to federal, with friends, posts and role-gated moderation.  <b>This was the pillar&rsquo;s busiest week since April, despite being parked</b>, because the work was interface, not new scope: a three-column shell, and the Issue Alignment Compass brought back <b>drawn with the same component the Compass itself renders</b> rather than a second radar of our own.  Members can now read the <b>sibling shards</b> of their own jurisdiction &mdash; a city splits into shards past a member cap, and until now there was no way to see what the rest of your city was discussing.</td>
-    <td class="fnote">Two decisions, not omissions.  A member with no address now gets a real prompt instead of a dismissible banner over a blank page, and it carries <b>no address field</b>, on purpose: <b>Civic Spaces never sees or stores your address.</b>  It only reads the jurisdictions the accounts app returns, and that app asks properly.  And <b>dark is now the default across every EV subdomain</b>, shared by a cookie on the parent domain, because the old behaviour was a theme that reset every time you switched tools.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Geo-scoped communities, neighborhood to federal, with friends, posts and role-gated moderation.  <b>This was the pillar&rsquo;s busiest week since April, despite being parked</b>, because the work was interface, not new scope: a three-column shell, and the Issue Alignment Compass brought back <b>drawn with the same component the Compass itself renders</b> rather than a second radar of our own.  Members can now read the <b>sibling shards</b> of their own jurisdiction &mdash; a city splits into shards past a member cap, and until now there was no way to see what the rest of your city was discussing.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Two decisions, not omissions.  A member with no address now gets a real prompt instead of a dismissible banner over a blank page, and it carries <b>no address field</b>, on purpose: <b>Civic Spaces never sees or stores your address.</b>  It only reads the jurisdictions the accounts app returns, and that app asks properly.  And <b>dark is now the default across every EV subdomain</b>, shared by a cookie on the parent domain, because the old behaviour was a theme that reset every time you switched tools.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Quests</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote">Fact-verification quests with consensus scoring; verified facts already feed Essentials.  Red gem quests unlock at VR 90+.</td>
-    <td class="fnote">v1.6 planning.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Fact-verification quests with consensus scoring; verified facts already feed Essentials.  Red gem quests unlock at VR 90+.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>v1.6 planning.</td>
   </tr>
   <tr>
     <td class="fname">Focused Communities</td>
     <td><span class="chip c-paused">Paused</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote">v1.0 shipped April 17: per-topic forums wired to the Compass.  Waiting on the post-election Connect pivot.</td>
-    <td class="fnote">v1.1: badge ratification and argument mapping.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>v1.0 shipped April 17: per-topic forums wired to the Compass.  Waiting on the post-election Connect pivot.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>v1.1: badge ratification and argument mapping.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Listening</td>
     <td><span class="chip c-paused">Paused</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote">Structured debate infrastructure; 5 of 6 phases done &mdash; timers, transcription, audience notes.  Its planning documents were brought back in step with what is actually built &mdash; the cheapest thing you can do for a project you mean to pick up again.</td>
-    <td class="fnote">Phase 6: voting and badges.  Then Common Grounds can build on it.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Structured debate infrastructure; 5 of 6 phases done &mdash; timers, transcription, audience notes.  Its planning documents were brought back in step with what is actually built &mdash; the cheapest thing you can do for a project you mean to pick up again.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 6: voting and badges.  Then Common Grounds can build on it.</td>
   </tr>
   <tr>
     <td class="fname">Emparks</td>
     <td><span class="chip c-design">Design</span></td>
     <td><div class="meter"><span class="f"></span><span></span><span></span><span></span></div><div class="mlabel">design</div></td>
-    <td class="fnote">Platform-wide annotation system, five mark types.  Full design doc; no build yet.</td>
-    <td class="fnote">Awaits Connect-pillar capacity.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Platform-wide annotation system, five mark types.  Full design doc; no build yet.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Awaits Connect-pillar capacity.</td>
   </tr>
   <tr>
     <td class="fname">Common Grounds</td>
     <td><span class="chip c-design">Design</span></td>
     <td><div class="meter"><span class="f"></span><span></span><span></span><span></span></div><div class="mlabel">design</div></td>
-    <td class="fnote">Adversarial-collaboration mediation.  Full design doc; depends on Empowered Listening and Fallacy Finders arbiters.</td>
-    <td class="fnote">Builds after its dependencies land.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Adversarial-collaboration mediation.  Full design doc; depends on Empowered Listening and Fallacy Finders arbiters.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Builds after its dependencies land.</td>
   </tr>
 </table></div>
 

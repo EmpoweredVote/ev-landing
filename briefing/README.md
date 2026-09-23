@@ -17,6 +17,18 @@ Since 2026-09-22 this is not one page that gets patched.  It is a series.
   wrong.  If an edition got something wrong, the *next* one says so and says what it
   corrects.  That is the whole point of keeping them: a reader can check what we claimed in
   August against what we claim today, and the archive is worthless if we can reach back into it.
+- **The one exception is presentation, and only presentation.**  What the edition *claims* is
+  frozen — every word, number, date and link.  How it *renders* may be repaired, because an
+  archived page that cannot be read is not serving the purpose it was kept for.  On 2026-09-23
+  the feature tables were rebuilt as stacked cards below 860px; they had needed 2.1 screens of
+  sideways scrolling on a phone, with the two columns carrying the actual writing off-screen.
+  That fix was applied to the archived 2026-09-11 edition as well as the current one.  The test
+  for whether a change is allowed here is simple: **would a reader who quoted this page last
+  month now be wrong?**  A stylesheet cannot make them wrong.  A sentence can.
+  Because each edition is a self-contained file with its own copy of the stylesheet, a fix like
+  this has to be applied to every edition by hand.  That is the cost of self-containment, and it
+  is the right trade: a shared stylesheet would silently restyle the archive every time the
+  current edition was designed.
 - **Each new edition is a fresh re-write, not a diff against the last one.**  Open the
   previous edition for facts and for the corrections it owes you; do not open it to edit.
   Work that spans several cycles — a statewide rollout, an audit, a pillar coming back — can
