@@ -50,7 +50,15 @@
   .meter .f{background:var(--gold)}
   .meter .fl{background:var(--live)}
   .mlabel{font-size:11px;color:var(--dim);margin-top:5px;letter-spacing:.04em}
-  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  /* 340px, not 300px.  At 300px a phone held sideways (~660px wide) split this
+     grid into two ~310px columns, which is narrower than the same phone gets in
+     portrait — so landscape was the WORSE reading experience.  340px keeps it
+     one-up until there is genuinely room for two. */
+  /* min(340px,100%), not a bare 340px.  The min value of minmax() is a HARD
+     floor: a bare 340px forces a 340px track inside a 280px container and the
+     PAGE overflows, which is how raising this from 300px broke a 320px phone
+     that had been fine.  min(…,100%) clamps the floor to the container. */
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:18px}
   .card{background:var(--panel);border:1px solid var(--line);padding:20px 22px}
   .card h3{margin:0 0 8px;font-size:16px}
   .card p{margin:0;font-size:14px;color:var(--dim)}
@@ -138,7 +146,7 @@
 
      Scoped to .tablebox.features on purpose -- the coverage table is three
      narrow columns and reads correctly as a table at any width. */
-  @media (max-width:860px){
+  @media (max-width:800px){
     .tablebox.features{overflow-x:visible;background:transparent;border:none}
     .tablebox.features table{display:block}
     .tablebox.features tbody{display:block}
@@ -169,6 +177,38 @@
      better tight anyway. */
   .tablebox:not(.features) th,
   .tablebox:not(.features) td{padding-left:10px;padding-right:10px}
+  /* th is nowrap by default, so a feature-table heading never breaks mid-phrase.
+     That default was setting the COVERAGE table's minimum width: "COVERAGE AREA
+     POLITICIANS STANCES" on one unbreakable line runs ~46px wider than the column
+     it sits in on a 320px phone, and on a ~660px phone in landscape, where the
+     grid goes two-up and each column is ~310px.  Measured on iPhone SE, Galaxy
+     S9+ and iPhone 14/15 landscape, 2026-09-23.  Let those three headings wrap;
+     the figures keep their nowrap through td.num, which is the one that matters. */
+  .tablebox:not(.features) th{white-space:normal}
+  /* On a 320px phone the coverage table still could not fit: "POLITICIANS" is one
+     unbreakable 11-character word, and three columns of unbreakable words have a
+     minimum width no amount of padding reaches.  table-layout:fixed makes the
+     container the authority instead of the content -- the table is then GUARANTEED
+     to fit rather than estimated to -- with explicit shares so the wordy first
+     column keeps the room it needs.  Figures still never wrap. */
+  @media (max-width:430px){
+    .tablebox:not(.features) table{table-layout:fixed}
+    .tablebox:not(.features) th,
+    .tablebox:not(.features) td{padding-left:7px;padding-right:7px}
+    /* Break long words ONLY in the wordy first column.  Applied to every cell it
+       snapped the headings mid-word -- "POLITICIA / NS" -- which looks like a
+       rendering fault rather than a tight fit. */
+    .tablebox:not(.features) td:first-child{-webkit-hyphens:auto;hyphens:auto}
+    /* The two figure headings are single unbreakable words, so they get the room
+       to sit on one line: no letter-spacing and a smaller size here only. */
+    .tablebox:not(.features) th{font-size:9.5px;letter-spacing:normal}
+    .tablebox:not(.features) th:first-child,
+    .tablebox:not(.features) td:first-child{width:40%}
+    .tablebox:not(.features) th:nth-child(2),
+    .tablebox:not(.features) td:nth-child(2){width:32%}
+    .tablebox:not(.features) th:nth-child(3),
+    .tablebox:not(.features) td:nth-child(3){width:28%}
+  }
   /* Per-card column headings for the phone layout.  Real DOM text rather than
      ::before + attr(), because generated content is not reliably announced by a
      screen reader — which would have left sighted readers with a label and
