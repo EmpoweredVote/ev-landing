@@ -122,12 +122,57 @@
   .ecohead{display:grid;grid-template-columns:120px 1fr 40px 40px;gap:10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
   .ecohead .eh{text-align:right}
   .eval.e30{color:var(--dim);font-weight:400}
+  /* ---- "How many arrive" on a phone -------------------------------------
+     .ecorow reserves 120px + 40px + 40px of fixed track plus 30px of gaps. On a
+     320px phone the row is 234px, so the 1fr bar track was left with FOUR PIXELS
+     -- and the bar is the whole point of the card. Measured 2026-09-23 on an
+     iPhone SE; the sweep did not catch it because a squashed grid track does not
+     overflow anything, it just stops meaning something.
+
+     Below 560px the bar moves to its own line and gets the full row width. The
+     30d/90d heading keeps its alignment because the header and the rows share
+     the same three columns. */
+  @media (max-width:560px){
+    .ecohead{grid-template-columns:1fr 34px 34px;gap:8px}
+    .ecohead span:first-child{display:none}
+    .ecorow{grid-template-columns:1fr 34px 34px;gap:3px 8px;
+            grid-template-areas:"host v30 v90" "bar bar bar"}
+    .ecorow .ehost{grid-area:host;text-align:left}
+    .ecorow .etrack{grid-area:bar;height:11px}
+    .ecorow .eval.e30{grid-area:v30}
+    .ecorow .eval:not(.e30){grid-area:v90}
+  }
+  /* .horizon is a 110px label beside the text.  On a 320px phone that leaves the
+     prose ~110px -- three or four words a line, a tall narrow ribbon.  Stack the
+     label above it instead.  Same class of defect as .ecorow above: a fixed grid
+     track that is reasonable on a laptop and eats half the row on a phone. */
+  @media (max-width:560px){
+    .horizon{grid-template-columns:1fr;gap:5px}
+    .horizon .when{padding-top:0}
+  }
+  /* The map is repeat(11,1fr), but a tile cannot shrink below the width of its
+     own two-letter label, so at 320px the grid pushed 19px PAST the card it sits
+     in.  It stayed inside the viewport the whole time, which is why a
+     viewport-overflow check never saw it -- the card is inset from the screen
+     edge.  Smaller label and tighter gap let the tiles shrink to fit. */
+  @media (max-width:430px){
+    .usmap{gap:3px}
+    .st{font-size:9px}
+  }
   /* Past-briefings archive list.  Each edition is a dated snapshot and is never edited
      after publication, so the list only ever grows. */
   .archive{list-style:none;margin:14px 0 0;padding:0;font-size:14px}
   .archive li{padding:11px 0;border-bottom:1px solid var(--line)}
   .archive li:last-child{border-bottom:none}
-  .archive a{color:var(--gold);text-decoration:none;font-weight:600}
+  /* 44px is Apple's minimum tap target; the bare inline link rendered 19px tall,
+     and these two links ARE the navigation for the archive.  Padding makes the
+     target finger-sized and the negative margin cancels it, so the list looks
+     exactly as it did.  The inline links inside prose ("Purpose mind map", the
+     footer permalink) are deliberately left alone -- padding a link inside a
+     sentence breaks the line spacing around it, and a reader reaches those with
+     a tap on a word, not a thumb aimed at a row. */
+  .archive a{color:var(--gold);text-decoration:none;font-weight:600;
+             display:inline-block;padding:13px 6px;margin:-13px -6px}
   .archive a:hover{text-decoration:underline}
   .archive small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
   .atag{display:inline-block;margin-left:8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--live);border:1px solid rgba(114,190,120,.4);background:rgba(114,190,120,.12);padding:2px 7px;border-radius:2px;vertical-align:1px}

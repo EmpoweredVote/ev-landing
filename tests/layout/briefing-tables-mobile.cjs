@@ -82,6 +82,36 @@ const PAGES = [
               const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
               return Math.round((th.clientHeight - pad) / lh);
             }),
+            // ---- things that DEGRADE instead of overflowing -----------------
+            // A grid track squashed to nothing does not overflow anything; it
+            // just stops meaning something, so the viewport checks above are
+            // blind to it. Both of these were found by looking, on 2026-09-23.
+            //
+            // The visitor bar is the whole point of "How many arrive". It was
+            // 4px wide on a 320px phone, because .ecorow reserved 200px of fixed
+            // track plus 30px of gaps out of a 234px row.
+            barTrack: (() => {
+              const t = document.querySelector('.ecorow .etrack');
+              return t ? Math.round(t.getBoundingClientRect().width) : null;
+            })(),
+            // A map tile cannot shrink below its own two-letter label, so the
+            // 11-column grid pushed past the CARD while staying inside the
+            // VIEWPORT -- invisible to any viewport-based assertion.
+            mapSpillPastCard: (() => {
+              const m = document.querySelector('.usmap');
+              if (!m) return null;
+              const pr = m.parentElement.getBoundingClientRect().right;
+              const tiles = [...m.querySelectorAll('.st')];
+              return Math.round(Math.max(...tiles.map((t) => t.getBoundingClientRect().right)) - pr);
+            })(),
+            // The Road Ahead label is a fixed 110px column beside the prose. At
+            // 320px that left the text ~110px: three or four words a line.
+            horizonProseShare: (() => {
+              const h = document.querySelector('.horizon');
+              if (!h) return null;
+              const prose = h.querySelector('p');
+              return Math.round((prose.getBoundingClientRect().width / h.getBoundingClientRect().width) * 100);
+            })(),
           };
         });
 
@@ -93,6 +123,15 @@ const PAGES = [
         if (r.stickOut.length) failures.push(`${where}: past the right edge -> ${r.stickOut.join(', ')}`);
         if (r.thLines.some((n) => n > 1)) {
           failures.push(`${where}: a coverage heading wrapped mid-word (lines: ${r.thLines.join(',')})`);
+        }
+        if (r.barTrack !== null && r.barTrack < 60) {
+          failures.push(`${where}: visitor bar track squashed to ${r.barTrack}px (needs >=60)`);
+        }
+        if (r.mapSpillPastCard !== null && r.mapSpillPastCard > 0) {
+          failures.push(`${where}: map tiles spill ${r.mapSpillPastCard}px past their card`);
+        }
+        if (r.horizonProseShare !== null && r.horizonProseShare < 55) {
+          failures.push(`${where}: Road Ahead prose gets only ${r.horizonProseShare}% of its row`);
         }
         if (pageErrors.length) failures.push(`${where}: page error -> ${pageErrors.join('; ')}`);
 
@@ -106,5 +145,5 @@ const PAGES = [
     console.error('briefing tables do not fit:\n  ' + failures.join('\n  '));
   }
   assert.deepStrictEqual(failures, [], 'briefing tables must fit their container on every device');
-  console.log(`OK briefing tables fit on ${CASES.length} devices x 2 editions x 2 orientations`);
+  console.log(`OK briefing layout holds on ${CASES.length} devices x 2 editions x 2 orientations`);
 })();
