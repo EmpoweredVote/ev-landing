@@ -249,6 +249,33 @@
      everyone else with an unlabelled block of prose.  Hidden on desktop, where
      the table's own header row does this job. */
   .clabel{display:none}
+  /* ---- Jump strip -------------------------------------------------------
+     This page runs 29.5 screens on a phone and about 10 on a laptop, so a
+     reader who wants Reach & Engagement should not have to scroll past four
+     pillars to reach it.  Sticky at every width, because a strip that only
+     lives at the top means scrolling back twenty screens to use it.
+
+     One line, scrolled sideways on a narrow screen rather than wrapped: eight
+     labels wrap to three lines at 320px, and a ~100px sticky bar would eat a
+     third of the viewport it is meant to help you read. */
+  .jump{position:sticky;top:0;z-index:20;margin:0 -20px;padding:0 20px;
+        background:var(--ink);border-bottom:1px solid var(--line)}
+  .jump ul{display:flex;gap:1px;list-style:none;margin:0;padding:0;
+           overflow-x:auto;scrollbar-width:none}
+  .jump ul::-webkit-scrollbar{display:none}
+  .jump a{display:block;white-space:nowrap;padding:11px 10px;font-size:12px;
+          letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
+          text-decoration:none;border-bottom:2px solid transparent}
+  .jump a:hover{color:var(--text)}
+  .jump a[aria-current="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+  /* Without this the sticky strip lands on top of the heading you just jumped
+     to, which reads as the link having gone to the wrong place. */
+  .h2row{scroll-margin-top:54px}
+  /* Deliberately NOT scroll-behavior:smooth.  This page is 19,598px tall, so a
+     jump from the top to Reach & Engagement is a multi-second blurred ride that
+     tells the reader nothing -- and on Chromium it had not finished 900ms after
+     the tap.  An instant jump is the right behaviour over this distance, and it
+     sidesteps the reduced-motion question rather than answering it. */
 </style>
 <div class="wrap">
 
@@ -282,7 +309,19 @@
   </div>
 </header>
 
-<div class="h2row"><h2>Inform Pillar: Shared Facts</h2><p>Open to everyone, no login.  Evidence-based, engaging, anti-partisan.</p></div>
+<nav class="jump" aria-label="Sections">
+  <ul>
+    <li><a href="#inform">Inform</a></li>
+    <li><a href="#connect">Connect</a></li>
+    <li><a href="#platform">Platform</a></li>
+    <li><a href="#data">Data</a></li>
+    <li><a href="#reach">Reach</a></li>
+    <li><a href="#ahead">Road Ahead</a></li>
+    <li><a href="#people">People</a></li>
+  </ul>
+</nav>
+
+<div class="h2row" id="inform"><h2>Inform Pillar: Shared Facts</h2><p>Open to everyone, no login.  Evidence-based, engaging, anti-partisan.</p></div>
 <div class="tablebox features"><table>
   <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
   <tr>
@@ -329,7 +368,7 @@
   </tr>
 </table></div>
 
-<div class="h2row"><h2>Connect Pillar: Shared Values</h2><p>Connected accounts, one human one voice.  Parked during the election push; resumes after November.</p></div>
+<div class="h2row" id="connect"><h2>Connect Pillar: Shared Values</h2><p>Connected accounts, one human one voice.  Parked during the election push; resumes after November.</p></div>
 <div class="tablebox features"><table>
   <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
   <tr>
@@ -376,7 +415,7 @@
   </tr>
 </table></div>
 
-<div class="h2row"><h2>Platform Core &amp; Infrastructure</h2><p>The shared spine every app plugs into.</p></div>
+<div class="h2row" id="platform"><h2>Platform Core &amp; Infrastructure</h2><p>The shared spine every app plugs into.</p></div>
 <div class="cols">
   <div class="card">
     <h3 class="serif">ev-accounts <span class="gold">v2.22</span></h3>
@@ -388,7 +427,7 @@
   </div>
 </div>
 
-<div class="h2row"><h2>Data Coverage Deep Dive</h2><p>The invisible work.  This is what "evidence-based" costs, and we paid it.</p></div>
+<div class="h2row" id="data"><h2>Data Coverage Deep Dive</h2><p>The invisible work.  This is what "evidence-based" costs, and we paid it.</p></div>
 <div class="cols">
   <div class="card">
     <h3 class="serif">Sourced stances, by where they serve</h3>
@@ -511,7 +550,7 @@
   app on arrival vs. the one action that app exists for.  See briefing/README.md for the
   exact events behind each row.
 -->
-<div class="h2row"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
+<div class="h2row" id="reach"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
 <div class="push">
   <h3 class="serif">Small, and not shallow</h3>
     <p><b>635 people used the platform in the last 90 days.</b>  That is the whole audience, across every app, over 1,875 sessions.  What they do once they arrive is genuinely good &mdash; the average session runs <b>just under seven minutes</b> and <b>7 in 10 don&rsquo;t bounce</b> &mdash; so the constraint is arrival, not engagement.</p>
@@ -568,7 +607,7 @@
   <p style="margin-top:10px;max-width:92ch"><b>The fix has been capturing since August 16, and the two ways of counting disagree by five times.</b>  <b>52 people reached a budget URL</b> this quarter; only <b>10</b> fired any past-the-front-page event.  Both are true, and the split says why: <b>38 of the 52 landed on our own organization&rsquo;s budget</b>, <code>empowered-vote-ca</code>, which is one click from the donate page &mdash; arriving there is a transparency visit, not budget exploration, and it selects nothing, so it fires nothing.  That leaves <b>16 people who opened some other government&rsquo;s budget</b>.  Neither number is published as a rate.  Treasury stays <b>unmeasured rather than low</b> until the non-donate half outgrows the donate traffic.  The rule it bought applies to every app here: <b>a low count is a claim about instrumentation until you have read the code path.</b></p>
 </div>
 
-<div class="h2row"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>
+<div class="h2row" id="ahead"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>
 <div class="card" style="padding:6px 22px">
   <div class="horizon">
     <div class="when">Now to Nov</div>
@@ -584,7 +623,7 @@
   </div>
 </div>
 
-<div class="h2row"><h2>The People Doing This</h2><p>A volunteer-built platform, visible in the commit history.</p></div>
+<div class="h2row" id="people"><h2>The People Doing This</h2><p>A volunteer-built platform, visible in the commit history.</p></div>
 <div class="people">
   <div class="person">Chris Cantrell<small>founder, systems design, data pipelines</small></div>
   <div class="person">Chris Andrews<small>On the Record, Read &amp; Rank redesign</small></div>
@@ -607,5 +646,49 @@
 
 </div>
 
+<script>
+/* Marks the section you are currently reading.  The strip works without this --
+   these are ordinary anchors -- so an unsupported browser just leaves it
+   unmarked rather than broken.
+
+   Picks the LAST heading scrolled past, not whichever heading happens to be on
+   screen.  The first version used an IntersectionObserver over a narrow band
+   near the top, which meant nothing was marked at all for most of the page:
+   these sections run thousands of pixels, so once you are reading inside one,
+   its heading is long gone above the band. */
+(function () {
+  var links = [].slice.call(document.querySelectorAll('.jump a'));
+  if (!links.length) return;
+  var sections = links
+    .map(function (a) { return { link: a, el: document.getElementById(a.getAttribute('href').slice(1)) }; })
+    .filter(function (s) { return s.el; });
+  var ticking = false, marked = null;
+
+  function mark() {
+    ticking = false;
+    var current = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].el.getBoundingClientRect().top <= 60) current = sections[i];
+      else break;                       // sections are in document order
+    }
+    if (current === marked) return;
+    marked = current;
+    sections.forEach(function (s) {
+      if (s === current) s.link.setAttribute('aria-current', 'true');
+      else s.link.removeAttribute('aria-current');
+    });
+    /* On a phone the strip is scrolled sideways, so the marked label can sit off
+       the right edge. block:'nearest' keeps this from moving the page. */
+    if (current && current.link.scrollIntoView) {
+      current.link.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }
+
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(mark); } }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll, { passive: true });
+  mark();
+})();
+</script>
 </body>
 </html>

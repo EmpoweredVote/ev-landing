@@ -67,14 +67,38 @@ const PAGES = [
             tableOver: [...document.querySelectorAll('.tablebox')].map((bx) =>
               Math.round(bx.querySelector('table').scrollWidth - bx.clientWidth)
             ),
-            // anything at all reaching past the right edge
+            // Anything at all reaching past the right edge -- EXCEPT the jump
+            // strip's own items. That strip is a deliberate horizontal scroller,
+            // so labels sitting off its right edge are the feature working.
+            // Exempting a scroll container is exactly what hid the original bug,
+            // so the exemption is paid for by the .jump assertions below: the
+            // strip itself must fit the viewport and stay one line tall.
             stickOut: [...document.querySelectorAll('body *')]
               .filter((el) => {
+                if (el.closest('.jump ul')) return false;
                 const rc = el.getBoundingClientRect();
                 return rc.width > 0 && rc.right > vw + 1;
               })
               .slice(0, 5)
               .map((el) => el.tagName + '.' + String(el.className || '').slice(0, 30)),
+            // ---- the jump strip ---------------------------------------------
+            jump: (() => {
+              const n = document.querySelector('.jump');
+              if (!n) return null;
+              const r = n.getBoundingClientRect();
+              const links = [...n.querySelectorAll('a')];
+              return {
+                overViewport: Math.round(r.right - vw),
+                height: Math.round(r.height),
+                links: links.length,
+                // a link pointing at an id that is not on the page
+                broken: links.filter((a) => !document.getElementById(a.getAttribute('href').slice(1)))
+                             .map((a) => a.getAttribute('href')),
+                // the strip must be able to reach every label
+                scrollable: n.querySelector('ul').scrollWidth <= n.querySelector('ul').clientWidth ||
+                            getComputedStyle(n.querySelector('ul')).overflowX === 'auto',
+              };
+            })(),
             // the column headings must not snap mid-word
             thLines: [...document.querySelectorAll('.tablebox:not(.features) th')].map((th) => {
               const cs = getComputedStyle(th);
@@ -133,7 +157,44 @@ const PAGES = [
         if (r.horizonProseShare !== null && r.horizonProseShare < 55) {
           failures.push(`${where}: Road Ahead prose gets only ${r.horizonProseShare}% of its row`);
         }
+        if (r.jump) {
+          if (r.jump.overViewport > 0) failures.push(`${where}: jump strip is ${r.jump.overViewport}px past the viewport`);
+          // One line. Eight labels WRAP to three lines at 320px, and a ~100px
+          // sticky bar would eat a third of the screen it exists to help read.
+          if (r.jump.height > 60) failures.push(`${where}: jump strip is ${r.jump.height}px tall (should be one line)`);
+          if (r.jump.broken.length) failures.push(`${where}: jump links point nowhere -> ${r.jump.broken.join(', ')}`);
+          if (!r.jump.scrollable) failures.push(`${where}: jump strip overflows without being scrollable`);
+          if (r.jump.links < 6) failures.push(`${where}: jump strip has only ${r.jump.links} links`);
+        }
         if (pageErrors.length) failures.push(`${where}: page error -> ${pageErrors.join('; ')}`);
+
+        // Follow a link and check where it actually lands. A sticky bar sitting
+        // on top of the heading you just jumped to reads as the link being
+        // broken, and it is one forgotten `scroll-margin-top` away at all times.
+        if (r.jump) {
+          const target = await p.evaluate(() => {
+            const a = document.querySelector('.jump a[href="#reach"], .jump a[href="#data"]');
+            if (!a) return null;
+            a.click();
+            return a.getAttribute('href').slice(1);
+          });
+          if (target) {
+            await p.waitForTimeout(250);
+            const landed = await p.evaluate((id) => {
+              const h = document.getElementById(id).getBoundingClientRect();
+              const strip = document.querySelector('.jump').getBoundingClientRect();
+              const marked = document.querySelector('.jump a[aria-current="true"]');
+              return { clearance: Math.round(h.top - strip.bottom),
+                       marked: marked ? marked.getAttribute('href') : null };
+            }, target);
+            if (landed.clearance < 0) {
+              failures.push(`${where}: jumping to #${target} puts the heading ${-landed.clearance}px under the sticky strip`);
+            }
+            if (landed.marked !== '#' + target) {
+              failures.push(`${where}: after jumping to #${target} the strip marks ${landed.marked}`);
+            }
+          }
+        }
 
         await ctx.close();
       }
