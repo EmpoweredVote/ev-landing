@@ -62,7 +62,7 @@ agg AS (SELECT bucket, count(*)::int AS pols, sum(n)::int AS stances FROM part G
 -- The named rows are editorial: whichever jurisdictions currently earn their own line.  Everything
 -- else collapses into the "N more jurisdictions" row, and `jurisdictions` below is that N.
 named AS (SELECT * FROM agg WHERE bucket IN
-  ('national','no seat','CA','MA','TX','MD','ME','VA','OR','WI','UT','WA','AZ','NC'))
+  ('national','no seat','CA','MA','TX','MD','ME','VA','OR','WI','UT','WA','AZ','NC','TN'))
 SELECT 1 AS ord, bucket, pols, stances, NULL::int AS jurisdictions FROM named
 UNION ALL
 SELECT 2, 'REST', sum(pols)::int, sum(stances)::int, count(*)::int FROM agg WHERE bucket NOT IN (SELECT bucket FROM named)

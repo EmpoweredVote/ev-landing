@@ -4,29 +4,723 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.png">
-<title>Empowered Vote: State of the Platform &mdash; September 22, 2026</title>
-<!--
-  The September 22, 2026 briefing is the CURRENT one, so it is served from /briefing and this
-  dated address forwards to it.  When the next edition is published, this file is replaced by a
-  frozen copy of the page as it stood today (see briefing/README.md, "Publishing a new edition").
-  Keeping the dated address live from day one is the point: a link to /briefing/2026-09-22 has to
-  work when someone is reading this edition, not only after it has been superseded.
--->
-<link rel="canonical" href="https://empowered.vote/briefing" />
+<title>Empowered Vote: State of the Platform — September 22, 2026</title>
+<link rel="canonical" href="https://empowered.vote/briefing/2026-09-22" />
 <meta name="robots" content="noindex">
-<meta http-equiv="refresh" content="0; url=/briefing">
-<style>
-  :root{--ink:#0F1620;--text:#E9E5D9;--dim:#9BA4AE;--gold:#E3B54A}
-  body{background:var(--ink);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;
-       line-height:1.55;margin:0;padding:80px 24px;text-align:center}
-  a{color:var(--gold)}
-  p{color:var(--dim);max-width:52ch;margin:0 auto 12px}
-</style>
+<script src="/analytics.js"></script>
 </head>
 <body>
-<p>The September 22, 2026 briefing is the current edition, so it is served from
-   <a href="/briefing">empowered.vote/briefing</a>.</p>
-<p>Taking you there now.</p>
-<script>location.replace('/briefing');</script>
+<style>
+  :root{
+    --ink:#0F1620; --panel:#18222F; --panel2:#1E2A3A; --line:#2C3A4D;
+    --text:#E9E5D9; --dim:#9BA4AE; --gold:#E3B54A; --teal:#4FA8A0;
+    --live:#72BE78; --amber:#D99E3F; --paper:#C8CFD8;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ink);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;line-height:1.55;margin:0;padding:0 20px 80px}
+  .wrap{max-width:1200px;margin:0 auto}
+  .serif{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif}
+  header{padding:56px 0 8px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
+  h1{font-size:clamp(30px,5vw,46px);margin:0 0 10px;font-weight:400;text-wrap:balance;line-height:1.15}
+  .sub{color:var(--dim);max-width:62ch;margin:0 0 28px;font-size:16px}
+  .sub b{color:var(--text);font-weight:600}
+  h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:0 0 6px}
+  .h2row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding:44px 0 10px;margin-bottom:18px;flex-wrap:wrap}
+  .h2row p{margin:0;color:var(--dim);font-size:14px}
+  .statband{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:32px 0 0}
+  .stat{background:var(--panel);padding:18px 16px}
+  .stat .n{font-size:clamp(22px,3vw,30px);font-variant-numeric:tabular-nums;color:var(--gold)}
+  .stat .l{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.35}
+  .pillar-note{color:var(--dim);font-size:14px;max-width:70ch;margin:0 0 20px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  .tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line)}
+  th{text-align:left;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .fname{font-weight:600;white-space:nowrap}
+  .fnote{color:var(--dim);font-size:13px;max-width:46ch}
+  .chip{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:2px;white-space:nowrap}
+  .c-live{background:rgba(114,190,120,.14);color:var(--live);border:1px solid rgba(114,190,120,.4)}
+  .c-dev{background:rgba(217,158,63,.13);color:var(--amber);border:1px solid rgba(217,158,63,.4)}
+  .c-design{background:rgba(155,164,174,.12);color:var(--paper);border:1px solid rgba(155,164,174,.35)}
+  .c-paused{background:rgba(79,168,160,.12);color:var(--teal);border:1px solid rgba(79,168,160,.4)}
+  .meter{display:flex;gap:3px;width:104px}
+  .meter span{height:6px;flex:1;background:var(--line);border-radius:1px}
+  .meter .f{background:var(--gold)}
+  .meter .fl{background:var(--live)}
+  .mlabel{font-size:11px;color:var(--dim);margin-top:5px;letter-spacing:.04em}
+  /* 340px, not 300px.  At 300px a phone held sideways (~660px wide) split this
+     grid into two ~310px columns, which is narrower than the same phone gets in
+     portrait — so landscape was the WORSE reading experience.  340px keeps it
+     one-up until there is genuinely room for two. */
+  /* min(340px,100%), not a bare 340px.  The min value of minmax() is a HARD
+     floor: a bare 340px forces a 340px track inside a 280px container and the
+     PAGE overflows, which is how raising this from 300px broke a 320px phone
+     that had been fine.  min(…,100%) clamps the floor to the container. */
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);padding:20px 22px}
+  .card h3{margin:0 0 8px;font-size:16px}
+  .card p{margin:0;font-size:14px;color:var(--dim)}
+  .card p b{color:var(--text)}
+  .card ul{margin:10px 0 0;padding-left:18px;font-size:14px;color:var(--dim)}
+  .card li{margin-bottom:7px}
+  .card li b{color:var(--text);font-weight:600}
+  .gold{color:var(--gold)}
+  .push{background:linear-gradient(135deg,var(--panel2),var(--panel));border:1px solid var(--line);border-left:3px solid var(--gold);padding:24px 26px;margin-top:30px}
+  .push h3{margin:0 0 8px;font-size:19px;font-weight:400}
+  .push p{margin:0;color:var(--dim);font-size:14.5px;max-width:78ch}
+  .push p b{color:var(--text)}
+  .usmap{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;max-width:660px;margin:18px 0 14px}
+  .st{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;border-radius:2px;cursor:default}
+  .t3{background:var(--gold);color:#14202E}
+  .t2{background:rgba(227,181,74,.48);color:var(--text)}
+  .t1{background:rgba(227,181,74,.13);color:var(--dim);border:1px solid rgba(227,181,74,.22)}
+  .t0{background:transparent;color:var(--dim);border:1px dashed rgba(155,164,174,.45)}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;font-size:12.5px;color:var(--dim)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .sw{width:13px;height:13px;border-radius:2px;display:inline-block}
+  .horizon{display:grid;grid-template-columns:110px 1fr;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .horizon:last-child{border-bottom:none}
+  .horizon .when{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding-top:3px}
+  .horizon h4{margin:0 0 5px;font-size:15.5px}
+  .horizon p{margin:0;font-size:14px;color:var(--dim);max-width:75ch}
+  .people{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+  .person{background:var(--panel);border:1px solid var(--line);padding:8px 14px;font-size:13.5px}
+  .person small{display:block;color:var(--dim);font-size:12px}
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px;max-width:80ch}
+  footer b{color:var(--paper)}
+  /* Reach & Engagement (usage funnel + ecosystem; hand-maintained from PostHog) */
+  .funnel{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+  .fstep .frow{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;margin-bottom:5px;gap:12px}
+  .fstep .flabel{color:var(--text);font-weight:600}
+  .fstep .fcount{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ftrack{height:26px;background:var(--line);border-radius:2px;overflow:hidden}
+  .fbar{height:100%;display:flex;align-items:center;padding:0 9px;min-width:42px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .fbar.b1{background:rgba(155,164,174,.5);color:var(--text)}
+  .fbar.b2{background:var(--live);color:#12261A}
+  .fbar.b3{background:var(--gold);color:#14202E}
+  .fbar.b4{background:var(--teal);color:#0C1C1A}
+  .fbar.b5{background:var(--amber);color:#241A08}
+  .fcap{font-size:12.5px;color:var(--dim);margin:14px 0 0;max-width:52ch}
+  .eco{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+  .ecorow{display:grid;grid-template-columns:120px 1fr 40px 40px;align-items:center;gap:10px;font-size:13px}
+  .ecorow .ehost{color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ecorow .eval{color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
+  .etrack{height:15px;background:var(--line);border-radius:2px;overflow:hidden}
+  .ebar{display:block;height:100%;background:rgba(155,164,174,.38);border-radius:2px}
+  .ecorow.me .ehost{color:var(--gold);font-weight:700}
+  .ecorow.me .ebar{background:var(--gold)}
+  .ecorow.me .eval{color:var(--gold);font-weight:700}
+  /* 30d/90d two-column headers for the funnel + visitor cards */
+  .fhead{display:flex;justify-content:flex-end;gap:10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+  .fcol{width:46px;text-align:right;font-variant-numeric:tabular-nums}
+  .fstep .frow .fcount{display:flex;gap:10px}
+  .fstep .fcount .fcol{flex:none}
+  .fstep .fcount .f30{color:var(--dim)}
+  .fstep .fcount .f90{color:var(--text);font-weight:700}
+  .ecohead{display:grid;grid-template-columns:120px 1fr 40px 40px;gap:10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+  .ecohead .eh{text-align:right}
+  .eval.e30{color:var(--dim);font-weight:400}
+  /* ---- "How many arrive" on a phone -------------------------------------
+     .ecorow reserves 120px + 40px + 40px of fixed track plus 30px of gaps. On a
+     320px phone the row is 234px, so the 1fr bar track was left with FOUR PIXELS
+     -- and the bar is the whole point of the card. Measured 2026-09-23 on an
+     iPhone SE; the sweep did not catch it because a squashed grid track does not
+     overflow anything, it just stops meaning something.
+
+     Below 560px the bar moves to its own line and gets the full row width. The
+     30d/90d heading keeps its alignment because the header and the rows share
+     the same three columns. */
+  @media (max-width:560px){
+    .ecohead{grid-template-columns:1fr 34px 34px;gap:8px}
+    .ecohead span:first-child{display:none}
+    .ecorow{grid-template-columns:1fr 34px 34px;gap:3px 8px;
+            grid-template-areas:"host v30 v90" "bar bar bar"}
+    .ecorow .ehost{grid-area:host;text-align:left}
+    .ecorow .etrack{grid-area:bar;height:11px}
+    .ecorow .eval.e30{grid-area:v30}
+    .ecorow .eval:not(.e30){grid-area:v90}
+  }
+  /* .horizon is a 110px label beside the text.  On a 320px phone that leaves the
+     prose ~110px -- three or four words a line, a tall narrow ribbon.  Stack the
+     label above it instead.  Same class of defect as .ecorow above: a fixed grid
+     track that is reasonable on a laptop and eats half the row on a phone. */
+  @media (max-width:560px){
+    .horizon{grid-template-columns:1fr;gap:5px}
+    .horizon .when{padding-top:0}
+  }
+  /* The map is repeat(11,1fr), but a tile cannot shrink below the width of its
+     own two-letter label, so at 320px the grid pushed 19px PAST the card it sits
+     in.  It stayed inside the viewport the whole time, which is why a
+     viewport-overflow check never saw it -- the card is inset from the screen
+     edge.  Smaller label and tighter gap let the tiles shrink to fit. */
+  @media (max-width:430px){
+    .usmap{gap:3px}
+    .st{font-size:9px}
+  }
+  /* Past-briefings archive list.  Each edition is a dated snapshot and is never edited
+     after publication, so the list only ever grows. */
+  .archive{list-style:none;margin:14px 0 0;padding:0;font-size:14px}
+  .archive li{padding:11px 0;border-bottom:1px solid var(--line)}
+  .archive li:last-child{border-bottom:none}
+  /* 44px is Apple's minimum tap target; the bare inline link rendered 19px tall,
+     and these two links ARE the navigation for the archive.  Padding makes the
+     target finger-sized and the negative margin cancels it, so the list looks
+     exactly as it did.  The inline links inside prose ("Purpose mind map", the
+     footer permalink) are deliberately left alone -- padding a link inside a
+     sentence breaks the line spacing around it, and a reader reaches those with
+     a tap on a word, not a thumb aimed at a row. */
+  .archive a{color:var(--gold);text-decoration:none;font-weight:600;
+             display:inline-block;padding:13px 6px;margin:-13px -6px}
+  .archive a:hover{text-decoration:underline}
+  .archive small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
+  .atag{display:inline-block;margin-left:8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--live);border:1px solid rgba(114,190,120,.4);background:rgba(114,190,120,.12);padding:2px 7px;border-radius:2px;vertical-align:1px}
+  /* ---- Feature tables on a phone ----------------------------------------
+     A five-column feature table cannot fit a phone.  Measured 2026-09-23 at
+     390px: the Inform table wanted 734px inside a 348px box, so every row took
+     2.1 screens of sideways dragging, and the two columns that carry the actual
+     writing ("Where it stands", "What's next") were the ones off-screen.
+     `.tablebox{overflow-x:auto}` hid this from a page-overflow check, because
+     the PAGE never overflowed -- only the box scrolled inside it.
+
+     Below 860px each row becomes a card instead: name, then status and journey
+     on one line, then the two prose columns stacked under their own headings,
+     which come from each cell's data-label.  Nothing is hidden; the same five
+     cells are all still there, in reading order.
+
+     Scoped to .tablebox.features on purpose -- the coverage table is three
+     narrow columns and reads correctly as a table at any width. */
+  @media (max-width:800px){
+    .tablebox.features{overflow-x:visible;background:transparent;border:none}
+    .tablebox.features table{display:block}
+    .tablebox.features tbody{display:block}
+    /* These tables have no <thead>; the header is the first row of <th>. */
+    .tablebox.features tr:first-child{display:none}
+    .tablebox.features tr{display:block;background:var(--panel);border:1px solid var(--line);
+                          padding:16px 18px;margin-bottom:12px}
+    .tablebox.features tr:last-child{margin-bottom:0}
+    .tablebox.features td{display:block;border:none;padding:0;max-width:none}
+    .tablebox.features td.fname{font-size:16px;font-weight:600;white-space:normal;margin-bottom:9px}
+    /* status chip and journey meter share one line */
+    .tablebox.features td:nth-child(2),
+    .tablebox.features td:nth-child(3){display:inline-block;vertical-align:top;margin:0 16px 4px 0}
+    .tablebox.features td.fnote{margin-top:13px;font-size:13.5px}
+    .tablebox.features .clabel{display:block;font-size:11px;letter-spacing:.1em;
+      text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:4px}
+  }
+  /* The coverage table stays a table, but at 390px its three columns ran 20px
+     past the box.  Tighter side padding is all it needed. */
+  @media (max-width:430px){
+    .tablebox th,.tablebox td{padding-left:9px;padding-right:9px}
+    .tablebox.features td{padding-left:0;padding-right:0}
+  }
+  /* The coverage table sits in a grid column that can be ~305px wide even when
+     the viewport is 768px, which is why the 430px query above did not reach it:
+     a viewport query cannot see a narrow COLUMN inside a wide page.  Tighter
+     side padding fixes it at every width, and a dense numeric table reads
+     better tight anyway. */
+  .tablebox:not(.features) th,
+  .tablebox:not(.features) td{padding-left:10px;padding-right:10px}
+  /* th is nowrap by default, so a feature-table heading never breaks mid-phrase.
+     That default was setting the COVERAGE table's minimum width: "COVERAGE AREA
+     POLITICIANS STANCES" on one unbreakable line runs ~46px wider than the column
+     it sits in on a 320px phone, and on a ~660px phone in landscape, where the
+     grid goes two-up and each column is ~310px.  Measured on iPhone SE, Galaxy
+     S9+ and iPhone 14/15 landscape, 2026-09-23.  Let those three headings wrap;
+     the figures keep their nowrap through td.num, which is the one that matters. */
+  .tablebox:not(.features) th{white-space:normal}
+  /* On a 320px phone the coverage table still could not fit: "POLITICIANS" is one
+     unbreakable 11-character word, and three columns of unbreakable words have a
+     minimum width no amount of padding reaches.  table-layout:fixed makes the
+     container the authority instead of the content -- the table is then GUARANTEED
+     to fit rather than estimated to -- with explicit shares so the wordy first
+     column keeps the room it needs.  Figures still never wrap. */
+  @media (max-width:430px){
+    .tablebox:not(.features) table{table-layout:fixed}
+    .tablebox:not(.features) th,
+    .tablebox:not(.features) td{padding-left:7px;padding-right:7px}
+    /* Break long words ONLY in the wordy first column.  Applied to every cell it
+       snapped the headings mid-word -- "POLITICIA / NS" -- which looks like a
+       rendering fault rather than a tight fit. */
+    .tablebox:not(.features) td:first-child{-webkit-hyphens:auto;hyphens:auto}
+    /* The two figure headings are single unbreakable words, so they get the room
+       to sit on one line: no letter-spacing and a smaller size here only. */
+    .tablebox:not(.features) th{font-size:9.5px;letter-spacing:normal}
+    .tablebox:not(.features) th:first-child,
+    .tablebox:not(.features) td:first-child{width:40%}
+    .tablebox:not(.features) th:nth-child(2),
+    .tablebox:not(.features) td:nth-child(2){width:32%}
+    .tablebox:not(.features) th:nth-child(3),
+    .tablebox:not(.features) td:nth-child(3){width:28%}
+  }
+  /* Per-card column headings for the phone layout.  Real DOM text rather than
+     ::before + attr(), because generated content is not reliably announced by a
+     screen reader — which would have left sighted readers with a label and
+     everyone else with an unlabelled block of prose.  Hidden on desktop, where
+     the table's own header row does this job. */
+  .clabel{display:none}
+  /* ---- Jump strip -------------------------------------------------------
+     This page runs 29.5 screens on a phone and about 10 on a laptop, so a
+     reader who wants Reach & Engagement should not have to scroll past four
+     pillars to reach it.  Sticky at every width, because a strip that only
+     lives at the top means scrolling back twenty screens to use it.
+
+     One line, scrolled sideways on a narrow screen rather than wrapped: eight
+     labels wrap to three lines at 320px, and a ~100px sticky bar would eat a
+     third of the viewport it is meant to help you read. */
+  .jump{position:sticky;top:0;z-index:20;margin:0 -20px;padding:0 20px;
+        background:var(--ink);border-bottom:1px solid var(--line)}
+  .jump ul{display:flex;gap:1px;list-style:none;margin:0;padding:0;
+           overflow-x:auto;scrollbar-width:none}
+  .jump ul::-webkit-scrollbar{display:none}
+  .jump a{display:block;white-space:nowrap;padding:11px 10px;font-size:12px;
+          letter-spacing:.07em;text-transform:uppercase;color:var(--dim);
+          text-decoration:none;border-bottom:2px solid transparent}
+  .jump a:hover{color:var(--text)}
+  .jump a[aria-current="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+  /* Without this the sticky strip lands on top of the heading you just jumped
+     to, which reads as the link having gone to the wrong place. */
+  .h2row{scroll-margin-top:54px}
+  /* Deliberately NOT scroll-behavior:smooth.  This page is 19,598px tall, so a
+     jump from the top to Reach & Engagement is a multi-second blurred ride that
+     tells the reader nothing -- and on Chromium it had not finished 900ms after
+     the tap.  An instant jump is the right behaviour over this distance, and it
+     sidesteps the reduced-motion question rather than answering it. */
+  .archived{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--amber);padding:14px 16px;margin:24px 0 0;font-size:14px;color:var(--dim)}
+  .archived b{color:var(--text)}
+  .archived a{color:var(--gold)}
+</style>
+<div class="wrap">
+
+<div class="archived">
+  <b>This is an archived briefing.</b>  It was published on <b>September 22, 2026</b> and has not been
+  changed since.  Every figure on this page was true on that date and is not kept current.
+  For where the platform stands today, read the <a href="/briefing">current briefing</a>.
+</div>
+
+<header>
+  <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; <span data-auto="asof">September 22, 2026</span></p>
+  <h1 class="serif">State of the Platform</h1>
+  <p class="sub">Every number on this page comes from the live database, verified git history, or our product analytics, not from estimates.  We build tools for shared facts; our progress report should be one.  <b>From this edition on, each briefing is written fresh and kept at its own dated address, so you can read what we said before and check it against what we say now.</b></p>
+
+  <div class="statband">
+    <div class="stat"><div class="n" data-auto="pols_curated">11,410</div><div class="l">curated officials and candidates (plus a <span data-auto="pool">76,330</span>-record discovery pool in triage)</div></div>
+    <div class="stat"><div class="n" data-auto="stances">36,420</div><div class="l">sourced stance positions, every one with cited sources</div></div>
+    <div class="stat"><div class="n" data-auto="pols_with_stances">4,196</div><div class="l">politicians with researched stances (avg <span data-auto="avg_stances">8.7</span> topics each)</div></div>
+    <div class="stat"><div class="n" data-auto="budget_entities">8,144</div><div class="l">governments with budget data, across all 50 states + DC</div></div>
+    <div class="stat"><div class="n" data-auto="candidates_2026">3,646</div><div class="l">2026 candidate records seeded for the midterms</div></div>
+    <div class="stat"><div class="n" data-auto="commits30">~1,700</div><div class="l">commits landed in the last 30 days alone</div></div>
+  </div>
+
+  <div class="push">
+    <h3 class="serif">The current push: three states, seat by seat</h3>
+    <p style="margin-top:10px"><b>Pennsylvania, South Carolina and Minnesota were seated end to end in eleven days.</b>  823 new officials, every one on a dated term: the <b>Pennsylvania General Assembly</b> at 253 of 253 with 252 portraits, plus Philadelphia, State College, Centre County and twenty county and row offices; the <b>South Carolina General Assembly</b> at 170 of 170 with a full portrait set, plus Columbia, Myrtle Beach and two counties; and the <b>Minnesota Legislature</b> at 201 seats, plus Duluth, Saint Paul and two county boards.  Charlotte, Mecklenburg County and Boulder landed alongside them.  Each seat was read one at a time against the government&rsquo;s own roster, which is why these passes keep finding what a bulk import swallows: one portrait had been skipped on a note saying its source site published no usage terms, and the site publishes them, at an address answering the whole time.  <b>Nobody had asked it.</b></p>
+
+    <p style="margin-top:10px"><b>Tennessee went from one researched official to 115.</b>  A statewide ranked-choice-voting ban seated 74 legislators verbatim, and the <b>Nashville Metro Council</b> was read member by member out of the city&rsquo;s own legislative record &mdash; 40 of 42 seats, both remaining zeros written down as zeros.  <b>Maryland</b> moved too: its Cannabis Reform Act seated 116 members on a topic that had been empty.  Total sourced stances went 35,877 to <span data-auto="stances">36,420</span>.</p>
+
+    <p style="margin-top:10px"><b>And one research pass was found filed under the wrong question.</b>  A Transportation Priorities pass on 82 Maine House members had been written into the <i>Residential Zoning</i> slot, which put members who voted to keep parking mandates on screen as broad upzoners.  It survived review because one phrase &mdash; &ldquo;reduce parking requirements&rdquo; &mdash; appears on both ladders.  The correction is written forward, not erased: the zoning rows are blanked rather than deleted, because deleting them would have let the old answer show through from the previous season.  <b>Maine&rsquo;s stance count rose by 164 and none of it is new coverage.</b>  It is the same research, finally filed under the question it answers.</p>
+  </div>
+</header>
+
+<nav class="jump" aria-label="Sections">
+  <ul>
+    <li><a href="#archive">Archive</a></li>
+    <li><a href="#inform">Inform</a></li>
+    <li><a href="#connect">Connect</a></li>
+    <li><a href="#platform">Platform</a></li>
+    <li><a href="#data">Data</a></li>
+    <li><a href="#reach">Reach</a></li>
+    <li><a href="#ahead">Road Ahead</a></li>
+    <li><a href="#people">People</a></li>
+  </ul>
+</nav>
+
+<div class="h2row" id="archive"><h2>Past Briefings</h2><p>Each update is a dated snapshot.  We do not edit one after publishing it.</p></div>
+<div class="card">
+  <p><b>This page is the current briefing, and it always lives at <code>empowered.vote/briefing</code>.</b>  Every edition also keeps a permanent address of its own, so a number you read here can be checked against the date it was published on.  Each update is written from scratch: work that runs for a month stays the headline, but the sentences around it are rewritten every time.  <b>We never edit a published edition.</b>  When an earlier one got something wrong, the next one says what it corrects.</p>
+  <ul class="archive">
+    <li><a href="/briefing/2026-09-22">September 22, 2026</a> <span class="atag">current</span><small>Three states seated; Tennessee 1 to 115; the Maine misfile corrected; On the Record restarts; a monitor that failed into a void.</small></li>
+    <li><a href="/briefing/2026-09-11">September 11, 2026</a><small>Treasury Tracker goes statewide in four states; Season 2 opens to voters; the first rise in the stance total in months.</small></li>
+  </ul>
+  <p style="margin-top:14px;font-size:13px;color:var(--dim)"><b>The archive starts here.</b>  Earlier briefings were published by overwriting this page, so they were not kept.  That is the gap this closes, and why the list is short.</p>
+</div>
+
+<div class="h2row" id="inform"><h2>Inform Pillar: Shared Facts</h2><p>Open to everyone, no login.  Evidence-based, engaging, anti-partisan.</p></div>
+<div class="tablebox features"><table>
+  <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
+  <tr>
+    <td class="fname">Empowered Essentials</td>
+    <td><span class="chip c-live">Live Alpha</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>ZIP-to-representatives with funding, votes and stances.  <b>Eight new communities got a banner.</b>  A quieter fix matters more: <b>school-district and county records had been hijacking the Local banner</b>, so a city page could show someone else&rsquo;s jurisdiction.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Portraits for the 70 Puerto Rico alcaldes still without one, and the territory&rsquo;s first stance research.  One sourcing rule was written down: <b>VOTE411 is a pointer, never a cited source.</b>  We follow it to the original and cite that.</td>
+  </tr>
+  <tr>
+    <td class="fname">Empowered Compass</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Season 2 has been what the Compass asks since September 4: <span data-auto="topics_open">60</span> topics from a library of <span data-auto="topics">64</span>.  A <b>surveillance technology</b> topic was added and used at once to seat eleven Nashville members, and <b>Season 3 exists as a draft</b> &mdash; assembled in the open, not switched on underneath the voter.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Every stance row carries a season, a pinned revision and an editor, so a position can change without erasing what was true before.  <b>1,695 answers &mdash; about 5% &mdash; sit on topics the open season no longer asks</b>: history a voter can read, not a position they can compare today.</td>
+  </tr>
+  <tr>
+    <td class="fname">Treasury Tracker</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>The biggest dataset we hold: <span data-auto="budget_entities">8,144</span> governments, up 637.  <b>The work was identity, not volume.</b>  A state publisher renamed a city and we ended up holding it twice, so the loader stopped keying governments on their names: it keys on the publisher&rsquo;s own stable id and runs a fork check after every load.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Grade the rows that still read <code>unknown</code>, and close the per-year document gaps in the loaded roster.  The recurring lesson has one shape, and it repeated twice: <b>a check can pass, or fail, and still not be measuring what you think.</b></td>
+  </tr>
+  <tr>
+    <td class="fname">Read &amp; Rank</td>
+    <td><span class="chip c-dev">In Development</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>A blind taste test for candidates: the question, not the race, is the unit of comparison.  <b>No commits for a second cycle.</b>  It is gated on the stance pool the research waves are filling, so the three states above are the work that unblocks it.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Candidate quote sourcing for 2026 races, once the stance pool for those races is deep enough to draw from.</td>
+  </tr>
+  <tr>
+    <td class="fname">Fallacy Finders</td>
+    <td><span class="chip c-dev">In Development</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>v1.1 is 4 of 6 phases done and built the <b>Fallacy Sleuth</b>, curation-time AI proposing timecoded fallacy tags on a transcript.  Its anti-partisan guarantees are mechanical rather than promised: names stripped before the model sees a word, every clip re-run with the speakers swapped and diffed, nothing published without two independent human agreements.  <b>Quiet for a third cycle</b> &mdash; but the dependency it waits on moved.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 10 finishes the US House floor clip end to end, then rights-clean clip sourcing at volume through On the Record.</td>
+  </tr>
+  <tr>
+    <td class="fname">Civic Trivia Championships</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span><b>The Featured shelf shipped</b>, and the label is finally true: the old strip was just the first ten collections in tier order, so the ones it was named for could never reach it.  <b>Then the difficulty labels turned out to be decorative.</b>  Easy questions are answered correctly 49.9% of the time and medium 50.0% &mdash; the same question wearing two labels &mdash; while <b>1,550 medium questions had never been served to anyone</b>, because the default mode draws four of five slots from the easy pool.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>A rubric now defines the three levels by <b>what the player has to bring</b>, with an easy floor of 25&ndash;33%.  Relabelling could not reach it, so 59 new easy questions were written &mdash; all in the seam every bank was missing, <b>local identity</b>.  One collection had sixty-odd questions on council restructuring and the auditor&rsquo;s office, including its room number, and none asking which river runs through the city.</td>
+  </tr>
+</table></div>
+
+<div class="h2row" id="connect"><h2>Connect Pillar: Shared Values</h2><p>Connected accounts, one human one voice.  Parked during the election push; resumes after November.</p></div>
+<div class="tablebox features"><table>
+  <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
+  <tr>
+    <td class="fname">Civic Spaces</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Geo-scoped communities, neighborhood to federal, with friends, posts and role-gated moderation.  <b>This was the pillar&rsquo;s busiest week since April, despite being parked</b>, because the work was interface, not new scope: a three-column shell, and the Issue Alignment Compass brought back <b>drawn with the same component the Compass itself renders</b> rather than a second radar of our own.  Members can now read the <b>sibling shards</b> of their own jurisdiction &mdash; a city splits into shards past a member cap, and until now there was no way to see what the rest of your city was discussing.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Two decisions, not omissions.  A member with no address now gets a real prompt instead of a dismissible banner over a blank page, and it carries <b>no address field</b>, on purpose: <b>Civic Spaces never sees or stores your address.</b>  It only reads the jurisdictions the accounts app returns, and that app asks properly.  And <b>dark is now the default across every EV subdomain</b>, shared by a cookie on the parent domain, because the old behaviour was a theme that reset every time you switched tools.</td>
+  </tr>
+  <tr>
+    <td class="fname">Empowered Quests</td>
+    <td><span class="chip c-live">Live</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Fact-verification quests with consensus scoring; verified facts already feed Essentials.  Red gem quests unlock at VR 90+.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>v1.6 planning.</td>
+  </tr>
+  <tr>
+    <td class="fname">Focused Communities</td>
+    <td><span class="chip c-paused">Paused</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>v1.0 shipped April 17: per-topic forums wired to the Compass.  Waiting on the post-election Connect pivot.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>v1.1: badge ratification and argument mapping.</td>
+  </tr>
+  <tr>
+    <td class="fname">Empowered Listening</td>
+    <td><span class="chip c-paused">Paused</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Structured debate infrastructure; 5 of 6 phases done &mdash; timers, transcription, audience notes.  Its planning documents were brought back in step with what is actually built &mdash; the cheapest thing you can do for a project you mean to pick up again.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 6: voting and badges.  Then Common Grounds can build on it.</td>
+  </tr>
+  <tr>
+    <td class="fname">Emparks</td>
+    <td><span class="chip c-design">Design</span></td>
+    <td><div class="meter"><span class="f"></span><span></span><span></span><span></span></div><div class="mlabel">design</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Platform-wide annotation system, five mark types.  Full design doc; no build yet.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Awaits Connect-pillar capacity.</td>
+  </tr>
+  <tr>
+    <td class="fname">Common Grounds</td>
+    <td><span class="chip c-design">Design</span></td>
+    <td><div class="meter"><span class="f"></span><span></span><span></span><span></span></div><div class="mlabel">design</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Adversarial-collaboration mediation.  Full design doc; depends on Empowered Listening and Fallacy Finders arbiters.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Builds after its dependencies land.</td>
+  </tr>
+</table></div>
+
+<div class="h2row" id="platform"><h2>Platform Core &amp; Infrastructure</h2><p>The shared spine every app plugs into.</p></div>
+<div class="cols">
+  <div class="card">
+    <h3 class="serif">ev-accounts <span class="gold">v2.23</span></h3>
+    <p>Auth, tiers, XP and gems, politician database, TIGER geofencing, elections.  <b>This cycle it wrote its privacy rules down instead of holding them in people&rsquo;s heads.</b>  A decision record sets the <b>privacy floors</b> &mdash; what the platform may show about a person, and when &mdash; with a retention policy for the stance audit, so a read of someone&rsquo;s answers is bounded by a rule anybody can look up rather than by whoever wrote the endpoint.  The audit&rsquo;s pre-flight checks ran before it was built and <b>found the first stage of the design wrong</b>, which is what a pre-flight is for.  Maryland&rsquo;s state-legislative district identifiers had collapsed onto each other &mdash; <b>84 rows, not the 24 first reported</b> &mdash; and the repair carries a guard so the shape cannot regress quietly.  <span data-auto="districts">9,189</span> districts mapped, <span data-auto="leg_votes">121,178</span> legislative votes and <span data-auto="bills">19,622</span> bills on record.</p>
+  </div>
+  <div class="card">
+    <h3 class="serif">On the Record</h3>
+    <p>Speaker-attributed, searchable transcripts of public meetings, synced to the original video.  <b>It restarted.</b>  After five cycles of near-silence and two consecutive unexplained drops in the segment count, ten meetings landed &mdash; legislative days, a city council regular session, a full interview, and an <b>LA mayoral debate</b> &mdash; and the dataset now reads <b><span data-auto="meetings">164</span> meetings, <span data-auto="segments">18,923</span> transcript segments and <span data-auto="speakers">1,190</span> identified speakers</b>, including LA City Council with <span data-auto="council_votes">7,200</span> recorded council votes.  Two things to be straight about.  The segment total is now <i>above</i> where it stood before the drops, so the new ingest more than covered them &mdash; but <b>the drops themselves are still unexplained</b>, and a total moving up does not answer why it moved down.  And segments carry no creation timestamp, so the ten dated meetings are the evidence here, not the segment count.  Built by volunteer Chris Andrews; it feeds the meetings system and the clip pipeline Fallacy Finders is waiting on.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px;border-left:3px solid var(--amber)">
+  <h3 class="serif">A check that failed for three weeks, into a void</h3>
+  <p style="max-width:92ch">Treasury Tracker holds a set of <b>frozen figures</b>: budget numbers that have been verified and may not move without a recorded decision.  A weekly invariant compares the live database against that set.  <b>It failed on September 7, 14 and 21 &mdash; three weeks running &mdash; and nobody was told.</b>  The job fired perfectly every time and wrote each verdict into a table nothing in the codebase reads, and the workflow that would have raised an issue had been switched off for want of a credential.  The check worked.  It reported into a void.</p>
+  <p style="margin-top:10px;max-width:92ch"><b>The data was never wrong.</b>  The database held an expectation three revisions out of date while the repository had moved on through decisions recorded properly each time; the differences match those notes exactly, which makes the diagnosis certain rather than plausible.  The real residual was two rows, not sixty-five.  Three things changed: the verdict is now <b>read on every daily run</b>, and a missing or stale one counts as a failure rather than a pass; the runner no longer reports one condition when it has found another; and a <b>live privilege sweep</b> now runs inside the database weekly, because the old guard read the text of code changes and could never see anything made through a console.  <b>We would rather publish this than a clean week.</b>  A monitor nobody reads is worse than no monitor, because it costs you the belief that you are being watched.</p>
+</div>
+
+<div class="h2row" id="data"><h2>Data Coverage Deep Dive</h2><p>The invisible work.  This is what "evidence-based" costs, and we paid it.</p></div>
+<div class="cols">
+  <div class="card">
+    <h3 class="serif">Sourced stances, by where they serve</h3>
+    <p><span data-auto="stances">36,420</span> stance positions across <span data-auto="pols_with_stances">4,196</span> politicians and <span data-auto="topics">64</span> topics, every one carrying reasoning and cited sources; <span data-auto="candidates_with_stances">1,690</span> of the 2026 candidates already have some.  One figure needs its date said out loud: <b><span data-auto="verified_sources">2,722</span> sources were independently re-checked in a sweep that finished in April 2026, and the number has not moved since</b>, because every row in it was written then.  It is a dated achievement, not a running total.</p>
+    <div class="tablebox" style="margin-top:14px;border:none;background:transparent"><table>
+      <tr><th>Coverage area</th><th style="text-align:right">Politicians</th><th style="text-align:right">Stances</th></tr>
+      <tr><td>US Congress + national</td><td class="num">571</td><td class="num">9,647</td></tr>
+      <tr><td>2026 candidates &amp; discovered names (no seat)</td><td class="num">940</td><td class="num">6,044</td></tr>
+      <tr><td>California (state + local)</td><td class="num">373</td><td class="num">4,787</td></tr>
+      <tr><td>Massachusetts (state + local)</td><td class="num">302</td><td class="num">3,355</td></tr>
+      <tr><td>Maryland (state + local)</td><td class="num">188</td><td class="num">2,228</td></tr>
+      <tr><td>Texas (state + local)</td><td class="num">270</td><td class="num">2,073</td></tr>
+      <tr><td>Maine (state + local)</td><td class="num">186</td><td class="num">1,794</td></tr>
+      <tr><td>Virginia (state + local)</td><td class="num">166</td><td class="num">900</td></tr>
+      <tr><td>Oregon (state + local + county)</td><td class="num">154</td><td class="num">824</td></tr>
+      <tr><td>Wisconsin (state + county + local)</td><td class="num">208</td><td class="num">628</td></tr>
+      <tr><td>Utah (state + city + county)</td><td class="num">48</td><td class="num">555</td></tr>
+      <tr><td>Washington (state + county + city)</td><td class="num">161</td><td class="num">489</td></tr>
+      <tr><td>Arizona (state + local)</td><td class="num">129</td><td class="num">436</td></tr>
+      <tr><td>North Carolina (state + local)</td><td class="num">124</td><td class="num">406</td></tr>
+      <tr><td>39 more jurisdictions (incl. Tennessee, Florida and DC)</td><td class="num">376</td><td class="num">2,254</td></tr>
+    </table></div>
+    <p style="margin-top:14px"><b>The table reconciles, and that is a weaker check than it looks.</b>  Every politician with at least one answer lands in exactly one row, and the rows sum <b>exactly</b> to the headline totals.  That catches a missing row.  It cannot catch a row filed in the wrong place, because a misattribution moves a count between buckets without changing the sum &mdash; which is how a past error survived a table that reconciled perfectly.  The corroborating signal is agreement across cycles: rebuilt today, <b>thirteen of the fourteen named rows reproduced their politician counts exactly</b>.  <b>Tennessee is why the remainder row grew by 118 people, and it has no row of its own yet</b>; next cycle it should.</p>
+    <p style="margin-top:10px"><b>How a stance gets seated.</b>  A member is placed on a topic because of <b>a bill they sponsored, read in its session-law text</b> &mdash; not a sentence someone else wrote about them.  Three rules travel with every wave: <b>a unanimous bill cannot evidence a position</b>; <b>cite the session law, not the introduced bill</b>, because a bill can be gutted by a committee substitute long after members file it and a sponsor list never changes; and where a mechanism matches no rung clause by clause, the answer is <b>blank</b>.  Two blanks this cycle are worth more than most of the seatings: one Nashville member&rsquo;s record was read in full and yielded <b>zero</b>, and Tennessee&rsquo;s eight education topics were triaged as <b>unreachable from state statute</b>.</p>
+  </div>
+  <div class="card">
+    <h3 class="serif">Budgets you can follow</h3>
+    <p>Treasury Tracker&rsquo;s database holds budget data for <b><span data-auto="budget_entities">8,144</span> government entities across all 50 states plus DC</b>, spanning fiscal years <span data-auto="min_fy">1976</span> to <span data-auto="max_fy">2028</span>:</p>
+    <ul>
+      <li><b><span data-auto="t_cities">2,903</span> cities</b>, <span data-auto="t_townships">2,787</span> townships, <span data-auto="t_boroughs">949</span> boroughs, <span data-auto="t_counties">699</span> counties, <span data-auto="t_towns">486</span> towns, <span data-auto="t_villages">253</span> villages, <span data-auto="t_states">50</span> states, and <span data-auto="t_other">17</span> others including the federal budget</li>
+      <li><b>That first line is a correction.</b>  Until today this page listed four classes &mdash; cities, counties, states and towns &mdash; and printed 3,502 of 7,507 entities as though that were the roster.  The missing 4,005 were townships, boroughs and villages, which exist because a state hands over its governments in the classes <i>its own</i> publisher uses.  The list now sums to the headline, and the refresh script complains if it ever stops</li>
+      <li><b><span data-auto="line_items_m">2.7 million</span></b> line items, <b><span data-auto="transactions_m">1.3 million</span></b> transactions and <b><span data-auto="salaries">282,457</span></b> public salary records</li>
+      <li>State general funds upgraded to audited sources across all 50 states, each tie-verified to the penny; a blind re-derivation confirmed <b>149 of 151 exact matches</b>, the two exceptions documented</li>
+      <li><b>A retired budget address now resolves through an alias instead of guessing</b>, closing the defect that set the rule: an unrecognised slug used to resolve quietly to a real budget for the wrong city, which is worse than an honest &ldquo;not found&rdquo;</li>
+      <li>The core promise: no best-guess data wearing a real-looking label</li>
+    </ul>
+  </div>
+</div>
+<div class="card" style="margin-top:18px">
+  <h3 class="serif">Our own books, in our own tool</h3>
+  <p style="max-width:92ch">Empowered Vote&rsquo;s budget is published in Treasury Tracker like any other entity, and putting ourselves through our own product found it describing us wrongly.  <b>The line under every hero headline read &ldquo;Explore how public funds are allocated and spent&rdquo; &mdash; including on our page, where the money is donations, not public funds.</b>  No figure was wrong, which is why nothing would have flagged it.  The page now says what it is, and deliberately makes <b>no completeness claim</b>: it publishes the bank balance, and we also hold an untransferred wallet balance, so &ldquo;every dollar&rdquo; would be an overstatement.  A transparency page is the worst place to overstate coverage.</p>
+</div>
+<div class="card" style="margin-top:18px">
+  <h3 class="serif">Follow the money</h3>
+  <p style="max-width:92ch">The third leg, alongside votes and stances.  The platform holds <b><span data-auto="fin_contribs_m">28.2 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">7.8 billion</span></b>, covering <b><span data-auto="fin_pols">1,302</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span> election cycles (<span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>)</b>.  Every record traces to its original FEC filing.  The pipeline handles <b>amended filings</b> &mdash; superseded lines are retired individually instead of counted twice.  This is the &ldquo;who funds whom&rdquo; data behind Essentials, presented without commentary.</p>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <h3 class="serif">Stance research across the map</h3>
+  <p>Every state has at least one researched official, and all 50 congressional delegations are covered nationally.  Shading shows the depth of <b>state and local</b> research.  <b>Tennessee&rsquo;s 1 to 115 is the largest single-cycle move this map has recorded</b>, and Maryland deepened to 188.  Minnesota, Pennsylvania and South Carolina barely moved, which understates them badly: all three had hundreds of <i>seats</i> loaded, and this map shades by stances researched, not seats held.  <b>Puerto Rico is an outlined tile</b> &mdash; 161 seats seeded, no stances yet.</p>
+  <div class="usmap">
+    <div class="st t1" style="grid-row:1;grid-column:1" title="Alaska: 2 researched officials">AK</div>
+    <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 186 researched officials">ME</div>
+    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 researched officials">VT</div>
+    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 researched official">NH</div>
+    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 161 researched officials">WA</div>
+    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 researched officials">ID</div>
+    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 researched officials">MT</div>
+    <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 5 researched officials">ND</div>
+    <div class="st t1" style="grid-row:3;grid-column:5" title="Minnesota: 6 researched officials">MN</div>
+    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 researched officials">IL</div>
+    <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 208 researched officials">WI</div>
+    <div class="st t1" style="grid-row:3;grid-column:8" title="Michigan: 4 researched officials">MI</div>
+    <div class="st t1" style="grid-row:3;grid-column:9" title="New York: 4 researched officials">NY</div>
+    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 researched officials">RI</div>
+    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 302 researched officials">MA</div>
+    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 154 researched officials">OR</div>
+    <div class="st t2" style="grid-row:4;grid-column:2" title="Nevada: 33 researched officials">NV</div>
+    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 researched officials">WY</div>
+    <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 4 researched officials">SD</div>
+    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 4 researched officials">IA</div>
+    <div class="st t2" style="grid-row:4;grid-column:6" title="Indiana: 20 researched officials">IN</div>
+    <div class="st t1" style="grid-row:4;grid-column:7" title="Ohio: 3 researched officials">OH</div>
+    <div class="st t1" style="grid-row:4;grid-column:8" title="Pennsylvania: 5 researched officials">PA</div>
+    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 researched officials">NJ</div>
+    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 researched officials">CT</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 374 researched officials">CA</div>
+    <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 48 researched officials">UT</div>
+    <div class="st t2" style="grid-row:5;grid-column:3" title="Colorado: 33 researched officials">CO</div>
+    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 4 researched officials">NE</div>
+    <div class="st t2" style="grid-row:5;grid-column:5" title="Missouri: 19 researched officials">MO</div>
+    <div class="st t1" style="grid-row:5;grid-column:6" title="Kentucky: 4 researched officials">KY</div>
+    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 researched officials">WV</div>
+    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 166 researched officials">VA</div>
+    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 188 researched officials">MD</div>
+    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 4 researched officials">DE</div>
+    <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 129 researched officials">AZ</div>
+    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 5 researched officials">NM</div>
+    <div class="st t1" style="grid-row:6;grid-column:4" title="Kansas: 5 researched officials">KS</div>
+    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 researched officials">AR</div>
+    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 115 researched officials">TN</div>
+    <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 124 researched officials">NC</div>
+    <div class="st t1" style="grid-row:6;grid-column:8" title="South Carolina: 5 researched officials">SC</div>
+    <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 16 researched officials">DC</div>
+    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 3 researched officials">OK</div>
+    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 5 researched officials">LA</div>
+    <div class="st t1" style="grid-row:7;grid-column:6" title="Mississippi: 4 researched officials">MS</div>
+    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 4 researched officials">AL</div>
+    <div class="st t1" style="grid-row:7;grid-column:8" title="Georgia: 6 researched officials">GA</div>
+    <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 2 researched officials">HI</div>
+    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 272 researched officials">TX</div>
+    <div class="st t2" style="grid-row:8;grid-column:9" title="Florida: 12 researched officials">FL</div>
+    <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: 161 officials seeded, stance research not started">PR</div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">12</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">7</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">32</span>)</span>
+    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>Seats seeded, research not started (<span data-auto="tier_none">1</span>)</span>
+  </div>
+  <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deeper tiers add legislatures, counties and cities.</p>
+</div>
+
+<!--
+  Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
+  a rolling window with internal/test traffic excluded (filterTestAccounts).  refresh.mjs
+  does NOT touch these — it only reads the platform Postgres DB.  Last pulled: 30 and 90
+  days ending September 22, 2026, via ad-hoc HogQL queries.  The $host breakdown is run
+  FIRST every cycle as a discovery step, then each app is re-queried as one dau series with
+  an exact host filter so people are deduped rather than summed.  See briefing/README.md for
+  the exact events behind each row.
+-->
+
+<div class="h2row" id="reach"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
+<div class="push">
+  <h3 class="serif">Small, and not shallow</h3>
+    <p><b>609 people used the platform in the last 90 days</b>, across every app, over 1,703 sessions.  What they do once they arrive is good &mdash; sessions average <b>six and a half minutes</b> and <b>7 in 10 don&rsquo;t bounce</b> &mdash; so the constraint is arrival, not engagement.  <b>93 of the 300 who reached the main site clicked through into an app</b>, 31% in the quarter.</p>
+    <p style="margin-top:10px"><b>Read every figure here as an order of magnitude, not a trend line.</b>  At this volume a couple of people either side is the entire swing, and the quarter window slides forward, so an app can &ldquo;fall&rdquo; because a busy week in June rolled out of it.  Nothing this cycle was aimed at arrival, so 635 to 609 is the expected result of not working on it.  The hostname map was re-run before any of these figures were pulled and found <b>no new host</b>, which is what makes this pull readable against the last four: the main site went 306, 316, 312, 297, 300.  One host that served nobody last quarter served somebody this one &mdash; the argument for leaving quiet hosts in the filter rather than tidying them out.</p>
+</div>
+<div class="cols" style="margin-top:18px">
+  <div class="card">
+    <h3 class="serif">Does the tool get used <i>as a tool</i>?</h3>
+    <p>Everyone who arrived, against the people who did the one thing that app exists for.  Bars are the 90-day rate; counts are people.</p>
+    <div class="funnel">
+      <div class="fhead"><span class="fcol">30d</span><span class="fcol">90d</span></div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Compass &mdash; completed a calibration <span style="color:var(--dim);font-weight:400">(of 126)</span></span><span class="fcount"><span class="fcol f30">8</span><span class="fcol f90">35</span></span></div>
+        <div class="ftrack"><div class="fbar b3" style="width:28%">28%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Essentials &mdash; looked up an official <span style="color:var(--dim);font-weight:400">(of 111)</span></span><span class="fcount"><span class="fcol f30">7</span><span class="fcol f90">29</span></span></div>
+        <div class="ftrack"><div class="fbar b2" style="width:26%">26%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Read &amp; Rank &mdash; revealed a ballot <span style="color:var(--dim);font-weight:400">(of 61)</span></span><span class="fcount"><span class="fcol f30">3</span><span class="fcol f90">10</span></span></div>
+        <div class="ftrack"><div class="fbar b4" style="width:16%">16%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Civic Trivia &mdash; finished a game <span style="color:var(--dim);font-weight:400">(of 110)</span></span><span class="fcount"><span class="fcol f30">7</span><span class="fcol f90">12</span></span></div>
+        <div class="ftrack"><div class="fbar b1" style="width:11%">11%</div></div>
+      </div>
+      <div class="fstep">
+        <div class="frow"><span class="flabel">Treasury &mdash; anything past the front page <span style="color:var(--dim);font-weight:400">(of 145 &mdash; see below)</span></span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">11</span></span></div>
+        <div class="ftrack"><div class="fbar b5" style="width:5%">n/a</div></div>
+      </div>
+    </div>
+    <p class="fcap"><b>Two of these are start problems, not finish problems.</b>  Only 17 people <i>started</i> a trivia game in a quarter, on 110 arrivals; 12 finished.  Read &amp; Rank is the same shape: 23 races started, 10 ballots revealed.  The Compass is the opposite and is the healthiest funnel we have: <b>114 of its 126 visitors opened the quiz</b> and 35 saw it through.</p>
+  </div>
+  <div class="card">
+    <h3 class="serif">How many arrive</h3>
+    <p>Unique visitors per app, 30 days and the full quarter.  <b>Each app is counted once across every hostname that serves it</b> &mdash; Treasury draws traffic on four, the main site on two.</p>
+    <div class="eco">
+      <div class="ecohead"><span></span><span></span><span class="eh">30d</span><span class="eh">90d</span></div>
+      <div class="ecorow"><span class="ehost">main site</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">112</span><span class="eval">300</span></div>
+      <div class="ecorow me"><span class="ehost">treasury</span><span class="etrack"><span class="ebar" style="width:48.3%"></span></span><span class="eval e30">51</span><span class="eval">145</span></div>
+      <div class="ecorow"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:42%"></span></span><span class="eval e30">44</span><span class="eval">126</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:37%"></span></span><span class="eval e30">34</span><span class="eval">111</span></div>
+      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:36.7%"></span></span><span class="eval e30">44</span><span class="eval">110</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:20.3%"></span></span><span class="eval e30">14</span><span class="eval">61</span></div>
+    </div>
+    <p class="fcap"><b>Treasury Tracker is still the second most-visited thing we run</b> and holds the platform&rsquo;s largest dataset.  <b>Civic Spaces is absent from this table</b>, and that is a measurement gap rather than a result: it serves no traffic our analytics can see.  Whether Treasury&rsquo;s 145 <i>reached a budget</i> is the question the note below is about.</p>
+  </div>
+</div>
+<div class="card" style="margin-top:18px;border-left:3px solid var(--amber)">
+  <h3 class="serif">A number this page published, withdrew &mdash; and what replaced it</h3>
+  <p style="max-width:92ch">An earlier edition said <b>seven people in a quarter opened any of Treasury Tracker</b>, as 5% of 152 visitors.  <b>That rate was not sound and it stays withdrawn.</b>  The events were fine; the denominator was not &mdash; Treasury pushed its in-app navigation into the address bar without recording a page view, so every visitor was filed against the bare domain.  The direction was wrong too: this quarter those few produced <b>110 category drills, 82 entity selections and 61 line-item views</b>.  The handful who reach a budget use it hard.</p>
+  <p style="margin-top:10px;max-width:92ch"><b>The fix has been recording since August 16, and the two ways of counting still disagree by five times.</b>  <b>52 people reached a budget address</b>; only <b>11</b> fired any past-the-front-page event.  The split explains it: <b>41 of the 52 landed on our own budget</b>, one click from the donate page &mdash; a transparency visit, not budget exploration, and it selects nothing, so it fires nothing.  That leaves <b>12 who opened some other government&rsquo;s budget</b>, down from 16.  Neither is published as a rate.  Treasury stays <b>unmeasured rather than low</b> until the half that is not ours outgrows the donate traffic.  The rule it bought applies to every app here: <b>a low count is a claim about instrumentation until you have read the code path.</b></p>
+</div>
+
+<div class="h2row" id="ahead"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>
+<div class="card" style="padding:6px 22px">
+  <div class="horizon">
+    <div class="when">Now to Nov</div>
+    <div><h4>Election readiness</h4><p>Research the seats just loaded &mdash; Pennsylvania, South Carolina and Minnesota have rosters and almost no stances.  Grade the budget rows still marked <code>unknown</code>.  Finish the 2026 House candidate waves and land Read &amp; Rank candidate quotes once the pool can carry them.  Success in November looks like one thing: <b>any voter in a served area can look up every name on their ballot and follow the money behind it.</b></p></div>
+  </div>
+  <div class="horizon">
+    <div class="when">Post-election</div>
+    <div><h4>The Connect pivot</h4><p>Reactivate the parked pillar: Empowered Listening phase 6, Focused Communities v1.1, Civic Spaces v4.0 &mdash; whose shell, shared theme and sibling-shard view are groundwork done early.  This is where the platform stops being a reference tool and becomes a community, and where our sustaining-donor model lives.</p></div>
+  </div>
+  <div class="horizon">
+    <div class="when">The long game</div>
+    <div><h4>The Empower pillar</h4><p>Designed but not built: the Gems stipend economy, Awareness Exchange, Badges, Symposium tournaments, Emparks, Common Grounds, and tools for citizens to run for office on the strength of their solutions.  Roughly a third of the founding vision, waiting on the first two pillars.</p></div>
+  </div>
+</div>
+
+<div class="h2row" id="people"><h2>The People Doing This</h2><p>A volunteer-built platform, visible in the commit history.</p></div>
+<div class="people">
+  <div class="person">Chris Cantrell<small>founder, systems design, data pipelines</small></div>
+  <div class="person">Chris Andrews<small>On the Record, Read &amp; Rank redesign</small></div>
+  <div class="person">Krishna Patel<small>UX design; the Civic Spaces shell</small></div>
+  <div class="person">Radhika Joglekar<small>UX &amp; logo design</small></div>
+  <div class="person">Aditi Deshpande<small>UX design</small></div>
+  <div class="person">Peter Torres<small>treasurer</small></div>
+  <div class="person">Ryan Rinkel<small>secretary</small></div>
+  <div class="person">Debra Maniscalco<small>outreach</small></div>
+</div>
+
+<div class="card" style="margin-top:26px;border-left:3px solid var(--gold)">
+  <h3 class="serif">The purpose, mapped</h3>
+  <p>An interactive <a href="/maps/purpose-map.html" style="color:var(--gold);text-decoration:underline">Purpose mind map</a> walks the whole vision &mdash; the thesis, and the Why, How, Who and What &mdash; with a short explainer on every concept and pillar feature.</p>
+</div>
+
+<footer>
+  <b>Sources and method.</b>  App statuses from git history across all repositories.  Database counts queried live on <span data-auto="asof">September 22, 2026</span>.  Reach figures are from PostHog &mdash; the 30 and 90 days ending September 22, 2026, internal and test traffic excluded, each app counted once across every hostname that serves it.  &ldquo;Visitors&rdquo; and the per-app action counts are both unique people over the same window, so a rate between them is fair but is not a strict funnel.  A politician&rsquo;s state resolves through a fixed order of jurisdiction links with placeholder occupancy excluded, and federal seats are identified structurally, which is why they form one row.  <b>This edition is permanently archived at <a href="/briefing/2026-09-22" style="color:var(--gold)">empowered.vote/briefing/2026-09-22</a> and will not be edited after publication.</b>  In keeping with the platform&rsquo;s anti-partisan commitment, nothing in this report is colored red or blue.
+</footer>
+
+</div>
+
+<script>
+/* Marks the section you are currently reading.  The strip works without this --
+   these are ordinary anchors -- so an unsupported browser just leaves it
+   unmarked rather than broken.
+
+   Picks the LAST heading scrolled past, not whichever heading happens to be on
+   screen.  The first version used an IntersectionObserver over a narrow band
+   near the top, which meant nothing was marked at all for most of the page:
+   these sections run thousands of pixels, so once you are reading inside one,
+   its heading is long gone above the band. */
+(function () {
+  var links = [].slice.call(document.querySelectorAll('.jump a'));
+  if (!links.length) return;
+  var sections = links
+    .map(function (a) { return { link: a, el: document.getElementById(a.getAttribute('href').slice(1)) }; })
+    .filter(function (s) { return s.el; });
+  var ticking = false, marked = null;
+
+  function mark() {
+    ticking = false;
+    var current = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].el.getBoundingClientRect().top <= 60) current = sections[i];
+      else break;                       // sections are in document order
+    }
+    if (current === marked) return;
+    marked = current;
+    sections.forEach(function (s) {
+      if (s === current) s.link.setAttribute('aria-current', 'true');
+      else s.link.removeAttribute('aria-current');
+    });
+    /* On a phone the strip is scrolled sideways, so the marked label can sit off
+       the right edge. block:'nearest' keeps this from moving the page. */
+    if (current && current.link.scrollIntoView) {
+      current.link.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }
+
+  function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(mark); } }
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll, { passive: true });
+  mark();
+})();
+</script>
 </body>
 </html>

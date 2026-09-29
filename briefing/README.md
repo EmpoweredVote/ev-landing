@@ -77,6 +77,11 @@ cp briefing/2026-09-22/index.html briefing/2026-10-06/index.html   # BEFORE step
 The one thing that must not be skipped is step 1.  Publishing a new `index.html` over an
 unfrozen predecessor destroys that edition, and there is no copy anywhere else.
 
+- **7. Add the newly frozen edition to `tests/layout/briefing-tables-mobile.cjs`.**  Its `PAGES`
+  list is the only thing that notices when a presentation fix reaches the current page and misses
+  the archive — each edition carries its own copy of the stylesheet, so nothing else would.  The
+  summary line counts `PAGES.length`; do not hard-code it again.
+
 ## What updates automatically vs by hand
 
 `refresh.mjs` pulls live counts from the platform database and rewrites only the
@@ -207,6 +212,47 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 (read-only queries only); any env file containing it works.  Requires Node 20+.
 
 ## Notes
+
+- 🔴 **A test can stop discriminating because the thing it detected was REMOVED, and that failure
+  reads as a clean bill of health.**  The curated-versus-pool split was computed from migration
+  1702's `is_placeholder_occupancy` — does this person hold an office with no geography.  On
+  2026-09-24, migration CA_0206 retired all 76,330 of those placeholder offices (`essentials.offices`
+  85,134 → 8,804), so the column now reads false for every row in the table and the query answered
+  **89,903 curated, 0 in the pool**.  Nothing in the data was wrong; the test had simply lost its
+  subject.  `refresh.mjs` now asks what a record RESTS ON instead — a current term, the legacy office
+  link, a candidacy, or researched stances — and carries two tripwires: it compares that answer
+  against the independent `is_active` flag (they agreed on 99.5% of records on 2026-09-29) and
+  WARNs if any record ever holds a placeholder office again.  **Generalise it: when a figure
+  suddenly reads perfect, suspect the measurement before celebrating the result.**  The old test is
+  kept as a probe rather than deleted, which is what makes the tripwire possible.
+- **The `named` CTE in `coverage-table.sql` gained Tennessee on 2026-09-29**, honouring the promise
+  the 2026-09-22 edition made.  Adding a named row shrinks the remainder row and nothing else;
+  check that the partition still sums before publishing, because that is the only thing that
+  proves the new row was carved out rather than double-counted.
+- **The Civic Trivia bank count is automated now** (`trivia_active`).  It must count questions with
+  `status='active'` that are linked to an **active collection**: a bare count of `trivia.questions`
+  reads about 9,000, because the table also holds 4,021 archived and 1,974 expired rows.
+- 🔴 **PostHog can be queried from here without a browser or an MCP server, and the credential is
+  in the env file this page already uses.**  `C:/EV-Accounts/backend/.env` carries `POSTHOG_API_KEY`
+  (a `phx_` **personal** key, which can read) and `POSTHOG_PROJECT_ID=444996`.  POST to
+  `https://us.posthog.com/api/projects/444996/query/` with `Authorization: Bearer $POSTHOG_API_KEY`
+  and a body of `{"query": {...}}` — `TrendsQuery` for the dau rows, `WebOverviewQuery` for the
+  platform-wide framing figures, `HogQLQuery` for anything those cannot express.  Written down
+  because on 2026-09-29 the section was nearly published as a carried-forward week-old pull on the
+  belief that PostHog was unreachable; nobody had looked in the env file.  **Check for the
+  credential before declaring a source unavailable.**
+- **The two OR'd rows need HogQL, and HogQL does not get `filterTestAccounts` for free.**  A
+  multi-series `TrendsQuery` returns one count per series, so summing Treasury's six events
+  double-counts anyone who fired two; the union has to be `count(DISTINCT person_id) ... WHERE
+  event IN (...)`.  That means reproducing the test-account filter by hand — read it from
+  `GET /api/projects/444996/` (`test_account_filters`), which on 2026-09-29 was the single clause
+  `person id NOT IN COHORT 333605`, and write `AND person_id NOT IN COHORT 333605`.  **Control the
+  substitution before trusting it**: run one single-event row both ways and require them to agree.
+  They did, exactly, on two rows (37/37 and 12/12).  The project timezone is `US/Pacific`.
+- **A section that genuinely cannot be re-measured gets DATED, not restated** — its own heading
+  says when it was measured, both cards name the window, and the footer says plainly that it was
+  not re-taken.  That is the treatment the April source sweep gets.  Never quietly re-publish a
+  stale window under today's date.
 
 - 🔴 **A list of classes is a sample until it sums to the headline.**  The Treasury bullet
   listed four entity types — cities, counties, states, towns — and printed **3,502 of 7,507**

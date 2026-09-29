@@ -34,9 +34,14 @@ const CASES = [
 ];
 
 const loc = (r) => pathToFileURL(path.resolve(__dirname, '../..', r)).href;
+// Every edition, not just the newest two. An archived edition is frozen in what it CLAIMS, not
+// in how it renders, and each one carries its own copy of the stylesheet -- so a fix applied to
+// the current page reaches the archive only by hand, and nothing but this list would notice it
+// had been missed. Add the outgoing edition here whenever a new one is published.
 const PAGES = [
   ['current', loc('briefing/index.html')],
-  ['archived', loc('briefing/2026-09-11/index.html')],
+  ['archived 2026-09-22', loc('briefing/2026-09-22/index.html')],
+  ['archived 2026-09-11', loc('briefing/2026-09-11/index.html')],
 ];
 
 (async () => {
@@ -206,5 +211,5 @@ const PAGES = [
     console.error('briefing tables do not fit:\n  ' + failures.join('\n  '));
   }
   assert.deepStrictEqual(failures, [], 'briefing tables must fit their container on every device');
-  console.log(`OK briefing layout holds on ${CASES.length} devices x 2 editions x 2 orientations`);
+  console.log(`OK briefing layout holds on ${CASES.length} devices x ${PAGES.length} editions x 2 orientations`);
 })();

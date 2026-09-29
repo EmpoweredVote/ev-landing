@@ -41,17 +41,40 @@ const fmtB = (n) => (Number(n) / 1e9).toFixed(1).replace(/\.0$/, '') + ' billion
 // ---------- queries ----------
 // Curated vs discovery pool is a STRUCTURAL question, not a source-name one.  Testing
 // source = 'cal_access_discovery' caught California and missed Indiana entirely: 672 records seeded
-// from Indiana candidate-committee filings were being counted as curated officials.  Migration 1702
-// made the real test one column — essentials.politician_occupancy_evidence.is_placeholder_occupancy,
-// which asks whether the office carries geography (district, chamber or city) rather than where the
-// person came from.  Provenance is the wrong test: every incumbent seeking re-election has a
-// candidate committee.  The two figures below now sum the way migration 1702 describes: 77,002
-// placeholder rows in the pool, everyone else curated.
-const PLACEHOLDER = `EXISTS (SELECT 1 FROM essentials.politician_occupancy_evidence e
-                             WHERE e.politician_id = p.id AND e.is_placeholder_occupancy)`;
+// from Indiana candidate-committee filings were being counted as curated officials.  Provenance
+// stays the wrong test: every incumbent seeking re-election has a candidate committee.
+//
+// 🔴 THE MIGRATION-1702 TEST DIED ON 2026-09-24 AND DIED SILENTLY, BY BEING FIXED.  It asked
+// essentials.politician_occupancy_evidence.is_placeholder_occupancy — does this person hold an
+// office carrying no geography — and migration CA_0206 retired all 76,330 of those placeholder
+// offices (essentials.offices 85,134 -> 8,804).  Nobody holds a placeholder any more, so the
+// column reads false for every row in the table and the old query answered "89,903 curated, 0 in
+// the pool".  A test can stop discriminating because the thing it detected was REMOVED, and that
+// failure looks exactly like a clean bill of health.  The retired records themselves were not
+// deleted: all 76,330 people are still there, now simply seated on nothing.
+//
+// The replacement asks what a record RESTS ON.  A curated record carries at least one anchor —
+// a current term, the legacy office link, a candidacy in a race, or researched stances.  A
+// discovery record carries none of the four; it is a name lifted off a campaign-finance filing
+// and nothing else.  That is structural in the same way the old test was, and it survives the
+// placeholder offices being gone, because it never asked about them.
+//
+// The status flag `is_active` is kept as an INDEPENDENT second opinion rather than as the
+// answer, and the two are compared below.  Measured 2026-09-29 they agree on 89,441 of 89,903
+// records (99.5%); the disagreements are 350 active records with no anchor yet and 112 retired
+// people who still carry one.  If they ever diverge badly, the flag or the anchors moved and
+// this line needs reading again — hence the WARNING.
+const ANCHORED = `(
+     EXISTS (SELECT 1 FROM essentials.office_terms t
+              WHERE t.politician_id = p.id AND (t.term_end IS NULL OR t.term_end >= current_date))
+  OR p.office_id IS NOT NULL
+  OR EXISTS (SELECT 1 FROM essentials.race_candidates rc WHERE rc.politician_id = p.id)
+  OR EXISTS (SELECT 1 FROM inform.politician_answers a WHERE a.politician_id = p.id))`;
 const core = await one(`SELECT
-  (SELECT count(*) FROM essentials.politicians p WHERE NOT ${PLACEHOLDER}) AS pols_curated,
-  (SELECT count(*) FROM essentials.politicians p WHERE ${PLACEHOLDER}) AS pool,
+  (SELECT count(*) FROM essentials.politicians p WHERE ${ANCHORED}) AS pols_curated,
+  (SELECT count(*) FROM essentials.politicians p WHERE NOT ${ANCHORED}) AS pool,
+  (SELECT count(*) FROM essentials.politicians p WHERE p.is_active) AS active_flagged,
+  (SELECT count(*) FROM essentials.politician_occupancy_evidence WHERE is_placeholder_occupancy) AS placeholder_held,
   (SELECT count(*) FROM inform.politician_answers) AS stances,
   (SELECT count(DISTINCT politician_id) FROM inform.politician_answers) AS pols_with_stances,
   (SELECT count(*) FROM inform.compass_topics) AS topics,
@@ -72,7 +95,17 @@ const core = await one(`SELECT
   (SELECT count(*) FROM meetings.meetings) AS meetings,
   (SELECT count(*) FROM meetings.segments) AS segments,
   (SELECT count(*) FROM meetings.speakers) AS speakers,
-  (SELECT count(*) FROM meetings.la_council_votes) AS council_votes`);
+  (SELECT count(*) FROM meetings.la_council_votes) AS council_votes,
+  -- Civic Trivia's live bank.  Count the questions a PLAYER can be served: status 'active' AND
+  -- linked to an ACTIVE collection.  A bare count of trivia.questions reads ~9,000 because it
+  -- includes 4,021 archived and 1,974 expired rows, and a count that ignores the collection link
+  -- counts questions no collection serves.  The audit's own handoff re-derives this number every
+  -- session rather than carrying it forward, for the same reason the note there gives: nightly
+  -- yield and automatic expiry both move it, in opposite directions.
+  (SELECT count(*) FROM trivia.questions q
+     JOIN trivia.collection_questions cq ON cq.question_id = q.id
+     JOIN trivia.collections c ON c.id = cq.collection_id AND c.is_active
+    WHERE q.status = 'active') AS trivia_active`);
 
 const treasury = await one(`SELECT
   (SELECT count(DISTINCT municipality_id) FROM treasury.budgets) AS budget_entities,
@@ -95,6 +128,29 @@ const treasury = await one(`SELECT
   (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type='village'  AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_villages,
   (SELECT count(*) FROM treasury.municipalities m WHERE m.entity_type NOT IN ('city','county','state','town','township','borough','village')
                                                    AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id=m.id)) AS t_other`);
+
+// The anchor test and the `is_active` flag are two independent readings of the same split, so they
+// have to keep agreeing.  This is the check that would have caught CA_0206 retiring the placeholder
+// offices out from under the old test: the moment the two answers diverge, one of them has stopped
+// measuring the thing.  `placeholder_held` is printed for the same reason — it is the old test, kept
+// as a tripwire rather than deleted, and it should now read 0 for ever.
+{
+  const curated = Number(core.pols_curated), flagged = Number(core.active_flagged);
+  const gap = Math.abs(curated - flagged);
+  // 5%, not 2%.  Measured 2026-09-29 the honest gap is already 238 of 12,198 — 1.95% — so a 2%
+  // threshold would fire on an ordinary week's drift, and a warning that cries wolf is one people
+  // learn to scroll past.  This is meant to catch a test losing its subject, not to police noise.
+  if (gap > curated * 0.05) {
+    console.log(`WARNING: the anchor test says ${curated} curated records, is_active says ${flagged}`);
+    console.log(`  — a gap of ${gap}, past the 5% these two have historically tracked within.`);
+    console.log('  Read both before publishing; one of them has stopped describing the split.');
+  }
+  if (Number(core.placeholder_held) > 0) {
+    console.log(`WARNING: ${core.placeholder_held} records hold a placeholder office again.`);
+    console.log('  CA_0206 retired all of them on 2026-09-24; if they are back, a loader is making');
+    console.log('  offices with no geography again and the pool figure is understated.');
+  }
+}
 
 // The entity-class rows are a PARTITION of the headline entity count, so they have to sum to it.
 // That check is the only thing that would have caught the 2026-09-22 defect, where the page listed
@@ -279,6 +335,7 @@ const values = {
   districts: fmt(core.districts), leg_votes: fmt(core.leg_votes), bills: fmt(core.bills),
   meetings: fmt(core.meetings), segments: fmt(core.segments), speakers: fmt(core.speakers),
   council_votes: fmt(core.council_votes),
+  trivia_active: fmt(core.trivia_active),
   budget_entities: fmt(treasury.budget_entities), min_fy: String(treasury.min_fy), max_fy: String(treasury.max_fy),
   line_items_m: fmtM(treasury.line_items), transactions_m: fmtM(treasury.transactions),
   salaries: fmt(treasury.salaries),
