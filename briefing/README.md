@@ -213,6 +213,22 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 
 ## Notes
 
+- 🔴 **A sibling repo's working tree is NOT its state. Read `git show origin/<default>:<path>`.**
+  On 2026-09-29 this page published "37 of 43 trivia collections audited" and "six collections
+  nobody has read yet" when the true figures were 42 of 43 and none. The numbers came from
+  `docs/superpowers/HANDOFF-collection-quality-audit.md` read off disk in `C:/Project Test`, a
+  repo that sits on a feature branch whose local `master` was **32 commits behind** `origin/master`.
+  A `git fetch` HAD been run; the comparison was made against the stale local ref anyway, so the
+  file read was four sessions old and every one of those six collections had since been closed.
+  **Three habits, all cheap:** fetch, then `git rev-list --count master..origin/master` and say the
+  number out loud; read living documents with `git show origin/master:<path>` rather than `cat`;
+  and re-derive any figure the document itself tells you to re-derive -- this one says so in its
+  own first paragraph, and following that instruction would have caught it without any git at all.
+  The trivia bank totals on the page were right precisely because they came from SQL.
+  Generalise it: **for every repo this page reports on but does not work in, the remote ref is the
+  source of truth and the database beats both.**
+
+
 - 🔴 **A test can stop discriminating because the thing it detected was REMOVED, and that failure
   reads as a clean bill of health.**  The curated-versus-pool split was computed from migration
   1702's `is_placeholder_occupancy` — does this person hold an office with no geography.  On
