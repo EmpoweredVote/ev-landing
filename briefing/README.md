@@ -213,6 +213,32 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 
 ## Notes
 
+- 🔴 **`git log --since=2026-09-29` does NOT mean midnight.**  Git's approxidate fills the unstated
+  time of day from *now*, so a bare date silently starts the window at this afternoon's clock time
+  and drops everything earlier that day.  On 2026-10-05 the same query read **11** commits as a bare
+  date and **39** as `--since=2026-09-29T00:00:00`, for one repo.  Always pass the time.
+- 🔴 **Resolve the default branch; do not assume the one that is checked out.**  `git -C <repo>
+  symbolic-ref --short refs/remotes/origin/HEAD`.  EV-Accounts defaults to `master` and sits on a
+  feature branch locally; counting against `origin/main` returned nothing at all, which reads
+  exactly like a quiet week.  Pair this with the working-tree rule below — one gives you the right
+  ref, the other stops you reading a stale one.
+- 🔴 **A research programme can produce thousands of rows and move no published figure, and the
+  commit log cannot tell you which.**  On 2026-10-05 three city slices landed 1,645 researched rows
+  across ~150 commits while `inform.politician_answers` had not gained a row since 2026-09-27.  The
+  output lives in `backend/data/stance-research/<batch>/`: `research.csv` / `stances.csv` are the
+  rows, and **`publish-report.json` is the only honest count of what was scored** — each entry
+  carries an `action`, and `review` means a human has not seen it yet.  `gate-findings.json` says
+  why.  Check `max(created_at)` on `politician_answers` before writing any sentence about research
+  reaching voters, and say plainly when the answer is "it has not".
+  ⚠ `inform.stance_research_review` is **not** that queue — it held only 51 rows from June and none
+  of the new work.  Do not read it as the admin queue without checking its `batch_id`s first.
+- **`inform.reliability_certifications` is publishable and nothing else reproduces it.**  One row
+  per certified stratum: `level`, `evidence_class`, `n`, the agreement statistics `m1_alpha` /
+  `m2_alpha` / `m3_wilson_low`, the severe-disagreement count `m4_severe`, `certified`, and a
+  `reason` array that carries the leakage control, the pre-ruling comparison and who approved it.
+  Read `unnest(reason)` — the controls are the part worth printing, and they are only in there.
+- **`essentials.districts` has no `created_at`**, so "districts added this cycle" has to come from
+  the difference between two refreshes, not from a query.
 - 🔴 **A sibling repo's working tree is NOT its state. Read `git show origin/<default>:<path>`.**
   On 2026-09-29 this page published "37 of 43 trivia collections audited" and "six collections
   nobody has read yet" when the true figures were 42 of 43 and none. The numbers came from
