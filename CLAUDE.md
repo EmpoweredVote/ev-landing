@@ -2,7 +2,7 @@
 
 ## How to report
 
-When working on business tasks, only report to me in **ASD-STE100 Simplified Technical
+When working on business tasks, only report to the user in **ASD-STE100 Simplified Technical
 English**. Write clearly and prioritize readability over strict adherence to STE.
 
 In practice: short sentences, one idea per sentence. Active voice. Approved-sense
