@@ -30,13 +30,18 @@ function sceneHash(scene, episode) {
     .digest('hex').slice(0, 16);
 }
 
-export async function buildEpisode(episodeDir, opts = {}) {
+export async function buildEpisode(episodeDirIn, opts = {}) {
+  // Absolute, always. ffmpeg's concat demuxer resolves relative entries in the
+  // list against the LIST FILE's own directory, not the process cwd, so a list
+  // written from a relative path doubles the prefix and nothing opens. The
+  // documented CLI invocation passes a relative directory.
+  const episodeDir = path.resolve(episodeDirIn);
   const episodeFile = path.join(episodeDir, 'episode.mjs');
   // Cache-bust the module so a rebuild in one process sees an edited episode.
   const mod = await import(pathToFileURL(episodeFile).href + '?v=' + Date.now());
   const episode = mod.default;
 
-  const outDir = opts.outDir || path.join(episodeDir, '..', '..', 'build', episode.id);
+  const outDir = path.resolve(opts.outDir || path.join(episodeDir, '..', '..', 'build', episode.id));
   const sceneDir = path.join(outDir, 'scenes');
   await mkdir(sceneDir, { recursive: true });
 
@@ -93,12 +98,53 @@ export async function buildEpisode(episodeDir, opts = {}) {
   const silent = path.join(outDir, episode.id + '-silent.mp4');
   await run('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', silent]);
 
+  // Re-assemble the voice against the PLANNED scene starts.
+  //
+  // speak() lays the lines out back to back with a fixed gap; it knows nothing
+  // about a scene's `hold`. From the first hold onward the voice would run
+  // ahead of the picture, and -shortest would then truncate the VIDEO to the
+  // shorter audio, dropping the end of the episode without a word about it.
+  // The picture plan is the master, so the audio is rebuilt against it.
+  //
+  // Each line's silence is computed from its ABSOLUTE start, not by adding up
+  // pads, for the same reason the frame boundaries are: error that is summed
+  // is error that accumulates.
+  const voDir = path.join(outDir, 'vo');
+  const byLine = new Map(timings.lines.map(l => [l.id, l]));
+  const pictureSeconds = planned.reduce((n, s) => n + s.frames, 0) / (episode.fps || 30);
+  let voTrack = path.join(outDir, 'vo.wav');
+
+  if (planned.length && planned.every(s => existsSync(path.join(voDir, s.vo + '.wav')))) {
+    const parts = [];
+    let audioClock = 0, silenceN = 0;
+    const silence = async (secs) => {
+      const f = path.join(voDir, '_sil-' + (silenceN++) + '.wav');
+      await run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi',
+        '-i', 'anullsrc=r=48000:cl=mono', '-t', secs.toFixed(4), f]);
+      parts.push(f);
+    };
+    for (const s of planned) {
+      const lead = s.start - audioClock;
+      if (lead > 0.0005) { await silence(lead); audioClock += lead; }
+      parts.push(path.join(voDir, s.vo + '.wav'));
+      audioClock += byLine.get(s.vo).dur;
+    }
+    const tail = pictureSeconds - audioClock;
+    if (tail > 0.0005) await silence(tail);
+
+    const voList = path.join(outDir, '_vo.txt');
+    await writeFile(voList,
+      parts.map(f => "file '" + f.replace(/\\/g, '/') + "'").join('\n') + '\n', 'utf8');
+    voTrack = path.join(outDir, 'vo-synced.wav');
+    await run('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0',
+      '-i', voList, '-c', 'copy', voTrack]);
+  }
+
   // Mux the scratch voice, when there is one.
   let scratch = null;
-  const vo = path.join(outDir, 'vo.wav');
-  if (existsSync(vo)) {
+  if (existsSync(voTrack)) {
     scratch = path.join(outDir, episode.id + '-scratch.mp4');
-    await run('ffmpeg', ['-y', '-v', 'error', '-i', silent, '-i', vo,
+    await run('ffmpeg', ['-y', '-v', 'error', '-i', silent, '-i', voTrack,
       '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', scratch]);
   }
 

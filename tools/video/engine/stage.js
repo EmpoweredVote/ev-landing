@@ -56,16 +56,22 @@
     ctx.restore();
   }
 
+  // Shared by stage and art scenes: an art scene often needs a phrase on
+  // screen too, and duplicating the draw is how the two drift apart.
+  function drawHeadline(scene, t) {
+    if (!scene.headline) return;
+    ctx.save();
+    ctx.globalAlpha = fade(t, 0.1, 0.45);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = FG;
+    ctx.font = "700 " + Math.round(H * (scene.type === "art" ? 0.052 : 0.072)) + "px " + FONT;
+    ctx.fillText(scene.headline, W * 0.08, H * 0.22);
+    ctx.restore();
+  }
+
   function drawStageScene(scene, t) {
-    if (scene.headline) {
-      ctx.save();
-      ctx.globalAlpha = fade(t, 0.1, 0.45);
-      ctx.textAlign = "left";
-      ctx.fillStyle = FG;
-      ctx.font = "700 " + Math.round(H * 0.072) + "px " + FONT;
-      ctx.fillText(scene.headline, W * 0.08, H * 0.22);
-      ctx.restore();
-    }
+    drawHeadline(scene, t);
     (scene.bullets || []).forEach(function (b, i) {
       var a = fade(t, b.t, 0.4);
       if (a <= 0) return;
@@ -88,6 +94,7 @@
     var fn = window.EVArt && window.EVArt[scene.art];
     if (!fn) throw new Error("unknown art function: " + scene.art + " (scene " + scene.id + ")");
     fn(ctx, t, W, H, scene);
+    drawHeadline(scene, t);
     window.EVCast.drawAll(ctx, scene, t, W, H);
   }
 

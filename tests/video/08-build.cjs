@@ -80,5 +80,55 @@ export default {
   const r3 = await buildEpisode(EP, { outDir: OUT, voice: false });
   assert.deepStrictEqual(r3.rendered, ['b'], 'only the changed scene re-renders, got ' + r3.rendered);
 
+  // A RELATIVE episode dir and out dir must work. ffmpeg's concat demuxer
+  // resolves relative entries against the LIST FILE's own directory, not the
+  // process cwd, so a list written with cwd-relative paths doubles the prefix
+  // and the join fails. Absolute paths hide it — and the documented CLI
+  // invocation is relative.
+  const relEp = path.relative(process.cwd(), EP).replace(/\\/g, '/');
+  const relOut = path.relative(process.cwd(), OUT).replace(/\\/g, '/');
+  const r4 = await buildEpisode(relEp, { outDir: relOut, voice: false });
+  assert.ok(fs.existsSync(r4.silent), 'a relative outDir must still produce the silent MP4');
+  assert.strictEqual(Number(probe(r4.silent, 'stream=nb_frames')), 48,
+    'the relative-path build must join the same 48 frames');
+
+  // A scene `hold` adds picture time AFTER its line. The voice track knows
+  // nothing about holds, so without correction the audio runs ahead of the
+  // picture from the first hold onward — and ffmpeg's -shortest then truncates
+  // the VIDEO to the shorter audio, silently dropping the end of the episode.
+  const EP2 = EP + '2', OUT2 = OUT + '2';
+  fs.rmSync(EP2, { recursive: true, force: true });
+  fs.rmSync(OUT2, { recursive: true, force: true });
+  fs.mkdirSync(path.join(OUT2, 'vo'), { recursive: true });
+  fs.mkdirSync(EP2, { recursive: true });
+  fs.writeFileSync(path.join(EP2, 'episode.mjs'), `
+export default {
+  id: 'epfixture2', title: 'Fixture2', accent: '#FFD426',
+  fps: 30, width: 320, height: 180,
+  scenes: [
+    { id: 'a', type: 'title', vo: 'L001', headline: 'One', hold: 0.5 },
+    { id: 'b', type: 'title', vo: 'L002', headline: 'Two' }
+  ]
+};
+`, 'utf8');
+  fs.copyFileSync(path.join(OUT, 'timings.json'), path.join(OUT2, 'timings.json'));
+  // Per-line audio, offline — no speech engine needed to test the assembly.
+  for (const id of ['L001', 'L002']) {
+    execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi',
+      '-i', 'anullsrc=r=48000:cl=mono', '-t', '0.6', path.join(OUT2, 'vo', id + '.wav')]);
+  }
+  execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi',
+    '-i', 'anullsrc=r=48000:cl=mono', '-t', '1.6', path.join(OUT2, 'vo.wav')]);
+
+  const r5 = await buildEpisode(EP2, { outDir: OUT2, voice: false });
+  assert.ok(r5.scratch && fs.existsSync(r5.scratch), 'a scratch MP4 must be produced when audio exists');
+  const vidDur = Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries',
+    'format=duration', '-of', 'default=nw=1:nk=1', r5.silent], { encoding: 'utf8' }).trim());
+  const mixDur = Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries',
+    'format=duration', '-of', 'default=nw=1:nk=1', r5.scratch], { encoding: 'utf8' }).trim());
+  assert.ok(Math.abs(mixDur - vidDur) <= 1 / 30 + 0.02,
+    'the scratch cut must be as long as the picture, not truncated to the voice: ' +
+    'picture ' + vidDur.toFixed(3) + 's, scratch ' + mixDur.toFixed(3) + 's');
+
   console.log('PASS 08-build');
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

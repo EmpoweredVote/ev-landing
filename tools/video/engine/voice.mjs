@@ -62,9 +62,13 @@ async function synth(line, dir, engine) {
   return wav;
 }
 
-export async function speak(lines, outDir, opts = {}) {
+export async function speak(lines, outDirIn, opts = {}) {
   const engine = opts.engine || 'edge';
   const gap = opts.gap == null ? GAP : opts.gap;
+  // Absolute, always. ffmpeg's concat demuxer resolves relative entries in the
+  // list against the LIST FILE's own directory, not the process cwd, so a list
+  // written from a relative outDir doubles the prefix and nothing opens.
+  const outDir = path.resolve(outDirIn);
   const dir = path.join(outDir, 'vo');
   await mkdir(dir, { recursive: true });
 
