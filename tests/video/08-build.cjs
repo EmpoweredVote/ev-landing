@@ -100,6 +100,34 @@ export default {
   assert.strictEqual(Number(probe(r4.silent, 'stream=nb_frames')), 48,
     'the relative-path build must join the same 48 frames');
 
+  // Re-timing an EARLY line must not re-render the scenes after it. A scene's
+  // picture depends on its content and its length, never on where it sits in
+  // the timeline, so hashing its start position too would re-render 39 scenes
+  // to produce 39 identical files — which is the whole cost of changing a word.
+  const t0 = JSON.parse(fs.readFileSync(path.join(OUT, 'timings.json'), 'utf8'));
+  t0.lines[0].dur = 0.9;                     // scene 'a' gets longer; 'b' does not change
+  t0.total = 0.9 + 0.2 + 0.6 + 0.2;
+  fs.writeFileSync(path.join(OUT, 'timings.json'), JSON.stringify(t0), 'utf8');
+  const retimed = await buildEpisode(EP, { outDir: OUT, voice: false });
+  assert.deepStrictEqual(retimed.rendered, ['a'],
+    'only the re-timed scene re-renders, got ' + retimed.rendered);
+
+  // A script line that no scene uses would be recorded, land in the voice
+  // track, and never appear on screen — desyncing everything after it.
+  t0.lines.push({ id: 'L003', text: 'Orphan.', direction: '', start: 1.9, dur: 0.6 });
+  t0.total += 0.8;
+  fs.writeFileSync(path.join(OUT, 'timings.json'), JSON.stringify(t0), 'utf8');
+  await assert.rejects(() => buildEpisode(EP, { outDir: OUT, voice: false }), /L003/,
+    'a line with no scene must abort the build and name itself');
+  // Put the fixture back as it was. Later blocks copy this timings.json and
+  // write their own per-line audio against the ORIGINAL durations; leaving the
+  // re-timed value here makes the declared lengths disagree with the real WAVs
+  // and the audio assembly then builds a track that is genuinely wrong.
+  t0.lines.pop();
+  t0.lines[0].dur = 0.6;
+  t0.total = 1.6;
+  fs.writeFileSync(path.join(OUT, 'timings.json'), JSON.stringify(t0), 'utf8');
+
   // Editing an episode's art.js must re-render the scenes that draw with it.
   // The scene OBJECT is unchanged by such an edit, so a hash taken over the
   // object alone goes on serving a stale MP4 of the old drawing — and the only

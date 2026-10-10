@@ -27,8 +27,13 @@ function run(cmd, args) {
 }
 
 function sceneHash(scene, episode, codeKey) {
+  // A scene's PICTURE depends on its content and its length, never on where it
+  // sits in the timeline. Leaving the positional fields in meant that changing
+  // one word near the top re-rendered every scene below it, to produce files
+  // identical to the ones already on disk.
+  const { start, end, startFrame, ...content } = scene;
   return createHash('sha1')
-    .update(JSON.stringify({ scene, w: episode.width, h: episode.height, fps: episode.fps, codeKey }))
+    .update(JSON.stringify({ content, w: episode.width, h: episode.height, fps: episode.fps, codeKey }))
     .digest('hex').slice(0, 16);
 }
 
@@ -74,6 +79,17 @@ export async function buildEpisode(episodeDirIn, opts = {}) {
   // nothing in the output to say so.
   const planned = planFrames(episode, timings)
     .map(s => (s.accent ? s : { ...s, accent: episode.accent }));
+
+  // One line is one scene. A line no scene claims still gets recorded and still
+  // lands in the voice track, so the picture would run short from that point on
+  // and everything after it would drift. Adding a line to script.md and
+  // forgetting its scene is the obvious way to do this by accident.
+  const claimed = new Set(planned.map(s => s.vo));
+  const orphans = timings.lines.filter(l => !claimed.has(l.id)).map(l => l.id);
+  if (orphans.length) {
+    throw new Error('script line(s) with no scene in ' + episode.id + ': ' + orphans.join(', ') +
+      '. Add a scene naming each, or remove the line from script.md and re-run with --voice.');
+  }
 
   // Load order matters: an episode's generated asset files (screen.js,
   // brand.js, ...) define the data URIs that art.js reads at registration
