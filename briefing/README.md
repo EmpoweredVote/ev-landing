@@ -69,6 +69,14 @@ cp briefing/2026-09-22/index.html briefing/2026-10-06/index.html   # BEFORE step
 
 (Easier in practice: keep a copy of the forwarder, it is 30 lines and changes only its date.)
 
+- **4a. Add the new edition to the "Previous Briefings" picker** in the header, as the first
+  entry, carrying the `current` tag; the outgoing edition loses that tag but keeps its row.
+  The picker is the `<details class="prevdrop">` block at the top of `<header>` and it is a
+  SECOND copy of the archive list — it is written into each edition by hand and is frozen with
+  it, exactly like every other sentence on the page.  An archived edition therefore shows the
+  archive as it stood on its own publication day and will never list anything later.  That is
+  the intended behaviour, not a bug to fix: a shared list would silently rewrite the archive.
+  The two copies have to agree within one edition, so write them in the same pass.
 - **4. Add the outgoing edition to the "Past briefings" list** in the new page, and move the
   `current` tag onto the new one.  The list only ever grows; nothing is removed from it.
 - **5. Update the dated permalink named in the footer** to the new date.
@@ -198,6 +206,28 @@ navigation before writing a sentence about user behaviour.
 The platform-wide framing numbers (visitors, sessions, average session
 duration, bounce rate) come from `query-web-overview` with no host filter.
 
+## The schedule
+
+A new edition is published automatically **every Monday and Thursday night at 02:07**, which is
+the small hours of Tuesday and Friday.  The Windows scheduled task `EV Briefing` runs
+`briefing/publish-edition.cmd`, which starts Claude Code headless with
+`briefing/SCHEDULED-EDITION.md` as its prompt and lets it do the whole job: freeze the outgoing
+edition, pull every number, write fresh prose, run the tests, commit and push.  Render deploys
+on the push.
+
+- The task runs **only while this PC is awake and Chris is logged on** — it uses an interactive
+  token rather than a stored password, which is the trade that keeps the password out of the task.
+  It is set to start as soon as possible after a missed start, so a machine that was asleep
+  overnight publishes when it comes back.
+- It needs the same things a human run needs: `C:/EV-Accounts/backend/.env` for `DATABASE_URL`
+  and `POSTHOG_API_KEY`, the sibling repos on disk, and a git credential that can push.
+- The log of each run is `%TEMP%\ev-briefing-edition.log`.  Read it before trusting a quiet night.
+- **An edition published this way may be corrected on the day it was published, and the page has
+  to say so.**  Once it is frozen by the next edition it is never touched again.  That rule is
+  older than the schedule and the schedule does not change it.
+- To stop it: `schtasks /Change /TN "EV Briefing" /DISABLE`.  To run it now:
+  `schtasks /Run /TN "EV Briefing"`.
+
 ## How to refresh
 
 ```bash
@@ -212,6 +242,28 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 (read-only queries only); any env file containing it works.  Requires Node 20+.
 
 ## Notes
+
+- 🔴 **`count(*)` ON AN ANSWER TABLE IS A ROW COUNT, AND THIS PAGE PUBLISHED IT AS A POSITION
+  COUNT FOR MONTHS.**  Two things pulled the two apart.  First, Seasons: one person can hold a
+  Season 1 AND a Season 2 answer on the same topic, and both rows were counted — on 2026-10-10,
+  38,311 rows resolved to 33,629 distinct (politician, topic) pairs.  Second, and worse, the
+  stance audit withdraws an unsupported position by writing a Season 2 answer of **0** over it.
+  `compassService` does `NULLIF(pa.value, 0) AS stance_value` with the guard deliberately
+  OUTSIDE the season collapse, so a 0 in the newest season **suppresses** the pair rather than
+  falling through to Season 1.  A withdrawal is therefore an **INSERT**: the stored total goes
+  **up** while the positions a voter can read go **down**.  On 2026-10-10 the stored total rose
+  36,438 → 38,311 in the same five days that 1,629 positions were withdrawn, and nothing on the
+  page could tell the two apart.
+  `refresh.mjs` now carries `stances_served` (the newest season's answer per pair, where it is
+  not a blank), `stances_blanked`, `stance_pairs`, `pols_served` and `avg_served` beside the old
+  `stances`, and **WARNs when stored and served move in opposite directions**.  Publish the
+  served figure as the headline and say the basis changed, the way `topics_open` was added
+  beside `topics` on 2026-09-11.
+  ⚠ **Keep `stances` as the figure `coverage-table.sql` reconciles against.**  That table is a
+  partition of STORED ROWS; pointing its check at the served figure would break the one test
+  that catches a missing bucket.  Say on the page which number the table sums to.
+  Generalise it: **when a total rises during a campaign whose whole purpose is to remove things,
+  the total is not measuring the campaign.**
 
 - 🔴 **`git log --since=2026-09-29` does NOT mean midnight.**  Git's approxidate fills the unstated
   time of day from *now*, so a bare date silently starts the window at this afternoon's clock time

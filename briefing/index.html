@@ -176,6 +176,52 @@
   .archive a:hover{text-decoration:underline}
   .archive small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
   .atag{display:inline-block;margin-left:8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--live);border:1px solid rgba(114,190,120,.4);background:rgba(114,190,120,.12);padding:2px 7px;border-radius:2px;vertical-align:1px}
+  /* ---- "Previous Briefings", top right of the header -------------------
+     The archive section below is the full list, with a sentence saying what
+     each edition found.  This is the same list as NAVIGATION, put where a
+     reader looks for it before they have scrolled anywhere.
+
+     <details>, not a scripted menu, so it opens with no JavaScript at all --
+     the script at the foot of the page only adds close-on-outside-click and
+     Escape, and the control is fully usable without either.  The summary is a
+     real button to the keyboard and to a screen reader for free.
+
+     44px minimum height for the same reason the archive links carry padding:
+     this is a navigation target aimed at with a thumb, not a word inside a
+     sentence. */
+  .hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .hrow .eyebrow{margin:0 0 14px}
+  .prevdrop{position:relative;flex:0 0 auto;margin-top:-4px}
+  .prevdrop>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:9px;
+    font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--gold);
+    border:1px solid var(--line);background:var(--panel);padding:0 14px;border-radius:2px;
+    min-height:44px;white-space:nowrap}
+  .prevdrop>summary::-webkit-details-marker{display:none}
+  .prevdrop>summary::marker{content:''}
+  .prevdrop>summary:hover{border-color:var(--gold)}
+  .prevdrop>summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .prevdrop .caret{display:inline-block;font-size:9px;line-height:1;transition:transform .12s ease}
+  .prevdrop[open] .caret{transform:rotate(180deg)}
+  /* Absolutely positioned, so it is OUT of flow and cannot widen the page.  It is also
+     not rendered at all while the <details> is shut, which is why it never reaches the
+     overflow checks in tests/layout/briefing-tables-mobile.cjs. */
+  .prevmenu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:320px;max-width:86vw;
+    background:var(--panel2);border:1px solid var(--line);box-shadow:0 12px 28px rgba(0,0,0,.5);padding:5px}
+  .prevmenu a{display:block;padding:11px 12px;color:var(--gold);text-decoration:none;font-weight:600;
+    font-size:14px;border-bottom:1px solid var(--line)}
+  .prevmenu a:last-child{border-bottom:none}
+  .prevmenu a:hover,.prevmenu a:focus-visible{background:var(--panel);text-decoration:underline}
+  .prevmenu small{display:block;color:var(--dim);font-size:12.5px;font-weight:400;margin-top:3px;
+    line-height:1.4;white-space:normal;text-decoration:none}
+  .prevmenu .cur{color:var(--live);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+    margin-left:7px;vertical-align:1px}
+  /* Below 560px the button takes the full width and the panel sits under it edge to edge;
+     a 320px panel hanging off a right edge is how a menu ends up half off a phone. */
+  @media (max-width:560px){
+    .prevdrop{width:100%;margin-top:0}
+    .prevdrop>summary{width:100%;justify-content:space-between}
+    .prevmenu{right:auto;left:0;width:100%;max-width:none}
+  }
   /* ---- Feature tables on a phone ----------------------------------------
      A five-column feature table cannot fit a phone.  Measured 2026-09-23 at
      390px: the Inform table wanted 734px inside a 348px box, so every row took
@@ -290,25 +336,36 @@
 </style>
 <div class="wrap">
 <header>
-  <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; <span data-auto="asof">October 5, 2026</span></p>
+  <div class="hrow">
+    <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; <span data-auto="asof">October 10, 2026</span></p>
+    <details class="prevdrop">
+      <summary>Previous Briefings <span class="caret">&#9660;</span></summary>
+      <div class="prevmenu">
+        <a href="/briefing/2026-10-10">October 10, 2026<span class="cur">current</span><small>The stance total rose while the positions a voter can read fell; 8.4 million roll-call votes; New York City.</small></a>
+        <a href="/briefing/2026-10-05">October 5, 2026<small>Six cities researched and nothing published; a sponsor list that seated four members; the first certified reliability stratum.</small></a>
+        <a href="/briefing/2026-09-29">September 29, 2026<small>Four states seated in eight days; the trivia bank audited collection by collection; a measurement that broke by being fixed.</small></a>
+        <a href="/briefing/2026-09-22">September 22, 2026<small>Three states seated; Tennessee 1 to 115; the Maine misfile corrected; On the Record restarts.</small></a>
+        <a href="/briefing/2026-09-11">September 11, 2026<small>Treasury Tracker goes statewide in four states; Season 2 opens to voters; the first rise in the stance total in months.</small></a>
+      </div>
+    </details>
+  </div>
   <h1 class="serif">State of the Platform</h1>
   <p class="sub">Every number on this page comes from the live database, verified git history, or our product analytics, not from estimates.  We build tools for shared facts; our progress report should be one.  <b>Each briefing is written fresh and kept at its own dated address, so you can read what we said before and check it against what we say now.</b></p>
 
   <div class="statband">
-    <div class="stat"><div class="n" data-auto="pols_curated">12,217</div><div class="l">curated officials and candidates (plus a <span data-auto="pool">77,716</span>-record discovery pool in triage)</div></div>
-    <div class="stat"><div class="n" data-auto="stances">36,438</div><div class="l">sourced stance positions, every one with cited sources</div></div>
-    <div class="stat"><div class="n" data-auto="pols_with_stances">4,196</div><div class="l">politicians with researched stances (avg <span data-auto="avg_stances">8.7</span> topics each)</div></div>
-    <div class="stat"><div class="n" data-auto="budget_entities">8,144</div><div class="l">governments with budget data, across all 50 states + DC</div></div>
-    <div class="stat"><div class="n" data-auto="candidates_2026">5,161</div><div class="l">2026 candidate records seeded for the midterms</div></div>
-    <div class="stat"><div class="n" data-auto="commits30">~1,800</div><div class="l">commits landed in the last 30 days alone</div></div>
+    <div class="stat"><div class="n" data-auto="stances_served">32,000</div><div class="l">stance positions a voter is actually served &mdash; a new and smaller measurement, explained below</div></div>
+    <div class="stat"><div class="n" data-auto="pols_served">4,208</div><div class="l">politicians carrying at least one served position (avg <span data-auto="avg_served">7.6</span> topics each)</div></div>
+    <div class="stat"><div class="n" data-auto="leg_votes">8,448,319</div><div class="l">recorded legislative votes, against 121,178 five days ago</div></div>
+    <div class="stat"><div class="n" data-auto="pols_curated">12,226</div><div class="l">curated officials and candidates (plus a <span data-auto="pool">77,708</span>-record discovery pool in triage)</div></div>
+    <div class="stat"><div class="n" data-auto="budget_entities">8,147</div><div class="l">governments with budget data, across all 50 states + DC</div></div>
+    <div class="stat"><div class="n" data-auto="commits30">~1,900</div><div class="l">commits landed in the last 30 days alone</div></div>
   </div>
 
   <div class="push">
-    <h3 class="serif">The current push: 1,645 rows of city research, and not one of them published</h3>
-    <p style="margin-top:10px"><b>Six cities in three states were researched end to end in four days</b> &mdash; Charlotte; Bradenton, Miami and Tallahassee; Duluth and Saint Paul.  Forty-seven seated members, thirty-five topics each, <b>1,645 researched rows</b>.  <b>Thirty-seven of those rows propose an actual position, and every one of the thirty-seven is in front of a human being rather than in front of a voter.</b>  Nothing in this programme publishes itself, and nothing has: the stance total in the band above has not moved since September 27, and that is the honest reading of the week.  We would rather report a research week as a research week than let a headline number drift upward on work nobody has checked.</p>
-    <p style="margin-top:10px"><b>Nearly half of the work is proof that a city is not allowed to act.</b>  792 of the 1,645 rows are scope blanks, because a state can reserve a subject to itself and most do.  That is a finding, not a failure &mdash; and it is why Minnesota was chosen third, to test the opposite case.  It held: four ladders came alive there that neither Carolina nor Florida could reach.  The detail is below.</p>
-    <p style="margin-top:10px"><b>The largest finding of the week was an evidence channel nobody had used.</b>  A measure that passes unanimously, by voice, records no division &mdash; so the vote says nothing about who wanted it, and our tools read that silence as absence.  Asking instead <i>who wrote it</i> seated four Duluth members at once, off one resolution.  <b>Three tools were blind to it at the same moment</b>: the divided-vote scan, the member vote lists, and every news sweep we run &mdash; not one article in any of the nine press corpora names a sponsor.  <b>When a measure passes without division, stop asking how people voted and ask who wrote it.</b></p>
-    <p style="margin-top:10px"><b>And one slice of our research was certified reliable by measurement rather than by assertion.</b>  Three AI coders read the same 57 state-level, record-based stances against human labels written blind, and agreed closely enough to clear the bar &mdash; with <b>no severe disagreements at all</b>.  The same 57 items had failed that test before the rulebook was written.  Figures below.</p>
+    <h3 class="serif">The stance total went up.  The number of positions a voter can read went down.</h3>
+    <p style="margin-top:10px"><b>Both are true, and until this week nothing here could tell them apart.</b>  An audit read every stance whose own reasoning admits it has no evidence &mdash; &ldquo;no documented position&rdquo;, &ldquo;scored based on her party&rdquo;, &ldquo;assigned a moderate value&rdquo; &mdash; and withdrew the ones that failed.  <b><span data-auto="stances_blanked">1,629</span> positions now stand withdrawn, 1,374 of them in the last five days.</b>  A withdrawal is written as a blank in the newest season, which suppresses the old answer everywhere a voter could meet it &mdash; and <b>a blank is a new row</b>, so the stored total climbed from 36,438 to <span data-auto="stances">38,311</span> while the thing the headline claims to count fell.</p>
+    <p style="margin-top:10px"><b>The figure this page has published for months was a row count, not a position count.</b>  The two had parted company before the audit even began: one person can hold a Season 1 and a Season 2 answer on the same topic, and both rows were counted.  <span data-auto="stances">38,311</span> rows resolve to <span data-auto="stance_pairs">33,629</span> person-and-topic pairs, of which <span data-auto="stances_served">32,000</span> carry a position a voter is served.  <b>That is the headline above: 6,311 below the stored total beside it, 4,438 below what we printed five days ago, and not comparable with any earlier edition.</b>  The refresh script now measures both and warns when they move in opposite directions.</p>
+    <p style="margin-top:10px"><b>Two things went right in the same five days.</b>  The thirty-seven proposed city positions the last edition left in front of a human being were <b>all reviewed and published</b> &mdash; the first time this programme has carried research through to a voter &mdash; and Minnesota moved up a tier on the map because of it.  And a LegiScan refresh took the legislative record from 121,178 votes to <b><span data-auto="leg_votes">8,448,319</span></b> across 29 state legislatures plus Congress, which is the evidence base the audit above has spent a week insisting on.  <b>The detail for both is below.</b></p>
   </div>
 </header>
 
@@ -327,15 +384,16 @@
 
 <div class="h2row" id="archive"><h2>Past Briefings</h2><p>Each update is a dated snapshot.  We do not edit one after publishing it.</p></div>
 <div class="card">
-  <p><b>This page is the current briefing, and it always lives at <code>empowered.vote/briefing</code>.</b>  Every edition also keeps a permanent address of its own, so a number you read here can be checked against the date it was published on.  Each update is written from scratch: work that runs for a month stays the headline, but the sentences around it are rewritten every time.  <b>We never edit a published edition.</b>  When an earlier one got something wrong, the next one says what it corrects.</p>
+  <p><b>This page is the current briefing, and it always lives at <code>empowered.vote/briefing</code>.</b>  Every edition also keeps a permanent address of its own, so a number you read here can be checked against the date it was published on.  <b>There is a picker at the top of this page</b> that jumps to any of them.  Each update is written from scratch: work that runs for a month stays the headline, but the sentences around it are rewritten every time.  <b>We never edit a published edition.</b>  When an earlier one got something wrong, the next one says what it corrects.</p>
   <ul class="archive">
-    <li><a href="/briefing/2026-10-05">October 5, 2026</a> <span class="atag">current</span><small>Six cities researched and nothing published; a sponsor list that seated four members; the first certified reliability stratum; a quiz answer that kept landing in slot C.</small></li>
+    <li><a href="/briefing/2026-10-10">October 10, 2026</a> <span class="atag">current</span><small>The stance total rose while the positions a voter can read fell; 8.4 million roll-call votes; New York City; all thirty-seven city positions approved.</small></li>
+    <li><a href="/briefing/2026-10-05">October 5, 2026</a><small>Six cities researched and nothing published; a sponsor list that seated four members; the first certified reliability stratum; a quiz answer that kept landing in slot C.</small></li>
     <li><a href="/briefing/2026-09-29">September 29, 2026</a><small>Four states seated in eight days; the trivia bank audited collection by collection; a measurement that broke by being fixed.</small></li>
     <li><a href="/briefing/2026-09-22">September 22, 2026</a><small>Three states seated; Tennessee 1 to 115; the Maine misfile corrected; On the Record restarts; a monitor that failed into a void.</small></li>
     <li><a href="/briefing/2026-09-11">September 11, 2026</a><small>Treasury Tracker goes statewide in four states; Season 2 opens to voters; the first rise in the stance total in months.</small></li>
   </ul>
-  <p style="margin-top:14px;font-size:13px;color:var(--dim)"><b>What the edition of September 29 left out.</b>  It headlined four states seated and named North Dakota, Kentucky, Kansas and South Dakota.  <b>A fifth had been seated in the small hours of that same morning and went unmentioned</b>: 188 Missouri General Assembly seats at 02:52 UTC and the City of St. Louis&rsquo;s 22 at 06:16, both before the edition was written.  Nothing it printed was wrong; it simply did not look.  Missouri now holds 155 of 163 House seats, 33 of 34 Senate seats and all five statewide executives.</p>
-  <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>It also set itself one test, and the test came back empty.</b>  It said the trivia audit &ldquo;landed too late in this window to have moved&rdquo; the completion rate, and that &ldquo;the next pull is the one to read.&rdquo;  This is that pull: <b>12 people finished a trivia game in the quarter out of 111 who arrived &mdash; the same twelve, out of the same hundred and eleven.</b>  Six days is far too short to conclude from.  We record the reading rather than drop the promise.</p>
+  <p style="margin-top:14px;font-size:13px;color:var(--dim)"><b>What the edition of October 5 got right, and the one thing it could not have known.</b>  It said 1,645 rows of city research existed and that none had reached a voter, and it was right.  <b>The thirty-seven that proposed a position have since all been approved and published</b>, which is the outcome it told readers to watch for.  What it could not have known is that the figure it reported all of this in &mdash; the stance total &mdash; was counting stored rows rather than positions.  <b>That is corrected at the top of this page, not in the archive</b>; the October 5 page stays exactly as published.</p>
+  <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>It also set itself a test, and the answer has not changed for a third pull running.</b>  Civic Trivia returned <b>the same twelve people out of the same nineteen game starts</b>.  That is no longer a short window, and it is read as a finding in the Reach section below.</p>
 </div>
 
 <div class="h2row" id="inform"><h2>Inform Pillar: Shared Facts</h2><p>Open to everyone, no login.  Evidence-based, engaging, anti-partisan.</p></div>
@@ -345,43 +403,43 @@
     <td class="fname">Civic Trivia Championships</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span><b>A player who noticed where the right answer sits could have beaten this quiz.</b>  Across 117 freshly generated questions the correct answer landed on option C <b>41%</b> of the time, and on <b>61%</b> of the questions whose options are numbers.  The cause was ours: the code sorted numeric options into order <i>after</i> generation, and models write distractors that bracket the true value &mdash; two below, one above &mdash; so the answer kept ranking third.  <b>Bank live today: <span data-auto="trivia_active">3,277</span> questions across 43 collections.</b></td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span>The fix inverts the order: the position is drawn from the question&rsquo;s own identifier <i>first</i>, the generator is told where to put the answer, and the old code now <b>verifies instead of imposes</b>.  A gate fails a batch above 35%.  Those 117 questions sit in two collections that are <b>switched off</b> until they pass.  The content audit did not advance: one collection still needs writing rather than reading, and two remain under the expiring-content floor.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span><b>Nothing shipped here this cycle, and the live bank shrank.</b>  Its repository took nine commits: eight dependency bumps and one tidy-up of its own documentation.  The playable bank reads <b><span data-auto="trivia_active">3,250</span> questions across 43 active collections</b>, down 27 as expiring content aged out; three collections are switched off, which is one more than the two withdrawn last cycle when 41% of a fresh batch put the right answer in slot C.  <b>The slot-C fix has not landed.</b></td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>The fix is designed: draw the answer position from the question&rsquo;s own identifier first, tell the generator where to put it, and let the old sorting code verify rather than impose, with a gate failing any batch above 35%.  <b>It needs a week of someone&rsquo;s attention and has not had it.</b>  The content audit still owes one collection that has to be written rather than read.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Essentials</td>
     <td><span class="chip c-live">Live Alpha</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>ZIP-to-representatives with funding, votes and stances.  <b>The front door lost a search box and gained thirteen cities.</b>  There were two ways in, and search-by-name answered worse than the address path beside it; it is gone, and thirteen communities we already serve now have a chip to tap.  <b>Indianapolis is keyed on the county FIPS code</b>, because the city and the county are one government there and a city FIPS finds nothing.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Banners: St. Louis takes the Arch, so Missouri moved to the Ozarks; Indiana gave up the Indianapolis skyline for Indiana Dunes.  <b>No photograph may appear twice on one page</b>, so a city joining pushes its state to a new subject.  Still owed, unchanged for a second cycle: portraits for the <b>70 Puerto Rico alcaldes</b> without one.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>ZIP-to-representatives with funding, votes and stances.  <b>Its coverage chips were re-judged against the evidence rather than against a loader&rsquo;s intent</b>, and they were wrong in both directions: eleven chips resting on a single covered official were greyed, eight false purples corrected, seven grey chips that did hold reasoning promoted, and Kitsap County &mdash; the last purple standing on one person &mdash; went grey.  <b>Charlotte, Duluth and Saint Paul turned purple because the research above reached them.</b>  55 Los Angeles County cities gained chips.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>LegiScan is now credited by name on profile and legislative-record pages</b> under CC BY 4.0, which the 8.4 million votes below make a visible obligation rather than a footnote.  Each stance citation shows the date of its source.  Still owed, unchanged for a third cycle: portraits for the <b>70 Puerto Rico alcaldes</b> without one.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Compass</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span><b>Every one of the <span data-auto="topics_open">60</span> topics a voter can answer now has a written annex</b> &mdash; what each rung means, where the line between two rungs falls, and the judgments already made.  All 60 were drafted or revised this cycle, out of a library of <span data-auto="topics">64</span>.  <b>No change under the voter</b>: Season 2 is still open, and we check for a cutover every cycle because the numbers do not announce one.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>Season 3 is being assembled in the open and now holds 61 staged topics.</b>  The city work found real defects in the local-tier ladders &mdash; rungs no city in three states could occupy &mdash; written up as Season 3 input rather than patched in place.  Then reliability measurement extends past state records to the other evidence classes.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span><b>The ladder a voter answers did not change; what sits on it did.</b>  Season 2 remains open and <span data-auto="topics_open">60</span> topics are served from a library of <span data-auto="topics">64</span>.  Underneath, the audit described at the top of this page withdrew <span data-auto="stances_blanked">1,629</span> positions by writing blanks over them, and the serving code was read before a single row was written: a blank in the newest season suppresses the pair instead of falling through to Season 1.  <b>Season 1 is closed and was not edited to do this.</b></td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>Season 3 is a draft in the database and already holds 17 answers</b>, staged against a 61-topic evaluation worksheet, with the repointing path built and guarded.  The next audit pass repairs forward rather than blanking: <b>24 rungs ask a genuinely different question in Season 2 than they did in Season 1</b>, and none of those can be carried across without a ruling.</td>
   </tr>
   <tr>
     <td class="fname">Treasury Tracker</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span><span data-auto="budget_entities">8,144</span> governments, unchanged.  <b>No commits at all this cycle</b> &mdash; the speed work landed on September 23 and nothing has followed it.  Arrivals rose anyway, 148 people in the quarter to <b>169</b>.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>The debt the last edition named is still outstanding</b>: we measured the slow call against the fast one, 3.05 MB against 7.4 KB, but never the five-run before-and-after on the real page.  <b>A faster call is not a faster page until the page is timed</b>, so the speed claim stays a claim about one call.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span><b>From no commits at all last cycle to 54, and New York City.</b>  NYC is onboarded end to end &mdash; ACFR-sourced, two fund scopes, <b>fiscal years 2002 to 2025</b>.  Redmond and Duvall, Washington, came in on their own BARS filings.  <b>A new axis records how a budget was accounted for</b>, cash or GAAP, and the comparison gate now refuses to set one beside the other.  <span data-auto="budget_entities">8,147</span> governments, up 3.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>A budget that was never adopted was being published as $0</b>; a null money column now survives as null, fixed in the API and in the reader.  38,491 rows still carry an unknown audit grade, now scoped as work rather than left unremarked.  <b>The debt this page has named for three editions is still outstanding</b>: the five-run before-and-after timing of the real page.  <b>A faster call is not a faster page until the page is timed.</b></td>
   </tr>
   <tr>
     <td class="fname">Read &amp; Rank</td>
     <td><span class="chip c-dev">In Development</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>A blind taste test for candidates: the question, not the race, is the unit of comparison.  <b>Its first commits in four cycles</b>, and they are a volunteer&rsquo;s UX redesign prototype rather than product code.  Still gated on the stance pool &mdash; and this cycle&rsquo;s research went into rows awaiting review, not into the pool.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>The prototype shipped with invented quotes under the names of real members of Congress</b>, disclosed in a README the rendered page did not carry.  Fixed the same day: fictional stand-ins, and the disclosure moved onto the screen itself.  <b>On a platform built on provenance, placeholder text must never sit under a real person&rsquo;s name</b> &mdash; design documents included.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>A blind taste test for candidates: the question, not the race, is the unit of comparison.  <b>48 commits, and the redesign is no longer a prototype beside the app &mdash; it is the app.</b>  Landing, choose-your-issues, read-a-quote and the ranking panel were all rebuilt from it, on the shared ev-ui palette.  <b>Google Maps is gone</b>, replaced by a local state, county and city matcher reading from our own endpoint.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>It is still gated on the stance pool</b>, and the audit above has just made that pool smaller and better evidenced at once.  <b>8 people revealed a ballot in the quarter, on 19 race starts</b> &mdash; a start problem, not a finish problem, and the new landing page is the first attempt at it.  The invented-quote defect reported two editions ago stays fixed.</td>
   </tr>
   <tr>
     <td class="fname">Fallacy Finders</td>
     <td><span class="chip c-dev">In Development</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>v1.1 is 4 of 6 phases done and built the <b>Fallacy Sleuth</b>: curation-time AI proposing timecoded fallacy tags, with names stripped before the model sees a word and every clip re-run with the speakers swapped.  <b>Quiet for a fifth cycle.</b></td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Its dependency moved instead.  <b>On the Record attempted two US House floor days and its quality gate refused both</b> &mdash; a full legislative day came back as 13 segments and then 9.  That refusal is the system working, and it is also the honest status of rights-clean clip sourcing at volume: not there yet.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>v1.1 is 4 of 6 phases done and built the <b>Fallacy Sleuth</b>: curation-time AI proposing timecoded fallacy tags, with names stripped before the model sees a word and every clip re-run with the speakers swapped.  <b>Quiet for a sixth cycle: no commits at all in this window.</b>  It is also the one repository on this page with <b>no remote</b>, so its state can only be read from the machine this report is written on &mdash; everything else here is read from a published branch.  Giving it one is now the smallest open task on this list.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Its dependency moved instead, in the right direction: On the Record spent the cycle on transcription quality.  <b>Clip sourcing at volume depends on transcripts the quality gate will accept</b>, and that is the work being done.</td>
   </tr>
 </table></div>
 
@@ -436,84 +494,88 @@
 <div class="cols">
   <div class="card">
     <h3 class="serif">ev-accounts <span class="gold">v2.23</span></h3>
-    <p>Auth, tiers, XP and gems, politician database, TIGER geofencing, elections.  The effort went into research rather than seating, but 240 dated terms landed: Missouri&rsquo;s legislature and executive, the City of St. Louis, St. Louis County, and <b>Indianapolis and Marion County merged into a single government</b> on the precedent Nashville set here last month &mdash; a 25-seat city-county council, 20 of whose seats were newly dated.  <span data-auto="districts">10,959</span> districts are mapped, up 27.  <span data-auto="leg_votes">121,178</span> legislative votes and <span data-auto="bills">19,622</span> bills on record.</p>
+    <p>Auth, tiers, XP and gems, politician database, TIGER geofencing, elections.  <b>168 commits, and the largest single data event in this platform&rsquo;s history.</b>  A LegiScan refresh across every state holding seated legislators took the record from <b>121,178 votes to <span data-auto="leg_votes">8,448,319</span></b>, and bills from 19,622 to <b><span data-auto="bills">221,770</span></b>: 29 state legislatures plus Congress, <b>66,958 bills carrying a recorded division</b>, votes dated December 2022 to October 8, and <b>every row attached to a named legislator</b> &mdash; 3,861 of them.  <span data-auto="districts">10,963</span> districts are mapped, up 4.</p>
   </div>
   <div class="card">
     <h3 class="serif">On the Record</h3>
-    <p>Speaker-attributed, searchable transcripts of public meetings, synced to the original video.  <b>It reached a state legislature this cycle</b>: the Indiana General Assembly&rsquo;s own video system resolves now, and a Senate Judiciary Committee hearing is published at 350 segments and 33 speakers.  The dataset reads <b><span data-auto="meetings">172</span> meetings, <span data-auto="segments">21,452</span> transcript segments and <span data-auto="speakers">1,409</span> identified speakers</b>, including LA City Council with <span data-auto="council_votes">7,200</span> recorded votes.  The standing caution is repeated rather than retired: segments carry no creation timestamp, so dated <i>meetings</i> are the evidence here, and <b>the two drops earlier this year are still unexplained</b>.  Built by volunteer Chris Andrews.</p>
+    <p>Speaker-attributed, searchable transcripts of public meetings, synced to the original video.  The work this cycle was quality rather than volume: <b>a silence filter on the whole-audio pass, and a stop to the repetition loops</b> that made a long recording restate itself.  Speaker-name suggestion reached its third slice and is wired into review.  The dataset reads <b><span data-auto="meetings">177</span> meetings, <span data-auto="segments">21,716</span> transcript segments and <span data-auto="speakers">1,432</span> identified speakers</b>, including LA City Council with <span data-auto="council_votes">7,200</span> recorded votes.  The standing caution is repeated rather than retired: segments carry no creation timestamp, so dated <i>meetings</i> are the evidence here &mdash; 23 of them in the last 30 days &mdash; and <b>the two drops earlier this year are still unexplained</b>.  Built by volunteer Chris Andrews.</p>
   </div>
 </div>
 
 <div class="card" style="margin-top:18px;border-left:3px solid var(--amber)">
-  <h3 class="serif">Three readers, one rulebook, and the first stratum we can call reliable</h3>
-  <p style="max-width:92ch">The Compass places a politician on a ladder from 1 to 5.  Until now, the claim that those placements are consistent rested on the people making them.  <b>It is now measured.</b>  Three AI coders read the same 57 state-level stances that rest on a legislative record, and their answers were compared with human labels written at a <b>blind desk</b>, where the labeller never sees what any model said.  The two agreement statistics came back at <b>0.830</b> and <b>0.932</b>, the third test at <b>0.904</b>, and the count of severe disagreements &mdash; two readers more than one rung apart &mdash; at <b>zero</b>.  That clears the bar; the stratum was certified on October 3 by volunteer Chris Andrews.</p>
-  <p style="margin-top:10px;max-width:92ch"><b>Two controls are why this is worth printing.</b>  Eight of the 57 items had themselves been used as examples while the rulebook was written, which is a quiet way to grade your own homework; removing them leaves 54 items at 0.821 and 0.928, still certified.  And <b>the identical 57 items, coded before five rulings were added, scored 0.741 and did not pass</b> &mdash; so the gain belongs to the rules, not the models, because the rulebook is the only thing that changed.  <b>One stratum of one evidence class is certified, and that is all.</b>  News-sourced and statement-sourced evidence are not, nor is the local tier the city work above lives in.</p>
+  <h3 class="serif">What a blank asserts, and what it does not</h3>
+  <p style="max-width:92ch">Being exact about what a withdrawal claims matters.  <b>A blank asserts that the row&rsquo;s own reasoning does not support the rung it carries.  It does not assert that the person holds no view.</b>  The commonest defect was an absence sitting beside an affiliation &mdash; a caucus, a committee seat, a scorecard percentage, an endorsement, a district, an ideological label &mdash; used to place someone who had said nothing on the subject.  Several rows stated the method outright: &ldquo;absence of activity on this topic places her at&hellip;&rdquo;, &ldquo;insufficient evidence to differentiate from baseline&rdquo;.</p>
+  <p style="margin-top:10px;max-width:92ch"><b>The first tier was read by hand, one row at a time.</b>  A detector swept all 38,405 rows carrying reasoning and produced 317 voter-facing candidates; 307 were actionable, and a person read every one.  <b>206 failed and were withdrawn; 101 passed and were left exactly as they were.</b>  Rows were spared where the absence <i>rules out a neighbouring rung</i> on top of real evidence, where the omission sits inside the person&rsquo;s own document, and where a score came with the record behind it.  <b>An audit that withdrew everything it looked at would not be an audit.</b></p>
+  <p style="margin-top:10px;max-width:92ch"><b>Nothing was added to the certified corpus this cycle.</b>  One stratum of one evidence class is still the only measured part of it &mdash; 57 state-level, record-based stances, certified October 3 at 0.830 and 0.932 with no severe disagreements.  News-sourced and statement-sourced evidence are not certified, nor is the local tier.  <b>The audit above is the manual counterpart to that measurement, not a substitute for extending it.</b></p>
 </div>
 
 <div class="h2row" id="data"><h2>Data Coverage Deep Dive</h2><p>The invisible work.  This is what "evidence-based" costs, and we paid it.</p></div>
 <div class="cols">
   <div class="card">
     <h3 class="serif">Sourced stances, by where they serve</h3>
-    <p><span data-auto="stances">36,438</span> stance positions across <span data-auto="pols_with_stances">4,196</span> politicians and <span data-auto="topics">64</span> topics, every one carrying reasoning and cited sources; <span data-auto="candidates_with_stances">1,846</span> of the 2026 candidates already have some.  One figure keeps its date said out loud: <b><span data-auto="verified_sources">2,722</span> sources were independently re-checked in a sweep that finished in April 2026, and the number has not moved since</b>, because every row in it was written then.  It is a dated achievement, not a running total.</p>
+    <p><b>This table partitions stored rows, not served positions.</b>  It is the check on where every row sits, so it reconciles against the row count: <span data-auto="stances">38,311</span> rows across <span data-auto="pols_with_stances">4,228</span> politicians and <span data-auto="topics">64</span> topics; <span data-auto="candidates_with_stances">1,846</span> of the 2026 candidates have some.  <b><span data-auto="stances_served">32,000</span> of them resolve to a position a voter is served, and every one of those carries reasoning and cited sources.</b>  The difference is <span data-auto="stances_blanked">1,629</span> withdrawals &mdash; which carry a reason for the blank, not a citation for a position &mdash; and the Season 1 answers that pair with a Season 2 one.  One figure keeps its date said out loud: <b><span data-auto="verified_sources">2,722</span> sources were independently re-checked in a sweep that finished in April 2026, and the number has not moved since</b>, because every row in it was written then.  It is a dated achievement, not a running total.</p>
     <div class="tablebox" style="margin-top:14px;border:none;background:transparent"><table>
       <tr><th>Coverage area</th><th style="text-align:right">Politicians</th><th style="text-align:right">Stances</th></tr>
-      <tr><td>US Congress + national</td><td class="num">556</td><td class="num">9,494</td></tr>
-      <tr><td>2026 candidates &amp; discovered names (no seat)</td><td class="num">933</td><td class="num">6,032</td></tr>
-      <tr><td>California (state + local)</td><td class="num">372</td><td class="num">4,767</td></tr>
-      <tr><td>Massachusetts (state + local)</td><td class="num">302</td><td class="num">3,355</td></tr>
-      <tr><td>Maryland (state + local)</td><td class="num">188</td><td class="num">2,228</td></tr>
-      <tr><td>Texas (state + local)</td><td class="num">270</td><td class="num">2,073</td></tr>
-      <tr><td>Maine (state + local)</td><td class="num">186</td><td class="num">1,794</td></tr>
-      <tr><td>Virginia (state + local)</td><td class="num">166</td><td class="num">900</td></tr>
-      <tr><td>Oregon (state + local + county)</td><td class="num">154</td><td class="num">824</td></tr>
-      <tr><td>Utah (state + city + county)</td><td class="num">57</td><td class="num">650</td></tr>
-      <tr><td>Wisconsin (state + county + local)</td><td class="num">208</td><td class="num">628</td></tr>
-      <tr><td>Washington (state + county + city)</td><td class="num">161</td><td class="num">489</td></tr>
-      <tr><td>Arizona (state + local)</td><td class="num">129</td><td class="num">436</td></tr>
-      <tr><td>North Carolina (state + local)</td><td class="num">124</td><td class="num">406</td></tr>
+      <tr><td>US Congress + national</td><td class="num">556</td><td class="num">9,694</td></tr>
+      <tr><td>2026 candidates &amp; discovered names (no seat)</td><td class="num">931</td><td class="num">6,206</td></tr>
+      <tr><td>California (state + local)</td><td class="num">373</td><td class="num">5,048</td></tr>
+      <tr><td>Massachusetts (state + local)</td><td class="num">302</td><td class="num">3,887</td></tr>
+      <tr><td>Texas (state + local)</td><td class="num">270</td><td class="num">2,412</td></tr>
+      <tr><td>Maryland (state + local)</td><td class="num">188</td><td class="num">2,316</td></tr>
+      <tr><td>Maine (state + local)</td><td class="num">186</td><td class="num">1,796</td></tr>
+      <tr><td>Virginia (state + local)</td><td class="num">166</td><td class="num">1,009</td></tr>
+      <tr><td>Oregon (state + local + county)</td><td class="num">154</td><td class="num">826</td></tr>
+      <tr><td>Utah (state + city + county)</td><td class="num">57</td><td class="num">682</td></tr>
+      <tr><td>Wisconsin (state + county + local)</td><td class="num">208</td><td class="num">629</td></tr>
+      <tr><td>Washington (state + county + city)</td><td class="num">168</td><td class="num">502</td></tr>
+      <tr><td>Arizona (state + local)</td><td class="num">129</td><td class="num">438</td></tr>
+      <tr><td>North Carolina (state + local)</td><td class="num">128</td><td class="num">411</td></tr>
       <tr><td>Tennessee (state + local)</td><td class="num">119</td><td class="num">231</td></tr>
-      <tr><td>38 more jurisdictions (incl. Florida and DC)</td><td class="num">271</td><td class="num">2,131</td></tr>
+      <tr><td>38 more jurisdictions (incl. Florida and DC)</td><td class="num">293</td><td class="num">2,224</td></tr>
     </table></div>
-    <p style="margin-top:14px"><b>No answers were written this cycle, and fourteen of the sixteen rows are identical to the last edition&rsquo;s.</b>  The two that moved are a matched pair: one person left the no-seat row for a jurisdiction, carrying six answers into the remainder.  The rows still sum exactly to the headline totals.  <b>That is the strongest form of the check this table can give.</b>  The sum alone catches a missing row but not a row filed in the wrong place, since a misattribution moves a count between buckets and leaves the total intact.  Fourteen rows reproducing to the number says the resolution order did not shift underneath us.</p>
-    <p style="margin-top:10px"><b>How a stance gets seated.</b>  A member is placed on a topic because of <b>a bill they sponsored, read in its session-law text</b> &mdash; not a sentence someone else wrote about them.  Each of the 60 topics now carries a written annex saying where the boundary between two rungs falls, and that rulebook is what the measurement above was measuring.</p>
+    <p style="margin-top:14px"><b>Every one of the sixteen rows moved, and the partition still sums exactly.</b>  1,888 rows were written in five days and landed in sixteen buckets without one going missing.  <b>Texas passed Maryland</b>, 2,073 to 2,412 against 2,228 to 2,316.  <b>Washington gained seven politicians and North Carolina four</b> &mdash; Redmond and Duvall in the one, Charlotte in the other.  The sum catches a missing row but not a misfiled one, so it is not the whole check; what corroborates it is that the two totals it reconciles against are computed by a separate script from separate queries.</p>
+    <p style="margin-top:10px"><b>How a stance gets seated.</b>  A member is placed on a topic because of <b>a bill they sponsored, read in its session-law text</b> &mdash; not a sentence someone else wrote about them.  Each of the 60 topics a voter can answer carries a written annex saying where the boundary between two rungs falls.  <b>The audit above is that rulebook applied backwards</b>, to rows written before it existed.</p>
   </div>
   <div class="card">
     <h3 class="serif">Budgets you can follow</h3>
-    <p>Treasury Tracker&rsquo;s database holds budget data for <b><span data-auto="budget_entities">8,144</span> government entities across all 50 states plus DC</b>, spanning fiscal years <span data-auto="min_fy">1976</span> to <span data-auto="max_fy">2028</span>:</p>
+    <p>Treasury Tracker&rsquo;s database holds budget data for <b><span data-auto="budget_entities">8,147</span> government entities across all 50 states plus DC</b>, spanning fiscal years <span data-auto="min_fy">1976</span> to <span data-auto="max_fy">2028</span>:</p>
     <ul>
-      <li><b><span data-auto="t_cities">2,903</span> cities</b>, <span data-auto="t_townships">2,787</span> townships, <span data-auto="t_boroughs">949</span> boroughs, <span data-auto="t_counties">699</span> counties, <span data-auto="t_towns">486</span> towns, <span data-auto="t_villages">253</span> villages, <span data-auto="t_states">50</span> states, and <span data-auto="t_other">17</span> others including the federal budget</li>
-      <li><b>No new entities, and no commits of any kind this cycle.</b>  Treasury is the one app here that stood still</li>
+      <li><b><span data-auto="t_cities">2,906</span> cities</b>, <span data-auto="t_townships">2,787</span> townships, <span data-auto="t_boroughs">949</span> boroughs, <span data-auto="t_counties">699</span> counties, <span data-auto="t_towns">486</span> towns, <span data-auto="t_villages">253</span> villages, <span data-auto="t_states">50</span> states, and <span data-auto="t_other">17</span> others including the federal budget</li>
+      <li><b>New York City, fiscal years 2002 to 2025</b>, from its own ACFR across two fund scopes &mdash; the largest municipal budget in the country, and the deepest year range any single entity here carries</li>
+      <li><b>Redmond and Duvall, Washington</b>, loaded from their own BARS filings, with a written reason recorded for every excluded year</li>
       <li><b><span data-auto="line_items_m">2.7 million</span></b> line items, <b><span data-auto="transactions_m">1.3 million</span></b> transactions and <b><span data-auto="salaries">282,457</span></b> public salary records</li>
-      <li>State general funds are audited sources across all 50 states, each tie-verified to the penny; a blind re-derivation confirmed <b>149 of 151 exact matches</b>, the two exceptions documented</li>
+      <li><b>A new axis records how each budget was accounted for</b> &mdash; cash or GAAP &mdash; read off that entity&rsquo;s own audit opinion letters, and the comparison gate now refuses to set a cash-basis budget beside a GAAP one</li>
       <li>The class list above is a <b>partition</b>, not a sample: this page&rsquo;s refresh script complains if the seven named classes and the catch-all stop summing to the headline</li>
       <li>The core promise: no best-guess data wearing a real-looking label</li>
     </ul>
   </div>
 </div>
+
 <div class="card" style="margin-top:18px">
-  <h3 class="serif">What it takes to say where a city councillor stands</h3>
-  <p style="max-width:92ch"><b>A city is not a small state, and the first question is never what someone believes.</b>  It is whether the body they sit on may decide the thing at all.  North Carolina and Florida reserve firearms, municipal wages and rent regulation to themselves, so <b>522 of those two tranches&rsquo; 1,015 rows are proof of a limit rather than a position</b>.  Minnesota reserves fewer &mdash; Saint Paul has a rent stabilisation ordinance, a municipal minimum wage, a chapter limiting city help with federal immigration enforcement, and ranked voting.  But it reserves <i>cannabis</i>, which Florida does not, so a finding copied from one state to the next would have been wrong in both directions.  <b>The scope review runs before any research and is itself cited</b>, to the statute and the municipal code chapter.</p>
-  <p style="margin-top:10px;max-width:92ch"><b>Then the sources have to be able to carry the claim, and ours sometimes could not.</b>  Three Saint Paul members were cited to one page: a meeting agenda that mentions two of them zero times and carries no roll call at all.  The citation checker was right to refuse all three.  The page that <i>could</i> carry the claim was one link away, and all three rows now verify on three sources of three with no value and no reasoning changed.  <b>When a citation fails, ask first whether the page could ever have carried the claim.</b></p>
-  <p style="margin-top:10px;max-width:92ch"><b>And a thin result is a claim about your tools until you have checked them.</b>  Re-mining the same cities with a link extractor that assumes no one publisher&rsquo;s layout took Charlotte from three seated rows to five, Florida from none to two, and Florida&rsquo;s attributed passages from <b>22 to 122</b>.  One member&rsquo;s own press sweep returned 700 files of which <b>nine</b> named him, his surname being a common one; every passage finally used came from other members&rsquo; corpora.  Price the next city off the second set of numbers.</p>
+  <h3 class="serif">Thirty-seven rows, four days, and the first closed loop</h3>
+  <p style="max-width:92ch"><b>The question this programme has never been able to answer is whether anything it produces reaches a voter.</b>  Now it has.  The six cities researched last cycle produced 1,645 rows, of which <b>thirty-seven proposed an actual position</b>; the rest were scope findings, proof that a city may not decide the thing at all.  <b>Every one of the thirty-seven was reviewed by a person and published</b>: Duluth 18, Saint Paul 12, Charlotte 5, Miami 1, Bradenton 1.  Tallahassee produced none that survived review.</p>
+  <p style="margin-top:10px;max-width:92ch"><b>The shape of the result is the finding.</b>  Minnesota was chosen third precisely because it reserves less to the state than North Carolina or Florida do, and it held: <b>Duluth and Saint Paul produced 30 of the 37 between them</b>, from 17 people; Charlotte 5, Florida 2.  A city with the power to act leaves a record; a city without it leaves a citation to the statute that stopped it.  <b>Both are worth publishing, and only one shades a map.</b></p>
+  <p style="margin-top:10px;max-width:92ch"><b>Two Washington towns went from nothing to voter-facing inside the same five days</b> &mdash; Redmond and Duvall: 16 city seats, 13 headshots, coverage chips and banners, budgets loaded from their own filings, and 12 published positions across 7 people.  <b>The constraint this page named last cycle was the review queue, and the queue was cleared.</b>  It will be the constraint again the moment the next tranche lands.  That has not been solved; it has been paid off once.</p>
 </div>
+
 <div class="card" style="margin-top:18px">
   <h3 class="serif">Follow the money</h3>
-  <p style="max-width:92ch">The third leg, alongside votes and stances.  The platform holds <b><span data-auto="fin_contribs_m">29.1 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">8.6 billion</span></b>, covering <b><span data-auto="fin_pols">2,248</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span> election cycles (<span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>)</b>.  Every record traces to its original FEC filing, and superseded lines from amended filings are retired individually rather than counted twice.  <b>Unchanged this cycle</b>: the widened matching and the 33 disputed surname links were last cycle&rsquo;s work, and nothing has arrived since.</p>
+  <p style="max-width:92ch">The third leg, alongside votes and stances.  The platform holds <b><span data-auto="fin_contribs_m">29.1 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">8.6 billion</span></b>, covering <b><span data-auto="fin_pols">2,250</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span> election cycles (<span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>)</b>.  Every record traces to its original FEC filing, and superseded lines from amended filings are retired individually rather than counted twice.  <b>Unchanged this cycle</b>: the widened matching and the 33 disputed surname links were last cycle&rsquo;s work, and nothing has arrived since.</p>
 </div>
 
 <div class="card" style="margin-top:18px">
   <h3 class="serif">Stance research across the map</h3>
-  <p>Every state has at least one researched official, and all 50 congressional delegations are covered nationally.  Shading shows the depth of <b>state and local</b> research.  <b>This map did not move, and the city work above is why</b>: a tile shades only when an answer is published, and none was.  The next edition is where Charlotte, Miami and Saint Paul would show &mdash; if a human approves them.  <b>Puerto Rico is an outlined tile</b>: 161 seats seeded, no stances yet.</p>
+  <p>Every state has at least one researched official, and all 50 congressional delegations are covered nationally.  Shading shows the depth of <b>state and local</b> research.  <b>The map moved where the last edition said it would.</b>  <b>Minnesota crossed from Seeded to Growing</b>, 7 researched officials to 24, as the thirty-seven city positions were published.  Florida went 12 to 14 and North Carolina 124 to 128 &mdash; real movement that does not cross a tier line &mdash; and Washington rose 161 to 168 with Redmond and Duvall.  <b>A tile shades only when an answer is published</b>, which is why it stood still for two editions while the research was being done.  <b>Puerto Rico is an outlined tile</b>: 161 seats seeded, no stances yet, and it was deliberately held out of this cycle&rsquo;s legislative-vote load.</p>
 <div class="usmap">
     <div class="st t1" style="grid-row:1;grid-column:1" title="Alaska: 2 researched officials">AK</div>
     <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 186 researched officials">ME</div>
     <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 researched officials">VT</div>
     <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 researched official">NH</div>
-    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 161 researched officials">WA</div>
+    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 168 researched officials">WA</div>
     <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 researched officials">ID</div>
     <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 researched officials">MT</div>
     <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 5 researched officials">ND</div>
-    <div class="st t1" style="grid-row:3;grid-column:5" title="Minnesota: 7 researched officials">MN</div>
+    <div class="st t2" style="grid-row:3;grid-column:5" title="Minnesota: 24 researched officials">MN</div>
     <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 researched officials">IL</div>
     <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 208 researched officials">WI</div>
     <div class="st t1" style="grid-row:3;grid-column:8" title="Michigan: 9 researched officials">MI</div>
@@ -525,12 +587,12 @@
     <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 researched officials">WY</div>
     <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 4 researched officials">SD</div>
     <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 4 researched officials">IA</div>
-    <div class="st t2" style="grid-row:4;grid-column:6" title="Indiana: 20 researched officials">IN</div>
+    <div class="st t2" style="grid-row:4;grid-column:6" title="Indiana: 23 researched officials">IN</div>
     <div class="st t1" style="grid-row:4;grid-column:7" title="Ohio: 3 researched officials">OH</div>
     <div class="st t1" style="grid-row:4;grid-column:8" title="Pennsylvania: 5 researched officials">PA</div>
     <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 researched officials">NJ</div>
     <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 researched officials">CT</div>
-    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 373 researched officials">CA</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 374 researched officials">CA</div>
     <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 57 researched officials">UT</div>
     <div class="st t2" style="grid-row:5;grid-column:3" title="Colorado: 34 researched officials">CO</div>
     <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 4 researched officials">NE</div>
@@ -545,7 +607,7 @@
     <div class="st t1" style="grid-row:6;grid-column:4" title="Kansas: 6 researched officials">KS</div>
     <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 researched officials">AR</div>
     <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 119 researched officials">TN</div>
-    <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 124 researched officials">NC</div>
+    <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 128 researched officials">NC</div>
     <div class="st t1" style="grid-row:6;grid-column:8" title="South Carolina: 5 researched officials">SC</div>
     <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 16 researched officials">DC</div>
     <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 3 researched officials">OK</div>
@@ -555,13 +617,13 @@
     <div class="st t1" style="grid-row:7;grid-column:8" title="Georgia: 6 researched officials">GA</div>
     <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 2 researched officials">HI</div>
     <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 272 researched officials">TX</div>
-    <div class="st t2" style="grid-row:8;grid-column:9" title="Florida: 12 researched officials">FL</div>
+    <div class="st t2" style="grid-row:8;grid-column:9" title="Florida: 14 researched officials">FL</div>
     <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: 161 officials seeded, stance research not started">PR</div>
   </div>
   <div class="legend">
     <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">12</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">7</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">32</span>)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">8</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">31</span>)</span>
     <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>Seats seeded, research not started (<span data-auto="tier_none">1</span>)</span>
   </div>
   <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deeper tiers add legislatures, counties and cities.</p>
@@ -571,29 +633,32 @@
   Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
   a rolling window with internal/test traffic excluded (filterTestAccounts).  refresh.mjs
   does NOT touch these — it only reads the platform Postgres DB.  Last pulled: 30 and 90
-  days ending October 5, 2026, through the project query API.
+  days ending October 10, 2026, through the project query API.
 
   The $host breakdown is run FIRST every cycle as a discovery step, then each app is
   re-queried as one dau series with an exact host filter so people are deduped rather than
-  summed.  Reconciled 2026-10-05: NO new hostname.  www.empowered.vote and
-  ev-landing.onrender.com again served nobody and stay in the filter anyway.  One pageview
-  carried no $host at all and is attributed to nothing.
+  summed.  Reconciled 2026-10-10: NO new hostname.  www.empowered.vote and
+  ev-landing.onrender.com again served nobody and stay in the filter anyway — and the rule
+  that keeps them there earned itself this cycle: treasury-tracker-frontend.onrender.com
+  served NOBODY in the window ending 2026-09-11 and served 5 people in this one.  A host
+  with no traffic costs nothing to carry and dropping it is how an undercount comes back.
+  One pageview carried no $host at all and is attributed to nothing.
 
   The two OR'd rows (Treasury, main-site click-through) cannot come from a multi-series
   TrendsQuery — that returns one count per series, and summing them double-counts anyone who
   fired two events.  They are HogQL unions instead, which means reproducing filterTestAccounts
   by hand: the project's only test filter is "person id NOT IN COHORT 333605".  That
-  substitution was CONTROLLED before it was trusted — both methods were run over two
-  single-event rows and agreed exactly (41/41 and 12/12).
+  substitution was CONTROLLED before it was trusted — both methods were run over three
+  single-event rows and agreed exactly (36/36, 33/33 and 12/12).
 
   See briefing/README.md for the exact events behind each row.
 -->
 
 <div class="h2row" id="reach"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
 <div class="push">
-  <h3 class="serif">Small, and not shallow</h3>
-    <p><b>673 people used the platform in the last 90 days</b>, across every app, over 1,644 sessions.  What they do once they arrive is good &mdash; sessions average <b>six minutes sixteen</b> and <b>7 in 10 don&rsquo;t bounce</b> &mdash; so the constraint is arrival, not engagement.  <b>105 of the 337 who reached the main site clicked through into an app</b>: 31% in the quarter, the third pull running at that share and each on a larger base.</p>
-    <p style="margin-top:10px"><b>Read every figure here as an order of magnitude, not a trend line.</b>  At this volume a couple of people either side is the whole swing, and the window slides, so an app can &ldquo;fall&rdquo; because a busy week in July rolled out of it.  Over seven pulls the main site reads <b>306, 316, 312, 297, 300, 314, 337</b>.  The hostname map was re-run first and found <b>no new host</b>, which is what makes this pull readable against the last six.</p>
+  <h3 class="serif">Flat at the top, and one row that has not moved in three pulls</h3>
+    <p><b>698 people used the platform in the last 90 days</b>, across every app, over 1,574 sessions and 3,786 page views.  Sessions average <b>five minutes fifty-nine</b> and <b>68% do not bounce</b>.  <b>105 of the 340 who reached the main site clicked through into an app</b> &mdash; 31% in the quarter, the fourth pull running at that share.</p>
+    <p style="margin-top:10px"><b>Read every figure here as an order of magnitude, not a trend line.</b>  At this volume a couple of people either side is the whole swing, and the window slides.  Over eight pulls the main site reads <b>306, 316, 312, 297, 300, 314, 337, 340</b>.  The hostname map was re-run first and found <b>no new host</b> &mdash; and something better: <b>a Render host that served nobody last cycle served five people this one</b>, which is exactly why a dead hostname stays in the filter instead of being tidied away.</p>
 </div>
 <div class="cols" style="margin-top:18px">
   <div class="card">
@@ -602,54 +667,54 @@
     <div class="funnel">
       <div class="fhead"><span class="fcol">30d</span><span class="fcol">90d</span></div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Compass &mdash; completed a calibration <span style="color:var(--dim);font-weight:400">(of 138)</span></span><span class="fcount"><span class="fcol f30">12</span><span class="fcol f90">41</span></span></div>
-        <div class="ftrack"><div class="fbar b3" style="width:30%">30%</div></div>
+        <div class="frow"><span class="flabel">Compass &mdash; completed a calibration <span style="color:var(--dim);font-weight:400">(of 135)</span></span><span class="fcount"><span class="fcol f30">12</span><span class="fcol f90">36</span></span></div>
+        <div class="ftrack"><div class="fbar b3" style="width:27%">27%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Essentials &mdash; looked up an official <span style="color:var(--dim);font-weight:400">(of 124)</span></span><span class="fcount"><span class="fcol f30">10</span><span class="fcol f90">31</span></span></div>
-        <div class="ftrack"><div class="fbar b2" style="width:25%">25%</div></div>
+        <div class="frow"><span class="flabel">Essentials &mdash; looked up an official <span style="color:var(--dim);font-weight:400">(of 129)</span></span><span class="fcount"><span class="fcol f30">14</span><span class="fcol f90">33</span></span></div>
+        <div class="ftrack"><div class="fbar b2" style="width:26%">26%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Read &amp; Rank &mdash; revealed a ballot <span style="color:var(--dim);font-weight:400">(of 66)</span></span><span class="fcount"><span class="fcol f30">3</span><span class="fcol f90">8</span></span></div>
-        <div class="ftrack"><div class="fbar b4" style="width:12%">12%</div></div>
+        <div class="frow"><span class="flabel">Read &amp; Rank &mdash; revealed a ballot <span style="color:var(--dim);font-weight:400">(of 62)</span></span><span class="fcount"><span class="fcol f30">4</span><span class="fcol f90">8</span></span></div>
+        <div class="ftrack"><div class="fbar b4" style="width:13%">13%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Civic Trivia &mdash; finished a game <span style="color:var(--dim);font-weight:400">(of 111)</span></span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">12</span></span></div>
+        <div class="frow"><span class="flabel">Civic Trivia &mdash; finished a game <span style="color:var(--dim);font-weight:400">(of 112)</span></span><span class="fcount"><span class="fcol f30">4</span><span class="fcol f90">12</span></span></div>
         <div class="ftrack"><div class="fbar b1" style="width:11%">11%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Treasury &mdash; anything past the front page <span style="color:var(--dim);font-weight:400">(of 169 &mdash; see below)</span></span><span class="fcount"><span class="fcol f30">8</span><span class="fcol f90">17</span></span></div>
+        <div class="frow"><span class="flabel">Treasury &mdash; anything past the front page <span style="color:var(--dim);font-weight:400">(of 190 &mdash; see below)</span></span><span class="fcount"><span class="fcol f30">13</span><span class="fcol f90">22</span></span></div>
         <div class="ftrack"><div class="fbar b5" style="width:5%">n/a</div></div>
       </div>
     </div>
-    <p class="fcap"><b>Two of these are start problems, not finish problems.</b>  Only 19 people <i>started</i> a trivia game in a quarter, on 111 arrivals; 12 finished.  Read &amp; Rank is the same shape: 19 races started, 8 ballots revealed.  The Compass is the opposite, and the healthiest funnel we have: <b>123 of its 138 visitors opened the quiz</b> and 41 saw it through.  <b>The trivia row is unchanged from last time, to the person</b> &mdash; see the archive note.</p>
+    <p class="fcap"><b>The trivia row has returned the same twelve people three pulls running</b>, on 19 game starts each time.  <b>Two editions ago this page said six days was too short to conclude from.  It is no longer six days.</b>  Nothing has shipped to that app in either window, which is the simplest explanation and the one we control.  Read &amp; Rank is the same shape &mdash; 19 races started, 8 ballots revealed &mdash; and its redesign landed too late to show here.  The Compass is the opposite and still our healthiest funnel: <b>117 of its 135 visitors opened the quiz</b>, and 36 finished.</p>
   </div>
   <div class="card">
     <h3 class="serif">How many arrive</h3>
     <p>Unique visitors per app, 30 days and the full quarter.  <b>Each app is counted once across every hostname that serves it</b> &mdash; Treasury drew traffic on four this quarter, the main site on two.</p>
     <div class="eco">
       <div class="ecohead"><span></span><span></span><span class="eh">30d</span><span class="eh">90d</span></div>
-      <div class="ecorow"><span class="ehost">main site</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">139</span><span class="eval">337</span></div>
-      <div class="ecorow me"><span class="ehost">treasury</span><span class="etrack"><span class="ebar" style="width:50.1%"></span></span><span class="eval e30">75</span><span class="eval">169</span></div>
-      <div class="ecorow"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:40.9%"></span></span><span class="eval e30">37</span><span class="eval">138</span></div>
-      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:36.8%"></span></span><span class="eval e30">51</span><span class="eval">124</span></div>
-      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:32.9%"></span></span><span class="eval e30">30</span><span class="eval">111</span></div>
-      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:19.6%"></span></span><span class="eval e30">24</span><span class="eval">66</span></div>
+      <div class="ecorow"><span class="ehost">main site</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">147</span><span class="eval">340</span></div>
+      <div class="ecorow me"><span class="ehost">treasury</span><span class="etrack"><span class="ebar" style="width:55.9%"></span></span><span class="eval e30">95</span><span class="eval">190</span></div>
+      <div class="ecorow"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:39.7%"></span></span><span class="eval e30">38</span><span class="eval">135</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:37.9%"></span></span><span class="eval e30">53</span><span class="eval">129</span></div>
+      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:32.9%"></span></span><span class="eval e30">20</span><span class="eval">112</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:18.2%"></span></span><span class="eval e30">26</span><span class="eval">62</span></div>
     </div>
-    <p class="fcap"><b>Treasury Tracker is still the second most-visited thing we run</b>, and it rose furthest this pull &mdash; 148 to 169 in the quarter &mdash; <b>in a cycle with no commits at all</b>.  <b>Civic Spaces is absent from this table</b>, and that is a measurement gap rather than a result: it serves no traffic our analytics can see.</p>
+    <p class="fcap"><b>Treasury Tracker rose furthest again</b> &mdash; 169 to 190 in the quarter, and 75 to 95 in the month &mdash; this time in a cycle with 54 commits behind it rather than none.  <b>Civic Trivia fell hardest</b>, 30 to 20 in the month, in the cycle where nothing shipped to it.  <b>Civic Spaces is absent from this table</b>, and that is a measurement gap rather than a result: it serves no traffic our analytics can see.</p>
   </div>
 </div>
 <div class="card" style="margin-top:18px;border-left:3px solid var(--amber)">
-  <h3 class="serif">A number this page published, withdrew &mdash; and what replaced it</h3>
-  <p style="max-width:92ch">An earlier edition said <b>seven people in a quarter opened any of Treasury Tracker</b>, as 5% of 152 visitors.  <b>That rate was not sound and it stays withdrawn.</b>  The events were fine; the denominator was not &mdash; Treasury pushed its in-app navigation into the address bar without recording a page view, so every visitor was filed against the bare domain.  The direction was wrong too: this quarter those few produced <b>133 category drills, 93 entity selections and 71 line-item views</b>.</p>
-  <p style="margin-top:10px;max-width:92ch"><b>The fix has recorded since August 16, and the two ways of counting still disagree by more than four times.</b>  <b>72 people reached a budget address</b>; only <b>17</b> fired any past-the-front-page event.  The split explains it: <b>55 landed on our own budget</b>, one click from the donate page &mdash; a transparency visit, which selects nothing and so fires nothing.  That leaves <b>19 on some other government&rsquo;s budget</b>, and <b>that half moved for the first time in three pulls</b>, 16 to 19, while the donate half went 47 to 55.  Treasury stays <b>unmeasured rather than low</b> until the half that is not ours outgrows the donate traffic.  <b>A low count is a claim about instrumentation until you have read the code path.</b></p>
+  <h3 class="serif">Treasury is still unmeasured rather than low &mdash; but the half that matters moved again</h3>
+  <p style="max-width:92ch">An earlier edition published a rate here &mdash; seven people in a quarter, as 5% of 152 visitors &mdash; and withdrew it.  <b>It stays withdrawn.</b>  The events were sound; the denominator was not, because Treasury pushed its in-app navigation into the address bar without recording a page view, so every visitor was filed against the bare domain.  The direction was wrong too: this quarter those few people produced <b>160 category drills, 100 entity selections, 100 line-item views and 56 year changes</b>.</p>
+  <p style="margin-top:10px;max-width:92ch"><b>The two ways of counting still disagree by more than three times.</b>  <b>82 people reached a budget address; only 22 fired any past-the-front-page event.</b>  The split explains it: <b>59 landed on our own budget</b>, one click from the donate page &mdash; a transparency visit, which selects nothing and so fires nothing.  That leaves <b>23 on some other government&rsquo;s budget, and that half has now risen twice running</b>, 16 to 19 to 23, while the donate half went 47 to 55 to 59.  <b>The day the non-donate half outgrows the donate half is the day this section gets a real denominator.</b>  It is not that day.</p>
 </div>
 
 <div class="h2row" id="ahead"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>
 <div class="card" style="padding:6px 22px">
   <div class="horizon">
     <div class="when">Now to Nov</div>
-    <div><h4>Election readiness</h4><p><b>Review the 37.</b>  A proposed position nobody has approved helps no voter, and the city programme makes more of them every week it runs: <b>the review queue is the bottleneck now, not the research.</b>  Then the state legislators, where the evidence per row is far better than in any city &mdash; 2,551 seated people across 16 legislatures are in scope.  Finish the 2026 candidate waves, write the one trivia collection an audit cannot fix, and time the Treasury page properly.  Success in November is one thing: <b>any voter in a served area can look up every name on their ballot and follow the money behind it.</b></p></div>
+    <div><h4>Election readiness</h4><p><b>Finish the audit.</b>  The first tier was read by hand and closed; the tail bands are still being worked, and 24 rungs are known to ask a different question in Season 2 than they did in Season 1, which means the next pass repairs forward rather than blanking.  <b>Then put the 8.4 million votes to work</b> &mdash; the evidence class the certified stratum rests on is exactly the one that record feeds, and it now covers 29 legislatures instead of a handful.  <b>3,861 legislators now carry at least one recorded vote</b>, which is the population that record can speak for.  Finish the 2026 candidate waves, land the trivia slot-C fix that did not move this cycle, write the one collection an audit cannot fix, and time the Treasury page properly.  Success in November is one thing: <b>any voter in a served area can look up every name on their ballot and follow the money behind it.</b></p></div>
   </div>
   <div class="horizon">
     <div class="when">Post-election</div>
@@ -679,7 +744,7 @@
 </div>
 
 <footer>
-  <b>Sources and method.</b>  App statuses from git history across all repositories, read from each repository&rsquo;s published branch rather than from a working copy.  Database counts queried live on <span data-auto="asof">October 5, 2026</span>.  Reach figures are from PostHog &mdash; the 30 and 90 days ending <span data-auto="asof">October 5, 2026</span>, internal and test traffic excluded, each app counted once across every hostname that serves it.  &ldquo;Visitors&rdquo; and the per-app action counts are both unique people over the same window, so a rate between them is fair but is not a strict funnel.  <b>The 1,645 researched rows described above are in no figure on this page, because none of them has been published.</b>  A politician&rsquo;s state resolves through a fixed order of jurisdiction links, and federal seats are identified structurally, which is why they form one row.  <b>This edition is permanently archived at <a href="/briefing/2026-10-05" style="color:var(--gold)">empowered.vote/briefing/2026-10-05</a> and will not be edited after publication.</b>  In keeping with the platform&rsquo;s anti-partisan commitment, nothing in this report is colored red or blue.
+  <b>Sources and method.</b>  App statuses from git history across all repositories, read from each repository&rsquo;s published branch rather than from a working copy, with an explicit time of day on every window.  <b>One repository, Fallacy Finders, has no remote</b>, so it is the single exception and is read locally.  Database counts queried live on <span data-auto="asof">October 10, 2026</span>.  Reach figures are from PostHog &mdash; the 30 and 90 days ending <span data-auto="asof">October 10, 2026</span>, internal and test traffic excluded, each app counted once across every hostname that serves it; the substitution used to exclude that traffic was controlled against the native filter on three rows and agreed exactly.  &ldquo;Visitors&rdquo; and the per-app action counts are both unique people over the same window, so a rate between them is fair but is not a strict funnel.  <b>The headline stance figure changed basis this edition</b>: it counts the newest season&rsquo;s answer per person and topic, where that answer is not a withdrawal, and is <b>not comparable with earlier editions</b>, which counted stored rows.  Both numbers are printed above, and the coverage table reconciles against the stored one.  A politician&rsquo;s state resolves through a fixed order of jurisdiction links, and federal seats are identified structurally, which is why they form one row.  <b>This edition is permanently archived at <a href="/briefing/2026-10-10" style="color:var(--gold)">empowered.vote/briefing/2026-10-10</a> and will not be edited after publication.</b>  In keeping with the platform&rsquo;s anti-partisan commitment, nothing in this report is colored red or blue.
 </footer>
 
 </div>
@@ -726,6 +791,30 @@
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onScroll, { passive: true });
   mark();
+})();
+</script>
+
+<script>
+/* The Previous Briefings picker works with no JavaScript at all -- it is a
+   <details>, and clicking the summary opens it.  This only adds the two
+   behaviours a reader expects from a menu and that <details> does not give:
+   clicking anywhere else closes it, and so does Escape.
+
+   Escape is handled on the document rather than on the panel because focus is
+   usually still on the summary button, which is OUTSIDE the panel; a listener
+   bound to the panel would never see the key. */
+(function () {
+  var d = document.querySelector('.prevdrop');
+  if (!d) return;
+  document.addEventListener('click', function (e) {
+    if (d.open && !d.contains(e.target)) d.open = false;
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !d.open) return;
+    d.open = false;
+    var s = d.querySelector('summary');
+    if (s) s.focus();
+  });
 })();
 </script>
 </body>

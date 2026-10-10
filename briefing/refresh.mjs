@@ -107,6 +107,38 @@ const core = await one(`SELECT
      JOIN trivia.collections c ON c.id = cq.collection_id AND c.is_active
     WHERE q.status = 'active') AS trivia_active`);
 
+// 🔴 THE STANCE TOTAL COUNTS STORAGE, NOT POSITIONS, AND IT HAD NEVER BEEN ASKED TO PROVE IT.
+// `count(*) FROM politician_answers` is a row count.  Since Seasons shipped, one person can hold
+// a Season 1 AND a Season 2 answer on the SAME topic, and both rows are counted — 38,311 rows
+// resolve to 33,629 distinct (politician, topic) pairs.  Worse, from 2026-10-06 the stance audit
+// began withdrawing unsupported positions by writing a Season 2 answer of 0 over them: compassService
+// does `NULLIF(pa.value, 0) AS stance_value` with the guard OUTSIDE the season collapse, so a 0 in
+// the newest season SUPPRESSES the pair rather than falling through to Season 1.  A withdrawal
+// therefore INSERTS a row, and the headline total goes UP while the number of positions a voter can
+// actually read goes DOWN.  On 2026-10-10 the stored total rose 36,438 -> 38,311 in the same five
+// days that 1,629 positions were withdrawn.
+//
+// So the page carries both, the way it already carries `topics` beside `topics_open`:
+//   stances         — rows stored.  This is what coverage-table.sql partitions, so the table's
+//                     TOTAL(partition) = TOTAL(headline) check still reconciles against it.
+//   stances_served  — positions a voter is served: the newest season's answer per (politician,
+//                     topic), counted only where it is not a blank.  This is the honest headline.
+const servedRows = await one(`
+  WITH latest AS (
+    SELECT DISTINCT ON (a.politician_id, a.topic_id)
+           a.politician_id, a.topic_id, a.value
+      FROM inform.politician_answers a
+      JOIN inform.seasons s ON s.id = a.season_id
+     ORDER BY a.politician_id, a.topic_id, s.number DESC
+  )
+  SELECT count(*) FILTER (WHERE value > 0)                        AS stances_served,
+         count(*) FILTER (WHERE value = 0)                        AS stances_blanked,
+         count(*)                                                 AS stance_pairs,
+         count(DISTINCT politician_id) FILTER (WHERE value > 0)   AS pols_served,
+         round(count(*) FILTER (WHERE value > 0)::numeric
+               / NULLIF(count(DISTINCT politician_id) FILTER (WHERE value > 0), 0), 1) AS avg_served
+    FROM latest`);
+
 const treasury = await one(`SELECT
   (SELECT count(DISTINCT municipality_id) FROM treasury.budgets) AS budget_entities,
   (SELECT min(fiscal_year) FROM treasury.budgets) AS min_fy,
@@ -328,6 +360,9 @@ const values = {
   asof,
   pols_curated: fmt(core.pols_curated), pool: fmt(core.pool),
   stances: fmt(core.stances), pols_with_stances: fmt(core.pols_with_stances),
+  stances_served: fmt(servedRows.stances_served), stances_blanked: fmt(servedRows.stances_blanked),
+  stance_pairs: fmt(servedRows.stance_pairs), pols_served: fmt(servedRows.pols_served),
+  avg_served: String(servedRows.avg_served),
   topics: fmt(core.topics), topics_open: fmt(core.topics_open),
   verified_sources: fmt(core.verified_sources),
   candidates_2026: fmt(core.candidates_2026), candidates_with_stances: fmt(core.candidates_with_stances),
@@ -367,6 +402,27 @@ for (const [key, val] of Object.entries(values)) {
     if (old !== val) changes.push(`${key}: ${old} -> ${val}`);
     return open + val + close;
   });
+}
+
+// 🔴 STORED AND SERVED MUST NOT MOVE IN OPPOSITE DIRECTIONS WITHOUT SOMEONE SAYING SO.  That is
+// precisely what a withdrawal campaign does — it inserts suppressing rows, so the row count climbs
+// while the positions a voter can read fall — and on 2026-10-10 nothing in this script noticed.
+// `changes` already carries the old value straight off the page, so the comparison is free.
+{
+  const moved = (key) => {
+    const c = changes.find((x) => x.startsWith(key + ': '));
+    if (!c) return null;
+    const [, from, to] = c.match(/: ([\d,]+) -> ([\d,]+)$/) ?? [];
+    if (!from) return null;
+    return Number(to.replace(/,/g, '')) - Number(from.replace(/,/g, ''));
+  };
+  const a = moved('stances'), b = moved('stances_served');
+  if (a !== null && b !== null && Math.sign(a) !== Math.sign(b)) {
+    console.log(`WARNING: rows stored moved ${a > 0 ? '+' : ''}${a} while positions served moved ${b > 0 ? '+' : ''}${b}.`);
+    console.log('  The two disagree on direction, which is the signature of a withdrawal campaign:');
+    console.log('  a blank in the newest season is an INSERT that suppresses an older answer.');
+    console.log('  Say so in the narrative; do not publish the rising number on its own.');
+  }
 }
 
 // Map tiles: matched by the two-letter abbreviation they display.
