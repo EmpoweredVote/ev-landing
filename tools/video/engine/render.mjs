@@ -68,7 +68,7 @@ export async function renderScene({ scene, episode, outFile, artFiles = [], alph
   const frames = scene.frames || Math.round(scene.dur * fps);
 
   const codec = ffmpegArgs ? ffmpegArgs : (alpha
-    ? ['-c:v', 'prores_ks', '-profile:v', '4444', '-pix_fmt', 'yuva444p10le']
+    ? ['-c:v', 'prores_ks', '-profile:v', '4444', '-pix_fmt', 'yuva444p12le']
     : ['-c:v', 'libx264', '-preset', 'medium', '-crf', '16', '-pix_fmt', 'yuv420p']);
 
   const ff = spawn('ffmpeg', ['-y', '-v', 'error',
@@ -86,6 +86,16 @@ export async function renderScene({ scene, episode, outFile, artFiles = [], alph
   // A dead ffmpeg makes every later write throw EPIPE; swallow that so the
   // close handler above reports the real reason instead.
   ff.stdin.on('error', () => {});
+
+  // Playwright's omitBackground only drops the browser's DEFAULT white page
+  // background. stage.html sets #111113 on html and body explicitly, and that
+  // still paints — so an "alpha" export came out 92% opaque, which is useless
+  // in a Resolve cut and looks fine in every other check.
+  await st.page.evaluate(a => {
+    var bg = a ? 'transparent' : '#111113';
+    document.documentElement.style.background = bg;
+    document.body.style.background = bg;
+  }, alpha);
 
   const withAlpha = alpha ? { ...scene, alpha: true } : scene;
   try {
