@@ -33,5 +33,22 @@ const ROOT = 'C:/ev-landing/ev-landing-main';
   assert.throws(() => parseScript('## L001\na\n\n## L001\nb\n'), /L001/,
     'a duplicate line id must throw and name itself');
 
+  // The speech cache, tested without a network. A stale cache would re-use
+  // yesterday's words for today's line, and the only symptom is that the
+  // narration does not match the script you just edited.
+  const { isCached } = await import('file:///' + ROOT + '/tools/video/engine/voice.mjs');
+  const dir = path.join(ROOT, 'tools/video/build/_cachetest');
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  const line = { id: 'L001', text: 'Who are these people?' };
+
+  assert.strictEqual(await isCached(dir, line), false, 'nothing cached yet');
+  fs.writeFileSync(path.join(dir, 'L001.txt'), line.text, 'utf8');
+  assert.strictEqual(await isCached(dir, line), false, 'text alone is not a cache hit; the audio must exist');
+  fs.writeFileSync(path.join(dir, 'L001.wav'), 'not really audio', 'utf8');
+  assert.strictEqual(await isCached(dir, line), true, 'same words plus audio is a hit');
+  assert.strictEqual(await isCached(dir, { id: 'L001', text: 'Who are these folks?' }), false,
+    'changed words must miss the cache');
+
   console.log('PASS 05-script');
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

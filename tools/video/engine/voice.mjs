@@ -10,6 +10,7 @@
 
 import { spawn } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const VOICE = 'en-US-AndrewMultilingualNeural';
@@ -36,10 +37,26 @@ export async function probeDuration(file) {
   return n;
 }
 
+// Has this line's audio already been made, from exactly these words?
+//
+// The stored .txt is the record of what was spoken. Comparing against it is
+// what makes the cache safe: change a word and the text no longer matches, so
+// the line is spoken again. Exported so it can be tested without a network.
+export async function isCached(dir, line) {
+  const txt = path.join(dir, line.id + '.txt');
+  const wav = path.join(dir, line.id + '.wav');
+  if (!existsSync(txt) || !existsSync(wav)) return false;
+  return (await readFile(txt, 'utf8')) === line.text;
+}
+
 async function synth(line, dir, engine) {
   const txt = path.join(dir, line.id + '.txt');
   const mp3 = path.join(dir, line.id + '.mp3');
   const wav = path.join(dir, line.id + '.wav');
+
+  // Changing one word should cost one line of speech, not forty.
+  if (await isCached(dir, line)) return wav;
+
   await writeFile(txt, line.text, 'utf8');
 
   if (engine === 'sapi') {
