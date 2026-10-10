@@ -27,3 +27,7 @@ tools/bubble-rig/rig-*.png
 # Playwright MCP page captures. 556 of these were committed to
 # ev-accounts and held live credentials.
 .playwright-mcp/
+
+# Video pipeline output — frames, audio, MP4s. Never commit: render.yaml
+# publishes the whole repo, so a committed episode ships on every deploy.
+tools/video/build/
