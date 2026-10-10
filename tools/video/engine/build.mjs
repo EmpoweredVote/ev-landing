@@ -7,7 +7,9 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 import { parseScript } from './script.mjs';
 import { speak, loadTimings } from './voice.mjs';
@@ -24,10 +26,25 @@ function run(cmd, args) {
   });
 }
 
-function sceneHash(scene, episode) {
+function sceneHash(scene, episode, codeKey) {
   return createHash('sha1')
-    .update(JSON.stringify({ scene, w: episode.width, h: episode.height, fps: episode.fps }))
+    .update(JSON.stringify({ scene, w: episode.width, h: episode.height, fps: episode.fps, codeKey }))
     .digest('hex').slice(0, 16);
+}
+
+// Everything that can change what a frame looks like without changing the
+// scene OBJECT: the episode's own art, and the drawing layer underneath it.
+// Hashing the object alone means an edit to art.js or to a pose serves a stale
+// MP4 of the old drawing, and the only symptom is that your fix did not appear.
+async function codeDigest(artFiles) {
+  const engine = ['stage.js', 'cast.js'].map(f => path.join(HERE, f));
+  const rig = ['leremy-rig.js', 'ev-anim-extras.js']
+    .map(f => path.join(HERE, '..', '..', '..', f));
+  const h = createHash('sha1');
+  for (const f of [...engine, ...rig, ...artFiles]) {
+    if (existsSync(f)) h.update(await readFile(f));
+  }
+  return h.digest('hex').slice(0, 16);
 }
 
 export async function buildEpisode(episodeDirIn, opts = {}) {
@@ -66,10 +83,11 @@ export async function buildEpisode(episodeDirIn, opts = {}) {
     .filter(existsSync);
 
   // Which scenes need rendering: the ones whose hash has no file.
+  const codeKey = await codeDigest(artFiles);
   const wanted = planned.filter(s => !opts.only || s.id === opts.only);
   const todo = [];
   for (const s of wanted) {
-    const h = sceneHash(s, episode);
+    const h = sceneHash(s, episode, codeKey);
     const hashFile = path.join(sceneDir, s.id + '.hash');
     const mp4 = path.join(sceneDir, s.id + '.mp4');
     const have = existsSync(mp4) && existsSync(hashFile) &&
@@ -168,10 +186,14 @@ export async function buildEpisode(episodeDirIn, opts = {}) {
       path.join(stills, String(i).padStart(3, '0') + '.png')]);
   }
   await readdir(stills);
+  // Tiles are scaled DOWN. At full resolution a 40-scene episode produces a
+  // 7704x10872 sheet, which is not something a person opens to check a layout.
+  // 480 wide is enough to see a Bobit's feet against the ground line, which is
+  // what this sheet is for.
+  const tileW = 480;
   await run('ffmpeg', ['-y', '-v', 'error', '-start_number', '0',
     '-i', path.join(stills, '%03d.png'),
-    '-vf', 'scale=' + episode.width + ':' + episode.height +
-      ',tile=' + cols + 'x' + rows + ':padding=8:color=0x222228',
+    '-vf', 'scale=' + tileW + ':-2,tile=' + cols + 'x' + rows + ':padding=8:color=0x222228',
     '-frames:v', '1', contact]);
 
   return { silent, scratch, sheet, contact, rendered, planned };

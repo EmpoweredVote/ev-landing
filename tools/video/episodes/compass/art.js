@@ -368,7 +368,11 @@
     cols.forEach(function (col, i) {
       var a = fade(t, 0.2 + i * 0.55, 0.5);
       if (a <= 0) return;
-      var dimmed = scene.highlight && scene.highlight !== col.name;
+      // `highlight` names either a pillar or a term in the formula. Dim the
+      // other pillars only when it names a pillar — otherwise highlighting
+      // "sValues" dims all three, since none of them match.
+      var pillarPicked = cols.some(function (c) { return c.name === scene.highlight; });
+      var dimmed = pillarPicked && scene.highlight !== col.name;
       ctx.save();
       ctx.globalAlpha = a * (dimmed ? 0.28 : 1);
       ctx.fillStyle = col.c;
@@ -425,7 +429,7 @@
     }
 
     var boxH = boxW * (shot.naturalHeight / shot.naturalWidth);
-    var maxH = H * 0.58;
+    var maxH = H * 0.62;   // still clears the Bobit standing in front of it
     if (boxH > maxH) { boxH = maxH; boxW = boxH * (shot.naturalWidth / shot.naturalHeight); x = (W - boxW) / 2; }
 
     ctx.save();

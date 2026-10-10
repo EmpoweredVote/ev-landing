@@ -92,6 +92,28 @@ export default {
   assert.strictEqual(Number(probe(r4.silent, 'stream=nb_frames')), 48,
     'the relative-path build must join the same 48 frames');
 
+  // Editing an episode's art.js must re-render the scenes that draw with it.
+  // The scene OBJECT is unchanged by such an edit, so a hash taken over the
+  // object alone goes on serving a stale MP4 of the old drawing — and the only
+  // symptom is that your fix did not appear.
+  fs.writeFileSync(path.join(EP, 'art.js'),
+    '(function(){window.EVArt=Object.assign(window.EVArt||{},{fixtureArt:function(c,t,W,H,s){' +
+    'c.fillStyle=s.accent;c.fillRect(W*0.1,H*0.4,W*0.3,H*0.2);}});})();', 'utf8');
+  const withArt = fs.readFileSync(path.join(EP, 'episode.mjs'), 'utf8')
+    .replace("{ id: 'b', type: 'stage', vo: 'L002', headline: 'Dos',",
+             "{ id: 'b', type: 'art', art: 'fixtureArt', vo: 'L002', headline: 'Dos',");
+  fs.writeFileSync(path.join(EP, 'episode.mjs'), withArt, 'utf8');
+  await buildEpisode(EP, { outDir: OUT, voice: false });              // picks up the type change
+  const settled = await buildEpisode(EP, { outDir: OUT, voice: false });
+  assert.deepStrictEqual(settled.rendered, [], 'the art scene must be cached once rendered');
+
+  fs.writeFileSync(path.join(EP, 'art.js'),
+    '(function(){window.EVArt=Object.assign(window.EVArt||{},{fixtureArt:function(c,t,W,H,s){' +
+    'c.fillStyle=s.accent;c.fillRect(W*0.5,H*0.2,W*0.4,H*0.5);}});})();', 'utf8');
+  const afterArt = await buildEpisode(EP, { outDir: OUT, voice: false });
+  assert.ok(afterArt.rendered.includes('b'),
+    'editing art.js must re-render the scenes that draw with it, got ' + afterArt.rendered);
+
   // A scene `hold` adds picture time AFTER its line. The voice track knows
   // nothing about holds, so without correction the audio runs ahead of the
   // picture from the first hold onward — and ffmpeg's -shortest then truncates
