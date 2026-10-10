@@ -13,7 +13,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 import { parseScript } from './script.mjs';
 import { speak, loadTimings } from './voice.mjs';
-import { planFrames, timingSheet } from './timing.mjs';
+import { planFrames, timingSheet, recordingScript } from './timing.mjs';
 import { openStage, renderScene } from './render.mjs';
 
 function run(cmd, args) {
@@ -75,10 +75,15 @@ export async function buildEpisode(episodeDirIn, opts = {}) {
   const planned = planFrames(episode, timings)
     .map(s => (s.accent ? s : { ...s, accent: episode.accent }));
 
-  // Load order matters: screen.js defines the data URIs that art.js reads at
-  // registration time, so it must come first. An explicit list beats globbing,
-  // which would silently depend on alphabetical ordering.
-  const artFiles = ['screen.js', 'art.js']
+  // Load order matters: an episode's generated asset files (screen.js,
+  // brand.js, ...) define the data URIs that art.js reads at registration
+  // time, so every one of them loads first and art.js loads last. Sorting the
+  // assets keeps the order stable, which matters because they feed the cache
+  // key below.
+  const assetFiles = (await readdir(episodeDir))
+    .filter(f => f.endsWith('.js') && f !== 'art.js' && !f.endsWith('.mjs'))
+    .sort();
+  const artFiles = [...assetFiles, 'art.js']
     .map(f => path.join(episodeDir, f))
     .filter(existsSync);
 
@@ -170,6 +175,10 @@ export async function buildEpisode(episodeDirIn, opts = {}) {
   const sheet = path.join(outDir, episode.id + '-timing.md');
   await writeFile(sheet, timingSheet(episode, planned), 'utf8');
 
+  // The script as something to read into a microphone.
+  const reading = path.join(outDir, episode.id + '-recording-script.md');
+  await writeFile(reading, recordingScript(episode, planned, timings), 'utf8');
+
   // The contact sheet: one frame per scene, in a grid. This is the artifact a
   // human looks at. Green tests do not prove a Bobit is visible, on the ground
   // or clear of the text.
@@ -196,7 +205,7 @@ export async function buildEpisode(episodeDirIn, opts = {}) {
     '-vf', 'scale=' + tileW + ':-2,tile=' + cols + 'x' + rows + ':padding=8:color=0x222228',
     '-frames:v', '1', contact]);
 
-  return { silent, scratch, sheet, contact, rendered, planned };
+  return { silent, scratch, sheet, reading, contact, rendered, planned };
 }
 
 // CLI
@@ -212,6 +221,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.log('silent  ', r.silent);
     if (r.scratch) console.log('scratch ', r.scratch);
     console.log('timing  ', r.sheet);
+    console.log('to read ', r.reading);
     console.log('contact ', r.contact, '  <- LOOK AT THIS BEFORE CALLING IT DONE');
   }).catch(e => { console.error(e); process.exit(1); });
 }

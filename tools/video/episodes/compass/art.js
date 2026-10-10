@@ -14,13 +14,21 @@
   var YOU    = [0.95, 0.55, 0.80, 0.00, 0.70, 0.45];   // index 3 deliberately empty
   var LEADER = [0.58, 0.72, 0.45, 0.00, 0.78, 0.30];
 
-  // The still of the live app. Decoding is async, so the renderer is told to
-  // wait via window.EVArt.ready before it asks for frame 0.
-  var shot = new Image();
-  var shotReady = new Promise(function (res) { shot.onload = res; shot.onerror = res; });
-  if (window.EVCompassShot) shot.src = window.EVCompassShot;
-  else res0();
-  function res0() { /* no still available; drawLiveScreen degrades to a caption */ }
+  // Images are decoded asynchronously, so the renderer is told to wait via
+  // window.EVArt.ready before it asks for frame 0. A missing asset resolves
+  // immediately rather than hanging the render — the drawing degrades instead.
+  function load(uri) {
+    var img = new Image();
+    var ready = new Promise(function (res) {
+      if (!uri) return res();
+      img.onload = res; img.onerror = res;
+    });
+    if (uri) img.src = uri;
+    return { img: img, ready: ready };
+  }
+  var shotA = load(window.EVCompassShot);
+  var logoA = load(window.EVCompassLogo);
+  var shot = shotA.img, logo = logoA.img;
 
   function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
   function fade(t, t0, dur) { return ease((t - t0) / dur); }
@@ -133,6 +141,46 @@
     ctx.fillStyle = accent;
     ctx.fillText("decides my vote", g.cx + W * 0.030, tipY + H * 0.015);
     ctx.restore();
+  }
+
+  // Chapter 1: the title card, as the product's own lockup.
+  //
+  // The brand mark happens to BE a radar chart — a hexagon of six spokes with
+  // yellow vertex dots — which is the same figure chapters 4 to 6 draw. Using
+  // the real lockup here makes that rhyme deliberate instead of accidental.
+  function drawTitleCard(ctx, t, W, H, scene) {
+    var a = fade(t, 0.15, 0.7);
+    var grow = 0.975 + 0.025 * a;          // a small settle, not a zoom
+
+    if (!logo.complete || !logo.naturalWidth) {
+      // The lockup is missing. Say the name in type rather than show nothing.
+      // `name`, not `headline`: a headline is drawn by the shared headline
+      // code too, and the card would carry the words twice.
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.textAlign = "center";
+      ctx.fillStyle = scene.accent || "#FFD426";
+      ctx.font = "800 " + Math.round(H * 0.105) + "px " + FONT;
+      ctx.fillText(scene.name || "Empowered Compass", W / 2, H * 0.47);
+      ctx.restore();
+    } else {
+      var w = W * 0.52 * grow;
+      var h = w * (logo.naturalHeight / logo.naturalWidth);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.drawImage(logo, (W - w) / 2, H * 0.44 - h / 2, w, h);
+      ctx.restore();
+    }
+
+    if (scene.sub) {
+      ctx.save();
+      ctx.globalAlpha = fade(t, 0.55, 0.6);
+      ctx.textAlign = "center";
+      ctx.fillStyle = MUTED;
+      ctx.font = "500 " + Math.round(H * 0.030) + "px " + FONT;
+      ctx.fillText(scene.sub, W / 2, H * 0.62);
+      ctx.restore();
+    }
   }
 
   // Chapter 0: the ballot. A column of names that stop meaning anything, and
@@ -446,6 +494,7 @@
   }
 
   window.EVArt = Object.assign(window.EVArt || {}, {
+    drawTitleCard: drawTitleCard,
     drawBallot: drawBallot,
     drawBoxes: drawBoxes,
     drawMarkers: drawMarkers,
@@ -455,5 +504,5 @@
     drawPillarFormula: drawPillarFormula,
     drawLiveScreen: drawLiveScreen
   });
-  window.EVArt.ready = shotReady;
+  window.EVArt.ready = Promise.all([shotA.ready, logoA.ready]);
 })();

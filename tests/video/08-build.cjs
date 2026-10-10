@@ -62,6 +62,14 @@ export default {
   assert.strictEqual(r1.planned[0].accent, '#FFD426',
     'a scene with no accent must inherit the episode accent, got ' + r1.planned[0].accent);
 
+  // The recording script must carry every line, and must NOT carry the
+  // direction notes — those are instructions to the renderer, and reading them
+  // aloud by mistake is exactly what a reader does with a script.
+  const reading = fs.readFileSync(r1.reading, 'utf8');
+  assert.ok(/L001/.test(reading) && /L002/.test(reading), 'every line appears in the recording script');
+  assert.ok(reading.includes('One.') && reading.includes('Two.'), 'the words to read are present');
+  assert.ok(!/Direction:/i.test(reading), 'direction notes must not reach the reader');
+
   // The timing sheet names every line with an in-point.
   const sheet = fs.readFileSync(r1.sheet, 'utf8');
   assert.ok(/L001/.test(sheet) && /L002/.test(sheet), 'every line appears in the sheet');
