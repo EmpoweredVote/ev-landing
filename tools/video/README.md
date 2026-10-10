@@ -40,7 +40,31 @@ Output lands in `tools/video/build/<episode>/`:
 - `<id>-scratch.mp4` — picture plus the AI voice. Watch this to judge the episode.
 - `<id>-silent.mp4` — the same picture, no audio. This is what goes into Resolve.
 - `<id>-timing.md` — every line with its in and out time, to match pace when re-recording.
+- `<id>-recording-script.md` — the words to read into a microphone, with the line
+  numbers the edit keys off. Direction notes are deliberately left out.
 - `<id>-contact.png` — one frame per scene, in a grid. **Look at this before calling an episode done.**
+
+`--alpha` produces something different: per-scene ProRes 4444 clips in
+`scenes-alpha/`, and nothing else. No join, no voice, no contact sheet — the
+clips *are* the deliverable, which is the point of that fallback. Alpha and
+opaque keep separate directories and separate cache keys, so one can never be
+served in place of the other.
+
+## What the build refuses
+
+The build aborts, naming the thing, rather than producing something that looks
+right. Each of these is a silent desync if it gets through:
+
+| Refusal | Why |
+|---|---|
+| a scene names a `vo` id not in `timings.json` | the scene would have no length |
+| two scenes name the same line | the line would be spoken twice |
+| a line no scene names | it would be recorded, land in the voice track, and never appear |
+| a per-line WAV is missing while others exist | the resync would be skipped and the end of the episode cut off |
+| a WAV's real length disagrees with `timings.json` by more than a frame | the scene was planned from a stale number |
+| a rendered scene holds the wrong frame count | ffmpeg can exit 0 having written a short file |
+| the joined picture does not hold the planned frames | a scene is short |
+| the scratch cut and the picture differ by more than a frame | the voice has been trimmed to fit |
 
 ## Durations are measured, never typed
 
@@ -72,6 +96,25 @@ Three types, and no more:
   which the episode's own `art.js` registers. May also carry a `headline` and a
   `cast`, both drawn on top.
 
+An art scene may carry any extra fields its draw function reads; they are part
+of the cache key, so changing one re-renders that scene. The Compass episode
+uses these:
+
+| Field | Used by | Meaning |
+|---|---|---|
+| `stage` | `drawSpokeGrowing`, `drawCompassBuilding`, `drawCompassOverlay` | how far through the idea this scene is |
+| `settled` | `drawMarkers`, `drawLiveScreen` | this scene continues the one before it, so show the end state at once |
+| `issue` | `drawSpokeGrowing` | the label on the single spoke |
+| `count`, `ring` | `drawMarkers` | how many markers, and whether they gather into the compass ring |
+| `dim`, `letters` | `drawBallot` | fade the names down the ballot; show the party letter beside each |
+| `highlight`, `formula` | `drawPillarFormula` | which pillar or formula term to pick out; whether the formula is shown |
+| `name`, `sub` | `drawTitleCard` | fallback wording if the lockup is missing, and the line beneath it |
+
+**A scene that continues another must say so.** Four consecutive scenes calling
+one draw function each replay its animation from zero, so the viewer watches the
+same reveal four times. `stage` and `settled` are how a scene says "start where
+the last one ended".
+
 A scene inherits `accent` from the episode unless it sets its own.
 
 ## A cast entry
@@ -90,6 +133,10 @@ floor and a lifted foot rises off it.
 Do not reach for the rig's own constants (128 standing, 200 seated). The 200 is
 the height of the plinth the rig draws under a seated figure; the video stage has
 no plinth, and using it hangs a sitting Bobit 130px in the air.
+
+The sample window is 30 seconds. It was 4, and `fall` reaches its deepest point
+late enough that the short window missed it by 9.5px — the figure sank through
+the floor at exactly the moment it lands.
 
 Three Bobits per scene, at most. A fourth aborts the render.
 
@@ -139,6 +186,12 @@ the moment the episode rendered. A `data:` URI does not taint.
 The current capture is the calibration onboarding screen. Reaching a calibrated
 radar needs a logged-in session; re-run the script from a logged-in browser to
 replace it.
+
+`episodes/compass/brand.js` is generated the same way, by `embed-brand.mjs`,
+from the dark variants in `brand/compass/`. Both files are committed on purpose:
+without them a fresh checkout builds a different episode, because the capture
+would have to be re-taken against a site that changes. They are 124KB together,
+which is text, not media.
 
 ## Writing an `art.js`
 

@@ -50,5 +50,21 @@ const ROOT = 'C:/ev-landing/ev-landing-main';
   assert.strictEqual(await isCached(dir, { id: 'L001', text: 'Who are these folks?' }), false,
     'changed words must miss the cache');
 
+  // The promise the plan actually made: the narration reaches the speech engine
+  // INTACT, and shell-quoting a sentence is how that breaks. Asserting that the
+  // parser kept the characters proves nothing about the engine call, so assert
+  // the bytes on disk and the shape of the argv.
+  const { speechArgs, writeLineText } = await import('file:///' + ROOT + '/tools/video/engine/voice.mjs');
+  const hard = { id: 'L002', text: lines[1].text };
+  const written = await writeLineText(dir, hard);
+  assert.strictEqual(fs.readFileSync(written, 'utf8'), hard.text,
+    'the words on disk must be the words in the script, byte for byte');
+
+  const argv = speechArgs(written, path.join(dir, 'L002.mp3'));
+  assert.ok(argv.includes('--file'), 'the engine must be given a FILE: ' + argv.join(' '));
+  assert.ok(argv.includes(written), 'the argv must name the text file');
+  assert.ok(!argv.some(a => a.includes('fair') || a.includes('—') || a.includes('&')),
+    'no part of the narration may ride on the command line: ' + argv.join(' '));
+
   console.log('PASS 05-script');
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

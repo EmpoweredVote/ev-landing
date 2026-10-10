@@ -25,8 +25,12 @@
   var FOOT = {};
   function footDepth(name, anim) {
     if (FOOT[name] != null) return FOOT[name];
+    // 30 seconds, not 4. A review measured `fall` at 107.5px over a 4-second
+    // window against 117.0px over 30 — its deepest moment arrives late, so a
+    // short window would have sunk that figure 9.5px through the floor. The
+    // loop runs once per animation and the result is memoized.
     var R = window.LeremyRig, lo = -1e9;
-    for (var i = 0; i <= 200; i++) {
+    for (var i = 0; i <= 1500; i++) {
       var j = R.computePose(anim.frame(i * 0.02), R.CFG, { x: 0, y: 0 });
       var f = Math.max(j.fR.y, j.fL.y);
       if (f > lo) lo = f;

@@ -91,7 +91,7 @@ export default {
       headline: 'And how hard you hold them',
       cast: [{ at: [0.24, 0.90], anim: 'tap', tone: 0, prop: { phone: true } }] },
 
-    { id: 'cal-yours', type: 'art', vo: 'L017', art: 'drawMarkers', count: 3,
+    { id: 'cal-yours', type: 'art', vo: 'L017', art: 'drawMarkers', count: 3, settled: true,
       headline: 'You choose the issues',
       cast: [{ at: [0.24, 0.90], anim: 'present', tone: 0 }] },
 
@@ -99,16 +99,21 @@ export default {
       cast: [{ at: [0.22, 0.90], anim: 'present', tone: 0 }] },
 
     // ── 4. How: one spoke ───────────────────────────────────────────────
+    // One idea built over four beats, not the same reveal played four times.
     { id: 'spoke-one', type: 'art', vo: 'L019', art: 'drawSpokeGrowing', issue: 'Housing',
+      stage: 'axis',
       cast: [{ at: [0.18, 0.90], anim: 'showTo', tone: 2 }] },
 
     { id: 'spoke-line', type: 'art', vo: 'L020', art: 'drawSpokeGrowing', issue: 'Housing',
+      stage: 'ticks',
       cast: [{ at: [0.18, 0.90], anim: 'showTo', tone: 2 }] },
 
     { id: 'spoke-far', type: 'art', vo: 'L021', art: 'drawSpokeGrowing', issue: 'Housing',
+      stage: 'travel',
       cast: [{ at: [0.18, 0.90], anim: 'present', tone: 2 }] },
 
     { id: 'spoke-rule', type: 'art', vo: 'L022', art: 'drawSpokeGrowing', issue: 'Housing',
+      stage: 'hold',
       cast: [{ at: [0.18, 0.90], anim: 'present', tone: 2 }] },
 
     // ── 5. How: the shape ───────────────────────────────────────────────
@@ -168,7 +173,7 @@ export default {
     // ── 8. Close ────────────────────────────────────────────────────────
     { id: 'live-screen', type: 'art', vo: 'L038', art: 'drawLiveScreen', hold: 1.2 },
 
-    { id: 'live-use', type: 'art', vo: 'L039', art: 'drawLiveScreen',
+    { id: 'live-use', type: 'art', vo: 'L039', art: 'drawLiveScreen', settled: true,
       cast: [{ at: [0.16, 0.95], anim: 'present', tone: 0, scale: 0.65 }] },
 
     { id: 'close', type: 'stage', vo: 'L040', hold: 1.0,

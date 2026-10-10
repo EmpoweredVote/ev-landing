@@ -86,61 +86,83 @@
   // spoke to be as small as one of six.
   function spokeGeom(W, H) { return { cx: W * 0.60, cy: H * 0.62, r: H * 0.40 }; }
 
+  // `stage` says how far through the idea this scene is, the way
+  // drawCompassBuilding does. Without it four consecutive scenes each replayed
+  // the dot sliding out from zero, so the viewer watched the same reveal four
+  // times across four cuts. A scene that continues the one before it starts
+  // where that one ended.
+  //
+  //   axis   the line appears
+  //   ticks  the scale appears on it
+  //   travel the dot slides out
+  //   hold   the dot rests, and the two ends of the scale are named
   function drawSpokeGrowing(ctx, t, W, H, scene) {
     var g = spokeGeom(W, H), accent = scene.accent || "#FFD426";
     var tipY = g.cy - g.r;
+    var stage = scene.stage || "travel";
+    var at = ["axis", "ticks", "travel", "hold"].indexOf(stage);
+    var DOT = 0.88;
 
+    // the axis
     ctx.save();
-    ctx.globalAlpha = fade(t, 0.1, 0.5);
+    ctx.globalAlpha = at === 0 ? fade(t, 0.1, 0.5) : 1;
     ctx.strokeStyle = GRID;
     ctx.lineWidth = Math.max(1, H * 0.0045);
     ctx.beginPath(); ctx.moveTo(g.cx, g.cy); ctx.lineTo(g.cx, tipY); ctx.stroke();
     ctx.restore();
 
-    // ticks, so "further out" reads as a scale and not a drift
+    // the issue's name, with the axis from the first beat onward
     ctx.save();
-    ctx.globalAlpha = fade(t, 0.5, 0.5) * 0.8;
-    ctx.strokeStyle = GRID;
-    ctx.lineWidth = Math.max(1, H * 0.003);
-    for (var k = 1; k <= 4; k++) {
-      var y = g.cy - g.r * (k / 4);
-      ctx.beginPath();
-      ctx.moveTo(g.cx - W * 0.012, y); ctx.lineTo(g.cx + W * 0.012, y);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    var travel = ease((t - 1.0) / 2.2) * 0.88;
-    if (travel > 0) {
-      var dy = g.cy - g.r * travel;
-      ctx.save();
-      ctx.globalAlpha = 0.32;
-      ctx.beginPath(); ctx.moveTo(g.cx, g.cy); ctx.lineTo(g.cx, dy);
-      ctx.strokeStyle = accent; ctx.lineWidth = H * 0.010; ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = accent;
-      ctx.beginPath(); ctx.arc(g.cx, dy, H * 0.016, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
-    ctx.save();
-    ctx.globalAlpha = fade(t, 0.3, 0.5);
+    ctx.globalAlpha = at === 0 ? fade(t, 0.3, 0.5) : 1;
     ctx.textAlign = "center";
     ctx.fillStyle = FG;
     ctx.font = "600 " + Math.round(H * 0.050) + "px " + FONT;
     ctx.fillText(scene.issue || LABELS[0], g.cx, tipY - H * 0.055);
     ctx.restore();
 
+    // ticks, so "further out" reads as a scale and not a drift
+    if (at >= 1) {
+      ctx.save();
+      ctx.globalAlpha = (at === 1 ? fade(t, 0.15, 0.6) : 1) * 0.8;
+      ctx.strokeStyle = GRID;
+      ctx.lineWidth = Math.max(1, H * 0.003);
+      for (var k = 1; k <= 4; k++) {
+        var y = g.cy - g.r * (k / 4);
+        ctx.beginPath();
+        ctx.moveTo(g.cx - W * 0.012, y); ctx.lineTo(g.cx + W * 0.012, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // the dot: travelling in its own beat, at rest in every beat after it
+    if (at >= 2) {
+      var travel = at === 2 ? ease((t - 0.4) / 2.4) * DOT : DOT;
+      if (travel > 0) {
+        var dy = g.cy - g.r * travel;
+        ctx.save();
+        ctx.globalAlpha = 0.32;
+        ctx.beginPath(); ctx.moveTo(g.cx, g.cy); ctx.lineTo(g.cx, dy);
+        ctx.strokeStyle = accent; ctx.lineWidth = H * 0.010; ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = accent;
+        ctx.beginPath(); ctx.arc(g.cx, dy, H * 0.016, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+
     // The two ends of the scale, named. This is the idea the chapter is for.
-    ctx.save();
-    ctx.globalAlpha = fade(t, 2.2, 0.8);
-    ctx.textAlign = "left";
-    ctx.font = "500 " + Math.round(H * 0.030) + "px " + FONT;
-    ctx.fillStyle = MUTED;
-    ctx.fillText("barely moves me", g.cx + W * 0.030, g.cy - H * 0.005);
-    ctx.fillStyle = accent;
-    ctx.fillText("decides my vote", g.cx + W * 0.030, tipY + H * 0.015);
-    ctx.restore();
+    if (at >= 2) {
+      ctx.save();
+      ctx.globalAlpha = at === 2 ? fade(t, 1.8, 0.8) : 1;
+      ctx.textAlign = "left";
+      ctx.font = "500 " + Math.round(H * 0.030) + "px " + FONT;
+      ctx.fillStyle = MUTED;
+      ctx.fillText("barely moves me", g.cx + W * 0.030, g.cy - H * 0.005);
+      ctx.fillStyle = accent;
+      ctx.fillText("decides my vote", g.cx + W * 0.030, tipY + H * 0.015);
+      ctx.restore();
+    }
   }
 
   // Chapter 1: the title card, as the product's own lockup.
@@ -276,7 +298,11 @@
       // Markers land one at a time while they are being answered, but in the
       // gather beat they are already there — the motion is the ring, not the
       // arrival, and staggering them again would start the scene nearly empty.
-      var a = scene.ring ? fade(t, i * 0.05, 0.3) : fade(t, 0.3 + i * 0.9, 0.45);
+      // `settled` means this scene continues the one before it: the markers
+      // are already there, and staggering them in again would replay the
+      // same arrival the viewer just watched.
+      var a = scene.settled ? 1
+        : (scene.ring ? fade(t, i * 0.05, 0.3) : fade(t, 0.3 + i * 0.9, 0.45));
       if (a <= 0) continue;
       var p = spots[i];
       var px = p.x * W, py = p.y * H;
@@ -460,7 +486,7 @@
 
   // Chapter 8: a few seconds of the real screen, to prove the thing exists.
   function drawLiveScreen(ctx, t, W, H, scene) {
-    var a = fade(t, 0.2, 0.8);
+    var a = scene.settled ? 1 : fade(t, 0.2, 0.8);
     var pad = W * 0.12;
     var boxW = W - pad * 2;
     var x = pad, y = H * 0.12;

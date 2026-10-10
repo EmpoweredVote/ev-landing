@@ -4,9 +4,24 @@
 
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// How many video frames a file actually holds. Counting packets rather than
+// reading nb_frames, because nb_frames comes back N/A for some containers and
+// a check that silently skips itself is worse than no check.
+function frameCount(file) {
+  return new Promise((resolve, reject) => {
+    const p = spawn('ffprobe', ['-v', 'error', '-select_streams', 'v:0',
+      '-count_packets', '-show_entries', 'stream=nb_read_packets',
+      '-of', 'default=nw=1:nk=1', file], { stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    p.stdout.on('data', d => { out += d; });
+    p.on('error', reject);
+    p.on('close', () => resolve(Number(out.trim())));
+  });
+}
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -98,6 +113,10 @@ export async function renderScene({ scene, episode, outFile, artFiles = [], alph
   }, alpha);
 
   const withAlpha = alpha ? { ...scene, alpha: true } : scene;
+  // A shared stage carries its errors across scenes, so a fault from scene 3
+  // would be reported against scene 4. Each render answers for itself.
+  st.errors.length = 0;
+
   try {
     for (let i = 0; i < frames; i++) {
       if (ff.exitCode !== null) break;
@@ -108,12 +127,26 @@ export async function renderScene({ scene, episode, outFile, artFiles = [], alph
     }
     ff.stdin.end();
     await done;
+
+    if (st.errors.length) {
+      throw new Error('page errors while rendering ' + scene.id + ': ' + st.errors.join('; '));
+    }
+
+    // ffmpeg exiting 0 is not proof it wrote the whole scene. A clean early
+    // exit leaves a short file that plays perfectly, caches, concatenates, and
+    // runs the picture short from here on while the voice keeps its positions.
+    const got = await frameCount(outFile);
+    if (got !== frames) {
+      throw new Error('scene ' + scene.id + ' was asked for ' + frames +
+        ' frames and the file holds ' + got + '; refusing it');
+    }
+  } catch (e) {
+    // Never leave a bad artefact where a later build could accept it.
+    await rm(outFile, { force: true });
+    throw e;
   } finally {
     if (own) await st.close();
   }
 
-  if (st.errors.length) {
-    throw new Error('page errors while rendering ' + scene.id + ': ' + st.errors.join('; '));
-  }
   return { file: outFile, frames };
 }

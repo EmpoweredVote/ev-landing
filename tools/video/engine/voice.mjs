@@ -49,6 +49,21 @@ export async function isCached(dir, line) {
   return (await readFile(txt, 'utf8')) === line.text;
 }
 
+// The narration reaches the engine as a FILE. Exported so a test can prove it:
+// the promise that quotes, em dashes and ampersands survive is a promise about
+// these argv, and nothing would have failed if someone passed the sentence on
+// the command line instead.
+export function speechArgs(txt, mp3) {
+  return ['-m', 'edge_tts', '--voice', VOICE, '--file', txt, '--write-media', mp3];
+}
+
+// Exported for the same reason: the bytes on disk are what gets spoken.
+export async function writeLineText(dir, line) {
+  const txt = path.join(dir, line.id + '.txt');
+  await writeFile(txt, line.text, 'utf8');
+  return txt;
+}
+
 async function synth(line, dir, engine) {
   const txt = path.join(dir, line.id + '.txt');
   const mp3 = path.join(dir, line.id + '.mp3');
@@ -57,7 +72,7 @@ async function synth(line, dir, engine) {
   // Changing one word should cost one line of speech, not forty.
   if (await isCached(dir, line)) return wav;
 
-  await writeFile(txt, line.text, 'utf8');
+  await writeLineText(dir, line);
 
   if (engine === 'sapi') {
     // Offline fallback. PowerShell reads the SAME file, so punctuation is
@@ -73,7 +88,7 @@ async function synth(line, dir, engine) {
     await run('ffmpeg', ['-y', '-v', 'error', '-i', wav, '-ar', '48000', '-ac', '1', raw]);
     await run('ffmpeg', ['-y', '-v', 'error', '-i', raw, '-c', 'copy', wav]);
   } else {
-    await run('python', ['-m', 'edge_tts', '--voice', VOICE, '--file', txt, '--write-media', mp3]);
+    await run('python', speechArgs(txt, mp3));
     await run('ffmpeg', ['-y', '-v', 'error', '-i', mp3, '-ar', '48000', '-ac', '1', wav]);
   }
   return wav;
