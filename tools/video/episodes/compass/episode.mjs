@@ -22,7 +22,7 @@ export default {
     { key: 'spoke', name: 'How — one spoke' },
     { key: 'shape', name: 'How — the shape' },
     { key: 'lay',   name: 'What — lay their shape over yours' },
-    { key: 'fit',   name: 'Where it fits' },
+    { key: 'src',   name: 'Says who — where a stance comes from' },
     { key: 'live',  name: 'Close — the live product' },
     { key: 'close', name: 'Close' }
   ],
@@ -148,27 +148,24 @@ export default {
     { id: 'lay-empty', type: 'art', vo: 'L031', art: 'drawCompassOverlay', stage: 'empty',
       cast: [{ at: [0.16, 0.90], anim: 'present', tone: 0 }] },
 
-    { id: 'lay-letter', type: 'art', vo: 'L032', art: 'drawCompassOverlay', stage: 'hold',
-      cast: [{ at: [0.14, 0.90], anim: 'showTo', tone: 2, scale: 0.95 },
-             { at: [0.30, 0.90], anim: 'present', tone: 0, scale: 0.95 }] },
-
     { id: 'lay-yours', type: 'art', vo: 'L033', art: 'drawCompassOverlay', stage: 'hold',
       headline: 'You read it yourself',
       cast: [{ at: [0.16, 0.90], anim: 'present', tone: 0 }] },
 
-    // ── 7. Where it fits ────────────────────────────────────────────────
-    { id: 'fit-pillars', type: 'art', vo: 'L034', art: 'drawPillarFormula',
-      cast: [{ at: [0.12, 0.92], anim: 'present', tone: 0, scale: 0.8 }] },
+    // ── 7. Says who ─────────────────────────────────────────────────────
+    // One card built over four beats. `stage` is what stops the four scenes
+    // replaying one reveal — see the note on drawSourceCard.
+    { id: 'src-ask', type: 'art', vo: 'L034', art: 'drawSourceCard', stage: 'ask',
+      cast: [{ at: [0.14, 0.93], anim: 'ponder', tone: 2, scale: 0.7 }] },
 
-    { id: 'fit-inform', type: 'art', vo: 'L035', art: 'drawPillarFormula', highlight: 'Inform',
-      cast: [{ at: [0.12, 0.92], anim: 'showTo', tone: 2, scale: 0.8 }] },
+    { id: 'src-stance', type: 'art', vo: 'L035', art: 'drawSourceCard', stage: 'stance',
+      cast: [{ at: [0.14, 0.93], anim: 'showTo', tone: 2, scale: 0.7 }] },
 
-    { id: 'fit-formula', type: 'art', vo: 'L036', art: 'drawPillarFormula', formula: true,
-      cast: [{ at: [0.12, 0.92], anim: 'present', tone: 0, scale: 0.8 }] },
+    { id: 'src-refs', type: 'art', vo: 'L036', art: 'drawSourceCard', stage: 'refs',
+      cast: [{ at: [0.14, 0.93], anim: 'present', tone: 0, scale: 0.7 }] },
 
-    { id: 'fit-values', type: 'art', vo: 'L037', art: 'drawPillarFormula', formula: true,
-      highlight: 'sValues',
-      cast: [{ at: [0.12, 0.92], anim: 'showTo', tone: 2, scale: 0.8 }] },
+    { id: 'src-scale', type: 'art', vo: 'L037', art: 'drawSourceCard', stage: 'scale',
+      cast: [{ at: [0.14, 0.93], anim: 'present', tone: 0, scale: 0.7 }] },
 
     // ── 8. Close ────────────────────────────────────────────────────────
     { id: 'live-screen', type: 'art', vo: 'L038', art: 'drawLiveScreen', hold: 1.2 },

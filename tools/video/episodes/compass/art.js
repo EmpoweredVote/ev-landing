@@ -78,6 +78,31 @@
     ctx.restore();
   }
 
+  // A rounded rectangle path. ctx.roundRect exists in this Chromium, but the
+  // episode also renders in the test fixtures, so the path is built by hand.
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  // Word wrap against a measured width. The card holds a real sentence off the
+  // stance ladder, and that sentence is longer than one line at any size.
+  function wrap(ctx, text, x, y, maxW, lineH) {
+    var words = text.split(" "), line = "", n = 0;
+    for (var i = 0; i < words.length; i++) {
+      var next = line ? line + " " + words[i] : words[i];
+      if (ctx.measureText(next).width > maxW && line) {
+        ctx.fillText(line, x, y + n * lineH); n++; line = words[i];
+      } else { line = next; }
+    }
+    if (line) ctx.fillText(line, x, y + n * lineH);
+    return n + 1;
+  }
+
   // Chapter 4: one spoke, one dot, one idea.
   //
   // This scene gets its own geometry rather than reusing geom(). A single
@@ -93,15 +118,20 @@
   // where that one ended.
   //
   //   axis   the line appears
-  //   ticks  the scale appears on it
+  //   ticks  the stops appear on it
   //   travel the dot slides out
-  //   hold   the dot rests, and the two ends of the scale are named
+  //   hold   the dot rests, and the two ends of the ladder are named
+  //
+  // Five stops, because the real topic has five. A spoke records WHICH answer
+  // you picked off a ladder of solutions -- it does not measure how strongly
+  // you feel about the issue. Labelling the ends "barely moves me" and "decides
+  // my vote", as this did, taught the viewer the wrong model of the product.
   function drawSpokeGrowing(ctx, t, W, H, scene) {
     var g = spokeGeom(W, H), accent = scene.accent || "#FFD426";
-    var tipY = g.cy - g.r;
     var stage = scene.stage || "travel";
     var at = ["axis", "ticks", "travel", "hold"].indexOf(stage);
-    var DOT = 0.88;
+    var DOT = 0.88, STOPS = 5;
+    var tipY = g.cy - g.r * DOT;   // the top STOP, not the top of the geometry
 
     // the axis
     ctx.save();
@@ -117,7 +147,7 @@
     ctx.textAlign = "center";
     ctx.fillStyle = FG;
     ctx.font = "600 " + Math.round(H * 0.050) + "px " + FONT;
-    ctx.fillText(scene.issue || LABELS[0], g.cx, tipY - H * 0.055);
+    ctx.fillText(scene.issue || LABELS[0], g.cx, tipY - H * 0.075);
     ctx.restore();
 
     // ticks, so "further out" reads as a scale and not a drift
@@ -125,11 +155,11 @@
       ctx.save();
       ctx.globalAlpha = (at === 1 ? fade(t, 0.15, 0.6) : 1) * 0.8;
       ctx.strokeStyle = GRID;
-      ctx.lineWidth = Math.max(1, H * 0.003);
-      for (var k = 1; k <= 4; k++) {
-        var y = g.cy - g.r * (k / 4);
+      ctx.lineWidth = Math.max(1, H * 0.0045);
+      for (var k = 0; k < STOPS; k++) {
+        var y = g.cy - g.r * DOT * (k / (STOPS - 1));
         ctx.beginPath();
-        ctx.moveTo(g.cx - W * 0.012, y); ctx.lineTo(g.cx + W * 0.012, y);
+        ctx.moveTo(g.cx - W * 0.018, y); ctx.lineTo(g.cx + W * 0.018, y);
         ctx.stroke();
       }
       ctx.restore();
@@ -158,9 +188,10 @@
       ctx.textAlign = "left";
       ctx.font = "500 " + Math.round(H * 0.030) + "px " + FONT;
       ctx.fillStyle = MUTED;
-      ctx.fillText("barely moves me", g.cx + W * 0.030, g.cy - H * 0.005);
+      ctx.fillText(scene.nearEnd || "government builds it", g.cx + W * 0.030, g.cy - H * 0.005);
       ctx.fillStyle = accent;
-      ctx.fillText("decides my vote", g.cx + W * 0.030, tipY + H * 0.015);
+      ctx.fillText(scene.farEnd || "let the market decide", g.cx + W * 0.030,
+        tipY + H * 0.015);
       ctx.restore();
     }
   }
@@ -428,58 +459,143 @@
     }
   }
 
-  // Chapter 7: the three pillars, then the formula.
-  function drawPillarFormula(ctx, t, W, H, scene) {
-    var cols = [
-      { name: "Inform",  c: "#FFD426" },
-      { name: "Connect", c: "#2BD9D9" },
-      { name: "Empower", c: "#FF4019" }
-    ];
-    var bw = W * 0.21, bh = H * 0.16, gap = W * 0.035;
-    var total = bw * 3 + gap * 2;
-    var x0 = (W - total) / 2, y0 = H * 0.26;
+  // Chapter 7: where a stance comes from.
+  //
+  // This is the chapter that answers "says who?". Every beat shares one frame
+  // — the two shapes small on the left, a card on the right — so the four
+  // scenes build one card instead of replaying one reveal four times.
+  //
+  //   ask     the shapes, one of the leader's dots ringed, an empty card
+  //   stance  the topic and the answer picked off the ladder
+  //   refs    the written reasoning, then the numbered references
+  //   scale   the counts, over the dimmed card
+  //
+  // The reasoning body is drawn as rules rather than sentences on purpose. A
+  // written-out record for a named person would be a claim about that person,
+  // and inventing one to illustrate how carefully the real ones are made would
+  // undo the point of the chapter. The reference hosts are real; they are the
+  // four most-cited hosts in the live table.
+  function drawSourceCard(ctx, t, W, H, scene) {
+    var accent = scene.accent || "#FFD426";
+    var stage = scene.stage || "refs";
+    var at = ["ask", "stance", "refs", "scale"].indexOf(stage);
 
-    cols.forEach(function (col, i) {
-      var a = fade(t, 0.2 + i * 0.55, 0.5);
-      if (a <= 0) return;
-      // `highlight` names either a pillar or a term in the formula. Dim the
-      // other pillars only when it names a pillar — otherwise highlighting
-      // "sValues" dims all three, since none of them match.
-      var pillarPicked = cols.some(function (c) { return c.name === scene.highlight; });
-      var dimmed = pillarPicked && scene.highlight !== col.name;
-      ctx.save();
-      ctx.globalAlpha = a * (dimmed ? 0.28 : 1);
-      ctx.fillStyle = col.c;
-      ctx.fillRect(x0 + i * (bw + gap), y0, bw, bh);
-      ctx.fillStyle = "#111113";
-      ctx.font = "700 " + Math.round(H * 0.045) + "px " + FONT;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(col.name, x0 + i * (bw + gap) + bw / 2, y0 + bh / 2);
-      ctx.restore();
-    });
+    // The compass, small, on the left. Same shapes as chapter 6, so the viewer
+    // reads this as the same picture rather than a new one.
+    var g = { cx: W * 0.21, cy: H * 0.36, r: Math.min(W, H) * 0.15, n: 6 };
+    var RING = 0;                       // the spoke whose stance we open up
+    ctx.save();
+    ctx.globalAlpha = (at === 0 ? fade(t, 0.1, 0.5) : 1) * (at === 3 ? 0.35 : 1);
+    axes(ctx, g, H, g.n);
+    ctx.strokeStyle = DIM; ctx.lineWidth = Math.max(1, H * 0.004);
+    polygon(ctx, g, YOU); ctx.stroke();
+    ctx.strokeStyle = accent; ctx.lineWidth = Math.max(1, H * 0.005);
+    polygon(ctx, g, LEADER); ctx.stroke();
+    var p = axisPoint(g, RING, LEADER[RING]);
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.arc(p.x, p.y, H * 0.011, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha *= 0.6;
+    ctx.strokeStyle = accent; ctx.lineWidth = Math.max(1, H * 0.003);
+    ctx.beginPath(); ctx.arc(p.x, p.y, H * 0.026, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
 
-    if (scene.formula) {
-      var f = fade(t, 0.4, 0.8);
+    // The card.
+    var x = W * 0.42, cw = W * 0.50, y = H * 0.10, ch = H * 0.58;
+    ctx.save();
+    ctx.globalAlpha = (at === 0 ? fade(t, 0.5, 0.6) : 1) * (at === 3 ? 0.5 : 1);
+    ctx.strokeStyle = GRID;
+    ctx.lineWidth = Math.max(1, H * 0.003);
+    roundRect(ctx, x, y, cw, ch, H * 0.018);
+    ctx.stroke();
+    ctx.restore();
+
+    var pad = W * 0.026, tx = x + pad, cy = y + H * 0.065;
+
+    // The topic, and the answer picked off the ladder.
+    if (at === 1 || at === 2) {
       ctx.save();
-      ctx.globalAlpha = f;
-      ctx.textAlign = "center";
+      ctx.globalAlpha = at === 1 ? fade(t, 0.15, 0.6) : 1;
+      ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
-      ctx.font = "700 " + Math.round(H * 0.058) + "px " + FONT;
-      var y = y0 + bh + H * 0.16;
-      if (scene.highlight === "sValues") {
-        var pre = "sFacts + ", mid = "sValues", post = " = sSolutions";
-        var wPre = ctx.measureText(pre).width, wMid = ctx.measureText(mid).width,
-            wPost = ctx.measureText(post).width;
-        var left = W / 2 - (wPre + wMid + wPost) / 2;
-        ctx.textAlign = "left";
-        ctx.fillStyle = MUTED; ctx.fillText(pre, left, y);
-        ctx.fillStyle = scene.accent || "#FFD426"; ctx.fillText(mid, left + wPre, y);
-        ctx.fillStyle = MUTED; ctx.fillText(post, left + wPre + wMid, y);
-      } else {
+      ctx.fillStyle = MUTED;
+      ctx.font = "600 " + Math.round(H * 0.026) + "px " + FONT;
+      ctx.fillText("CIVIC LEADER  ·  HOUSING", tx, cy);
+      ctx.fillStyle = FG;
+      ctx.font = "700 " + Math.round(H * 0.038) + "px " + FONT;
+      wrap(ctx, "Build no public housing, but set binding rules on the " +
+        "private market like rent caps.", tx, cy + H * 0.062, cw - pad * 2, H * 0.050);
+      ctx.restore();
+    }
+
+    // The written reasoning, as rules, then the references, as rows.
+    if (at === 2) {
+      var ry = cy + H * 0.195;
+      ctx.save();
+      ctx.globalAlpha = fade(t, 0.1, 0.5);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = MUTED;
+      ctx.font = "600 " + Math.round(H * 0.022) + "px " + FONT;
+      ctx.fillText("WHY WE PLACED THEM HERE", tx, ry - H * 0.028);
+      ctx.strokeStyle = GRID;
+      ctx.lineWidth = Math.max(2, H * 0.009);
+      ctx.lineCap = "round";
+      [0.90, 0.96, 0.62].forEach(function (frac, i) {
+        var yy = ry + i * H * 0.034;
+        ctx.beginPath();
+        ctx.moveTo(tx, yy); ctx.lineTo(tx + (cw - pad * 2) * frac, yy);
+        ctx.stroke();
+      });
+      ctx.restore();
+
+      var hosts = ["ontheissues.org", "en.wikipedia.org", "congress.gov",
+                   "leginfo.legislature.ca.gov"];
+      ctx.save();
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      hosts.forEach(function (host, i) {
+        var a = fade(t, 0.9 + i * 0.45, 0.4);
+        if (a <= 0) return;
+        var yy = ry + H * 0.115 + i * H * 0.054;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = MUTED;
+        ctx.font = "600 " + Math.round(H * 0.024) + "px " + FONT;
+        ctx.fillText(String(i + 1), tx, yy);
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = a * 0.75;
+        ctx.fillRect(tx + W * 0.016, yy - H * 0.011, H * 0.022, H * 0.022);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "#6FD2E8";
+        ctx.font = "500 " + Math.round(H * 0.028) + "px " + FONT;
+        ctx.fillText(host, tx + W * 0.016 + H * 0.034, yy);
+      });
+      ctx.restore();
+    }
+
+    // The counts, over the dimmed card. Measured 2026-10-10 in one query run,
+    // so the three read consistently with each other; spoken as "tens of
+    // thousands", so the picture does not age faster than the narration.
+    if (at >= 3) {
+      var counts = [
+        { n: "39,000", what: "researched positions" },
+        { n: "4,200",  what: "civic leaders" },
+        { n: "69,000", what: "references behind them" }
+      ];
+      ctx.save();
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      counts.forEach(function (c, i) {
+        var a = fade(t, 0.15 + i * 0.5, 0.45);
+        if (a <= 0) return;
+        var yy = y + H * 0.155 + i * H * 0.165;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = accent;
+        ctx.font = "700 " + Math.round(H * 0.090) + "px " + FONT;
+        ctx.fillText(c.n, tx, yy);
         ctx.fillStyle = FG;
-        ctx.fillText("sFacts + sValues = sSolutions", W / 2, y);
-      }
+        ctx.font = "500 " + Math.round(H * 0.032) + "px " + FONT;
+        ctx.fillText(c.what, tx, yy + H * 0.042);
+      });
       ctx.restore();
     }
   }
@@ -527,7 +643,7 @@
     drawSpokeGrowing: drawSpokeGrowing,
     drawCompassBuilding: drawCompassBuilding,
     drawCompassOverlay: drawCompassOverlay,
-    drawPillarFormula: drawPillarFormula,
+    drawSourceCard: drawSourceCard,
     drawLiveScreen: drawLiveScreen
   });
   window.EVArt.ready = Promise.all([shotA.ready, logoA.ready]);

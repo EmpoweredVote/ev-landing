@@ -66,6 +66,12 @@ right. Each of these is a silent desync if it gets through:
 | the joined picture does not hold the planned frames | a scene is short |
 | the scratch cut and the picture differ by more than a frame | the voice has been trimmed to fit |
 
+`tests/video/12-episode.cjs` makes the first three of those checks again without
+rendering or speaking anything, and adds two the build cannot make: a scene
+naming a draw function `art.js` does not register, and a draw function no scene
+uses. Run it after any edit to `script.md`, `episode.mjs` or `art.js` — it costs
+under a second and it is the cheapest way to learn that a line was deleted.
+
 ## Durations are measured, never typed
 
 An episode file carries no scene lengths. Each scene names a narration line with
@@ -102,18 +108,26 @@ uses these:
 
 | Field | Used by | Meaning |
 |---|---|---|
-| `stage` | `drawSpokeGrowing`, `drawCompassBuilding`, `drawCompassOverlay` | how far through the idea this scene is |
+| `stage` | `drawSpokeGrowing`, `drawCompassBuilding`, `drawCompassOverlay`, `drawSourceCard` | how far through the idea this scene is |
 | `settled` | `drawMarkers`, `drawLiveScreen` | this scene continues the one before it, so show the end state at once |
 | `issue` | `drawSpokeGrowing` | the label on the single spoke |
+| `nearEnd`, `farEnd` | `drawSpokeGrowing` | the two ends of the answer ladder, named |
 | `count`, `ring` | `drawMarkers` | how many markers, and whether they gather into the compass ring |
 | `dim`, `letters` | `drawBallot` | fade the names down the ballot; show the party letter beside each |
-| `highlight`, `formula` | `drawPillarFormula` | which pillar or formula term to pick out; whether the formula is shown |
 | `name`, `sub` | `drawTitleCard` | fallback wording if the lockup is missing, and the line beneath it |
 
 **A scene that continues another must say so.** Four consecutive scenes calling
 one draw function each replay its animation from zero, so the viewer watches the
 same reveal four times. `stage` and `settled` are how a scene says "start where
 the last one ended".
+
+**A spoke records which answer, not how strongly.** A topic in the live product
+carries a ladder of named solutions — Housing runs from "government is the main
+provider" to "rely on the market" in five steps — and a dot's distance along the
+spoke is the step the person picked. It is not a measure of how much the issue
+matters to them. `drawSpokeGrowing` used to label its ends "barely moves me" and
+"decides my vote", which taught the viewer the wrong model of the product in the
+one chapter built to teach the right one.
 
 A scene inherits `accent` from the episode unless it sets its own.
 
@@ -174,7 +188,7 @@ a hang.
 `episodes/compass/screen.js` is **generated**. Refresh it with:
 
 ```bash
-node tools/video/episodes/compass/grab-screen.mjs [url]
+node tools/video/episodes/compass/grab-screen.mjs [url] [--profile <dir>]
 ```
 
 It writes the screenshot as a `data:` URI, not a `.png` beside the page, and that
@@ -183,9 +197,31 @@ canvas permanently, and from then on every `getImageData` on it throws — which
 would break the pixel assertions in `tests/video/03-cast.cjs` and `04-art.cjs`
 the moment the episode rendered. A `data:` URI does not taint.
 
-The current capture is the calibration onboarding screen. Reaching a calibrated
-radar needs a logged-in session; re-run the script from a logged-in browser to
-replace it.
+A fresh browser reaches only the calibration onboarding screen, because a
+compass nobody has answered has no shape to draw — which made the closing shot
+of episode 1 a picture of the sign-up step. `--profile` borrows a Chrome
+user-data-dir that HAS answered, and the still then shows a real calibrated
+radar.
+
+**Point it at a COPY of the profile, never the live one.** Chrome holds a
+single-instance lock on a directory it is running in, and the copy keeps the
+script from writing into a browser somebody is using. Four things need to come
+across, and nothing else:
+
+```
+Local State
+Default/Preferences
+Default/Network/Cookies
+Default/Local Storage/leveldb
+```
+
+The script dismisses two things that are correct product behaviour and wrong in
+a still: the coach-mark tour, which dims the whole page behind it, and the
+sign-up prompt, which is the only element in the frame about us rather than
+about the compass. The sign-up prompt is hidden by matching the INNERMOST
+element holding its text — every ancestor up to the root also contains that
+text, and hiding all of them writes a blank white still that still looks like a
+successful run.
 
 `episodes/compass/brand.js` is generated the same way, by `embed-brand.mjs`,
 from the dark variants in `brand/compass/`. Both files are committed on purpose:
