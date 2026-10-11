@@ -10,6 +10,17 @@
   var FG = "#F2F2F2", MUTED = "#9A9AA0", GRID = "#33333D", DIM = "#5A5A68";
   var FONT = '"Figtree", "Segoe UI", system-ui, sans-serif';
 
+  // The product's own two colours, not a decorative choice. The live compass
+  // legend (EV-CompassV2 src/pages/CombinedPage.jsx) paints YOUR shape purple
+  // and the civic leader you compare against green, and this episode ends on a
+  // screenshot of exactly that. Drawing them in anything else would teach a
+  // colour language for five minutes and then contradict it.
+  //
+  // These are the dark-theme values; the stage is #111113.
+  var YOU_C  = "#7C6B9E";    // you
+  var LEAD_C = "#6DD28C";    // the civic leader laid over you
+  var BOTH_C = "#749E95";    // the two of them mixed: where you already agree
+
   var LABELS = ["Housing", "Schools", "Transit", "Taxes", "Climate", "Policing"];
   var YOU    = [0.95, 0.55, 0.80, 0.00, 0.70, 0.45];   // index 3 deliberately empty
   var LEADER = [0.58, 0.72, 0.45, 0.00, 0.78, 0.30];
@@ -173,9 +184,9 @@
         ctx.save();
         ctx.globalAlpha = 0.32;
         ctx.beginPath(); ctx.moveTo(g.cx, g.cy); ctx.lineTo(g.cx, dy);
-        ctx.strokeStyle = accent; ctx.lineWidth = H * 0.010; ctx.stroke();
+        ctx.strokeStyle = YOU_C; ctx.lineWidth = H * 0.010; ctx.stroke();
         ctx.globalAlpha = 1;
-        ctx.fillStyle = accent;
+        ctx.fillStyle = YOU_C;
         ctx.beginPath(); ctx.arc(g.cx, dy, H * 0.016, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
@@ -189,7 +200,7 @@
       ctx.font = "500 " + Math.round(H * 0.030) + "px " + FONT;
       ctx.fillStyle = MUTED;
       ctx.fillText(scene.nearEnd || "government builds it", g.cx + W * 0.030, g.cy - H * 0.005);
-      ctx.fillStyle = accent;
+      ctx.fillStyle = MUTED;
       ctx.fillText(scene.farEnd || "let the market decide", g.cx + W * 0.030,
         tipY + H * 0.015);
       ctx.restore();
@@ -369,21 +380,21 @@
     var upTo = stage === "dots" ? ease(t / 2.4) * g.n : g.n;
     for (var k = 0; k < g.n; k++) {
       if (k >= upTo || YOU[k] === 0) continue;
-      dot(ctx, g, k, YOU[k], H, accent);
+      dot(ctx, g, k, YOU[k], H, YOU_C);
     }
 
     if (stage === "dots") return;
 
     var grow = stage === "outline" ? ease(t / 1.8) : 1;
     ctx.save();
-    ctx.strokeStyle = accent;
+    ctx.strokeStyle = YOU_C;
     ctx.lineWidth = Math.max(2, H * 0.006);
     ctx.globalAlpha = grow;
     polygon(ctx, g, YOU);
     ctx.stroke();
     if (stage === "filled") {
-      ctx.globalAlpha = 0.18 * fade(t, 0.1, 0.8);
-      ctx.fillStyle = accent;
+      ctx.globalAlpha = 0.22 * fade(t, 0.1, 0.8);
+      ctx.fillStyle = YOU_C;
       ctx.fill();
     }
     ctx.restore();
@@ -393,7 +404,6 @@
   function drawCompassOverlay(ctx, t, W, H, scene) {
     var g = geom(W, H), accent = scene.accent || "#FFD426";
     var stage = scene.stage || "second";
-    var LEAD = "#1DA8C6";
 
     axes(ctx, g, H, g.n);
     for (var i = 0; i < g.n; i++) {
@@ -402,21 +412,21 @@
 
     // your shape, always present
     ctx.save();
-    ctx.strokeStyle = accent;
+    ctx.strokeStyle = YOU_C;
     ctx.lineWidth = Math.max(2, H * 0.006);
     ctx.globalAlpha = stage === "alone" ? 1 : 0.85;
     polygon(ctx, g, YOU); ctx.stroke();
-    ctx.globalAlpha = 0.14;
-    ctx.fillStyle = accent; ctx.fill();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = YOU_C; ctx.fill();
     ctx.restore();
-    for (var d1 = 0; d1 < g.n; d1++) if (YOU[d1] > 0) dot(ctx, g, d1, YOU[d1], H, accent);
+    for (var d1 = 0; d1 < g.n; d1++) if (YOU[d1] > 0) dot(ctx, g, d1, YOU[d1], H, YOU_C);
 
     if (stage === "alone") return;
 
     var appear = stage === "second" ? fade(t, 0.3, 1.2) : 1;
     ctx.save();
     ctx.globalAlpha = appear;
-    ctx.strokeStyle = LEAD;
+    ctx.strokeStyle = LEAD_C;
     ctx.lineWidth = Math.max(2, H * 0.006);
     ctx.setLineDash([H * 0.018, H * 0.012]);
     polygon(ctx, g, LEADER); ctx.stroke();
@@ -427,7 +437,7 @@
       for (var m = 0; m < g.n; m++) both.push(Math.min(YOU[m], LEADER[m]));
       ctx.save();
       ctx.globalAlpha = 0.34 * (stage === "overlap" ? fade(t, 0.2, 1.0) : 1);
-      ctx.fillStyle = "#43D07E";
+      ctx.fillStyle = BOTH_C;
       polygon(ctx, g, both); ctx.fill();
       ctx.restore();
     }
@@ -443,7 +453,7 @@
       ctx.fillStyle = "#FF6B52";
       ctx.font = "600 " + Math.round(H * 0.028) + "px " + FONT;
       ctx.textAlign = "center";
-      ctx.fillText("you care more", (a.x + b.x) / 2 + W * 0.075, (a.y + b.y) / 2);
+      ctx.fillText("different answers", (a.x + b.x) / 2 + W * 0.085, (a.y + b.y) / 2);
       ctx.restore();
     }
 
@@ -487,15 +497,15 @@
     ctx.save();
     ctx.globalAlpha = (at === 0 ? fade(t, 0.1, 0.5) : 1) * (at === 3 ? 0.35 : 1);
     axes(ctx, g, H, g.n);
-    ctx.strokeStyle = DIM; ctx.lineWidth = Math.max(1, H * 0.004);
+    ctx.strokeStyle = YOU_C; ctx.lineWidth = Math.max(1, H * 0.004);
     polygon(ctx, g, YOU); ctx.stroke();
-    ctx.strokeStyle = accent; ctx.lineWidth = Math.max(1, H * 0.005);
+    ctx.strokeStyle = LEAD_C; ctx.lineWidth = Math.max(1, H * 0.005);
     polygon(ctx, g, LEADER); ctx.stroke();
     var p = axisPoint(g, RING, LEADER[RING]);
-    ctx.fillStyle = accent;
+    ctx.fillStyle = LEAD_C;
     ctx.beginPath(); ctx.arc(p.x, p.y, H * 0.011, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha *= 0.6;
-    ctx.strokeStyle = accent; ctx.lineWidth = Math.max(1, H * 0.003);
+    ctx.strokeStyle = LEAD_C; ctx.lineWidth = Math.max(1, H * 0.003);
     ctx.beginPath(); ctx.arc(p.x, p.y, H * 0.026, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
 
@@ -517,7 +527,7 @@
       ctx.globalAlpha = at === 1 ? fade(t, 0.15, 0.6) : 1;
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
-      ctx.fillStyle = MUTED;
+      ctx.fillStyle = LEAD_C;
       ctx.font = "600 " + Math.round(H * 0.026) + "px " + FONT;
       ctx.fillText("CIVIC LEADER  ·  HOUSING", tx, cy);
       ctx.fillStyle = FG;

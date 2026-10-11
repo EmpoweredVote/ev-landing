@@ -67,10 +67,19 @@ right. Each of these is a silent desync if it gets through:
 | the scratch cut and the picture differ by more than a frame | the voice has been trimmed to fit |
 
 `tests/video/12-episode.cjs` makes the first three of those checks again without
-rendering or speaking anything, and adds two the build cannot make: a scene
-naming a draw function `art.js` does not register, and a draw function no scene
-uses. Run it after any edit to `script.md`, `episode.mjs` or `art.js` — it costs
-under a second and it is the cheapest way to learn that a line was deleted.
+rendering or speaking anything, and adds four the build cannot make: a scene
+naming a draw function `art.js` does not register, a draw function no scene
+uses, a scene whose id prefix is not a named chapter, and a named chapter no
+scene belongs to. Run it after any edit to `script.md`, `episode.mjs` or
+`art.js` — it costs under a second and it is the cheapest way to learn that a
+line was deleted.
+
+The chapter half of that is not cosmetic. Everything that groups scenes for a
+human — the recording script, the review contact sheet — walks the chapter list
+and shows what it can name. A renamed chapter key left four finished scenes out
+of the review page while the page still looked complete, so **anything that
+groups scenes takes the chapter list from `episode.chapters` and never keeps its
+own copy**, and says loudly, at the top, when a scene matched nothing.
 
 ## Durations are measured, never typed
 
@@ -135,7 +144,8 @@ A scene inherits `accent` from the episode unless it sets its own.
 
 ```js
 { at: [xFrac, groundYFrac], anim: 'stroll', tone: 0, scale: 1, flip: false,
-  path: [[0.2, 0.9], [0.8, 0.9]], prop: { phone: true }, shadow: true }
+  color: '#7C6B9E', path: [[0.2, 0.9], [0.8, 0.9]],
+  prop: { phone: true }, shadow: true }
 ```
 
 **`at` is the GROUND LINE, not the pelvis.** The rig's `computePose` puts the
@@ -154,8 +164,27 @@ the floor at exactly the moment it lands.
 
 Three Bobits per scene, at most. A fourth aborts the render.
 
-`tone` indexes the dark palette: `#1DA8C6`, `#FF6B52`, `#FFD740`, `#43D07E`,
-`#B49BFF`, `#FF9A4D`.
+`tone` indexes the house palette: `#1DA8C6`, `#FF6B52`, `#FFD740`, `#43D07E`,
+`#B49BFF`, `#FF9A4D`. `color` overrides it with an exact hex, and beats `tone`
+if both are given.
+
+**When a Bobit stands for something the product draws, take the product's
+colour, not a tone.** Episode 1 ends on a screenshot of the live compass, where
+your shape is purple and the civic leader you compare against is green:
+
+| | | source |
+|---|---|---|
+| you | `#7C6B9E` | the live legend, `EV-CompassV2 src/pages/CombinedPage.jsx` |
+| a compared civic leader | `#6DD28C` | same, dark-theme value |
+| where the two overlap | `#749E95` | the two of them mixed |
+
+Those three are named at the top of `episodes/compass/art.js` and again in
+`episode.mjs`, and `tests/video/13-colours.cjs` reads them back out of the
+rendered pixels. It exists because the same two shapes are drawn by three
+different functions, and they once disagreed: chapter 6 drew the leader teal
+while chapter 7 drew them Inform yellow. The accent is the episode's brand
+colour. It is not a shape colour, and the test fails if the compass outline is
+painted in it.
 
 ## Adding a pose
 

@@ -63,7 +63,10 @@
     }
 
     var pose = anim.frame(t);
-    var opts = { color: TONES[(entry.tone || 0) % TONES.length], time: t };
+    // `color` beats `tone`. The tone palette is the house set of six; an
+    // episode that has to draw a figure in a colour the PRODUCT owns -- the
+    // compass's purple "you" and green "them" -- names the hex instead.
+    var opts = { color: entry.color || TONES[(entry.tone || 0) % TONES.length], time: t };
     if (anim.mega) { opts.mega = true; opts.arm = anim.arm; opts.megaColor = scene.accent || "#FFD426"; }
     if (anim.book) opts.book = true;
     if (anim.swirl) opts.swirl = true;

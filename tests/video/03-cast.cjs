@@ -91,6 +91,36 @@ function sceneWith(cast) {
   } catch (e) { tooMany = String(e); }
   assert.ok(tooMany && /limit is 3/.test(tooMany), 'a fourth Bobit must abort, got: ' + tooMany);
 
+  // 8. An explicit colour overrides the tone. Episode 1 has to draw a Bobit in
+  //    the live compass's own purple and green, and neither is in the six-tone
+  //    palette: "you" is #7C6B9E and a compared leader is #6DD28C, taken from
+  //    the product's legend. A tone index cannot say that.
+  async function tint(scene, t, hex) {
+    const want = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16),
+                  parseInt(hex.slice(5, 7), 16)];
+    return await page.evaluate(([s, tt, rgb]) => {
+      window.EVStage.renderFrame(s, tt);
+      const c = document.getElementById('stage');
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (Math.abs(d[i] - rgb[0]) < 18 && Math.abs(d[i + 1] - rgb[1]) < 18 &&
+            Math.abs(d[i + 2] - rgb[2]) < 18) n++;
+      }
+      return n;
+    }, [scene, t, want]);
+  }
+
+  const PURPLE = '#7C6B9E';
+  const painted = await tint(
+    sceneWith([{ at: [0.5, groundFrac], anim: 'present', color: PURPLE }]), 1.0, PURPLE);
+  assert.ok(painted > 150,
+    'an explicit colour must reach the drawn figure, got ' + painted + ' matching pixels');
+  const byTone = await tint(
+    sceneWith([{ at: [0.5, groundFrac], anim: 'present', tone: 0 }]), 1.0, PURPLE);
+  assert.ok(byTone < 20,
+    'without an explicit colour the tone still decides, got ' + byTone + ' purple pixels');
+
   // 7. An unknown animation name must abort loudly, naming itself.
   let threw = null;
   try {

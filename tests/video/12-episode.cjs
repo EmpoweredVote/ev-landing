@@ -63,6 +63,25 @@ const EP_DIR = path.join(ROOT, 'tools/video/episodes/compass');
   assert.deepStrictEqual(unused, [],
     'art.js registers draw functions no scene uses: ' + unused.join(', '));
 
+  // Every scene belongs to a named chapter. Anything that groups scenes by the
+  // id prefix -- the recording script, the review contact sheet -- shows only
+  // the chapters it can name, so a scene whose prefix is unnamed is a scene
+  // nobody reviews and nobody records. Four of them went missing exactly this
+  // way: a chapter was renamed and one reader kept the old key.
+  const chapterKeys = new Set((episode.chapters || []).map(c => c.key));
+  assert.ok(chapterKeys.size > 0, 'the episode must name its chapters');
+  const homeless = episode.scenes
+    .map(s => s.id)
+    .filter(id => !chapterKeys.has(id.split('-')[0]));
+  assert.deepStrictEqual(homeless, [],
+    'scenes belong to no named chapter: ' + homeless.join(', '));
+
+  // And no chapter is named that nothing uses, which is how a stale key hides.
+  const usedKeys = new Set(episode.scenes.map(s => s.id.split('-')[0]));
+  const emptyChapters = [...chapterKeys].filter(k => !usedKeys.has(k));
+  assert.deepStrictEqual(emptyChapters, [],
+    'chapters are named that no scene belongs to: ' + emptyChapters.join(', '));
+
   console.log('PASS 12-episode (' + episode.scenes.length + ' scenes, ' +
     written.length + ' lines, ' + registered.length + ' art entries)');
 })().catch(e => { console.error('FAIL', e.message); process.exit(1); });
