@@ -41,6 +41,28 @@
       p.armRU = 78 + s * 3;  p.armRF = 92 + s * 3;  // right arm reaches out, palm up
       p.headTilt = -3;
       return p;
+    } },
+    // Thumbing a phone or tapping through a questionnaire. The off hand holds
+    // the device (pair it with prop {phone:true}); the near hand taps.
+    tap: { label: "Tap", mood: "answering, one at a time", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var s = osc(t, 1.25);
+      p.armLU = 46;  p.armLF = -118;                  // off hand holds the phone up
+      p.armRU = 40 + s * 2;  p.armRF = -104 + s * 9;  // near hand taps at it
+      p.headTilt = 16;
+      p.hunch = (p.hunch || 0) + 3;
+      return p;
+    } },
+    // Presenting a chart standing beside the figure: near arm swept out and
+    // level, head turned to what it is showing. Slower than `offer`.
+    showTo: { label: "Show to", mood: "look at this with me", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var s = osc(t, 0.38);
+      p.armRU = 96 + s * 4;  p.armRF = 74 + s * 5;
+      p.armLU = 8;  p.armLF = 14;
+      p.headTilt = -13 + s * 2;
+      p.lean = (p.lean || 0) + 2;
+      return p;
     } }
   };
 
