@@ -36,13 +36,23 @@ export function parseScript(text) {
 
     const dir = line.match(DIRECTION);
     if (dir) { cur.direction = dir[1].trim(); continue; }
-    if (!line.trim()) continue;
+
+    // A blank line ends the narration. Narration may wrap over several lines,
+    // but an episode file also carries prose BETWEEN the numbered lines —
+    // chapter headings, a note recording what was cut and why — and without
+    // this rule all of it is glued onto the line above. That damage is
+    // invisible: the line still parses, it is just longer than the page, so
+    // the voice reads a chapter heading aloud and every match against a
+    // recorded take comes back weak for a reason nothing names.
+    if (!line.trim()) { if (cur.parts.length) cur.closed = true; continue; }
+    if (cur.closed) continue;
     cur.parts.push(line.trim());
   }
 
   for (const l of out) {
     l.text = l.parts.join(' ');
     delete l.parts;
+    delete l.closed;
     if (!l.text) throw new Error('line ' + l.id + ' has a heading but no narration');
   }
   return out;

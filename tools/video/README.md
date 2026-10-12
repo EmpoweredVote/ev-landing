@@ -31,6 +31,7 @@ node tools/video/engine/build.mjs tools/video/episodes/compass --alpha
 |---|---|---|
 | 1. Write | `script.md` | numbered narration lines, each with a direction note |
 | 2. Voice | `engine/voice.mjs` | one audio file per line via `edge-tts`, measured with `ffprobe` |
+| 2b. Cut | `engine/split.mjs` | the same per-line files, cut out of a take Chris recorded |
 | 3. Time | `engine/timing.mjs` | scene durations, in whole frames, from the measured voice |
 | 4. Render | `engine/render.mjs` | one MP4 per scene; frames are piped to ffmpeg, never written |
 | 5. Join | `engine/build.mjs` | concat, mux the scratch voice, timing sheet, contact sheet |
@@ -81,6 +82,102 @@ of the review page while the page still looked complete, so **anything that
 groups scenes takes the chapter list from `episode.chapters` and never keeps its
 own copy**, and says loudly, at the top, when a scene matched nothing.
 
+## Cutting a recorded take into lines
+
+`voice.mjs` writes one file per line because it speaks each line on its own.
+A person reads them in one continuous take, so the numbering has to be
+recovered from the words:
+
+```bash
+# one take per episode
+node tools/video/engine/split.mjs tools/video/episodes/treasury audio/DJI_35.WAV
+
+# a pickup: the lines fluffed the first time, recorded again. Later takes win.
+node tools/video/engine/split.mjs tools/video/episodes/essentials take.WAV pickup.WAV
+
+# see the plan without writing anything
+node tools/video/engine/split.mjs tools/video/episodes/compass take.WAV --dry
+```
+
+Output is `build/<episode>/vo/`, the same shape `voice.mjs` writes, so nothing
+downstream knows or cares which voice it got. Each line also gets its `.txt`,
+which is what stops a later `--voice` run from speaking over a real recording,
+and `vo/_source.json` records which seconds of which take each line came from.
+
+`engine/transcribe.py` does the listening, through `faster-whisper`, and caches
+its result beside the build so re-running the cut is seconds rather than
+minutes. The default model is `small.en`. **Do not drop it to `base.en`**: the
+smaller model is twice as fast and it silently drops words. On the Treasury take
+it ended a line four words early, which downstream reads as "he never finished
+that line", and the line is there.
+
+`engine/align.mjs` decides where each line is, and it is tested without audio
+in `tests/video/14-align.cjs`. Three things it has to get right, each of which
+the obvious implementation gets wrong:
+
+- **A fluffed line is read again**, so the LAST complete reading wins. That is
+  what the recording script tells the reader will happen.
+- **A title card's words sit inside the sign-off.** "This is Treasury Tracker"
+  is contained in "That is Treasury Tracker. Go follow your money", so a
+  per-line search cuts the title card out of the closing line nine minutes
+  later and drags every line between them out of order. The take is therefore
+  aligned against the whole script at once, not line by line.
+- **A line can simply not have been read.** It is named and the run stops. A
+  missing per-line WAV is a silent desync: the build resyncs the voice to the
+  picture and the end of the episode is cut off, with nothing looking wrong.
+
+Two things it reports rather than hides. A line read with a long pause in the
+middle is kept whole — half a line is worse — and the pause is named, because
+the file holds it. And per-line files whose numbers the script no longer has
+are deleted, so a line brought back under an old number cannot quietly keep the
+synthesized voice while everything around it is the real reading.
+
+### When the words cannot settle it
+
+A reader who starts a line, stops, and starts again leaves two readings on the
+tape. Usually the alignment finds the second one. Sometimes it cannot, because
+the recogniser writes the two attempts down as one: on the Compass take it gave
+the word "the" a length of 1.48 seconds, put the whole stumble inside it, and
+handed back a word stream with no pause and no repeat in it.
+
+The silence is the only witness, and the silence does not say enough on its own.
+Across the three Compass/Essentials/Treasury takes, eight cuts open with speech,
+a long silence, and then more speech. Three are false starts. The other five are
+a reader pausing in the middle of a sentence — "Most budget coverage only ...
+ever shows you the first one" — where trimming to the silence would throw away
+the opening of the line. No rule separates them.
+
+So the splitter prints the suspects and cuts none of them:
+
+```
+may open on a false start — listen, then pin in cuts.json if it is one:
+  L003 (1.301s of silence at 48.09s, speech again at 49.39s)
+```
+
+Listen to those seconds. If it is a false start, write the cut down in the
+episode's `cuts.json`, which is optional and holds only the lines the ear had to
+settle:
+
+```json
+{
+  "L003": {
+    "take": "DJI_34_20261011_091753.WAV",
+    "start": 49.35,
+    "_heard": "46.95-48.05 is 'So you do what the-', then 1.4s of nothing."
+  }
+}
+```
+
+A pin is the last word on where its line starts or stops; everything else about
+the line is still measured. Give `start`, `end`, or both. A pinned line is not
+reported again. A pin naming a line the script does not have stops the run,
+because a pin that silently does nothing is how a cut stays wrong after somebody
+has fixed it. Say in `_heard` what is actually on the tape before the pinned
+second: a bare number is a decision nobody can check later.
+
+The level is left alone except for one gain, the same for every line and every
+take, that lifts the loudest take to -3 dBFS. Dynamics are a mix decision and
+belong in Resolve, not here. `--no-gain` turns even that off.
 ## Durations are measured, never typed
 
 An episode file carries no scene lengths. Each scene names a narration line with
@@ -117,13 +214,70 @@ uses these:
 
 | Field | Used by | Meaning |
 |---|---|---|
-| `stage` | `drawSpokeGrowing`, `drawCompassBuilding`, `drawCompassOverlay`, `drawSourceCard` | how far through the idea this scene is |
-| `settled` | `drawMarkers`, `drawLiveScreen` | this scene continues the one before it, so show the end state at once |
+| `continues` | every draw function, via `arrive()` | the picture was already on screen, so nothing in it fades in again |
+| `headlineAt` | the shared overlay | the second the words that say the headline are spoken |
+| `headlineY` | the shared overlay | how far down the frame the headline sits, 0.22 if unsaid; the bullets follow it |
+| `stage` | `drawCalibrate`, `drawSpokeGrowing`, `drawCompassBuilding`, `drawCompassOverlay`, `drawSourceCard` | how far through the idea this scene is |
+| `settled` | `drawLiveScreen` | this scene continues the one before it, so show the end state at once |
 | `issue` | `drawSpokeGrowing` | the label on the single spoke |
-| `nearEnd`, `farEnd` | `drawSpokeGrowing` | the two ends of the answer ladder, named |
-| `count`, `ring` | `drawMarkers` | how many markers, and whether they gather into the compass ring |
-| `dim`, `letters` | `drawBallot` | fade the names down the ballot; show the party letter beside each |
+| `enter` | `drawBallot` | this scene starts outside the polling place and goes in |
+| `dim`, `letters` | `drawBallot` | the SECOND the names start to fade, and the second the party discs land. Zero means it happened before this scene |
 | `name`, `sub` | `drawTitleCard` | fallback wording if the lockup is missing, and the line beneath it |
+
+**Nothing arrives twice.** One scene is one narration line, so a single idea
+runs across four or five cuts with the picture barely changing under them. Every
+draw function fades its contents in from its own `t = 0`, which is right the
+first time and wrong every time after: the ballot the viewer is already looking
+at blinks out and fades back in at the cut, four times in the first thirty
+seconds. A scene that carries on from the one before says `continues: true`, and
+`arrive(scene, t, …)` returns 1 instead of a fade. What is NEW in the scene
+keeps its own timing — that is the point of the flag, so the party letters can
+land on a ballot that does not.
+
+A field that names a second needs the same care, and `since(t, t0, dur)` is it.
+A scene carrying on from the one before still has to say WHEN each thing on it
+arrived, and the honest answer for everything already on screen is "before this
+scene started", which is zero. Read as the start of a fade, zero makes the thing
+ramp up from nothing again at the cut — which is how the party discs kept
+respawning for three scenes after the one that brought them in, under a
+`continues` flag that was doing its job everywhere else. Only a POSITIVE time
+animates.
+
+The same rule covers the cast, and there it is just arithmetic: a figure at
+`[0.74, 0.88]` in one scene and `[0.80, 0.88]` at `scale: 0.9` in the next
+teleports, and across four scenes it reads as the thing that is wrong with the
+video. Hold one position and one scale for a whole chapter and change only
+`anim`; where the figure genuinely has to move, give it a `path` and let it
+walk.
+
+**State changes belong inside the line that describes them, not at the cut after
+it.** `dim` was true or false, so the down-ballot names were bright for one
+scene and faint in the next with nothing in between. It is now the second they
+start to fade, which is while "somewhere past the top of it the names stop
+meaning anything" is being said. Any flag that names a state is suspect for the
+same reason.
+
+**Type waits for the voice.** `headlineAt` is the second the narration reaches
+the words on screen, read off the recording — `vo/<take>.words.json` has every
+word's start. Type that appears before the voice gets there is read ahead of the
+voice, and from then on the viewer is reading instead of listening.
+
+**A box is as big as what is in it.** The source card was a fixed height, and
+the fourth reference printed below its own border; the questionnaire card was a
+fixed row height, and a ten-item list ran off the bottom of the frame. Both now
+measure their contents first — the question is wrapped with `wrapLines()` before
+the box is drawn, and the card either grows to fit or tightens its rows against
+a floor. A number somebody chose once, for the content there was at the time, is
+a bug waiting for the next line of copy.
+
+**Write a fact down once.** The Compass episode's Housing ladder is five named
+solutions, the viewer picks one of them, and three separate chapters draw that
+pick: a questionnaire card highlights it, the compass puts a dot on that spoke,
+and the spoke chapter blows the same spoke up and names its two ends. They were
+three numbers until they disagreed on screen — the card said "public money for
+low-income housing" while the spoke put the dot on "let the market decide". Now
+`HOUSING`, `rung()` and `PICKED` at the top of `art.js` are the only statement
+of it and all three read from them.
 
 **A scene that continues another must say so.** Four consecutive scenes calling
 one draw function each replay its animation from zero, so the viewer watches the
@@ -164,9 +318,44 @@ the floor at exactly the moment it lands.
 
 Three Bobits per scene, at most. A fourth aborts the render.
 
+### A scene is one line, and a line can be a sequence
+
+One scene is one narration line. That rule is what makes a re-time a single
+number, and it does not bend. But a line can describe a sequence — "you get to
+your polling booth, work your way down your ballot" is one line and two acts —
+so a cast entry can change what it is doing partway through:
+
+```js
+{ anim: [{ t: 0, anim: 'stroll' }, { t: 1.6, anim: 'friendly' }],
+  path: [{ t: 0,   at: [0.26, 0.88] },
+         { t: 1.6, at: [0.26, 0.88] },
+         { t: 5.8, at: [0.42, 0.88] }],
+  show: [0, 3.5] }
+```
+
+- **`anim`** as a list names what is being done from each second onward. Each
+  keyframe's animation plays from ITS own zero, so a figure that starts walking
+  at 1.6s starts at the beginning of a stride rather than joining one halfway
+  through.
+- **`path`** as `[{ t, at }]` names waypoints in seconds. The two-point form
+  `[[x, y], [x, y]]` still runs the whole scene, which is what most scenes want;
+  waypoints are for a figure that has to cross to somewhere and then stay there
+  instead of drifting for the length of the line.
+- **`show: [from, to]`** is the seconds the figure is drawn at all. A figure
+  that walks through a door has to stop being drawn when it goes in, or it
+  stands on the threshold for the rest of the line. Two entries in the same
+  colour, one ending where the other begins, is how someone goes in one place
+  and comes out in another.
+
 `tone` indexes the house palette: `#1DA8C6`, `#FF6B52`, `#FFD740`, `#43D07E`,
 `#B49BFF`, `#FF9A4D`. `color` overrides it with an exact hex, and beats `tone`
 if both are given.
+
+**A figure whose colour means nothing invites the viewer to ask who it is.**
+Episode 1 drew the viewer purple everywhere and then put a palette-yellow figure
+in three scenes, and a reviewer's first note on each was "I don't know why he is
+there". If a figure stands for the viewer, paint it the viewer's colour; if it
+stands for nobody, leave it out.
 
 **When a Bobit stands for something the product draws, take the product's
 colour, not a tone.** Episode 1 ends on a screenshot of the live compass, where
@@ -176,9 +365,9 @@ your shape is purple and the civic leader you compare against is green:
 |---|---|---|
 | you | `#7C6B9E` | the live legend, `EV-CompassV2 src/pages/CombinedPage.jsx` |
 | a compared civic leader | `#6DD28C` | same, dark-theme value |
-| where the two overlap | `#749E95` | the two of them mixed |
+| you both picked the same answer | `#FED12E` | `ev-ui src/RadarChartCore.jsx` |
 
-Those three are named at the top of `episodes/compass/art.js` and again in
+The first two are named at the top of `episodes/compass/art.js` and again in
 `episode.mjs`, and `tests/video/13-colours.cjs` reads them back out of the
 rendered pixels. It exists because the same two shapes are drawn by three
 different functions, and they once disagreed: chapter 6 drew the leader teal
@@ -186,6 +375,12 @@ while chapter 7 drew them Inform yellow. The accent is the episode's brand
 colour. It is not a shape colour, and the test fails if the compass outline is
 painted in it.
 
+The two shapes are both FILLED and translucent, with the fills and strokes the
+live chart uses, so where they lie over each other the two make a third colour
+by themselves. That overlap is the product's own picture of agreement, so
+nothing draws a separate "both" polygon over the top of it. Where you and the
+leader picked the SAME answer on a spoke, one yellow dot replaces the two, an
+eighth larger — again, what the live chart does.
 ## Adding a pose
 
 Poses go in **`ev-anim-extras.js` at the repo root**, never in this tool. That

@@ -1,0 +1,20 @@
+{
+  "_why": [
+    "Cuts settled by listening, because the words cannot settle them.",
+    "Seconds into the named take. Only the fields given here are pinned;",
+    "everything else about the line is still measured.",
+    "Each entry says what is actually on the tape before the pinned second."
+  ],
+
+  "L003": {
+    "take": "DJI_34_20261011_091753.WAV",
+    "start": 49.35,
+    "_heard": "46.95-48.05 is 'So you do what the-', then 1.4s of nothing, then the line. The recogniser merged the two attempts and gave the word 'the' a length of 1.48s, so the word stream shows no pause and no repeat at all."
+  },
+
+  "L036": {
+    "take": "DJI_34_20261011_091753.WAV",
+    "start": 516.85,
+    "_heard": "The attempt before this one runs to 514.85 and stops on 'legislature sites'. He restarts at 516.95. The alignment finds the right reading but the cut opened on the tail of the one before it, which is the clip heard at 4:34."
+  }
+}

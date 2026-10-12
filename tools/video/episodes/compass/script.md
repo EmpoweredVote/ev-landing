@@ -142,7 +142,7 @@ And we keep the receipts. Each one carries its references. Voting records. Bill 
 
 ## L037
 > Direction: `art` — the card dims and the three counts come up over it.
-That is most of the work behind this tool. Tens of thousands of positions, across thousands of officials, with tens of thousands of references under them. It is the part nobody sees, and it is the reason the second shape is worth putting on your screen.
+That is most of the work behind this tool. Tens of thousands of positions, across thousands of officials, with tens of thousands of references under them.
 
 ## L038
 > Direction: cut to a few seconds of the real compass.empowered.vote screen.

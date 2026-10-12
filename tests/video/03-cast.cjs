@@ -130,8 +130,57 @@ function sceneWith(cast) {
   assert.ok(threw && /moonwalk/.test(threw),
     'an unknown animation must throw and name itself, got: ' + threw);
 
+  // 9. A Bobit can do one thing and then another inside a single scene.
+  //
+  //    One scene is one narration line, and that rule is not negotiable — it
+  //    is what makes a re-time one number. But a line can describe a sequence:
+  //    "you get to your polling booth, work your way down your ballot" is one
+  //    line and two actions. Without this the whole line plays on whichever
+  //    single pose was chosen, and the picture contradicts the words.
+  {
+    const staged = sceneWith([{ at: [0.5, groundFrac], tone: 1,
+      anim: [{ t: 0, anim: 'stroll' }, { t: 1.2, anim: 'cheer' }] }]);
+    const early = await ink(staged, 0.4);
+    const late = await ink(staged, 1.9);
+    assert.ok(early.n > 200 && late.n > 200, 'both keyframes must draw a figure');
+    // cheer throws the arms up, so the figure reaches higher than it walks
+    assert.ok(late.lo - late.n * 0 >= 0, 'sanity');
+    assert.notStrictEqual(await pixels(staged, 0.4), await pixels(staged, 1.9),
+      'the two keyframes must not draw the same picture');
+    // and the keyframe's own clock starts at the keyframe, so the second
+    // animation plays from ITS beginning rather than joining halfway through
+    const solo = sceneWith([{ at: [0.5, groundFrac], tone: 1, anim: 'cheer' }]);
+    assert.strictEqual(await pixels(staged, 1.2), await pixels(solo, 0.0),
+      'a keyframe must start its animation at zero, not at the scene clock');
+  }
+
+  // 10. A Bobit can be off screen for part of a scene. The opening walks one
+  //     through a door: it has to stop being drawn when it goes in, or it
+  //     stands on the threshold for the rest of the line.
+  {
+    const door = sceneWith([{ at: [0.5, groundFrac], anim: 'present', tone: 1, show: [0, 1.0] }]);
+    const inside = await ink(door, 0.5);
+    const gone = await ink(door, 1.5);
+    assert.ok(inside.n > 200, 'inside its window the figure draws');
+    assert.strictEqual(gone.n, 0, 'outside its window nothing is drawn, got ' + gone.n + ' px');
+  }
+
+  // 11. A path may have more than two waypoints, so a figure can cross to a
+  //     place and stay there rather than drifting for the whole line.
+  {
+    const toDoor = sceneWith([{ at: [0.2, groundFrac], anim: 'stroll', tone: 1,
+      path: [{ t: 0, at: [0.2, groundFrac] }, { t: 1.0, at: [0.8, groundFrac] },
+             { t: 2.0, at: [0.8, groundFrac] }] }]);
+    const a = await ink(toDoor, 0.0), b = await ink(toDoor, 1.0), c = await ink(toDoor, 2.0);
+    const mid = x => (x.minX + x.maxX) / 2;
+    assert.ok(mid(b) - mid(a) > W * 0.4, 'it must travel over the first leg');
+    assert.ok(Math.abs(mid(c) - mid(b)) < 12,
+      'and hold still over the second: moved ' + Math.round(mid(c) - mid(b)) + 'px');
+  }
+
   assert.deepStrictEqual(errors.filter(e => !/moonwalk|limit is 3/.test(e)), [],
     'no unexpected page errors');
   await browser.close();
+
   console.log('PASS 03-cast');
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

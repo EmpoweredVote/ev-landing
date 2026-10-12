@@ -41,32 +41,80 @@
 
   function lerp(a, b, u) { return a + (b - a) * u; }
 
+  // What the figure is doing at time t, and how long it has been doing it.
+  //
+  // `anim` is usually one name for the whole scene. It may instead be a list
+  // of [{ t, anim }] because one narration line can describe a sequence — "you
+  // get to your polling booth, work your way down your ballot" is one line and
+  // two actions — and one scene is one line, which is the rule that makes a
+  // re-time a single number. Each keyframe's animation plays from ITS own
+  // zero: an animation joined halfway through starts mid-stride.
+  function acting(entry, t) {
+    if (!Array.isArray(entry.anim)) return { name: entry.anim, since: t };
+    var k = entry.anim[0];
+    for (var i = 0; i < entry.anim.length; i++) {
+      if (t >= entry.anim[i].t) k = entry.anim[i]; else break;
+    }
+    return { name: k.anim, since: Math.max(0, t - (k.t || 0)) };
+  }
+
+  // Where the figure is at time t, as fractions of the frame.
+  //
+  // Two forms. `[[x, y], [x, y]]` runs the whole scene, which is what most
+  // scenes want. `[{ t, at: [x, y] }, ...]` names waypoints in seconds, so a
+  // figure can cross to somewhere and then stay there instead of drifting for
+  // the length of the line.
+  function placed(entry, scene, t) {
+    var path = entry.path;
+    if (!path) return entry.at;
+    if (Array.isArray(path[0])) {
+      var u = scene.dur > 0 ? Math.max(0, Math.min(1, t / scene.dur)) : 0;
+      return [lerp(path[0][0], path[1][0], u), lerp(path[0][1], path[1][1], u)];
+    }
+    if (t <= path[0].t) return path[0].at;
+    for (var i = 1; i < path.length; i++) {
+      if (t <= path[i].t) {
+        var span = path[i].t - path[i - 1].t;
+        var v = span > 0 ? (t - path[i - 1].t) / span : 1;
+        return [lerp(path[i - 1].at[0], path[i].at[0], v),
+                lerp(path[i - 1].at[1], path[i].at[1], v)];
+      }
+    }
+    return path[path.length - 1].at;
+  }
+
   function drawOne(ctx, entry, scene, t, W, H) {
     var R = window.LeremyRig;
-    var anim = R.ANIMATIONS[entry.anim];
-    if (!anim) throw new Error("unknown animation: " + entry.anim + " (scene " + scene.id + ")");
+    // `show` is [from, to] in seconds: outside it the figure is not drawn at
+    // all. A figure that walks through a door has to stop being drawn when it
+    // goes in, or it stands on the threshold for the rest of the line.
+    if (entry.show && (t < entry.show[0] || t > entry.show[1])) return;
+
+    var act = acting(entry, t);
+    var anim = R.ANIMATIONS[act.name];
+    if (!anim) throw new Error("unknown animation: " + act.name + " (scene " + scene.id + ")");
 
     var scale = entry.scale == null ? 1 : entry.scale;
-    var u = scene.dur > 0 ? Math.max(0, Math.min(1, t / scene.dur)) : 0;
-    var p0 = entry.path ? entry.path[0] : entry.at;
-    var p1 = entry.path ? entry.path[1] : entry.at;
-    var xFrac = lerp(p0[0], p1[0], u);
-    var gFrac = lerp(p0[1], p1[1], u);
+    var where = placed(entry, scene, t);
+    var xFrac = where[0];
+    var gFrac = where[1];
 
     var cx = xFrac * W;
     var groundY = gFrac * H;
-    var lift = footDepth(entry.anim, anim) * scale;
+    var lift = footDepth(act.name, anim) * scale;
     var pelvisY = groundY - lift;
 
     if (entry.shadow !== false) {
       R.drawShadow(ctx, cx, groundY, 66 * scale, "rgba(0,0,0,0.38)");
     }
 
-    var pose = anim.frame(t);
+    var pose = anim.frame(act.since);
     // `color` beats `tone`. The tone palette is the house set of six; an
     // episode that has to draw a figure in a colour the PRODUCT owns -- the
     // compass's purple "you" and green "them" -- names the hex instead.
-    var opts = { color: entry.color || TONES[(entry.tone || 0) % TONES.length], time: t };
+    // `time` drives props that are synced to the animation (the paddleball's
+    // ball, the swirl), so it follows the same clock the pose does.
+    var opts = { color: entry.color || TONES[(entry.tone || 0) % TONES.length], time: act.since };
     if (anim.mega) { opts.mega = true; opts.arm = anim.arm; opts.megaColor = scene.accent || "#FFD426"; }
     if (anim.book) opts.book = true;
     if (anim.swirl) opts.swirl = true;

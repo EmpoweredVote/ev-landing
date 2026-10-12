@@ -53,13 +53,26 @@
       p.hunch = (p.hunch || 0) + 3;
       return p;
     } },
-    // Presenting a chart standing beside the figure: near arm swept out and
-    // level, head turned to what it is showing. Slower than `offer`.
+    // Presenting a chart standing beside the figure: near arm swept out toward
+    // it, head turned to what it is showing. Slower than `offer`.
+    //
+    // The near arm bends at the elbow instead of reaching out in one straight
+    // line. The shoulder sits only about seven pixels below the neck, and the
+    // head fills the space above it, so an arm held level with the shoulder
+    // leaves the body in the one place where nothing of the body is visible
+    // behind it: at the size a figure is drawn in a 1080p frame it reads as a
+    // stick growing out of the jaw. Dropping the upper arm to the middle of
+    // the torso puts the join where the viewer can see it, and the forearm
+    // still finishes level, which is what makes the gesture read as showing.
+    //
+    // The off arm is swung clear of the torso for the same reason: hanging
+    // straight down it disappears behind the torso bar and the figure looks
+    // as though it has one arm.
     showTo: { label: "Show to", mood: "look at this with me", frame: function (t) {
       var p = Object.assign({}, base.frame(t));
       var s = osc(t, 0.38);
-      p.armRU = 96 + s * 4;  p.armRF = 74 + s * 5;
-      p.armLU = 8;  p.armLF = 14;
+      p.armRU = 62 + s * 4;  p.armRF = 96 + s * 5;
+      p.armLU = -13;  p.armLF = -20;
       p.headTilt = -13 + s * 2;
       p.lean = (p.lean || 0) + 2;
       return p;

@@ -31,3 +31,10 @@ tools/bubble-rig/rig-*.png
 # Video pipeline output — frames, audio, MP4s. Never commit: render.yaml
 # publishes the whole repo, so a committed episode ships on every deploy.
 tools/video/build/
+
+# Raw voice recordings. The takes are the SOURCE the cut reads, not output,
+# but they are a quarter of a gigabyte of WAV and render.yaml publishes the
+# whole repo — committing them would ship the recordings on every deploy and
+# keep them in the history forever. cuts.json names the take each line came
+# from; keep the files themselves beside the repo.
+audio/

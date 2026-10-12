@@ -25,6 +25,28 @@ const ROOT = 'C:/ev-landing/ev-landing-main';
   assert.ok(lines[1].text.includes('Ampersands & em dashes'), 'a wrapped line must join with a space');
   assert.ok(!/\n/.test(lines[1].text), 'a multi-line body must be joined into one string');
 
+  // A blank line ends the narration. Episode scripts carry prose between the
+  // numbered lines — chapter headings, a note about what was cut and why — and
+  // the parser used to glue whatever followed onto the line before it. The
+  // damage is invisible: the line still parses, it is just five words longer
+  // than the page, so the voice reads a chapter heading aloud and every match
+  // against a recorded take comes back weak.
+  const withChapters = parseScript(`## L001
+> Direction: a Bobit reads.
+This is Treasury Tracker.
+
+Chapter 2 — the budget as a picture
+
+## L002
+> Direction: \`art\` — a bar.
+Treasury Tracker takes that document
+and draws it.
+`);
+  assert.strictEqual(withChapters[0].text, 'This is Treasury Tracker.',
+    'a chapter heading after a line must not become part of it');
+  assert.strictEqual(withChapters[1].text, 'Treasury Tracker takes that document and draws it.',
+    'but a wrapped line, with no blank between, still joins');
+
   // A heading that is not a line id is a hard error, not a silently skipped line.
   assert.throws(() => parseScript('## notanid\nhello\n'), /notanid/,
     'an unparsable line heading must throw and name itself');
