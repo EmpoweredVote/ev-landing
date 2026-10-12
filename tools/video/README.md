@@ -175,6 +175,52 @@ because a pin that silently does nothing is how a cut stays wrong after somebody
 has fixed it. Say in `_heard` what is actually on the tape before the pinned
 second: a bare number is a decision nobody can check later.
 
+### Nobody speaks during a silence
+
+`cutPoints` used to move a cut outward only, because the recogniser's word
+boundary lands a tenth of a second inside the first consonant. It goes wrong
+the other way too: on a line the reader began quietly, or after a long pause,
+the recogniser puts the first word up to a second before any sound, and the cut
+then opens on a second of room tone. Essentials had 1.84 s of nothing between
+"search the donors by name" and "and kept separate from all of it", and a
+dozen more joins over a second.
+
+The silence settles it. If the recogniser's start lies INSIDE a silence that the
+line reads out of, the line cannot have begun there — it began where that
+silence ended, and the same at the other end. That one rule took every join in
+the episode down to the 0.45 s the splitter puts between lines on purpose, with
+no pins at all. It only ever moves a cut inward, and only to a boundary the
+audio itself drew.
+
+### The cut that holds all of the line but the beginning
+
+The splitter also prints the cuts that do not hold their whole line:
+
+```
+cut does not hold the whole line — listen, then pin in cuts.json:
+  L003 opens 3 word(s) in — "the information exists" is not in the cut
+```
+
+This is the fault that hides best, and it is NOT the same as a false start.
+Where a reader pauses between the first sentence of a line and the rest, the
+window that reads best can be the rest on its own — every word in it is the
+line's, in order, and the match score barely moves. Essentials L003 came out as
+"It is just kept in a dozen places. The city clerk has the council…" at a match
+of 0.923, which is the score of a line that is fine. "The information exists."
+was recorded, is in the script, and was in no WAV. Everything downstream — the
+scene's length, every word time read off it, the picture built against those
+times — was then built on a line that is not the line, and nothing anywhere
+said so.
+
+`clipped()` in `align.mjs` answers one question per cut: how many of the line's
+own words are missing from each end. A count of words is a thing a person can
+check against the tape in ten seconds. It reports rather than cuts, for the same
+reason the false-start check does — a reader who drops a word is ordinary, and
+only the ear can say whether what is missing was said. Contractions are expanded
+before the comparison, because the script writes "It is worth saying" and the
+recogniser writes "It's", and a warning that fires on lines that are fine is a
+warning nobody reads.
+
 The level is left alone except for one gain, the same for every line and every
 take, that lifts the loudest take to -3 dBFS. Dynamics are a mix decision and
 belong in Resolve, not here. `--no-gain` turns even that off.
@@ -212,6 +258,12 @@ An art scene may carry any extra fields its draw function reads; they are part
 of the cache key, so changing one re-renders that scene. The Compass episode
 uses these:
 
+> The cache key digests EVERY `.js` file in the episode directory, not just
+> `art.js` — `screen.js` and `brand.js` are in it too. So refreshing the live
+> still or the lockup re-renders all 37 scenes, exactly as an `art.js` edit
+> does. Worth knowing before deciding to swap a capture at the end of a review
+> round: it costs a full build, so batch it with whatever else is outstanding.
+
 | Field | Used by | Meaning |
 |---|---|---|
 | `continues` | every draw function, via `arrive()` | the picture was already on screen, so nothing in it fades in again |
@@ -243,6 +295,44 @@ respawning for three scenes after the one that brought them in, under a
 `continues` flag that was doing its job everywhere else. Only a POSITIVE time
 animates.
 
+**A field that nobody set is a THIRD state, and `since` cannot see it.** It has
+no second, so it reads as zero, and zero means "already on screen" — so a thing
+that should not be in this scene at all is drawn from its first frame. In
+episode 2 that put the mini compass, the stance drawer, the blank topic and the
+coverage message between one and two scenes ahead of the lines that introduce
+them, and every one of them looked deliberate. The three states are:
+
+| | |
+|---|---|
+| absent | the scene never names the field |
+| `0` | it was on screen before this scene started |
+| `> 0` | it arrives at that second |
+
+So an optional thing asks for its field BY NAME — `at(scene, 'compassAt', t,
+dur)` rather than `since(t, scene.compassAt \|\| 0, dur)` — and a scene that
+wants to keep something writes an explicit `0`, the way episode 1 writes `dim:
+0` and `letters: 0`. The explicit zero is not noise; it is the scene saying
+out loud that it inherited the thing.
+
+The same zero bites a second time wherever it is used as a CLOCK ORIGIN rather
+than as a flag. `searchAt` opens the donor search and also starts the query
+typing itself in, `ease((t - searchAt - 0.4) / 0.9)`. The three later scenes
+inherit the field as `0` — correctly, "it was already there" — and the typing
+clock read that as "start typing at t = 0.4", so the word typed itself in again
+in the outside-spending scene and again in the filings scene. One query, three
+scenes, typed three times. Anything that animates from a field's value has to
+ask whether the field is positive before it runs, not just whether it exists.
+
+**Two lists that have to stay in step are one list.** Episode 2's ballot had
+`JOBS` — the offices — and `TOUCHES` — what each office decides — as two arrays
+read at the same index. They are not in the same order and never could be: the
+offices arrive in the order chapter 1 reads them out and the labels arrive in
+the order chapter 7 reads THOSE out, which is the point of the chapter. So
+zoning hung off the assessor, the school day off the water board, and every one
+of the five labels pointed at the wrong row. It is one array now, and each row
+owns both of its seconds. This is the same rule as "write a fact down once",
+read from the other end: if two structures must agree, they are one structure.
+
 The same rule covers the cast, and there it is just arithmetic: a figure at
 `[0.74, 0.88]` in one scene and `[0.80, 0.88]` at `scale: 0.9` in the next
 teleports, and across four scenes it reads as the thing that is wrong with the
@@ -269,6 +359,18 @@ measure their contents first — the question is wrapped with `wrapLines()` befo
 the box is drawn, and the card either grows to fit or tightens its rows against
 a floor. A number somebody chose once, for the content there was at the time, is
 a bug waiting for the next line of copy.
+
+Episode 2 found the same fault three more times, in three different functions,
+and fixed each one where it happened — which is why it happened again somewhere
+else. The ballot was `H * 0.70` tall with five rows under the fold and the sixth
+printed off the bottom of the paper. The profile's district line ran out through
+the side of the card. The reasoning drawer was wrapped to the PANEL's width and
+printed past its own border and the panel's. So there is now one `fitLabel()`
+beside `label()` — same arguments plus the width of the box — and anything
+printed inside a box goes through it. It shrinks rather than clips or wraps: a
+clipped word is a word cut in half, and a line that wraps changes the height of
+whatever holds it. **Where the same fault turns up twice, the fix is a shared
+function, not a second patch.**
 
 **Write a fact down once.** The Compass episode's Housing ladder is five named
 solutions, the viewer picks one of them, and three separate chapters draw that

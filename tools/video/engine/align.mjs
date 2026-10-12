@@ -349,6 +349,26 @@ export function cutPoints(spans, silences, duration, opts = {}) {
       }
     }
 
+    // Nobody speaks during a silence.
+    //
+    // Both rules above only ever move a cut OUTWARD, because the recogniser's
+    // word boundary lands a tenth of a second inside the first consonant. It
+    // also goes wrong the other way: on a line the reader began quietly, or
+    // after a long pause, the recogniser puts the first word up to a second
+    // before any sound. The cut then opens on a second of room tone, and the
+    // joined track has an audible hole in it — Essentials L020 to L021 was
+    // 1.84 s of nothing between "search the donors by name" and "and kept
+    // separate from all of it".
+    //
+    // The silence itself settles it. If the recogniser's start lies INSIDE a
+    // silence that the line reads out of, the line cannot have begun there;
+    // it began where that silence ended. Same at the other end. This only
+    // ever moves a cut inward, and only to a boundary the audio drew.
+    for (const [a, b] of silences) {
+      if (a <= sp.start && b > sp.start && b < sp.end) onset = Math.max(onset, b);
+      if (a > sp.start && a < sp.end && b >= sp.end) offset = Math.min(offset, a);
+    }
+
     out.push({
       id: sp.id,
       start: Math.max(0, onset - pad),
@@ -406,6 +426,86 @@ export function openingPause(spans, silences, opts = {}) {
       if (b - a < stall) continue;
       out.push({ id: s.id, at: a, dur: Math.round((b - a) * 1000) / 1000, resume: b });
       break;
+    }
+  }
+  return out;
+}
+
+// A cut that starts after the line does, or stops before it ends.
+//
+// This is the fault that hides best. The alignment settles each line inside
+// the region it found it in, and where a reader paused between the first
+// sentence and the rest, the window that reads BEST can be the rest on its
+// own: every word in it is the line's, in order, and the match score barely
+// moves. Essentials L003 came out as "It is just kept in a dozen places. The
+// city clerk has the council..." — the sentence before it, "The information
+// exists.", was recorded, is in the script, and was in no cut. It scored
+// 0.923 and nothing downstream could tell. Every scene length, every word
+// time and the whole picture were then built on a line that is not the line.
+//
+// So each cut is asked how much of its OWN line it holds at each end. The
+// answer is a count of words, which is a thing a person can check against the
+// tape in ten seconds. It reports; it does not cut, for the same reason
+// `openingPause` does not: a reader who drops a word is ordinary, and only
+// the ear can say whether what is missing was said.
+//
+// `spans` is [{id, start, end}] after pins. `stream` is the take's words.
+const EDGES = 2;        // fewer words than this at an edge is a dropped word
+
+// The script writes "It is worth saying"; the reader says it, and the
+// recogniser writes "It's". That is two script words against one spoken word
+// at the very front of a line, which is exactly the shape this check looks
+// for — so without this every contraction in the episode is a false alarm,
+// and a warning that fires on lines that are fine is a warning nobody reads.
+//
+// Only pronoun and auxiliary forms are expanded. A possessive wears the same
+// apostrophe — "a clerk's office" — and expanding that would invent a word.
+const CONTRACTIONS = {
+  "i'm": "i am", "i've": "i have", "i'll": "i will", "i'd": "i would",
+  "it's": "it is", "it'll": "it will", "that's": "that is", "that'll": "that will",
+  "there's": "there is", "here's": "here is", "what's": "what is", "who's": "who is",
+  "we're": "we are", "we've": "we have", "we'll": "we will",
+  "you're": "you are", "you've": "you have", "you'll": "you will",
+  "they're": "they are", "they've": "they have", "they'll": "they will",
+  "let's": "let us", "don't": "do not", "doesn't": "does not", "didn't": "did not",
+  "isn't": "is not", "aren't": "are not", "wasn't": "was not", "weren't": "were not",
+  "can't": "can not", "won't": "will not", "nobody's": "nobody is"
+};
+function expand(ws) {
+  const out = [];
+  for (const w of ws) {
+    const full = CONTRACTIONS[w];
+    if (full) for (const p of full.split(' ')) out.push(p);
+    else out.push(w);
+  }
+  return out;
+}
+
+export function clipped(spans, stream, lines, opts = {}) {
+  const edge = opts.edge == null ? EDGES : opts.edge;
+  const byId = new Map(lines.map(l => [l.id, expand(normalise(l.text))]));
+  const out = [];
+  for (const sp of spans) {
+    const want = byId.get(sp.id);
+    if (!want || !want.length) continue;
+    let said = [];
+    for (const it of stream) {
+      if (it.e <= sp.start || it.s >= sp.end) continue;
+      const w = normalise(it.w)[0];
+      if (w) said.push(w);
+    }
+    if (!said.length) continue;
+    said = expand(said);
+    // Which of the line's own words the cut actually carried, first and last.
+    const [first, last] = bounds(want, said);
+    const head = first, tail = want.length - 1 - last;
+    if (head >= edge || tail >= edge) {
+      out.push({
+        id: sp.id,
+        head, tail,
+        headWords: want.slice(0, head).join(' '),
+        tailWords: want.slice(last + 1).join(' ')
+      });
     }
   }
   return out;

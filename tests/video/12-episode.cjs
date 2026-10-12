@@ -15,9 +15,21 @@ const vm = require('vm');
 const { pathToFileURL } = require('url');
 
 const ROOT = path.join(__dirname, '..', '..');
-const EP_DIR = path.join(ROOT, 'tools/video/episodes/compass');
+// Every episode that has a picture, not one named episode. The checks below
+// are the cheap way to learn that a line was deleted, and an episode this file
+// does not know about does not get them — which is the state episode 2 was in
+// for as long as this path was a constant.
+const EPISODES = path.join(ROOT, 'tools/video/episodes');
+const DIRS = fs.readdirSync(EPISODES)
+  .map(name => path.join(EPISODES, name))
+  .filter(dir => fs.existsSync(path.join(dir, 'episode.mjs')));
 
 (async function () {
+  assert.ok(DIRS.length > 0, 'no episode has an episode.mjs');
+  for (const EP_DIR of DIRS) await check(EP_DIR);
+})().catch(e => { console.error('FAIL', e.message); process.exit(1); });
+
+async function check(EP_DIR) {
   const episode = (await import(pathToFileURL(path.join(EP_DIR, 'episode.mjs')).href)).default;
   const script = fs.readFileSync(path.join(EP_DIR, 'script.md'), 'utf8');
 
@@ -82,6 +94,6 @@ const EP_DIR = path.join(ROOT, 'tools/video/episodes/compass');
   assert.deepStrictEqual(emptyChapters, [],
     'chapters are named that no scene belongs to: ' + emptyChapters.join(', '));
 
-  console.log('PASS 12-episode (' + episode.scenes.length + ' scenes, ' +
-    written.length + ' lines, ' + registered.length + ' art entries)');
-})().catch(e => { console.error('FAIL', e.message); process.exit(1); });
+  console.log('PASS 12-episode ' + path.basename(EP_DIR) + ' (' + episode.scenes.length +
+    ' scenes, ' + written.length + ' lines, ' + registered.length + ' art entries)');
+}

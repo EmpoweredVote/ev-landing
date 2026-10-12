@@ -467,5 +467,50 @@ function words(rows) {
     assert.ok(l23.start >= 349.0, 'and L023 must still start on "Then"');
   }
 
+  // 6. A cut that holds all of its line but the beginning.
+  //
+  // Essentials L003. The reader said "The information exists." then paused,
+  // then read the rest of the line; the best-reading window was the rest on
+  // its own, so the WAV opened on "It is just kept in a dozen places" and the
+  // sentence before it was in the script, on the tape, and in no cut. The
+  // match score was 0.923, which is the score of a line that is fine.
+  {
+    const ws = words([
+      "The|42.38|42.92 information|42.92|43.32 exists.|43.32|43.84",
+      "It's|44.28|44.54 just|44.54|44.74 kept|44.74|45.02 in|45.02|45.22",
+      "a|45.22|45.36 dozen|45.36|45.54 places.|45.54|45.96",
+      "The|46.60|46.80 City|46.80|47.00 Clerk|47.00|47.24 has|47.24|47.74",
+      "the|47.74|47.98 Council.|47.98|48.18"
+    ]);
+    const lines = [{ id: 'L003',
+      text: 'The information exists. It is just kept in a dozen places. The city clerk has the council.' }];
+
+    // The cut as the alignment left it: opening on "It's".
+    const bad = A.clipped([{ id: 'L003', start: 44.44, end: 48.28 }], ws, lines);
+    assert.strictEqual(bad.length, 1, 'a cut missing its first sentence must be reported');
+    assert.strictEqual(bad[0].head, 3, 'and must say how many words are missing');
+    assert.strictEqual(bad[0].headWords, 'the information exists');
+    // Three, not five: the recogniser wrote "It is" as "It's", and the check
+    // expands the contraction before it compares. Without that, every "it's"
+    // at the head of a line reads as two missing words and the warning fires
+    // on lines that are fine — which is how a warning stops being read.
+    assert.strictEqual(bad[0].tail, 0);
+
+    // The same line, pinned back to where the reading really starts.
+    assert.deepStrictEqual(A.clipped([{ id: 'L003', start: 42.7, end: 48.28 }], ws, lines), [],
+      'and must say nothing once the pin has fixed it');
+
+    // A cut that stops early is the same fault at the other end.
+    const early = A.clipped([{ id: 'L003', start: 42.7, end: 46.2 }], ws, lines);
+    assert.strictEqual(early.length, 1);
+    assert.strictEqual(early[0].tail, 6, 'got ' + JSON.stringify(early[0]));
+    assert.strictEqual(early[0].tailWords, 'the city clerk has the council');
+
+    // One dropped word at an edge is a reader, not a mis-cut, and must not be
+    // reported — a warning that cries wolf on every line is read by nobody.
+    assert.deepStrictEqual(A.clipped([{ id: 'L003', start: 43.0, end: 48.28 }], ws, lines), [],
+      'a single clipped word is not a mis-cut');
+  }
+
   console.log('PASS 14-align');
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

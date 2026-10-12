@@ -32,7 +32,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScript } from './script.mjs';
-import { alignTake, cutPoints, openingPause, applyPins } from './align.mjs';
+import { alignTake, cutPoints, openingPause, applyPins, clipped } from './align.mjs';
 
 const NOISE = -40;        // dB; below this counts as silence
 const MINSIL = 0.35;      // seconds; shorter than this is a pause inside a line
@@ -133,6 +133,7 @@ export async function split(episodeDir, takes, opts = {}) {
   const reads = new Map();                       // line id -> {take, start, end, score}
   const perTake = [];
   const silByTake = [];
+  const wordsByTake = [];
   const usedPins = [];
   for (let t = 0; t < takes.length; t++) {
     const wav = path.resolve(takes[t]);
@@ -159,6 +160,7 @@ export async function split(episodeDir, takes, opts = {}) {
     }
     perTake.push({ wav, duration, read: cuts.length, missing, silences: sil.length });
     silByTake.push(sil);
+    wordsByTake.push(ws);
     console.log(`take ${t + 1}: ${path.basename(wav)}  ${(duration / 60).toFixed(1)} min, ` +
       `${cuts.length} of ${lines.length} lines`);
   }
@@ -197,6 +199,33 @@ export async function split(episodeDir, takes, opts = {}) {
   if (suspects.length) {
     console.log('may open on a false start — listen, then pin in cuts.json if it is one:');
     for (const x of suspects) console.log('  ' + x);
+  }
+
+  // A cut that does not hold the whole line it is named after. The words are
+  // there on the tape, in the script, and in no WAV — see `clipped`. Reported
+  // per take, against the cut that was actually chosen, so a pin that fixed
+  // one of these stops it being raised again.
+  // A pinned line has already been decided by the ear, so it is not raised
+  // again — the same rule the false-start report follows, and for the same
+  // reason: a warning that keeps firing after somebody has answered it is a
+  // warning that gets ignored on the line where it matters.
+  const short = [];
+  const byTake = new Map();
+  for (const l of lines) {
+    const r = reads.get(l.id);
+    if (!r || pins[l.id]) continue;
+    if (!byTake.has(r.take)) byTake.set(r.take, []);
+    byTake.get(r.take).push({ id: l.id, start: r.start, end: r.end });
+  }
+  for (const [t, spans] of byTake) {
+    for (const c of clipped(spans, wordsByTake[t] || [], lines)) {
+      if (c.head) short.push(`${c.id} opens ${c.head} word(s) in — "${c.headWords}" is not in the cut`);
+      if (c.tail) short.push(`${c.id} stops ${c.tail} word(s) early — "${c.tailWords}" is not in the cut`);
+    }
+  }
+  if (short.length) {
+    console.log('cut does not hold the whole line — listen, then pin in cuts.json:');
+    for (const x of short) console.log('  ' + x);
   }
 
   const absent = lines.filter(l => !reads.has(l.id)).map(l => l.id);
