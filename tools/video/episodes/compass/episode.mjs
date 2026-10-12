@@ -274,7 +274,14 @@ export default {
     // ── 8. Close ────────────────────────────────────────────────────────
     { id: 'live-screen', type: 'art', vo: 'L038', art: 'drawLiveScreen', hold: 1.2 },
 
-    { id: 'live-use', type: 'art', vo: 'L039', art: 'drawLiveScreen', settled: true,
+    // "Calibrate once. After that, every election, you hold your shape up
+    // against whoever is asking" — so this scene shows the browse view, where
+    // the calibrated compass is held against a city's worth of sitting
+    // officials. It is a different picture from the one before it, so it does
+    // NOT carry `settled`: the screen crosses rather than cutting, which is
+    // the one place in the episode where a change of shot is the point.
+    { id: 'live-use', type: 'art', vo: 'L039', art: 'drawLiveScreen',
+      shot: 'browse', host: 'essentials.empowered.vote',
       cast: [{ at: [0.18, 0.95], anim: 'present', color: YOU, scale: 0.60 }] },
 
     // "That's the Empowered Compass" cuts back to the product's own lockup —

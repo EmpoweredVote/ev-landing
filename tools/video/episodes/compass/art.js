@@ -121,8 +121,13 @@
     return { img: img, ready: ready };
   }
   var shotA = load(window.EVCompassShot);
+  // The browse view, captured separately. Optional on purpose: an episode
+  // whose second still has not been grabbed yet falls back to the first one
+  // rather than rendering an empty box, and the fallback is visible in the
+  // contact sheet instead of hiding as a blank frame.
+  var browseA = load(window.EVCompassBrowseShot);
   var logoA = load(window.EVCompassLogo);
-  var shot = shotA.img, logo = logoA.img;
+  var browse = browseA.img, logo = logoA.img;
 
   function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
   function fade(t, t0, dur) { return ease((t - t0) / dur); }
@@ -1307,7 +1312,15 @@
   }
 
   // Chapter 8: a few seconds of the real screen, to prove the thing exists.
+  //
+  // TWO screens now, and which one a scene shows is the scene's own business.
+  // The first is the compass itself. The second is the browse view, where that
+  // same compass is held up against a city's worth of sitting officials —
+  // which is what L039 says out loud, and it lives on the Essentials host, so
+  // the caption under it has to say so rather than repeat the compass address.
   function drawLiveScreen(ctx, t, W, H, scene) {
+    var shot = scene.shot === 'browse' && browse.naturalWidth ? browse : shotA.img;
+    var host = scene.host || 'compass.empowered.vote';
     var a = scene.settled ? 1 : fade(t, 0.2, 0.8);
     var pad = W * 0.12;
     var boxW = W - pad * 2;
@@ -1319,7 +1332,7 @@
       ctx.fillStyle = MUTED;
       ctx.textAlign = "center";
       ctx.font = "600 " + Math.round(H * 0.040) + "px " + FONT;
-      ctx.fillText("compass.empowered.vote", W / 2, H * 0.45);
+      ctx.fillText(host, W / 2, H * 0.45);
       ctx.restore();
       return;
     }
@@ -1337,7 +1350,7 @@
     ctx.fillStyle = MUTED;
     ctx.textAlign = "center";
     ctx.font = "600 " + Math.round(H * 0.032) + "px " + FONT;
-    ctx.fillText("compass.empowered.vote", W / 2, y + boxH + H * 0.055);
+    ctx.fillText(host, W / 2, y + boxH + H * 0.055);
     ctx.restore();
   }
 
@@ -1353,5 +1366,5 @@
     drawSourceCard: drawSourceCard,
     drawLiveScreen: drawLiveScreen
   });
-  window.EVArt.ready = Promise.all([shotA.ready, logoA.ready]);
+  window.EVArt.ready = Promise.all([shotA.ready, browseA.ready, logoA.ready]);
 })();

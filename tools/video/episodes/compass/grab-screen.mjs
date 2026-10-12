@@ -6,31 +6,98 @@
 // tests/video/03-cast.cjs and 04-art.cjs the moment this episode is rendered.
 // A data: URI does not taint. This is a documented trap in this repo.
 //
-//   node grab-screen.mjs [url] [--profile <chrome user-data-dir>]
+//   node grab-screen.mjs [url] [--profile <dir>] [--out <file>] [--global <name>]
+//                        [--compass <json>] [--from <image>] [--note <text>]
 //
-// A fresh browser reaches only the calibration onboarding screen, because a
-// compass that nobody has answered has no shape to draw. --profile borrows a
-// browser profile that HAS answered, so the still shows a real calibrated
-// radar. Point it at a COPY of the profile, never the live one: Chrome holds a
-// single-instance lock on a directory it is running in, and the copy keeps this
-// script from writing anything into a browser somebody is using. Only four
-// things need to come across — `Local State`, `Default/Preferences`,
+// --from embeds a picture that already exists instead of taking one, and it is
+// here because two of this episode's stills cannot be taken by a script. Both
+// show a calibrated compass held against real officials, which the app serves
+// to a signed-in account rather than to localStorage, and one of them is a
+// frame lifted out of a screen recording. --note is written into the generated
+// file beside the source, because a still nobody can regenerate has to say
+// where it came from or the next person has no way to find out.
+//
+// The episode holds TWO stills now — the compass itself, and the browse view
+// where that compass is held up against a city's worth of officials — so the
+// target, the file and the global are all arguments. Defaults are the first
+// still, so the original command still means what it meant.
+//
+// A compass that nobody has answered has no shape to draw, and there are two
+// ways to give this script one.
+//
+// --compass takes the four keys the app keeps a calibration in, as JSON:
+// `selectedTopics`, `invertedSpokes`, `answers` and `writeIns`, each a string
+// exactly as localStorage holds it. They are seeded before the first paint, so
+// a FRESH browser draws a real compass and no account is involved. This is the
+// one to reach for: it needs a line pasted out of a console, not a copy of
+// somebody's browser.
+//
+// --profile borrows a browser profile instead, which is what a view behind a
+// login needs — the browse comparison is served to an account, not to
+// localStorage. Point it at a COPY, never the live profile: Chrome holds a
+// single-instance lock on a directory it is running in, and the copy keeps
+// this script from writing anything into a browser somebody is using. Only
+// four things need to come across — `Local State`, `Default/Preferences`,
 // `Default/Network/Cookies` and `Default/Local Storage/leveldb`.
 
 import { createRequire } from 'node:module';
-import { writeFile } from 'node:fs/promises';
+import { writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
-const pi = args.indexOf('--profile');
-const PROFILE = pi >= 0 ? args[pi + 1] : null;
-const TARGET = args.filter((a, i) => i !== pi && i !== pi + 1 && !a.startsWith('--'))[0]
+function flag(name, fallback) {
+  const i = args.indexOf('--' + name);
+  return i >= 0 ? args[i + 1] : fallback;
+}
+const taken = new Set();
+for (const n of ['profile', 'out', 'global', 'compass', 'from', 'note']) {
+  const i = args.indexOf('--' + n);
+  if (i >= 0) { taken.add(i); taken.add(i + 1); }
+}
+const PROFILE = flag('profile', null);
+const OUT = flag('out', 'screen.js');
+const GLOBAL = flag('global', 'EVCompassShot');
+const COMPASS = flag('compass', null);
+const FROM = flag('from', null);
+const NOTE = flag('note', null);
+const TARGET = args.filter((a, i) => !taken.has(i) && !a.startsWith('--'))[0]
   || 'https://compass.empowered.vote/';
 
-const DARK = () => { try { localStorage.setItem('ev:color-scheme', 'dark'); } catch (e) { /* private mode */ } };
+// A calibration is four localStorage strings, seeded before the first paint.
+// Written as one init script with the theme, because both have to be in place
+// before the app reads either.
+const seed = COMPASS ? JSON.parse(COMPASS) : null;
+const DARK = (held) => {
+  try { localStorage.setItem('ev:color-scheme', 'dark'); } catch (e) { /* private mode */ }
+  if (!held) return;
+  try {
+    for (const k of ['selectedTopics', 'invertedSpokes', 'answers', 'writeIns']) {
+      if (held[k] != null) localStorage.setItem(k, held[k]);
+    }
+  } catch (e) { /* private mode */ }
+};
+
+// --from: nothing to drive, just read the picture and write the file. The
+// media type comes off the extension, because a JPEG announced as a PNG
+// decodes to nothing and the only sign of it is a blank box in the render.
+if (FROM) {
+  const held = await readFile(FROM);
+  const type = /\.jpe?g$/i.test(FROM) ? 'jpeg' : 'png';
+  const lines = [
+    '// GENERATED by grab-screen.mjs --from. NOT reproducible by re-running:',
+    '// it is a picture somebody took, embedded here.',
+    '// Source: ' + FROM
+  ];
+  if (NOTE) lines.push('// ' + NOTE);
+  lines.push('window.' + GLOBAL + ' = "data:image/' + type + ';base64,' +
+             held.toString('base64') + '";');
+  await writeFile(path.join(HERE, OUT), lines.join('\n') + '\n', 'utf8');
+  console.log('wrote ' + OUT + ',', Math.round(held.length / 1024), 'KB from', FROM);
+  process.exit(0);
+}
 
 const { chromium } = require('playwright');
 let ctx, page, close;
@@ -44,7 +111,7 @@ if (PROFILE) {
   page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   close = () => browser.close();
 }
-await page.addInitScript(DARK);
+await page.addInitScript(DARK, seed);
 await page.goto(TARGET, { waitUntil: 'networkidle' });
 await page.waitForTimeout(2500);                 // let any chart finish drawing
 
@@ -75,9 +142,11 @@ await page.waitForTimeout(300);
 const buf = await page.screenshot({ type: 'png' });
 await close();
 
-await writeFile(path.join(HERE, 'screen.js'),
+const how = PROFILE ? ' (borrowed profile)' : (seed ? ' (seeded calibration)' : ' (fresh browser)');
+await writeFile(path.join(HERE, OUT),
   '// GENERATED by grab-screen.mjs. Re-run it to refresh the still.\n' +
-  '// Source: ' + TARGET + (PROFILE ? ' (calibrated profile)' : ' (fresh browser)') + '\n' +
-  'window.EVCompassShot = "data:image/png;base64,' + buf.toString('base64') + '";\n',
+  '//   node grab-screen.mjs ' + TARGET + ' --out ' + OUT + ' --global ' + GLOBAL + '\n' +
+  '// Source: ' + TARGET + how + '\n' +
+  'window.' + GLOBAL + ' = "data:image/png;base64,' + buf.toString('base64') + '";\n',
   'utf8');
-console.log('wrote screen.js,', Math.round(buf.length / 1024), 'KB from', TARGET);
+console.log('wrote ' + OUT + ',', Math.round(buf.length / 1024), 'KB from', TARGET);
