@@ -375,15 +375,19 @@
   // It was H * 0.70 with five rows under the fold, and the sixth printed off
   // the bottom of the paper — the last job the narrator reads out, hanging in
   // mid-air below the card that was supposed to hold it.
+  // Nine rows, evenly spaced, and nothing between the third and the fourth.
+  // There was a dashed rule there and then, when the rule went, the air it had
+  // sat in — which read as a missing row rather than as a fold. A ballot is
+  // one list. What chapter 7 argues about is where you stop reading it, and
+  // the dimmed top three say that on their own.
   function ballotBox(W, H) {
     var rowH = H * 0.066;
     var head = H * 0.115;                           // the title and its rule
-    var fold = H * 0.018, afterFold = H * 0.028;    // the dashed line and its air
     var foot = H * 0.030;
     return {
       x: W * 0.16, y: H * 0.035, w: W * 0.30,
-      h: head + TOP.length * rowH + fold + afterFold + JOBS.length * rowH + foot,
-      rowH: rowH, head: head, fold: fold, afterFold: afterFold
+      h: head + (TOP.length + JOBS.length) * rowH + foot,
+      rowH: rowH, head: head
     };
   }
   function drawBallot(ctx, t, W, H, scene) {
@@ -415,12 +419,7 @@
       ballotRow(ctx, b, top0 + i * rowH, rowH, H, a * ta, TOP[i], true);
     }
 
-    // The fold is AIR, not a rule. A dashed line across the paper drew the eye
-    // to itself and cut the column in two, and the column is one object: the
-    // argument of chapter 7 is about where you stop reading, which the dimmed
-    // top three say on their own.
-    var foldY = top0 + TOP.length * rowH + b.fold;
-    var jy = foldY + b.afterFold;
+    var jy = top0 + TOP.length * rowH;
     for (var k = 0; k < JOBS.length; k++) {
       // In the opening line each job appears on the second it is said, except
       // the row nobody reads out, which is on the paper from the first frame.
@@ -1226,7 +1225,7 @@
   // "Transparent Motivations", and the question under it. Everything in the
   // chapter is measured off this box, so moving it moves the legend, the
   // committee list, the search and the outside block with it.
-  function moneyBar(W, H) { return { x: W * 0.12, y: H * 0.250, w: W * 0.76, h: H * 0.085 }; }
+  function moneyBar(W, H) { return { x: W * 0.12, y: H * 0.288, w: W * 0.76, h: H * 0.092 }; }
 
   function drawMoney(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
@@ -1349,7 +1348,7 @@
     if (qa > 0) {
       ctx.save();
       ctx.globalAlpha = a * qa;
-      label(ctx, "Who paid for the campaign?", cx, H * 0.180, H * 0.042, MUTED, "600", "center");
+      label(ctx, "Who paid for the campaign?", cx, H * 0.185, H * 0.044, MUTED, "600", "center");
       ctx.restore();
     }
   }
@@ -1363,11 +1362,18 @@
     for (var p = 0; p < PAIR.length; p++) {
       var pa = scene.pairAt == null ? 0 : since(t, scene.pairAt + p * 0.5, 0.45);
       if (pa <= 0) continue;
-      var y = H * 0.295 + p * H * 0.255, h = H * 0.095;
+      var y = H * 0.300 + p * H * 0.280, h = H * 0.115;
       ctx.save();
       ctx.globalAlpha = a * pa;
-      label(ctx, PAIR[p].name, b.x, y - H * 0.016, H * 0.032, FG, "600");
-      label(ctx, moneyFull(PAIR[p].total), b.x + b.w, y - H * 0.016, H * 0.032, MUTED, "600", "right");
+      label(ctx, PAIR[p].name, b.x, y - H * 0.020, H * 0.034, FG, "600");
+      // The two totals are the whole reason this pair is on screen, and they
+      // sit in grey beside their bars until the line says "the same amount of
+      // money". Then they take the page's own white, together — which is the
+      // sentence, drawn. Nothing moves and nothing arrives: the figures that
+      // were already there stop being background.
+      var same = at(scene, "sameAt", t, 0.45);
+      label(ctx, moneyFull(PAIR[p].total), b.x + b.w, y - H * 0.020, H * 0.034,
+            same > 0.5 ? FG : MUTED, same > 0.5 ? "700" : "600", "right");
       ctx.restore();
       ctx.save();
       ctx.globalAlpha = a * pa;
@@ -1393,7 +1399,7 @@
       ctx.save();
       ctx.globalAlpha = a * ka;
       for (var k = 0; k < BANDS.length; k++) {
-        var kx = b.x + k * kw, ky = H * 0.715;
+        var kx = b.x + k * kw, ky = H * 0.805;
         ctx.fillStyle = BANDS[k].c;
         roundRect(ctx, kx, ky - H * 0.024, H * 0.026, H * 0.026, H * 0.006);
         ctx.fill();
@@ -1409,7 +1415,7 @@
   // names of private people, and they are public record on the page without
   // needing to be six feet tall in a film.
   function drawDonors(ctx, t, W, H, scene, a, accent) {
-    var x = W * 0.12, y = H * 0.615, w = W * 0.40;
+    var x = W * 0.12, y = H * 0.665, w = W * 0.40;
     // Whose filings these are, said once and left there. The bar above is the
     // FEDERAL campaign; these six committees are off the California filings.
     // An unlabelled list under a federal total invites the viewer to read
@@ -1424,14 +1430,14 @@
       var named = atIndex(scene.srcAt, 1, t, 0.45);
       ctx.save();
       ctx.globalAlpha = a;
-      label(ctx, "COMMITTEES THAT GAVE · CALIFORNIA FILINGS", x, y - H * 0.032,
+      label(ctx, "COMMITTEES THAT GAVE · CALIFORNIA FILINGS", x, y - H * 0.042,
             H * 0.026, named > 0.5 ? accent : MUTED, "700");
       ctx.restore();
     }
     for (var i = 0; i < COMMITTEES.length; i++) {
       var ca = scene.listAt == null ? 0 : (scene.listAt > 0 ? since(t, scene.listAt + i * 0.28, 0.35) : 1);
       if (ca <= 0) continue;
-      var ry = y + i * H * 0.046;
+      var ry = y + i * H * 0.050;
       ctx.save();
       ctx.globalAlpha = a * ca;
       ctx.fillStyle = BANDS[2].c;                      // PAC purple: this is that band
@@ -1444,7 +1450,7 @@
     }
     var sa = at(scene, "searchAt", t, 0.45);
     if (sa > 0) {
-      var sx = W * 0.58, sw = W * 0.30, sy = H * 0.605, sh = H * 0.080;
+      var sx = W * 0.58, sw = W * 0.30, sy = H * 0.648, sh = H * 0.086;
       panel(ctx, sx, sy, sw, sh, H, a * sa, EDGE);
       ctx.save();
       ctx.globalAlpha = a * sa;
@@ -1481,7 +1487,7 @@
   function drawOutside(ctx, t, W, H, scene, a, accent) {
     var oa = at(scene, "outsideAt", t, 0.5);
     if (oa <= 0) return;
-    var x = W * 0.58, y = H * 0.725, w = W * 0.30, h = H * 0.135;
+    var x = W * 0.58, y = H * 0.790, w = W * 0.30, h = H * 0.145;
     ctx.save();
     ctx.globalAlpha = a * oa;
     ctx.strokeStyle = EDGE;

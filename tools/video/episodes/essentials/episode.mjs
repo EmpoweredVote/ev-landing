@@ -168,27 +168,36 @@ export default {
     // Both bars arrive on "Those proportions" — 0.09 — and stay for the whole
     // line. They used to wait for "two campaigns" at 3.88, which left the
     // frame empty for the first four seconds of the line that is ABOUT them.
+    //
+    // The two totals turn white together on "the same amount of money" —
+    // 5.19. They are six tenths of one per cent apart and that is the point;
+    // until the line says so they are two grey figures beside two bars.
     { id: 'money-two', type: 'art', vo: 'L019', art: 'drawMoney', stage: 'two',
-      titleAt: 0, askAt: 0, pairAt: 0.09 },
+      titleAt: 0, askAt: 0, pairAt: 0.09, sameAt: 5.19 },
 
     // Back to her bar, which means this scene does not continue either: it
     // fades the whole picture back in rather than snapping to it. The bands
     // are already named, so their times are zero — "was there", not "starts
     // now".
+    //
+    // The chapter's question goes with that fade. `askAt` is ABSENT from here
+    // on, not zero: once the picture is a page of committees and a search
+    // field, "Who paid for the campaign?" has been answered, and the words
+    // are one more thing to read over her name.
     { id: 'money-donors', type: 'art', vo: 'L020', art: 'drawMoney', stage: 'donors',
-      titleAt: 0, askAt: 0, whoseAt: 0, barAt: 0, bandAt: [0, 0, 0, 0], listAt: 0.34, searchAt: 3.72 },
+      titleAt: 0, whoseAt: 0, barAt: 0, bandAt: [0, 0, 0, 0], listAt: 0.34, searchAt: 3.72 },
 
     // "Outside spending" — 3.30.
     { id: 'money-outside', type: 'art', vo: 'L021', art: 'drawMoney', stage: 'outside',
-      continues: true, titleAt: 0, askAt: 0, whoseAt: 0, barAt: 0, bandAt: [0, 0, 0, 0], listAt: 0, searchAt: 0,
+      continues: true, titleAt: 0, whoseAt: 0, barAt: 0, bandAt: [0, 0, 0, 0], listAt: 0, searchAt: 0,
       outsideAt: 2.35 },
 
     // The Commission at 3.69, state and local disclosure at 5.43. Each is a
     // tag on the thing it produced, not a new panel.
     { id: 'money-filings', type: 'art', vo: 'L022', art: 'drawMoney', stage: 'filings',
-      continues: true, titleAt: 0, askAt: 0, whoseAt: 0, barAt: 0, bandAt: [0, 0, 0, 0], listAt: 0, searchAt: 0,
+      continues: true, titleAt: 0, whoseAt: 0, barAt: 0, bandAt: [0, 0, 0, 0], listAt: 0, searchAt: 0,
       outsideAt: 0, srcAt: [3.69, 5.43],
-      cast: [{ at: [0.945, 0.96], anim: 'showTo', color: VIEWER, scale: 0.72, flip: true }] },
+      cast: [{ at: [0.925, 0.96], anim: 'showTo', color: VIEWER, scale: 0.72, flip: true }] },
 
     // ── 6. The record ───────────────────────────────────────────────────
     // The three columns light as the line names them: the bill at 3.02, what
