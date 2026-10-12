@@ -79,16 +79,29 @@ export default {
     // different boxes" are told by where the figures are rather than by
     // redrawing the set each time. They face each other here — `notlistening`
     // turned back to back, which is a different argument from this one.
+    // A row has turns in it. Both of them waving the same arm at the same
+    // speed from the same zero was one figure drawn twice: he shouts, she
+    // shrugs and he stops, she shouts and he shrugs, and only then do they
+    // both go at once — faster, and never in step, which is what `rate` and
+    // `phase` are for.
     { id: 'why-disagree', type: 'art', vo: 'L007', art: 'drawBoxes', stage: 'hold',
-      cast: [{ at: [0.19, 0.88], anim: 'elderangry', tone: 0, scale: 0.9 },
-             { at: [0.33, 0.88], anim: 'elderangry', tone: 1, scale: 0.9, flip: true }] },
+      cast: [{ at: [0.19, 0.88], tone: 0, scale: 0.9,
+               anim: [{ t: 0, anim: 'elderangry' }, { t: 2.4, anim: 'standstill' },
+                      { t: 3.6, anim: 'shrug' }, { t: 5.4, anim: 'scold', rate: 1.3 }] },
+             { at: [0.33, 0.88], tone: 1, scale: 0.9, flip: true, phase: 0.4,
+               anim: [{ t: 0, anim: 'standstill' }, { t: 1.2, anim: 'shrug' },
+                      { t: 2.4, anim: 'elderangry' }, { t: 5.4, anim: 'scold', rate: 1.18 }] }] },
 
     // "Two people in DIFFERENT boxes": one in each, reaching toward the other
     // across the gap. They stay put — the line is that the boxes make the
     // agreement hard to see, so the boxes have to still be between them.
     { id: 'why-agree', type: 'art', vo: 'L008', art: 'drawBoxes', stage: 'hold',
-      cast: [{ at: [0.26, 0.88], anim: 'showTo', tone: 0, scale: 0.9 },
-             { at: [0.72, 0.88], anim: 'showTo', tone: 1, scale: 0.9, flip: true }] },
+      cast: [{ at: [0.26, 0.88], tone: 0, scale: 0.9,
+               anim: [{ t: 0, anim: 'elderangry' }, { t: 4.6, anim: 'peek' },
+                      { t: 7.2, anim: 'shrug' }] },
+             { at: [0.72, 0.88], tone: 1, scale: 0.9, flip: true, phase: 0.5,
+               anim: [{ t: 0, anim: 'peek' }, { t: 2.6, anim: 'shrug' },
+                      { t: 4.6, anim: 'scold', rate: 1.2 }] }] },
 
     // The boxes go. Only then do the two of them walk to each other, slowly,
     // and start talking — so the walk reads as a consequence of the boxes
@@ -99,7 +112,7 @@ export default {
                       { t: 5.8, anim: 'friendly' }],
                path: [{ t: 0, at: [0.26, 0.88] }, { t: 1.6, at: [0.26, 0.88] },
                       { t: 5.8, at: [0.42, 0.88] }, { t: 9.4, at: [0.42, 0.88] }] },
-             { tone: 1, scale: 0.9, flip: true,
+             { tone: 1, scale: 0.9, flip: true, rate: 0.86, phase: 1.1,
                anim: [{ t: 0, anim: 'standstill' }, { t: 1.6, anim: 'stroll' },
                       { t: 5.8, anim: 'friendly' }],
                path: [{ t: 0, at: [0.72, 0.88] }, { t: 1.6, at: [0.72, 0.88] },
@@ -109,8 +122,16 @@ export default {
     // this chapter the viewer stands in ONE place at ONE size: four scenes at
     // four different x positions read as the figure jumping about, which is
     // the first thing a reviewer noticed and the hardest to stop seeing.
+    // The viewer ARRIVES here. This is the line where the episode turns from
+    // the parties to the person, so the person walks on, says hello and then
+    // stands still facing the camera, rather than being discovered already
+    // in the corner pointing at nothing.
     { id: 'why-start', type: 'art', vo: 'L010', art: 'drawBrandMark',
-      cast: [{ at: [0.78, 0.88], anim: 'present', color: YOU, scale: 0.95 }] },
+      cast: [{ color: YOU, scale: 0.95,
+               anim: [{ t: 0, anim: 'scurry' }, { t: 1.8, anim: 'greet' },
+                      { t: 4.4, anim: 'standstill' }],
+               path: [{ t: 0, at: [0.28, 0.88] }, { t: 1.8, at: [0.50, 0.88] },
+                      { t: 10.6, at: [0.50, 0.88] }] }] },
 
     // The person on screen through this chapter is the viewer, and the viewer
     // is purple everywhere else in the episode. A tone-palette yellow here
@@ -119,7 +140,7 @@ export default {
     // default height the two were a few pixels apart and read as one block.
     { id: 'why-driven', type: 'art', vo: 'L011', art: 'drawBrandMark', continues: true,
       headline: 'Voter driven, not party driven', headlineAt: 0.3, headlineY: 0.44,
-      cast: [{ at: [0.78, 0.88], anim: 'present', color: YOU, scale: 0.95 }] },
+      cast: [{ at: [0.50, 0.88], anim: 'standstill', color: YOU, scale: 0.95 }] },
 
     // Each line of type arrives with the words that say it, not before. The
     // seconds are measured off the recording: "Not every opinion you hold"
@@ -131,7 +152,13 @@ export default {
       headline: 'Vote-worthy issues', headlineAt: 2.4, headlineY: 0.36,
       bullets: [{ t: 4.3, text: 'Not every opinion you hold' },
                 { t: 6.0, text: 'The few that change your vote' }],
-      cast: [{ at: [0.78, 0.88], anim: 'present', color: YOU, scale: 0.95 }] },
+      // This is the line that brings type with it, so he walks out of its way
+      // first and then stands with his arms down. He stays in that corner for
+      // the rest of the chapter.
+      cast: [{ color: YOU, scale: 0.95,
+               anim: [{ t: 0, anim: 'scurry' }, { t: 1.6, anim: 'standstill' }],
+               path: [{ t: 0, at: [0.50, 0.88] }, { t: 1.6, at: [0.78, 0.88] },
+                      { t: 9.6, at: [0.78, 0.88] }] }] },
 
     { id: 'why-goal', type: 'art', vo: 'L013', art: 'drawBrandMark', continues: true,
       headline: 'Turn your priorities into a picture', headlineAt: 3.4, headlineY: 0.40,
@@ -161,8 +188,12 @@ export default {
 
     { id: 'cal-shape', type: 'art', vo: 'L018', art: 'drawCalibrate', stage: 'shape',
       continues: true,
+      // He turns to walk and turns back to point. Without the second half of
+      // that he crossed the frame leftwards while drawn facing right, which
+      // reads as walking backwards and is the only thing anybody sees.
       cast: [{ color: YOU, scale: 0.60,
                anim: [{ t: 0, anim: 'stroll' }, { t: 3.0, anim: 'present' }],
+               flip: [{ t: 0, flip: true }, { t: 3.0, flip: false }],
                path: [{ t: 0, at: [0.53, 0.97] }, { t: 3.0, at: [0.18, 0.95] },
                       { t: 7.5, at: [0.18, 0.95] }] }] },
 

@@ -12,6 +12,12 @@
     "_heard": "46.95-48.05 is 'So you do what the-', then 1.4s of nothing, then the line. The recogniser merged the two attempts and gave the word 'the' a length of 1.48s, so the word stream shows no pause and no repeat at all."
   },
 
+  "L020": {
+    "take": "DJI_34_20261011_091753.WAV",
+    "start": 295.31,
+    "_heard": "The cut opened at 294.64 and the first word is at 295.54, so it carried 0.9s of room tone. With the 0.45s gap the splitter puts between lines, the pause after 'Take one issue on its own. Like Housing.' was 1.35s. This halves it."
+  },
+
   "L036": {
     "take": "DJI_34_20261011_091753.WAV",
     "start": 516.85,
