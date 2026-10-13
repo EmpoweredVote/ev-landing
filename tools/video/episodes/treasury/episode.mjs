@@ -89,13 +89,16 @@ export default {
       name: 'Treasury Tracker' },
 
     // ── 3. The budget as a picture ──────────────────────────────────────
-    // The document is still on screen and becomes the bar, in the order the
-    // sentence gives it: "draws it in a way that anyone can read" at 5.82, "the
-    // whole budget becomes one shape" at 9.30, "and every department is a
-    // slice of it" at 11.66, "sized by what it actually receives" at 14.18.
-    // Four clauses, four things happening, none of them early.
+    // The document is still on screen and BECOMES the bar: it starts leaving on
+    // "draws it in a way that anyone can read" at 5.82 and takes 1.4s, so the
+    // bar has to be there by 7.20 or the frame is empty between them. The
+    // contact sheet caught exactly that — two seconds of nothing.
+    //
+    // shapeAt is therefore the one second here that is NOT a word: it is where
+    // the document finishes going. The rest are his — "and every department is
+    // a slice of it" at 11.66, "sized by what it actually receives" at 14.18.
     { id: 'bar-collapse', type: 'art', vo: 'L006', art: 'drawBudgetBar', stage: 'collapse',
-      collapseAt: 5.82, shapeAt: 9.30, sliceAt: 11.66, sizeAt: 14.18 },
+      collapseAt: 5.82, shapeAt: 7.20, sliceAt: 11.66, sizeAt: 14.18 },
 
     // The two largest are named as he reaches the answer — "the answer" at
     // 6.51, "anybody asks" at 8.15 — so the question at 9.77 lands on a
