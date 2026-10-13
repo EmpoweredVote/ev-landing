@@ -157,8 +157,8 @@
   ];
 
   // The federal top level, FY2024, by what it is for. Nine named segments is as
-  // many as the frame holds honestly; the real chart has more below
-  // Transportation and drawLevels says so rather than ending silently.
+  // many as the frame holds, and the tenth entry is the rest of the budget by
+  // subtraction so the bar is scaled to the whole of it.
   var FED_OUT = [
     { label: "Social Security",          amt: 1460.9e9, c: "#3AABB8" },
     { label: "Interest on the debt",     amt: 1133.0e9, c: "#FF5740" },
@@ -168,7 +168,13 @@
     { label: "Income support programs",  amt:  670.5e9, c: "#59B0C4" },
     { label: "Veterans benefits",        amt:  329.2e9, c: "#C2674A" },
     { label: "Education & job training", amt:  306.4e9, c: "#D4940B" },
-    { label: "Transportation",           amt:  136.6e9, c: "#4D8FC2" }
+    { label: "Transportation",           amt:  136.6e9, c: "#4D8FC2" },
+    // The nine above sum to $6,695.5B. Money Out is $7,195.8B, and icicle
+    // scales every row to the sum of what it is handed — so without this the
+    // bar drew each segment 7.5% too wide while printing a total it was not
+    // scaled to. The spec's own rule: a drawn segment must never silently
+    // stand for several, so the remainder is named and sized.
+    { label: "Everything else",          amt:  500.3e9, c: "#55555F" }
   ];
   // The federal toggles, in the product's own words.
   var FED_TOGGLE = ["What it's for", "Who spends it"];
@@ -191,7 +197,9 @@
     { label: "Agriculture",                   amt:  209.3e9, c: "#C2674A" },
     { label: "Personnel Management",          amt:  126.2e9, c: "#D4940B" },
     { label: "Transportation",                amt:  118.4e9, c: "#4D8FC2" },
-    { label: "Homeland Security",             amt:  105.2e9, c: "#8F9EBC" }
+    { label: "Homeland Security",             amt:  105.2e9, c: "#8F9EBC" },
+    // Same arithmetic: the ten above sum to $6,799.8B of the same $7,195.8B.
+    { label: "Everything else",               amt:  396.0e9, c: "#55555F" }
   ];
 
   // Los Angeles County and California, FY2024, their whole top levels. Read off
@@ -765,11 +773,16 @@
       rows = [{ segs: LA_OUT, current: false }, { segs: LA_DRILL.level1, current: true }];
       opts.labelAlpha = opened;
       icicle(ctx, rows, opts);
+      // bar-open leaves six parts showing. bar-trail must not start from one
+      // and fade in again — the trail is the one thing this line is about, and
+      // rebuilding it at the cut is the blink `continues` exists to stop. It
+      // builds from six to seven as he says "the trail at the top".
+      var SHOWN_AT_OPEN = 6;
       crumbShown = stage === 'trail'
-        ? Math.floor(1 + (LA_DRILL.crumb.length - 1) *
-            Math.max(0, Math.min(1, at(scene, 'crumbAt', t, 2.0))))
+        ? SHOWN_AT_OPEN + Math.round(Math.max(0, Math.min(1,
+            at(scene, 'crumbAt', t, 1.2))))
         : 5 + Math.round(deeper);
-      crumbAlpha = a * (stage === 'trail' ? at(scene, 'crumbAt', t, 0.4) : opened);
+      crumbAlpha = a * (stage === 'trail' ? 1 : opened);
       breadcrumb(ctx, LA_DRILL.crumb, crumbShown, box.x, box.y - H * 0.038, W, H, crumbAlpha);
       return;
     }
@@ -939,7 +952,11 @@
       // indexed by CARD, in this array's order, NOT by the order the script
       // names them: he says money out first, and reading the two arrays at the
       // same index put every label on the wrong row in episode 2.
-      var base = (stage === 'two' && i === 2) ? 0.35 : 1;
+      // The third card is faint until it is NAMED, in both stages. Gating this
+      // on stage === 'two' meant it jumped to full strength at the cut into
+      // 'named' — 8.4s before he says "a third" — and cardAt only changed the
+      // border colour.
+      var base = (i === 2) ? 0.35 : 1;
       var on = stage === 'named' ? atIndex(scene.cardAt, i, t, 0.4) : 0;
       var strength = Math.max(base, on);
       panel(ctx, b.x, b.y, b.w, b.h, H, a * strength,
@@ -967,6 +984,19 @@
     if (scene.stage === 'across') {
       // Four years side by side, one column each, and the two the closing
       // sentence is about picked out of the rest.
+      // Until the first column lands the inherited bar is still what is on
+      // screen. Without this the frame held a heading and nothing else for
+      // five seconds, one scene after the same fault was fixed in bar-collapse.
+      var anyCol = 0;
+      for (var q = 0; q < YEAR_ROWS.length; q++) {
+        anyCol = Math.max(anyCol, atIndex(scene.colAt, q, t, 0.35));
+      }
+      if (anyCol <= 0) {
+        barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
+        icicle(ctx, [{ segs: yearSegs(3), current: true }],
+               { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
+        return;
+      }
       barHead(ctx, W, H, a, "Los Angeles, FY2021 to FY2024", CHART_SUB);
       var colW = (box.w - W * 0.018 * 3) / 4;
       for (var y = 0; y < YEAR_ROWS.length; y++) {
@@ -984,10 +1014,13 @@
         var cy = box.y, colH = H * 0.34;
         for (k = 0; k < segs.length; k++) {
           var sh = colH * (segs[k].amt / total);
-          var pick = (k === GREW && at(scene, 'grewAt', t, 0.4) > 0) ||
-                     (k === SHRANK && at(scene, 'shrankAt', t, 0.4) > 0);
+          // The two the closing sentence is about are full strength from the
+          // moment their column lands; everything else is dimmed. The beats at
+          // grewAt and shrankAt name them in the legend below, which is what
+          // those seconds are for.
+          var tracked = (k === GREW || k === SHRANK);
           ctx.save();
-          ctx.globalAlpha = a * on * (pick ? 1 : (k === GREW || k === SHRANK ? 1 : 0.22));
+          ctx.globalAlpha = a * on * (tracked ? 1 : 0.22);
           ctx.fillStyle = segs[k].c;
           ctx.fillRect(Math.round(cx), Math.round(cy), Math.round(colW),
                        Math.max(1, Math.round(sh) - 1));
@@ -1128,7 +1161,7 @@
         }
       }
       icicle(ctx, [{ segs: segs, current: true }],
-             { x: box.x, y: box.y, w: box.w, H: H, alpha: a, money: perPerson > 0.5 });
+             { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
 
       if (stage === 'twoways' && second > 0) {
         // The same total again, by department. A different picture of one
@@ -1149,9 +1182,13 @@
       if (stage === 'person') {
         ctx.save();
         ctx.globalAlpha = a;
-        var big = perPerson > 0.5 ? "about $21,000 each" : money(LEVELS[0].out);
-        fitLabel(ctx, perPerson > 0.5 ? "Your share" : "Money out",
-                 box.x, box.y + H * 0.205, box.w * 0.4, H * 0.021, MUTED, "700");
+        // Nothing here divides anything. Before the switch this is the page's
+        // own Money Out; after it, the page's own per-person figure for the
+        // largest segment. An episode about showing your work does not get to
+        // do arithmetic off screen and present the answer as the product's.
+        var big = perPerson > 0.5 ? FED_PERPERSON[0] : money(LEVELS[0].out);
+        fitLabel(ctx, perPerson > 0.5 ? "Social Security, your share" : "Money out",
+                 box.x, box.y + H * 0.205, box.w * 0.46, H * 0.021, MUTED, "700");
         fitLabel(ctx, big, box.x, box.y + H * 0.262, box.w * 0.6,
                  H * 0.055, scene.accent || "#FFD426", "700");
         ctx.restore();
@@ -1198,7 +1235,14 @@
       // ones are would undo the chapter. Episode 1's source card is drawn the
       // same way for the same reason.
       var open = at(scene, 'openAt', t, 0.7);
-      if (open <= 0) return;
+      if (open <= 0) {
+        // The panel has not opened yet, so the chart is still what is on
+        // screen. Returning here left 1.34s of black at the cut.
+        barHead(ctx, W, H, a, CHART_HEAD, null);
+        icicle(ctx, [{ segs: LA_OUT, current: true }],
+               { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
+        return;
+      }
       var pw = box.w, px = box.x, py = H * 0.17, rowH = H * 0.094;
       var ph = H * 0.055 + METHOD.rows.length * rowH;
       panel(ctx, px, py, pw, ph, H, a * open, EDGE);
@@ -1381,7 +1425,12 @@
   // did before the pan existed.
   function drawLiveScreen(ctx, t, W, H, scene) {
     var host = scene.host || 'treasurytracker.empowered.vote';
-    var a = scene.settled ? 1 : fade(t, 0.2, 0.8);
+    // `arrive`, not a bare fade. Episode 1 gates this on `settled` and episode
+    // 2 on `arrive`; copying episode 1's version brought a function that cannot
+    // see `continues`, so close-follow faded up from black at the very cut its
+    // panFrom was calculated to make continuous. `settled` still works, for
+    // whatever sets it.
+    var a = scene.settled ? 1 : arrive(scene, t, 0.2, 0.8);
     var pad = W * 0.12;
     var boxW = W - pad * 2;
     var x = pad, y = H * 0.12;

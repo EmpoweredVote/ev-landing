@@ -155,8 +155,13 @@ async function words(wav, cacheDir, model, opts = {}) {
   const cache = path.join(cacheDir, key);
   if (existsSync(cache)) {
     const held = JSON.parse(await readFile(cache, 'utf8'));
+    // noise and minsil are part of the key because the repair pass SPLICES
+    // words into the cached stream, and which spans it repairs comes from the
+    // silences those two thresholds decide. Re-running with --noise would
+    // otherwise read back a stream repaired under the old threshold and hand
+    // cutPoints two inconsistent views of one tape.
     if (held.size === st.size && held.mtime === st.mtimeMs && held.model === model &&
-        held.repair === REPAIR) {
+        held.repair === REPAIR && held.noise === opts.noise && held.minsil === opts.minsil) {
       return held.words;
     }
   }
@@ -164,7 +169,8 @@ async function words(wav, cacheDir, model, opts = {}) {
   let got = await transcribe(wav, tmp, model);
   if (opts.silences) got = await repairLost(wav, got, opts.silences, opts.duration, model, cacheDir);
   await writeFile(cache, JSON.stringify(
-    { size: st.size, mtime: st.mtimeMs, model, repair: REPAIR, words: got }), 'utf8');
+    { size: st.size, mtime: st.mtimeMs, model, repair: REPAIR,
+      noise: opts.noise, minsil: opts.minsil, words: got }), 'utf8');
   await unlink(tmp).catch(() => {});
   return got;
 }
@@ -174,12 +180,25 @@ async function words(wav, cacheDir, model, opts = {}) {
 // nothing to compare against is a first split and says nothing.
 async function reportMoved(voDir, now) {
   const f = path.join(voDir, '_source.json');
-  if (!existsSync(f)) return;
+  // build/ is git-ignored, so "no record" is the normal state of a fresh clone
+  // or a second machine — exactly where somebody is most likely to re-split
+  // without knowing what it costs. Saying nothing there is the silent failure
+  // this whole report exists to prevent.
+  if (!existsSync(f)) {
+    console.log('\nno previous split beside this build, so this run cannot say ' +
+      'what moved.\nIf episode.mjs or art.js already carry seconds, re-read every ' +
+      'one of them.\n');
+    return;
+  }
   let was = null;
   try {
     const held = JSON.parse(await readFile(f, 'utf8'));
     was = Array.isArray(held) ? held : held.lines;
-  } catch (e) { return; }         // an unreadable record is not a reason to stop
+  } catch (e) {
+    console.log('\nthe previous split record is unreadable, so this run cannot ' +
+      'say what moved.\n');
+    return;
+  }
 
   const moved = movedCuts(was, now);
   if (!moved.length) return;
@@ -234,7 +253,8 @@ export async function split(episodeDir, takes, opts = {}) {
     // The silences come first: the repair pass inside words() needs them to
     // know which gaps in the transcript the tape was speaking through.
     const sil = await silences(wav, duration, noise, minsil);
-    const ws = await words(wav, voDir, model, { duration, silences: sil });
+    const ws = await words(wav, voDir, model,
+      { duration, silences: sil, noise: noise, minsil: minsil });
     const { cuts, missing } = alignTake(ws, lines);
     const mine = {};
     for (const [k, v] of Object.entries(pins)) {
@@ -258,6 +278,20 @@ export async function split(episodeDir, takes, opts = {}) {
     wordsByTake.push(ws);
     console.log(`take ${t + 1}: ${path.basename(wav)}  ${(duration / 60).toFixed(1)} min, ` +
       `${cuts.length} of ${lines.length} lines`);
+  }
+
+  // A pin that matched no take is a pin that did nothing. The stray check above
+  // catches a pin naming a line the script does not have; this catches one
+  // naming a take that was not passed — after a rename, a re-encode, or a
+  // forgotten pickup. align.mjs puts it plainly: a pin that silently does
+  // nothing is how a cut stays wrong after somebody has fixed it.
+  const pinned = Object.keys(pins).filter(k => !k.startsWith('_'));
+  const landed = new Set(usedPins.map(u => u.split(' ')[0]));
+  const idle = pinned.filter(id => !landed.has(id));
+  if (idle.length) {
+    throw new Error('cuts.json pins ' + idle.join(', ') + ', and no take passed to ' +
+      'this run matched — check the "take" filename in each. A pin that silently ' +
+      'does nothing is how a cut stays wrong after somebody has fixed it.');
   }
 
   // A line the reader broke in half and picked up seconds later is kept whole

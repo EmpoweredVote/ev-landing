@@ -71,26 +71,32 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   // its current row reaching to 0.54. So sample below the single row — at its
   // last frame, not its first, because an early arrival that is also wrong is
   // still wrong at the end.
-  const belowOneRow = Math.round(H * 0.50);
+  // cover-alpha names none of drawCoverage's optional fields — no fedAt, no
+  // cityAt, no verbAt — and every one of them draws something. The four verbs
+  // print down the right-hand side, so that side must be empty of type.
+  //
+  // An earlier version of this check asked whether bar-collapse drilled. It
+  // could not fail: that stage hard-codes its rows and never reads openAt. A
+  // test that cannot fail for the reason it names is worse than no test.
+  const verbBand = [Math.round(W * 0.74), Math.round(W * 0.97)];
   {
-    const shot = await pixels(sceneAt('bar-collapse'), 16);
+    const shot = await pixels(sceneAt('cover-alpha'), 2.1);
     let n = 0;
-    for (let x = Math.round(W * 0.10); x < Math.round(W * 0.85); x++) {
-      if (lit(shot, x, belowOneRow) > 150) n++;
+    for (let y = Math.round(H * 0.22); y < Math.round(H * 0.52); y++) {
+      for (let x = verbBand[0]; x < verbBand[1]; x++) if (lit(shot, x, y) > 200) n++;
     }
     assert.strictEqual(n, 0,
-      'bar-collapse names no openAt and must not drill, found ' + n +
-      ' lit pixels where a drilled row would be');
+      'cover-alpha names no verbAt and must print no verbs, found ' + n + ' lit pixels');
   }
-  // And the scene that DOES name it drills, or the rule above passes by
+  // And the scene that DOES name them prints them, or the rule above passes by
   // drawing nothing at all.
   {
-    const shot = await pixels(sceneAt('bar-open'), 5);
+    const shot = await pixels(sceneAt('cover-map'), 13);
     let n = 0;
-    for (let x = Math.round(W * 0.10); x < Math.round(W * 0.85); x++) {
-      if (lit(shot, x, belowOneRow) > 150) n++;
+    for (let y = Math.round(H * 0.22); y < Math.round(H * 0.52); y++) {
+      for (let x = verbBand[0]; x < verbBand[1]; x++) if (lit(shot, x, y) > 200) n++;
     }
-    assert.ok(n > 300, 'bar-open names openAt and must drill, found only ' + n);
+    assert.ok(n > 200, 'cover-map names verbAt and must print the verbs, found ' + n);
   }
 
   // ---- REVIEW FOCUS 2 ----------------------------------------------------
@@ -117,9 +123,12 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     if (run >= minRun) runs++;
     return runs;
   }
+  // bar-trick, NOT bar-named: the 'named' stage sets labelAlpha to 0, so
+  // icicle draws no segment labels at all and the width gate under test never
+  // runs. bar-trick is the plain bar with every label icicle will print.
   const rowY = Math.round(H * 0.34 + H * 0.045);      // through the label glyphs
   {
-    const shot = await pixels(sceneAt('bar-named'), 11);
+    const shot = await pixels(sceneAt('bar-trick'), 3);
     const runs = darkRuns(shot, rowY, W * 0.70, W * 0.92, 3);
     assert.strictEqual(runs, 0,
       'a narrow segment printed a label over its neighbours: ' + runs +
@@ -128,7 +137,7 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   // The widest segment DOES carry its name, or the rule above is passing by
   // drawing nothing at all.
   {
-    const shot = await pixels(sceneAt('bar-named'), 11);
+    const shot = await pixels(sceneAt('bar-trick'), 3);
     const runs = darkRuns(shot, rowY, W * 0.09, W * 0.28, 2);
     assert.ok(runs > 4, 'the largest segment must print its name, found ' + runs + ' strokes');
   }
@@ -157,7 +166,8 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   for (const id of ['bar-named', 'bar-open', 'bar-trail', 'bar-items',
                     'bar-payments', 'bar-trick', 'three-cards', 'three-named',
                     'three-half', 'years-change', 'years-across', 'levels-city',
-                    'levels-four', 'levels-fed', 'levels-two', 'levels-person']) {
+                    'levels-four', 'levels-fed', 'levels-two', 'levels-person',
+                    'close-follow']) {
     const early = await inkCount(sceneAt(id), 0.02);
     const later = await inkCount(sceneAt(id), 1.20);
     assert.ok(early > later * 0.70,
@@ -185,7 +195,7 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
         if (run > best) best = run;
       }
       const got = best / (x1 - x0);
-      assert.ok(Math.abs(got - expected) < 0.03,
+      assert.ok(Math.abs(got - expected) < 0.02,
         'level row ' + row + ' is scaled to the wrong total: widest segment is ' +
         got.toFixed(3) + ' of the bar, expected ' + expected);
     }
@@ -197,9 +207,12 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   // episode 2 used 0.25 where its real figure was 0.264 and the page jumped
   // fifty pixels back up, which is the one thing a continuous pan must not do.
   {
-    const timings = JSON.parse(fs.readFileSync(
-      path.join(ROOT, 'tools/video/build/treasury/timings.json'), 'utf8'));
-    const dur = timings.lines.find(l => l.id === 'L036').dur;
+    // L036's measured length, pinned here rather than read out of
+    // build/treasury/timings.json — that path is gitignored, so depending on it
+    // meant this assertion silently disappeared on a clean checkout. If a
+    // re-split moves L036 this number changes with it, and the splitter now
+    // says so out loud.
+    const dur = 4.768;
     const a = sceneAt('close-screen'), b = sceneAt('close-follow');
     const endA = (a.panFrom || 0) + (a.panRate || 0) * dur;
     const startB = b.panFrom || 0;
@@ -220,6 +233,31 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     assert.ok(same < early.w * 0.9,
       'close-screen is not panning: ' + same + ' of ' + early.w +
       ' pixels are identical four seconds apart');
+  }
+
+  // ---- every segment table sums to the total printed beside it ------------
+  // icicle scales each row to the sum of what it is HANDED. FED_OUT listed
+  // nine segments adding to $6,695.5B while the frame printed $7,195.8B, so
+  // every federal segment drew 7.5% too wide and $500.3B vanished without a
+  // mark. The spec's rule: a drawn segment must never silently stand for
+  // several.
+  {
+    const src = fs.readFileSync(path.join(EP_DIR, 'art.js'), 'utf8');
+    const sumOf = name => {
+      const i = src.indexOf('var ' + name + ' = [');
+      assert.ok(i > 0, 'art.js has no table named ' + name);
+      const body = src.slice(i, src.indexOf('\n  ];', i));
+      return [...body.matchAll(/amt:\s*([\d.]+)e(\d)/g)]
+        .reduce((a, m) => a + (+m[1]) * Math.pow(10, +m[2]), 0);
+    };
+    for (const [name, printed] of [['FED_OUT', 7195.8e9], ['FED_BY_DEPT', 7195.8e9],
+                                   ['LA_OUT', 21.5e9], ['COUNTY_OUT', 37.6e9],
+                                   ['STATE_OUT', 190.3e9]]) {
+      const off = Math.abs(sumOf(name) - printed) / printed;
+      assert.ok(off < 0.01, name + ' sums to $' + (sumOf(name) / 1e9).toFixed(1) +
+        'B but the frame prints $' + (printed / 1e9).toFixed(1) +
+        'B, so every segment in it is drawn ' + (off * 100).toFixed(1) + '% wrong');
+    }
   }
 
   assert.deepStrictEqual(errors, [], 'the page threw while rendering');
