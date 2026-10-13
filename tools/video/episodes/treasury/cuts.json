@@ -6,13 +6,20 @@
     "false start is a short burst and a second of silence, not the long pause",
     "align.mjs looks for. The three start pins below were each found the same",
     "way: ffmpeg silencedetect over the take, then each burst transcribed on",
-    "its own. Every one of them is 'the last complete reading wins'."
+    "its own. Every one of them is 'the last complete reading wins'.",
+    "",
+    "A \"trim\" is different from a pin. A pin moves where a line starts or ends.",
+    "A trim shortens every silence INSIDE the line to that many seconds, taking",
+    "the air out of the middle of each gap and leaving half the maximum on each",
+    "side of the join. It is for dead air in the read, not for a mistake."
   ],
 
   "L003": {
     "take": "DJI_35_20261011_092809.WAV",
     "start": 53.40,
-    "_heard": "'...it usually, your-' and then 3.9s of nothing before the line is read whole. The fragment is an abandoned attempt, not the opening of the line."
+    "trim": 0.35,
+    "_heard": "'...it usually, your-' and then 3.9s of nothing before the line is read whole. The fragment is an abandoned attempt, not the opening of the line.",
+    "_trimmed": "Chris: 'at :25 seconds I say And it's full of... liness that read... fund 010. Can you remove the length of those pauses? It should flow smoother and there's too much dead air in my read.' The three gaps he hears are 0.90s after 'full of', 0.43s after '010' and 0.61s before 'Department'. The word stream shows a 2.4s hole between '010' and 'Department' that is NOT there: he is speaking through it and the recogniser mis-timed it. The audio decided this, not the transcript."
   },
 
   "L006": {
@@ -31,6 +38,18 @@
     "take": "DJI_35_20261011_092809.WAV",
     "start": 301.36,
     "_heard": "Two attempts. 298.84-299.38 is 'One tel-' and stops; 301.51-310.28 is the line read whole. 2.13s between them."
+  },
+
+  "L024": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 401.91,
+    "_heard": "Two attempts. 399.91-401.20 is 'Which raises the question you sho-' and stops; 402.06-408.60 is the line read whole, 'Which raises the question you should ask of any chart anybody ever shows you.' 0.86s between them. Found the same way as L006, L007 and L017: silencedetect over the head of the line, then each burst transcribed on its own."
+  },
+
+  "L027": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "trim": 0.35,
+    "_trimmed": "Chris: 'Why the picture can...add up to more than the official total. Can you reduce the pause between can and add?' The audible gap is the 0.58s after 'add', before 'up'; the line also carries 0.74s, 0.58s and 0.67s gaps elsewhere, and the whole read sits slower than the chapter around it."
   },
 
   "L037": {

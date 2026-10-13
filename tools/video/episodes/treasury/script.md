@@ -71,9 +71,12 @@ A budget answers more than one question, so the tool keeps them apart.
 > Direction: `art` — each card is picked out in turn as it is named.
 Money out: how the money is spent. Money in: where it came from in the first place. And for the governments that publish it, a third: what the workforce is paid, department by department.
 
-## L015
-> Direction: `art` — the money-out bar alone, then the money-in bar joining it.
-Most budget coverage only ever shows you the first one. Spending without revenue is half a story, and it is the half that makes everything look like waste.
+<!-- L015 was cut on 2026-10-13. "Most budget coverage only ever shows you
+     the first one. Spending without revenue is half a story, and it is the half
+     that makes everything look like waste." Chris: "Omit that section; sounds
+     too AI." The chapter now cuts from naming the three questions straight to
+     changing the year. Line numbers are not renumbered: every cut, pin and
+     scene keys off them, and L022 is already missing for the same reason. -->
 
 Chapter 4 — across time
 

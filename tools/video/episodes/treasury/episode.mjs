@@ -62,8 +62,9 @@ export default {
       cast: [{ at: [0.74, 0.93], anim: 'ponder', color: VIEWER, scale: 0.95 }] },
 
     // The document lands beside the figure. The three fund codes arrive as he
-    // reads them — "Fund" 6.68, "Department" 9.44, "account" 10.90 — and they
-    // are the codes he actually says. drawDocument prints FUND 010 because
+    // reads them — "Fund" 6.00, "Department" 8.39, "account" 9.85 — and they
+    // are the codes he actually says. All three moved when the dead air inside
+    // this line came out: the line is 12.08s where it was 13.13s. drawDocument prints FUND 010 because
     // that is what is on the tape; they are imaginary examples either way, so
     // the only thing that matters is that the prop agrees with the narration.
     //
@@ -71,7 +72,7 @@ export default {
     // Four scenes at four x positions read as the figure jumping about, which
     // was the first thing a reviewer noticed on episode 1.
     { id: 'stub-doc', type: 'art', vo: 'L003', art: 'drawDocument',
-      codeAt: [6.68, 9.44, 10.90],
+      codeAt: [6.00, 8.39, 9.85],
       cast: [{ at: [0.74, 0.93], anim: 'standstill', color: VIEWER, scale: 0.95 }] },
 
     // The document is already there and does not land again. Only the figure
@@ -154,12 +155,11 @@ export default {
     { id: 'three-named', type: 'art', vo: 'L014', art: 'drawThreeCards', stage: 'named',
       continues: true, cardAt: [2.17, 0.33, 8.41] },
 
-    // "Spending without revenue" at 2.54 is when the second bar joins the
-    // first, which is the whole of this line's picture.
-    { id: 'three-half', type: 'art', vo: 'L015', art: 'drawThreeCards', stage: 'half',
-      continues: true, inAt: 2.54 },
-
     // ── 5. Across time ──────────────────────────────────────────────────
+    // L015 was cut from the script on 2026-10-13 — "Omit that section; sounds
+    // too AI" — so chapter 3 ends on the three cards and this chapter opens
+    // straight after it. There is no three-half scene any more; drawThreeCards
+    // still answers to stage 'half' and nothing calls it.
     // The line is three seconds long. "Change the year" at 0.17, "the whole
     // shape redraws" from 1.15 — so the change starts on the instruction and
     // is still moving while he describes it.
@@ -207,7 +207,13 @@ export default {
       continues: true, shrinkAt: 4.58 },
 
     // ── 7. Where the numbers come from ──────────────────────────────────
+    // The line is the chapter's question, so it is printed as one: "Where did
+    // these numbers come from?" lands at 4.77 and the title arrives with it.
+    // The bar stays readable underneath — it had been dimmed to the point
+    // where its own labels could not be read, which is the one thing a chart
+    // in a chapter about trusting charts must not do.
     { id: 'src-ask', type: 'art', vo: 'L024', art: 'drawSourceCard', stage: 'ask',
+      titleAt: 4.77,
       cast: [{ at: [0.78, 0.94], anim: 'ponder', color: VIEWER, scale: 0.85 }] },
     // "every view names its source" at 8.03 is when the line under the chart
     // appears — late in an 11.3s line, because the first eight seconds are the
@@ -221,13 +227,17 @@ export default {
 
     // The panel OPENS here, which is the beat, so this scene does not continue.
     // "the method is written out in full" at 1.34, then the four things he
-    // names: what is counted 3.64, why it adds up to more 6.12, where a
-    // negative went 9.98, how far into the year 12.00. The other three real
-    // headings are there from the moment it opens, because he does not claim
-    // them and type that arrives unannounced is type the viewer reads instead
-    // of listening.
+    // names: what is counted 3.36, why it adds up to more 5.41, where a
+    // negative went 8.82, how far into the year 10.31. Every one of them moved
+    // when the dead air inside this line came out.
+    //
+    // The panel shows ONLY those four. It used to carry three more real
+    // headings standing silently underneath — how deep the data goes, whether
+    // the numbers can be audited, the scale modes — and they arrived with
+    // nothing said about them. Chris: "let's remove those bottom 3 as they
+    // don't spawn elegantly."
     { id: 'src-method', type: 'art', vo: 'L027', art: 'drawSourceCard', stage: 'method',
-      openAt: 1.34, rowAt: [3.64, 6.12, 9.98, 12.00] },
+      openAt: 1.34, rowAt: [3.36, 5.41, 8.82, 10.31] },
 
     { id: 'src-why', type: 'art', vo: 'L028', art: 'drawSourceCard', stage: 'method',
       continues: true, openAt: 0, rowAt: [0, 0, 0, 0],

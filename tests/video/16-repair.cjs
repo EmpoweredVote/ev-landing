@@ -37,7 +37,7 @@ function say(from, text) {
 const end = ws => ws[ws.length - 1].e;
 
 (async function () {
-  const { lostSpans, offsetWords, spliceWords } =
+  const { lostSpans, offsetWords, spliceWords, tighten, mapTime } =
     await import(pathToFileURL(path.join(ROOT, 'tools/video/engine/repair.mjs')).href);
 
   // ---- lostSpans: which gaps hold speech the transcript has no words for ----
@@ -188,5 +188,77 @@ const end = ws => ws[ws.length - 1].e;
     assert.ok(out.some(x => x.w === 'first') && out.some(x => x.w === 'second'));
   }
 
-  console.log('PASS 16-repair (lostSpans, offsetWords, spliceWords)');
+  // ---- tighten: dead air inside a line Chris wants shorter ---------------
+  // A pin can move where a line starts and ends. It cannot touch the silence
+  // IN the line, and that is where his note landed: "there's too much dead air
+  // in my read". So a trim shortens every silence inside the cut to a maximum
+  // and leaves the speech alone.
+  //
+  // Air is removed from the MIDDLE of a silence, never from one end. A word's
+  // last consonant and the next word's first breath both live at the edges of
+  // the gap, and taking the air off one side clips one of them.
+
+  // Nothing over the maximum is nothing to do: one segment, nothing removed.
+  {
+    const r = tighten(10, 20, [[12, 12.2], [15, 15.3]], 0.35);
+    assert.deepStrictEqual(r.keep, [[10, 20]]);
+    assert.strictEqual(r.removed, 0);
+  }
+
+  // One long silence: 0.90s down to 0.35s, so 0.55s goes, from the middle.
+  {
+    const r = tighten(10, 20, [[14, 14.9]], 0.35);
+    assert.strictEqual(+r.removed.toFixed(3), 0.55);
+    assert.strictEqual(r.keep.length, 2);
+    // half the maximum is left standing on each side of the join
+    assert.strictEqual(+r.keep[0][1].toFixed(3), 14.175);   // 14 + 0.35/2
+    assert.strictEqual(+r.keep[1][0].toFixed(3), 14.725);   // 14.9 - 0.35/2
+    const kept = r.keep.reduce((a, k) => a + (k[1] - k[0]), 0);
+    assert.strictEqual(+kept.toFixed(3), 9.45);             // 10s less 0.55s
+  }
+
+  // Exactly at the maximum is left alone: a rule that fires at its own
+  // threshold removes air from lines nobody asked about.
+  {
+    assert.strictEqual(tighten(10, 20, [[14, 14.35]], 0.35).removed, 0);
+  }
+
+  // A silence that straddles the cut counts only for the part inside it. The
+  // air BEFORE the first word is the line's opening pause — the cut decided
+  // that, and a trim must not take it away as well.
+  {
+    const r = tighten(10, 20, [[9, 11.5], [19.4, 21]], 0.35);
+    assert.strictEqual(r.keep[0][0], 10, 'the cut still opens where it opened');
+    assert.strictEqual(r.keep[r.keep.length - 1][1], 20, 'and still ends where it ended');
+    const kept = r.keep.reduce((a, k) => a + (k[1] - k[0]), 0);
+    // 1.5s of silence inside at the head and 0.6s at the tail, each down to
+    // 0.35: 1.15 + 0.25 removed.
+    assert.strictEqual(+kept.toFixed(3), +(10 - 1.15 - 0.25).toFixed(3));
+  }
+
+  // ---- mapTime: where a word lands after the air comes out ---------------
+  // Every *At second in episode.mjs is a word's second in its own cut. Trim the
+  // line and every one of them moves, so the word sheet has to be rewritten
+  // from the trimmed clock rather than the take's.
+  {
+    const r = tighten(10, 20, [[14, 14.9]], 0.35);
+    assert.strictEqual(+mapTime(r.keep, 10).toFixed(3), 0, 'the cut starts at zero');
+    assert.strictEqual(+mapTime(r.keep, 13).toFixed(3), 3, 'before the gap, nothing moves');
+    assert.strictEqual(+mapTime(r.keep, 16).toFixed(3), 5.45, 'after it, 0.55s earlier');
+    assert.strictEqual(+mapTime(r.keep, 20).toFixed(3), 9.45, 'and the line is 0.55s shorter');
+  }
+  // A word that began before the cut still reads negative, which is how the
+  // word sheet says "this cut is tight against that word".
+  {
+    const r = tighten(10, 20, [], 0.35);
+    assert.strictEqual(+mapTime(r.keep, 9.6).toFixed(3), -0.4);
+  }
+  // A time inside removed air lands on the join, not somewhere that is gone.
+  {
+    const r = tighten(10, 20, [[14, 14.9]], 0.35);
+    const t = mapTime(r.keep, 14.45);
+    assert.strictEqual(+t.toFixed(3), 4.175, 'a time inside the removed air lands on the join');
+  }
+
+  console.log('PASS 16-repair (lostSpans, offsetWords, spliceWords, tighten, mapTime)');
 })().catch(e => { console.error('FAIL', e.message); process.exit(1); });

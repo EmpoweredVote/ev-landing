@@ -33,7 +33,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScript } from './script.mjs';
 import { alignTake, cutPoints, openingPause, applyPins, clipped } from './align.mjs';
-import { lostSpans, offsetWords, spliceWords, movedCuts, wordSheet } from './repair.mjs';
+import { lostSpans, offsetWords, spliceWords, movedCuts, wordSheet, tighten } from './repair.mjs';
 
 const NOISE = -40;        // dB; below this counts as silence
 const MINSIL = 0.35;      // seconds; shorter than this is a pause inside a line
@@ -255,7 +255,6 @@ export async function split(episodeDir, takes, opts = {}) {
     const sil = await silences(wav, duration, noise, minsil);
     const ws = await words(wav, voDir, model,
       { duration, silences: sil, noise: noise, minsil: minsil });
-    wordsByTake[t] = ws;
     const { cuts, missing } = alignTake(ws, lines);
     const mine = {};
     for (const [k, v] of Object.entries(pins)) {
@@ -405,17 +404,48 @@ export async function split(episodeDir, takes, opts = {}) {
   await run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi',
     '-i', 'anullsrc=r=48000:cl=mono', '-t', String(gap), silence]);
 
+  const trimmed = [];
+  const keptByLine = new Map();
   let clock = 0;
   for (const line of lines) {
     const r = reads.get(line.id);
     const wav = path.join(voDir, line.id + '.wav');
     const filters = ['aresample=48000'];
     if (gainDb) filters.push(`volume=${gainDb}dB`);
-    // -ss and -t before -i would seek on the input and lose sample accuracy on
-    // a long file; after -i, ffmpeg decodes and trims exactly where asked.
-    await run('ffmpeg', ['-y', '-v', 'error', '-i', r.wav,
-      '-ss', String(r.start), '-to', String(r.end),
-      '-af', filters.join(','), '-ac', '1', '-c:a', 'pcm_s16le', wav]);
+
+    // A `trim` in cuts.json shortens every silence INSIDE this line to that
+    // many seconds. A pin decides where a line starts and where it ends; this
+    // is the only thing that reaches the dead air in the middle of one, which
+    // is where "there's too much dead air in my read" lands.
+    //
+    // aselect keeps the spans tighten() chose and asetpts restamps what is
+    // left, so the output is one continuous line with the air gone. It happens
+    // in the same pass as the gain: a second encode of a cut is a second
+    // chance to lose a sample.
+    const pin = pins[line.id];
+    const trimSec = pin && (!pin.take || pin.take === path.basename(r.wav))
+      ? Number(pin.trim) || 0 : 0;
+    let keepSpans = null;
+    if (trimSec > 0) {
+      const tt = tighten(r.start, r.end, silByTake[r.take] || [], trimSec);
+      if (tt.removed > 0.01) {
+        keepSpans = tt.keep;
+        trimmed.push({ id: line.id, removed: tt.removed, joins: tt.keep.length - 1 });
+      }
+    }
+    if (keepSpans) {
+      const sel = keepSpans.map(k => `between(t\\,${k[0].toFixed(4)}\\,${k[1].toFixed(4)})`).join('+');
+      await run('ffmpeg', ['-y', '-v', 'error', '-i', r.wav,
+        '-af', [`aselect=${sel}`, 'asetpts=N/SR/TB'].concat(filters).join(','),
+        '-ac', '1', '-c:a', 'pcm_s16le', wav]);
+      keptByLine.set(line.id, keepSpans);
+    } else {
+      // -ss and -t before -i would seek on the input and lose sample accuracy on
+      // a long file; after -i, ffmpeg decodes and trims exactly where asked.
+      await run('ffmpeg', ['-y', '-v', 'error', '-i', r.wav,
+        '-ss', String(r.start), '-to', String(r.end),
+        '-af', filters.join(','), '-ac', '1', '-c:a', 'pcm_s16le', wav]);
+    }
     const dur = await probeDuration(wav);
     await writeFile(path.join(voDir, line.id + '.txt'), line.text, 'utf8');
     timings.lines.push({ id: line.id, text: line.text, direction: line.direction, start: clock, dur });
@@ -423,6 +453,12 @@ export async function split(episodeDir, takes, opts = {}) {
     clock += dur + gap;
   }
   timings.total = clock;
+  if (trimmed.length) {
+    console.log('trimmed dead air inside ' + trimmed.length + ' line(s):');
+    for (const t of trimmed) {
+      console.log(`  ${t.id}  -${t.removed.toFixed(2)}s across ${t.joins} join(s)`);
+    }
+  }
 
   // Anything numbered that the script no longer has. The synthesized voice
   // leaves a .wav, a .txt and an .mp3 per line, and a line deleted from the
@@ -455,10 +491,13 @@ export async function split(episodeDir, takes, opts = {}) {
   for (let i = 0; i < perTake.length; i++) {
     wordsFor[path.basename(perTake[i].wav)] = wordsByTake[i] || [];
   }
+  // A trimmed line's words go through its kept spans, not the take's own
+  // clock: the air is out of the file the picture is cut against, so a second
+  // read off the take would name a second the scene never reaches.
   await writeFile(path.join(outDir, 'words.md'), wordSheet(lines.map(l => {
     const r = reads.get(l.id);
     return { id: l.id, take: path.basename(r.wav), start: r.start, end: r.end,
-             match: r.score, hole: r.hole };
+             match: r.score, hole: r.hole, keep: keptByLine.get(l.id) || null };
   }), wordsFor, id), 'utf8');
 
   await writeFile(path.join(outDir, 'timings.json'), JSON.stringify(timings, null, 2), 'utf8');
