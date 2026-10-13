@@ -131,18 +131,39 @@ export default {
       cast: [{ at: [0.78, 0.94], anim: 'present', color: VIEWER, scale: 0.85 }] },
 
     // ── 4. More than one question ───────────────────────────────────────
+    // Two cards at full strength and a third faint, which is what "a third
+    // joins them faintly" means. It names no cardAt at all, so nothing lights.
     { id: 'three-cards', type: 'art', vo: 'L013', art: 'drawThreeCards', stage: 'two',
       continues: true },
+
+    // `cardAt` is indexed by CARD — Money In, Money Out, Employees — and NOT by
+    // the order he names them. He says "money out" at 0.33, "money in" at 2.17
+    // and "a third" at 8.41, so the array is out of order on purpose and the
+    // comment is the only thing standing between this and episode 2's bug.
+    //
+    // Those first two seconds exist because the repair pass recovered them:
+    // small.en stamped fourteen words of this line on one timestamp.
     { id: 'three-named', type: 'art', vo: 'L014', art: 'drawThreeCards', stage: 'named',
-      continues: true },
+      continues: true, cardAt: [2.17, 0.33, 8.41] },
+
+    // "Spending without revenue" at 2.54 is when the second bar joins the
+    // first, which is the whole of this line's picture.
     { id: 'three-half', type: 'art', vo: 'L015', art: 'drawThreeCards', stage: 'half',
-      continues: true },
+      continues: true, inAt: 2.54 },
 
     // ── 5. Across time ──────────────────────────────────────────────────
+    // The line is three seconds long. "Change the year" at 0.17, "the whole
+    // shape redraws" from 1.15 — so the change starts on the instruction and
+    // is still moving while he describes it.
     { id: 'years-change', type: 'art', vo: 'L016', art: 'drawYears', stage: 'change',
-      continues: true },
+      continues: true, changeAt: 0.57 },
+
+    // The four columns arrive while he says "Several years tells you how it is
+    // evolving" (5.09 to 7.37), so the picture is complete before the sentence
+    // that reads it. Then "What grew" at 8.45 and "what shrank" at 9.45.
     { id: 'years-across', type: 'art', vo: 'L017', art: 'drawYears', stage: 'across',
-      continues: true },
+      continues: true, colAt: [5.09, 5.65, 6.21, 6.77],
+      grewAt: 8.45, shrankAt: 9.45 },
 
     // ── 6. Across levels ────────────────────────────────────────────────
     { id: 'levels-city', type: 'art', vo: 'L018', art: 'drawLevels', stage: 'nest',

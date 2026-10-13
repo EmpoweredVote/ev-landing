@@ -97,16 +97,54 @@
     legend: ["Under Budget", "On Budget", "Over Budget"]
   };
 
-  // Four years of the same two segments, with each year's whole-budget total.
-  // Roads rises and Electric falls back, which is what the tape says — "what
-  // grew, what shrank". These are the real four values; a prettier pair was not
-  // chosen and neither series is smoothed.
-  var LA_YEARS = [
-    { year: 2021, total: 17.3e9, roads: { amt: 2.2e9, pct: 12.6 }, electric: { amt: 3.9e9, pct: 22.5 } },
-    { year: 2022, total: 18.4e9, roads: { amt: 2.4e9, pct: 13.1 }, electric: { amt: 4.4e9, pct: 23.6 } },
-    { year: 2023, total: 19.5e9, roads: { amt: 2.5e9, pct: 12.9 }, electric: { amt: 4.7e9, pct: 24.1 } },
-    { year: 2024, total: 21.5e9, roads: { amt: 3.5e9, pct: 16.1 }, electric: { amt: 4.5e9, pct: 20.8 } }
+  // Four years of EVERY top-level segment, in LA_OUT's order, so "change the
+  // year and the whole shape redraws" can redraw the whole shape rather than
+  // two of it. `amt` in billions; `pct` is the share the page prints.
+  //
+  // One thing the live chart does that this does not: it re-sorts the segments
+  // by size each year, so Water and Health swap places between FY2022 and
+  // FY2023. Re-sorting mid-animation would be a frame of chaos and would stop
+  // the viewer following any one segment, which is the whole point of the
+  // chapter. Each segment therefore keeps its place and its colour, and only
+  // its width moves. The year that is on screen longest — FY2024, every other
+  // chapter — is exact.
+  var YEAR_ROWS = [
+    { year: 2021, total: 17.3e9,
+      amt: [4.70, 3.90, 2.20, 1.60, 1.40, 1.30, 1.20, 0.6163, 0.4539, 0.0368],
+      pct: [27.4, 22.5, 12.6,  9.0,  7.8,  7.5,  6.8,  3.6,    2.6,    0.2] },
+    { year: 2022, total: 18.4e9,
+      amt: [4.90, 4.40, 2.40, 1.70, 1.40, 1.50, 1.00, 0.6731, 0.4442, 0.0433],
+      pct: [26.4, 23.6, 13.1,  9.4,  7.6,  8.1,  5.5,  3.7,    2.4,    0.2] },
+    { year: 2023, total: 19.5e9,
+      amt: [5.00, 4.70, 2.50, 2.10, 1.50, 1.50, 0.8985, 0.8014, 0.5127, 0.0559],
+      pct: [25.5, 24.1, 12.9, 10.5,  7.9,  7.6,  4.6,    4.1,    2.6,    0.3] },
+    { year: 2024, total: 21.5e9,
+      amt: [5.60, 4.50, 3.50, 2.20, 1.70, 1.50, 1.30, 0.7568, 0.4611, 0.0659],
+      pct: [25.9, 20.8, 16.1, 10.2,  7.7,  7.2,  6.2,  3.5,    2.1,    0.3] }
   ];
+  // The two the closing sentence is about. Roads rises and Electric falls back:
+  // "what grew, what shrank". The real four values, neither series smoothed and
+  // neither pair chosen to flatter the line.
+  var GREW = 2, SHRANK = 1;              // indices into LA_OUT
+
+  // One year's segments, in LA_OUT's order, ready for icicle().
+  function yearSegs(i) {
+    var row = YEAR_ROWS[i], out = [];
+    for (var k = 0; k < LA_OUT.length; k++) {
+      out.push({ label: LA_OUT[k].label, c: LA_OUT[k].c, amt: row.amt[k] * 1e9, pct: row.pct[k] });
+    }
+    return out;
+  }
+  // The same, between two years, so a year change is a move rather than a cut.
+  function yearSegsBetween(a, b, u) {
+    var A = YEAR_ROWS[a], B = YEAR_ROWS[b], out = [];
+    for (var k = 0; k < LA_OUT.length; k++) {
+      var amt = (A.amt[k] + (B.amt[k] - A.amt[k]) * u) * 1e9;
+      out.push({ label: LA_OUT[k].label, c: LA_OUT[k].c, amt: amt,
+                 pct: A.pct[k] + (B.pct[k] - A.pct[k]) * u });
+    }
+    return out;
+  }
 
   // The four governments, FY2024, outermost first. `perPerson` is the figure
   // the page itself computes and prints; nothing here divides.
@@ -788,13 +826,164 @@
     }
   }
 
+  // ── Chapter 3: more than one question ──────────────────────────────────
+  // The three cards the live page puts above the chart, in its own words. The
+  // bar carries on underneath: this chapter does not draw one of its own.
+  function cardBox(W, H, i) {
+    var box = barBox(W, H);
+    var gap = W * 0.02, w = (box.w - gap * 2) / 3;
+    return { x: box.x + i * (w + gap), y: H * 0.085, w: w, h: H * 0.135 };
+  }
+  function drawThreeCards(ctx, t, W, H, scene) {
+    var a = arrive(scene, t, 0.1, 0.5);
+    if (a <= 0) return;
+    var box = barBox(W, H);
+    var stage = scene.stage || 'two';
+
+    if (stage === 'half') {
+      // The money-out bar alone, then the money-in bar joining it underneath.
+      // Both are drawn by icicle(); only what they are handed differs.
+      barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
+      var joined = at(scene, 'inAt', t, 0.7);
+      var rows = [{ segs: LA_OUT, current: true }];
+      if (joined > 0) rows.push({ segs: LA_IN, current: true });
+      var opts = { x: box.x, y: box.y, w: box.w, H: H, alpha: a };
+      icicle(ctx, rows, opts);
+      var rowH = Math.round(H * ROW_CUR), gapH = Math.max(1, H * ROW_GAP);
+      ctx.save();
+      ctx.globalAlpha = a;
+      label(ctx, "MONEY OUT", box.x, box.y - H * 0.012, H * 0.019, MUTED, "700");
+      if (joined > 0) {
+        ctx.globalAlpha = a * joined;
+        label(ctx, "MONEY IN", box.x, box.y + rowH + gapH - H * 0.012,
+              H * 0.019, MUTED, "700");
+      }
+      ctx.restore();
+      return;
+    }
+
+    // 'two' and 'named': the bar below, the three cards above.
+    barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
+    icicle(ctx, [{ segs: LA_OUT, current: true }],
+           { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
+
+    for (var i = 0; i < LA_CARDS.length; i++) {
+      var c = LA_CARDS[i], b = cardBox(W, H, i);
+      // The third card is present and FAINT from the first scene — "a third
+      // joins them faintly" — and only lights when he names it. `cardAt` is
+      // indexed by CARD, in this array's order, NOT by the order the script
+      // names them: he says money out first, and reading the two arrays at the
+      // same index put every label on the wrong row in episode 2.
+      var base = (stage === 'two' && i === 2) ? 0.35 : 1;
+      var on = stage === 'named' ? atIndex(scene.cardAt, i, t, 0.4) : 0;
+      var strength = Math.max(base, on);
+      panel(ctx, b.x, b.y, b.w, b.h, H, a * strength,
+            on > 0.5 ? (scene.accent || "#FFD426") : EDGE);
+      ctx.save();
+      ctx.globalAlpha = a * strength;
+      fitLabel(ctx, c.head, b.x + b.w * 0.07, b.y + b.h * 0.30, b.w * 0.86,
+               H * 0.024, MUTED, "700");
+      fitLabel(ctx, money(c.amt), b.x + b.w * 0.07, b.y + b.h * 0.66, b.w * 0.86,
+               H * 0.046, FG, "700");
+      fitLabel(ctx, c.sub, b.x + b.w * 0.07, b.y + b.h * 0.89, b.w * 0.86,
+               H * 0.019, DIM, "500");
+      ctx.restore();
+    }
+  }
+
+  // ── Chapter 4: across time ─────────────────────────────────────────────
+  // The same bar, re-timed. Every width below comes from YEAR_ROWS, which is
+  // every top-level segment in all four years as the live page reports them.
+  function drawYears(ctx, t, W, H, scene) {
+    var a = arrive(scene, t, 0.1, 0.5);
+    if (a <= 0) return;
+    var box = barBox(W, H);
+
+    if (scene.stage === 'across') {
+      // Four years side by side, one column each, and the two the closing
+      // sentence is about picked out of the rest.
+      barHead(ctx, W, H, a, "Los Angeles, FY2021 to FY2024", CHART_SUB);
+      var colW = (box.w - W * 0.018 * 3) / 4;
+      for (var y = 0; y < YEAR_ROWS.length; y++) {
+        var on = atIndex(scene.colAt, y, t, 0.35);
+        if (on <= 0) continue;
+        var cx = box.x + y * (colW + W * 0.018);
+        ctx.save();
+        ctx.globalAlpha = a * on;
+        label(ctx, "FY" + YEAR_ROWS[y].year, cx, box.y - H * 0.014,
+              H * 0.022, MUTED, "700");
+        ctx.restore();
+        // A vertical stack: each segment's share of that year, top to bottom.
+        var segs = yearSegs(y), total = 0, k;
+        for (k = 0; k < segs.length; k++) total += segs[k].amt;
+        var cy = box.y, colH = H * 0.34;
+        for (k = 0; k < segs.length; k++) {
+          var sh = colH * (segs[k].amt / total);
+          var pick = (k === GREW && at(scene, 'grewAt', t, 0.4) > 0) ||
+                     (k === SHRANK && at(scene, 'shrankAt', t, 0.4) > 0);
+          ctx.save();
+          ctx.globalAlpha = a * on * (pick ? 1 : (k === GREW || k === SHRANK ? 1 : 0.22));
+          ctx.fillStyle = segs[k].c;
+          ctx.fillRect(Math.round(cx), Math.round(cy), Math.round(colW),
+                       Math.max(1, Math.round(sh) - 1));
+          ctx.restore();
+          if ((k === GREW || k === SHRANK) && sh > H * 0.028) {
+            ctx.save();
+            ctx.globalAlpha = a * on;
+            fitLabel(ctx, segs[k].pct.toFixed(1) + "%", cx + colW * 0.06,
+                     cy + sh * 0.62, colW * 0.88, H * 0.021, ONSEG, "700");
+            ctx.restore();
+          }
+          cy += sh;
+        }
+      }
+      // Which two the eye is meant to follow, named once under the columns.
+      var namedGrew = at(scene, 'grewAt', t, 0.4), namedShrank = at(scene, 'shrankAt', t, 0.4);
+      var ly = box.y + H * 0.385;
+      if (namedGrew > 0) {
+        ctx.save(); ctx.globalAlpha = a * namedGrew;
+        ctx.fillStyle = LA_OUT[GREW].c;
+        ctx.fillRect(box.x, ly - H * 0.016, H * 0.020, H * 0.020);
+        label(ctx, LA_OUT[GREW].label + " grew, 12.6% to 16.1%",
+              box.x + H * 0.030, ly, H * 0.022, FG, "600");
+        ctx.restore();
+      }
+      if (namedShrank > 0) {
+        ctx.save(); ctx.globalAlpha = a * namedShrank;
+        ctx.fillStyle = LA_OUT[SHRANK].c;
+        ctx.fillRect(box.x, ly + H * 0.022, H * 0.020, H * 0.020);
+        label(ctx, LA_OUT[SHRANK].label + " fell back, 22.5% to 20.8%",
+              box.x + H * 0.030, ly + H * 0.038, H * 0.022, FG, "600");
+        ctx.restore();
+      }
+      return;
+    }
+
+    // 'change': the year steps and every segment moves with it.
+    var u = at(scene, 'changeAt', t, 1.3);
+    var segsNow = u <= 0 ? yearSegs(2) : yearSegsBetween(2, 3, u);
+    var shown = u < 0.5 ? YEAR_ROWS[2] : YEAR_ROWS[3];
+    barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
+    icicle(ctx, [{ segs: segsNow, current: true }],
+           { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
+    ctx.save();
+    ctx.globalAlpha = a;
+    label(ctx, "FY" + shown.year, box.x + box.w, box.y - H * 0.040,
+          H * 0.030, scene.accent || "#FFD426", "700", "right");
+    label(ctx, money(shown.total) + " spent", box.x + box.w, box.y - H * 0.012,
+          H * 0.021, MUTED, "600", "right");
+    ctx.restore();
+  }
+
   window.EVArt = Object.assign(window.EVArt || {}, {
     drawStub: drawStub,
     drawDocument: drawDocument,
     drawTitleCard: drawTitleCard,
     drawBudgetBar: drawBudgetBar,
     drawLineItems: drawLineItems,
-    drawPayments: drawPayments
+    drawPayments: drawPayments,
+    drawThreeCards: drawThreeCards,
+    drawYears: drawYears
   });
   window.EVArt.ready = Promise.all([logoA.ready, shotA.ready]);
 })();
