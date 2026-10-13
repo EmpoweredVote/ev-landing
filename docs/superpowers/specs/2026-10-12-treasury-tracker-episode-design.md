@@ -38,7 +38,7 @@ every beat the script claims, with real data:
 | Script beat | What Los Angeles actually has |
 |---|---|
 | chapter 5, four levels | breadcrumb `United States / California / Los Angeles County / Los Angeles` |
-| chapter 4, change the year | FY2003–24 |
+| chapter 4, change the year | FY2003–24 of budget data — see "The episode runs on FY2024" below |
 | L014, three questions | Money In $21.6B, Money Out $21.5B, **Employees $7.4B** |
 | L023, per person | $5,548 per person, already computed and displayed |
 | L025, every view names its source | "CA State Controller - Expenditures · as of 2026-08-20", linked |
@@ -92,6 +92,35 @@ Money Out's top level, FY2024, total $21.5B:
 These are real and must stay real. A segment invented to make the picture
 balance is the same fault as an invented reasoning body — see "Direction rules"
 below.
+
+**The episode runs on FY2024, and it has to.** Checked live on 2026-10-12 at
+all four levels of the breadcrumb. FY2025 exists at the top two levels and does
+not exist at the bottom two:
+
+| Level | Budget years | FY2025 |
+|---|---|---|
+| Los Angeles | FY2003–24 (All Funds · actuals; Total Governmental · actuals is FY2017–24) | **no** |
+| Los Angeles County | FY2003–24 | **no** |
+| California | FY2002–25 | yes — $221.6B in, $221.8B out |
+| United States | FY1976–2025 | yes — $5,234.6B in, $7,532.2B out, flagged **Partial year** |
+
+The year picker is not the test. The Los Angeles picker offers FY2003 to FY2026,
+because the **Salaries** dataset reaches further than the budget does. Asking
+for `?entity=los-angeles-ca&year=2025&dataset=operating` silently rewrites
+itself to `dataset=salaries`: the page keeps its breadcrumb, drops Money In and
+Money Out to no figure at all, and shows Employees $6.9B on its own. Los Angeles
+County behaves the same way. So "the newest year the picker offers" and "the
+newest year this episode can teach" are different years, and only the second one
+is usable.
+
+FY2024 is therefore the newest year every level has as a whole budget. The
+episode opens on FY2024, chapter 4 `years-across` shows four Los Angeles budget
+years ending at FY2024, and chapter 5 compares the four levels at FY2024.
+
+Federal FY2025 stays interesting for one reason: the page carries the banner
+"Partial year — totals and proportions aren't comparable to a full fiscal year",
+which is one of the four cautions L027 names. It is evidence the chapter can
+point at. It is not the year the episode runs on.
 
 ## What blocks the cut
 
@@ -269,27 +298,26 @@ These are not restated for completeness; each one has already cost a review roun
 
 | Risk | Handling |
 |---|---|
-| The episode runs long — 5.53 min of speech lands near 6:20 even after L012 is re-recorded, against 5:06 and 5:26 for episodes 1 and 2 | Flagged, not fixed. The script is recorded; shortening it means re-recording. Chris's call. |
+| The episode runs long — 5.53 min of speech lands near 6:20 even after L012 is re-recorded, against 5:06 and 5:26 for episodes 1 and 2 | Accepted for now. Chris reviewed the number on 2026-10-12 and chose to judge the length from the stitched cut. Shortening the episode means re-recording, so the decision waits for the first scratch build. |
 | Nineteen scenes of one object gets visually monotonous | The object changes meaningfully in each chapter — it drills, splits, re-times, stacks. If it still reads flat on the contact sheet, that is a review finding, not a build failure. |
 | A faithful icicle is dense at 1920x1080 | The real component compresses ancestors and gives the current row the height, which carries most of it. Los Angeles's top level is seven named segments with no "Other", so seven is known to fit. If a deeper level needs more than that to be honest, the smallest are gathered into one labelled "Other" and the label says so — a drawn segment must never silently stand for several. |
 | LA's real palette differs from the config | Read it off the live chart before writing it down. Step 4. |
 
 ## Open questions
 
-1. **Episode length.** Near 6:20. Acceptable, or does the script get trimmed and
-   partly re-recorded?
-2. **Which year leads.** The live page opened on FY2024. Chapter 4 changes the
-   year — which years does `years-across` show, and does the episode open on
-   2024 or on the latest available?
+1. **Episode length.** Near 6:20, against 5:06 and 5:26. Chris reviewed this on
+   2026-10-12 and chose to judge it from the stitched cut rather than trim the
+   script in advance. Open only until that cut exists.
 
-   The live federal page says "Latest available: FY2025. FY2026 data not yet
-   published by United States", so the newest year is not the same at every
-   level — Los Angeles showed FY2024 and the federal view offers FY2025.
-   Whatever `years-across` shows must be a year every level in chapter 5 has.
+**Closed during review.** Two questions that were open when this spec was first
+written now have answers.
 
-**Closed during review.** A third question — whether the federal beats render
-at all — was open when this spec was first written. They were checked in a real
-browser on 2026-10-12 and all four are there; what they are is recorded under
+*Which year leads.* FY2024, settled above. The question assumed the episode
+could lead on the latest year available. The latest year is not the same year at
+every level, and the two Los Angeles levels have no FY2025 budget at all.
+
+*Whether the federal beats render at all.* They were checked in a real browser
+on 2026-10-12 and all four are there; what they are is recorded under
 "What is settled" above. That check also confirmed L031 incidentally: an entity
 the site does not have returns "We couldn't find a government matching...",
 rather than quietly showing somebody else's budget.
