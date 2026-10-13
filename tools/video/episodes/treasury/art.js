@@ -148,11 +148,12 @@
 
   // The four governments, FY2024, outermost first. `perPerson` is the figure
   // the page itself computes and prints; nothing here divides.
+  // `segs` is filled in after the segment tables are declared, below.
   var LEVELS = [
-    { name: "United States",      out: 7195.8e9, perPerson: null },
-    { name: "California",         out:  190.3e9, perPerson: "$4,818" },
-    { name: "Los Angeles County", out:   37.6e9, perPerson: "$3,752" },
-    { name: "Los Angeles",        out:   21.5e9, perPerson: "$5,548" }
+    { name: "United States",      out: 7195.8e9, perPerson: null,     segs: null },
+    { name: "California",         out:  190.3e9, perPerson: "$4,818", segs: null },
+    { name: "Los Angeles County", out:   37.6e9, perPerson: "$3,752", segs: null },
+    { name: "Los Angeles",        out:   21.5e9, perPerson: "$5,548", segs: null }
   ];
 
   // The federal top level, FY2024, by what it is for. Nine named segments is as
@@ -172,6 +173,56 @@
   // The federal toggles, in the product's own words.
   var FED_TOGGLE = ["What it's for", "Who spends it"];
   var FED_SCALE = ["$", "Per person"];
+  // What the page itself prints in per-person mode. Coarse, because the page
+  // rounds it that way — and that coarseness is L023's point: a share of it is
+  // a number a person can hold. Nothing here divides anything.
+  var FED_PERPERSON = ["$4K", "$3K", "$3K", "$3K", "$3K", "$2K", "$1K", "$1K", "$402"];
+
+  // The same federal money by WHO SPENDS IT. A genuinely different picture: by
+  // purpose Social Security leads at $1,460.9B, by department Health and Human
+  // Services leads at $1,902.3B. That is L021's whole claim and it is true.
+  var FED_BY_DEPT = [
+    { label: "Health and Human Services",     amt: 1902.3e9, c: "#3AABB8" },
+    { label: "Social Security Administration", amt: 1519.7e9, c: "#FF5740" },
+    { label: "The Treasury",                  amt: 1382.1e9, c: "#FED12E" },
+    { label: "Defense — Military Programs",   amt:  829.1e9, c: "#9788B8" },
+    { label: "Veterans Affairs",              amt:  334.4e9, c: "#74B589" },
+    { label: "Education",                     amt:  273.1e9, c: "#59B0C4" },
+    { label: "Agriculture",                   amt:  209.3e9, c: "#C2674A" },
+    { label: "Personnel Management",          amt:  126.2e9, c: "#D4940B" },
+    { label: "Transportation",                amt:  118.4e9, c: "#4D8FC2" },
+    { label: "Homeland Security",             amt:  105.2e9, c: "#8F9EBC" }
+  ];
+
+  // Los Angeles County and California, FY2024, their whole top levels. Read off
+  // the bar's own title attributes rather than the detail cards: the cards miss
+  // any segment a few pixels wide, and a bar drawn from an incomplete list
+  // misstates every proportion in it. These sum to 99.4% and 100.2%, which is
+  // the page's own rounding.
+  var COUNTY_OUT = [
+    { label: "Public Protection",                amt: 9.40e9,  c: "#3AABB8" },
+    { label: "Public Assistance",                amt: 9.10e9,  c: "#FF5740" },
+    { label: "Ways, Health & Sanitation",        amt: 8.30e9,  c: "#FED12E" },
+    { label: "Hospitals",                        amt: 6.30e9,  c: "#9788B8" },
+    { label: "General Government",               amt: 2.00e9,  c: "#74B589" },
+    { label: "Debt & Major Projects",            amt: 816.1e6, c: "#59B0C4" },
+    { label: "Shared Services",                  amt: 807.9e6, c: "#C2674A" },
+    { label: "Education, Recreation & Culture",  amt: 705.4e6, c: "#D4940B" },
+    { label: "Water Utility",                    amt: 118.5e6, c: "#4D8FC2" },
+    { label: "Airport",                          amt:  20.0e6, c: "#8F9EBC" }
+  ];
+  var STATE_OUT = [
+    { label: "Education",                     amt: 86.4e9,  c: "#3AABB8" },
+    { label: "Health & Human Services",       amt: 64.1e9,  c: "#FF5740" },
+    { label: "Corrections & Rehabilitation",  amt: 14.5e9,  c: "#FED12E" },
+    { label: "General Government",            amt: 10.4e9,  c: "#9788B8" },
+    { label: "Natural Resources",             amt:  6.4e9,  c: "#74B589" },
+    { label: "Interest & Fiscal Charges",     amt:  3.0e9,  c: "#59B0C4" },
+    { label: "Bond & Lease Principal",        amt:  3.0e9,  c: "#C2674A" },
+    { label: "Business, Services & Housing",  amt:  1.1e9,  c: "#D4940B" },
+    { label: "Transportation",                amt:  1.0e9,  c: "#4D8FC2" },
+    { label: "Capital Outlay",                amt: 254.5e6, c: "#8F9EBC" }
+  ];
 
   // The method panel on the federal view. SEVEN REAL HEADINGS — the four L027
   // names and three it does not claim. The BODY under each one stays as
@@ -211,6 +262,15 @@
   // reads aloud — imaginary examples either way, so the only thing that matters
   // is that the prop agrees with the narration.
   var CODES = ["FUND 010", "DEPARTMENT 08", "ACCOUNT 42010"];
+
+  // Each level's own segments, hung on LEVELS now that all four tables exist.
+  // One list per government, so drawLevels cannot pair a name with somebody
+  // else's bar — the fault episode 2 shipped when two arrays were read at the
+  // same index and were never in the same order.
+  LEVELS[0].segs = FED_OUT;
+  LEVELS[1].segs = STATE_OUT;
+  LEVELS[2].segs = COUNTY_OUT;
+  LEVELS[3].segs = LA_OUT;
 
   // ── Helpers ────────────────────────────────────────────────────────────
   // Images decode asynchronously, so the renderer waits on window.EVArt.ready
@@ -412,7 +472,8 @@
     ctx.globalAlpha = alpha;
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
-      var h = Math.max(2, Math.round(H * (row.current ? ROW_CUR : ROW_ANC)));
+      var h = Math.max(2, Math.round(H * (row.current ? ROW_CUR : ROW_ANC) *
+                                    (o.rowScale == null ? 1 : o.rowScale)));
       var total = 0, i;
       for (i = 0; i < row.segs.length; i++) total += row.segs[i].amt;
       var cx = x;
@@ -438,8 +499,12 @@
           ctx.globalAlpha = alpha * (o.labelAlpha == null ? 1 : o.labelAlpha);
           fitLabel(ctx, s.label, cx + h * 0.15, y + h * 0.42, sw - h * 0.30,
                    H * 0.022, ONSEG, "700", "left");
-          fitLabel(ctx, money(s.amt), cx + h * 0.15, y + h * 0.72, sw - h * 0.30,
-                   H * 0.021, "rgba(16,19,26,0.78)", "600", "left");
+          // `shown` is a figure the PAGE prints that is not this segment's
+          // dollar amount — the per-person mode's own rounding, for one. The
+          // bar is still sized by the money either way, so the shape does not
+          // change when the scale does, which is what the live toggle does.
+          fitLabel(ctx, s.shown || money(s.amt), cx + h * 0.15, y + h * 0.72,
+                   sw - h * 0.30, H * 0.021, "rgba(16,19,26,0.78)", "600", "left");
           ctx.restore();
         }
         cx += sw;
@@ -975,6 +1040,149 @@
     ctx.restore();
   }
 
+  // ── Chapter 5: across levels ───────────────────────────────────────────
+  // Four governments whose totals span $21.5B to $7,195.8B. Each bar is scaled
+  // to its OWN total, which is the honest drawing of the claim: the chapter
+  // says all four are drawn the same WAY, not that they are the same size. Each
+  // total is printed beside its bar so the viewer can see which denominator it
+  // used — a bar scaled to the wrong one is a lie nobody can see.
+  function drawLevels(ctx, t, W, H, scene) {
+    var a = arrive(scene, t, 0.1, 0.5);
+    if (a <= 0) return;
+    var box = barBox(W, H);
+    var stage = scene.stage || 'column';
+    var i, on;
+
+    if (stage === 'nest') {
+      // The city sits inside the county, inside the state, inside the federal.
+      // Outermost first, so each one wraps the last.
+      barHead(ctx, W, H, a, "Four governments, one taxpayer", null);
+      var cx = W / 2, cy = H * 0.50;
+      for (i = 0; i < LEVELS.length; i++) {
+        on = atIndex(scene.ringAt, i, t, 0.45);
+        if (on <= 0) continue;
+        var shrink = 1 - i * 0.21;
+        var rw = W * 0.62 * shrink, rh = H * 0.34 * shrink;
+        ctx.save();
+        ctx.globalAlpha = a * on;
+        ctx.strokeStyle = i === LEVELS.length - 1 ? (scene.accent || "#FFD426") : EDGE;
+        ctx.fillStyle = i === LEVELS.length - 1 ? "rgba(255,212,38,0.10)" : CARD;
+        ctx.lineWidth = Math.max(1, H * 0.003);
+        roundRect(ctx, cx - rw / 2, cy - rh / 2, rw, rh, H * 0.016);
+        ctx.fill(); ctx.stroke();
+        fitLabel(ctx, LEVELS[i].name, cx - rw / 2 + W * 0.014,
+                 cy - rh / 2 + H * 0.034, rw * 0.5, H * 0.022,
+                 i === LEVELS.length - 1 ? FG : MUTED, "700");
+        ctx.restore();
+      }
+      return;
+    }
+
+    if (stage === 'column') {
+      // Four bars, drawn identically, each scaled to its own total.
+      barHead(ctx, W, H, a, "Four governments, drawn the same way", null);
+      // Four bars in one frame: each row is drawn at 0.60 of the height it
+      // has elsewhere, and the gap is wider than the row so a bar never covers
+      // the next government's name. The RATIO between rows is untouched —
+      // every one of the four is the same size as the others, which is the
+      // claim the chapter is making.
+      var rowGap = H * 0.125;
+      for (i = 0; i < LEVELS.length; i++) {
+        on = atIndex(scene.rowAt, i, t, 0.4);
+        if (on <= 0) continue;
+        var ly = box.y - H * 0.03 + i * rowGap;
+        ctx.save();
+        ctx.globalAlpha = a * on;
+        label(ctx, LEVELS[i].name, box.x, ly - H * 0.012, H * 0.022, FG, "700");
+        label(ctx, money(LEVELS[i].out) + " out", box.x + box.w, ly - H * 0.012,
+              H * 0.021, MUTED, "600", "right");
+        ctx.restore();
+        icicle(ctx, [{ segs: LEVELS[i].segs, current: true }],
+               { x: box.x, y: ly, w: box.w, H: H, alpha: a * on,
+                 rowScale: 0.60, minLabelPx: box.w * 0.16 });
+      }
+      return;
+    }
+
+    if (stage === 'federal' || stage === 'twoways' || stage === 'person') {
+      var perPerson = stage === 'person' ? at(scene, 'shrinkAt', t, 1.0) : 0;
+      barHead(ctx, W, H, a, "United States, FY2024", CHART_SUB);
+
+      // The toggle, in the product's own words. Which side is live depends on
+      // the beat: by purpose until "and by department", then both are shown.
+      var second = stage === 'twoways' ? at(scene, 'secondAt', t, 0.8) : 0;
+      var pair = stage === 'person' ? FED_SCALE : FED_TOGGLE;
+      var liveRight = stage === 'person' ? perPerson > 0.5 : second > 0.5;
+      drawToggle(ctx, W, H, box.x + box.w, box.y - H * 0.052,
+                 pair, liveRight, a * (stage === 'federal'
+                   ? at(scene, 'toggleAt', t, 0.5) : 1), scene);
+
+      // By purpose, always. In per-person mode the same bar carries the page's
+      // own per-person figures instead of the dollar ones.
+      var segs = FED_OUT;
+      if (perPerson > 0.5) {
+        segs = [];
+        for (i = 0; i < FED_OUT.length; i++) {
+          segs.push({ label: FED_OUT[i].label, c: FED_OUT[i].c, amt: FED_OUT[i].amt,
+                      shown: FED_PERPERSON[i] });
+        }
+      }
+      icicle(ctx, [{ segs: segs, current: true }],
+             { x: box.x, y: box.y, w: box.w, H: H, alpha: a, money: perPerson > 0.5 });
+
+      if (stage === 'twoways' && second > 0) {
+        // The same total again, by department. A different picture of one
+        // number: $1,460.9B leads by purpose, $1,902.3B by department.
+        var y2 = box.y + H * 0.175;
+        ctx.save();
+        ctx.globalAlpha = a * second;
+        label(ctx, "BY DEPARTMENT", box.x, y2 - H * 0.012, H * 0.019, MUTED, "700");
+        ctx.restore();
+        icicle(ctx, [{ segs: FED_BY_DEPT, current: true }],
+               { x: box.x, y: y2, w: box.w, H: H, alpha: a * second });
+        ctx.save();
+        ctx.globalAlpha = a;
+        label(ctx, "BY PURPOSE", box.x, box.y - H * 0.012, H * 0.019, MUTED, "700");
+        ctx.restore();
+      }
+
+      if (stage === 'person') {
+        ctx.save();
+        ctx.globalAlpha = a;
+        var big = perPerson > 0.5 ? "about $21,000 each" : money(LEVELS[0].out);
+        fitLabel(ctx, perPerson > 0.5 ? "Your share" : "Money out",
+                 box.x, box.y + H * 0.205, box.w * 0.4, H * 0.021, MUTED, "700");
+        fitLabel(ctx, big, box.x, box.y + H * 0.262, box.w * 0.6,
+                 H * 0.055, scene.accent || "#FFD426", "700");
+        ctx.restore();
+      }
+      return;
+    }
+  }
+
+  // The product's own two-state toggle: a pill with the live half filled.
+  function drawToggle(ctx, W, H, right, y, pair, liveRight, alpha, scene) {
+    if (alpha <= 0) return;
+    ctx.font = "700 " + Math.round(H * 0.020) + "px " + FONT;
+    var pad = W * 0.012;
+    var w0 = ctx.measureText(pair[0]).width + pad * 2;
+    var w1 = ctx.measureText(pair[1]).width + pad * 2;
+    var h = H * 0.044, x = right - (w0 + w1);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = CARD;
+    roundRect(ctx, x, y, w0 + w1, h, h / 2); ctx.fill();
+    ctx.strokeStyle = EDGE; ctx.lineWidth = Math.max(1, H * 0.002); ctx.stroke();
+    ctx.fillStyle = scene.accent || "#FFD426";
+    roundRect(ctx, liveRight ? x + w0 : x, y, liveRight ? w1 : w0, h, h / 2);
+    ctx.fill();
+    label(ctx, pair[0], x + w0 / 2, y + h * 0.66, H * 0.020,
+          liveRight ? MUTED : ONSEG, "700", "center");
+    label(ctx, pair[1], x + w0 + w1 / 2, y + h * 0.66, H * 0.020,
+          liveRight ? ONSEG : MUTED, "700", "center");
+    ctx.restore();
+  }
+
   window.EVArt = Object.assign(window.EVArt || {}, {
     drawStub: drawStub,
     drawDocument: drawDocument,
@@ -983,7 +1191,8 @@
     drawLineItems: drawLineItems,
     drawPayments: drawPayments,
     drawThreeCards: drawThreeCards,
-    drawYears: drawYears
+    drawYears: drawYears,
+    drawLevels: drawLevels
   });
   window.EVArt.ready = Promise.all([logoA.ready, shotA.ready]);
 })();

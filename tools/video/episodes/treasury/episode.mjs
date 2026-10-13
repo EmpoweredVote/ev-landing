@@ -166,16 +166,36 @@ export default {
       grewAt: 8.45, shrankAt: 9.45 },
 
     // ── 6. Across levels ────────────────────────────────────────────────
+    // The CITY is already on screen and has been for five chapters, so it is
+    // explicitly 0 rather than 0.29 where he says the word: a scene that opens
+    // on an empty frame and builds the thing the viewer is already looking at
+    // is a hole at the cut. What ARRIVES is the other three, on "not the only
+    // government", 1.17 to 1.73. The line is 2.64s; nothing can be slow here.
+    // ringAt is indexed by LEVELS order, outermost first.
     { id: 'levels-city', type: 'art', vo: 'L018', art: 'drawLevels', stage: 'nest',
-      continues: true },
+      continues: true, ringAt: [1.73, 1.45, 1.17, 0] },
+
+    // He names them INWARDS — "a city" 0.56, "a county" 1.25, "a state" 1.99,
+    // "a federal government" 2.76 — and LEVELS is ordered OUTWARDS. So rowAt is
+    // reversed on purpose. This is the same index-order trap as cardAt, and the
+    // same fault episode 2 shipped. The city is 0 for the same reason as above:
+    // it is already there, and he is naming it rather than introducing it.
     { id: 'levels-four', type: 'art', vo: 'L019', art: 'drawLevels', stage: 'column',
-      continues: true },
+      continues: true, rowAt: [2.76, 1.99, 1.25, 0] },
+
+    // "Do you want to see what the money is for, or who spends it" starts at
+    // 2.81, which is when the toggle appears.
     { id: 'levels-fed', type: 'art', vo: 'L020', art: 'drawLevels', stage: 'federal',
-      continues: true },
+      continues: true, toggleAt: 2.81 },
+
+    // "by purpose" at 2.86, "and by department" at 3.70 — the second picture
+    // arrives on the second half of the phrase, not on the first.
     { id: 'levels-two', type: 'art', vo: 'L021', art: 'drawLevels', stage: 'twoways',
-      continues: true },
+      continues: true, secondAt: 3.70 },
+
+    // "and into dollars per person" at 4.58 is the switch.
     { id: 'levels-person', type: 'art', vo: 'L023', art: 'drawLevels', stage: 'person',
-      continues: true },
+      continues: true, shrinkAt: 4.58 },
 
     // ── 7. Where the numbers come from ──────────────────────────────────
     { id: 'src-ask', type: 'art', vo: 'L024', art: 'drawSourceCard', stage: 'ask',

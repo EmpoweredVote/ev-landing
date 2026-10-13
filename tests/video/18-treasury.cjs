@@ -133,7 +133,65 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     assert.ok(runs > 4, 'the largest segment must print its name, found ' + runs + ' strokes');
   }
 
+  // ---- REVIEW FOCUS 3 ----------------------------------------------------
+  // Nothing may fade in again inside the nineteen-scene run. Every scene from
+  // bar-named to levels-person carries continues: true, and a thing that
+  // re-enters at a cut reads as a blink — the exact fault continues exists to
+  // stop. At the first frame a continuing scene is already at full strength,
+  // so it has about as much ink then as a second later.
+  // Counted INSIDE the page. Serialising a 1280x720 frame out of the browser
+  // is 3.7 million array entries, and thirty-two of them is minutes; the same
+  // loop in the page is milliseconds and returns one number.
+  async function inkCount(scene, t) {
+    return page.evaluate(([sc, tt]) => {
+      window.EVStage.renderFrame(sc, tt);
+      const c = document.querySelector('canvas');
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] + d[i + 1] + d[i + 2] > 120) n++;
+      }
+      return n;
+    }, [scene, t]);
+  }
+  for (const id of ['bar-named', 'bar-open', 'bar-trail', 'bar-items',
+                    'bar-payments', 'bar-trick', 'three-cards', 'three-named',
+                    'three-half', 'years-change', 'years-across', 'levels-city',
+                    'levels-four', 'levels-fed', 'levels-two', 'levels-person']) {
+    const early = await inkCount(sceneAt(id), 0.02);
+    const later = await inkCount(sceneAt(id), 1.20);
+    assert.ok(early > later * 0.70,
+      id + ' carries continues and must not fade in: ' + early +
+      ' lit pixels at t=0.02 against ' + later + ' at t=1.2');
+  }
+
+  // ---- REVIEW FOCUS 4 ----------------------------------------------------
+  // The four level bars must each be scaled to their OWN total. Four
+  // governments spanning $21.5B to $7,195.8B share one picture, and a bar
+  // scaled to the wrong denominator is a lie the viewer cannot see. The widest
+  // segment of each row, as a fraction of the bar, is that government's own
+  // largest share: Social Security is 20.3% of federal spending and Government
+  // & Public Safety is 26.0% of Los Angeles's.
+  {
+    const shot = await pixels(sceneAt('levels-four'), 6);
+    const x0 = Math.round(W * 0.08), x1 = Math.round(W * 0.92);
+    for (const [row, expected] of [[0, 0.203], [3, 0.260]]) {
+      const y = Math.round(H * (0.31 + row * 0.125 + 0.039));
+      let best = 0, run = 0, prev = null;
+      for (let x = x0; x < x1; x++) {
+        const i = (y * shot.w + x) * 4;
+        const key = shot.data[i] + ',' + shot.data[i + 1] + ',' + shot.data[i + 2];
+        if (key === prev) run++; else { prev = key; run = 1; }
+        if (run > best) best = run;
+      }
+      const got = best / (x1 - x0);
+      assert.ok(Math.abs(got - expected) < 0.03,
+        'level row ' + row + ' is scaled to the wrong total: widest segment is ' +
+        got.toFixed(3) + ' of the bar, expected ' + expected);
+    }
+  }
+
   assert.deepStrictEqual(errors, [], 'the page threw while rendering');
   await browser.close();
-  console.log('PASS 18-treasury (no early drill, no label in a segment too small)');
+  console.log('PASS 18-treasury (no early drill, no label too small, no re-entry, four honest denominators)');
 })().catch(e => { console.error('FAIL', e.message); process.exit(1); });
