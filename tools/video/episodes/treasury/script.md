@@ -153,7 +153,7 @@ Chapter 8 — what this is for
 It's worth saying what this is for.  
 
 ## L033
-> Direction: a second Bobit `annoyed`, pointing at one small segment.
+> Direction: one small segment is picked out of the bar; the Bobit watches.
 Not to make you angry about a line item. Angry is easy. 
 
 ## L034
@@ -161,7 +161,7 @@ Not to make you angry about a line item. Angry is easy.
 It's so you can vote with confidence and context.  Hearing a number on its own can be made to mean almost anything. That same number inside the whole picture usually means just one thing.
 
 ## L035
-> Direction: two Bobits in front of the bar, `present` and `ponder`.
+> Direction: the Bobit in front of the bar, `present`.
 If we want a democracy that is run by the people, we need to make it easier for the people to understand where their money is going.
 
 Chapter 9 — close

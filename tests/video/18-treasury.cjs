@@ -484,6 +484,48 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     }
   }
 
+  // ---- the coverage caption counts what the map actually shows ----------
+  // The caption said "in all 51 states". There are fifty, plus the District of
+  // Columbia, and a civic tech platform that miscounts the states is not one
+  // anybody should trust with a budget. The 51st code in the API's answer is
+  // US — the federal government, which has its own line underneath the map.
+  //
+  // So the caption is tied to the table it describes: both numbers in it are
+  // read back out of MAP_COUNT, and every key in MAP_COUNT has to be a real
+  // state. A new state code, a re-capture, or a hand-edited caption all fail
+  // here rather than on screen.
+  {
+    const src = fs.readFileSync(path.join(EP_DIR, 'art.js'), 'utf8');
+    const STATES = ('AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD ' +
+      'MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT ' +
+      'VT VA WA WV WI WY').split(' ');
+    const i = src.indexOf('var MAP_COUNT = {');
+    assert.ok(i > 0, 'art.js has no MAP_COUNT');
+    const body = src.slice(i, src.indexOf('};', i));
+    const pairs = [...body.matchAll(/\b([A-Z]{2}):\s*(\d+)/g)]
+      .map(m => [m[1], +m[2]]);
+    assert.ok(pairs.length > 40, 'MAP_COUNT did not parse, found ' + pairs.length + ' entries');
+
+    const notStates = pairs.map(p => p[0]).filter(k => STATES.indexOf(k) < 0);
+    assert.deepStrictEqual(notStates, [],
+      'MAP_COUNT is keyed by state, and these are not states: ' + notStates.join(' ') +
+      ' — the API answers with US for the federal government, which is not one');
+
+    const cap = /var MAP_TOTAL = "([^"]+)"/.exec(src);
+    assert.ok(cap, 'art.js has no MAP_TOTAL caption');
+    const saidStates = +(/(\d+) states/.exec(cap[1]) || [])[1];
+    const saidGovs = +String((/([\d,]+) governments/.exec(cap[1]) || [])[1] || '')
+      .replace(/,/g, '');
+    const sum = pairs.reduce((a, p) => a + p[1], 0);
+
+    assert.strictEqual(saidStates, pairs.length,
+      'the caption claims ' + saidStates + ' states and the map has ' + pairs.length);
+    assert.ok(saidStates <= 50,
+      'there are fifty states: the caption claims ' + saidStates);
+    assert.strictEqual(saidGovs, sum,
+      'the caption claims ' + saidGovs + ' governments and the map adds to ' + sum);
+  }
+
   assert.deepStrictEqual(errors, [], 'the page threw while rendering');
   await browser.close();
   console.log('PASS 18-treasury (no early drill, no label too small, no re-entry, honest denominators, the pan joins up)');

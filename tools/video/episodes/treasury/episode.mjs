@@ -24,11 +24,6 @@
 // episodes 1 and 2 used for the same person.
 const VIEWER = '#7C6B9E';
 
-// The second figure is somebody ELSE, so it is not the viewer's purple. Green
-// is the cast palette's own, and the two read as two people from the moment
-// the second one walks on.
-const FRIEND = '#43D07E';
-
 export default {
   id: 'treasury',
   title: 'Treasury Tracker',
@@ -291,23 +286,33 @@ export default {
     // reaction, and by L035 both are calm.
     { id: 'why-calm', type: 'art', vo: 'L032', art: 'drawBudgetBar', stage: 'whole',
       cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 }] },
+
+    // ONE figure through this chapter. A second one used to walk on here and
+    // stay to the end of the episode: "the green guy runs in from the side and
+    // sways with short arms — the constant moving is distracting, can you get
+    // rid of the green person?"
+    //
+    // What it was carrying was L033's beat, so the BAR carries it now. "about
+    // a line item" lands at 1.41 and one small segment is picked out of the
+    // bar there — the same segment L034 then zooms into, which is a tighter
+    // join than a second person pointing at it.
     { id: 'why-angry', type: 'art', vo: 'L033', art: 'drawBudgetBar', stage: 'whole',
-      continues: true,
-      cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 },
-             { anim: [{ t: 0, anim: 'toddlemarch' }, { t: 1.1, anim: 'annoyed' }],
-               color: FRIEND, scale: 0.85, flip: true,
-               path: [{ t: 0, at: [1.12, 0.94] }, { t: 1.1, at: [0.70, 0.94] }] }] },
+      continues: true, pokeAt: 1.41,
+      cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 }] },
     // The scene opens zoomed IN on one segment — "hearing the number on its
     // own" at 3.76 — and pulls back on "that same number inside the whole
     // picture" at 7.72, which is the sentence the picture is making.
+    //
+    // While it is alone it carries its own figure, big, with nothing around
+    // it. It used to be a featureless orange bar for seven seconds: "4:34 just
+    // shows an orange bar and I lose track of what I'm saying." A line about a
+    // number on its own needs the number on it.
     { id: 'why-zoom', type: 'art', vo: 'L034', art: 'drawBudgetBar', stage: 'zoom',
       continues: true, zoomAt: 7.72,
-      cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 },
-             { at: [0.70, 0.94], anim: 'annoyed', color: FRIEND, scale: 0.85, flip: true }] },
+      cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 }] },
     { id: 'why-democracy', type: 'art', vo: 'L035', art: 'drawBudgetBar', stage: 'whole',
       continues: true,
-      cast: [{ at: [0.30, 0.94], anim: 'present', color: VIEWER, scale: 0.85 },
-             { at: [0.70, 0.94], anim: 'ponder', color: FRIEND, scale: 0.85, flip: true }] },
+      cast: [{ at: [0.30, 0.94], anim: 'present', color: VIEWER, scale: 0.85 }] },
 
     // ── 10. Close ───────────────────────────────────────────────────────
     // The real page, panned rather than held. The rates are fractions of the
@@ -329,11 +334,9 @@ export default {
     { id: 'close-follow', type: 'art', vo: 'L037', art: 'drawLiveScreen', continues: true,
       host: 'treasurytracker.empowered.vote',
       panFrom: 0.3131, panRate: 0.085,
-      cast: [{ at: [0.09, 0.97], anim: 'present', color: VIEWER, scale: 0.75 },
-             { at: [0.91, 0.97], anim: 'ponder', color: FRIEND, scale: 0.75, flip: true }] },
+      cast: [{ at: [0.09, 0.97], anim: 'present', color: VIEWER, scale: 0.75 }] },
     { id: 'close-card', type: 'art', vo: 'L038', art: 'drawTitleCard', hold: 1.0,
       name: 'Treasury Tracker', sub: 'treasurytracker.empowered.vote',
-      cast: [{ at: [0.42, 0.95], anim: 'cheer', color: VIEWER, scale: 0.85 },
-             { at: [0.58, 0.95], anim: 'cheer', color: FRIEND, scale: 0.85, flip: true }] }
+      cast: [{ at: [0.50, 0.95], anim: 'cheer', color: VIEWER, scale: 0.85 }] }
   ]
 };

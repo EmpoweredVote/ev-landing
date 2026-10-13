@@ -710,8 +710,10 @@
         // Everything that was not chosen steps back, by the same amount the
         // choice itself arrived by, so the dimming and the drill are one move.
         var strength = 1;
-        if (row.focus != null && row.focus !== i) {
-          strength = 1 - (row.focusAmt == null ? 1 : row.focusAmt) * (1 - DIMMED);
+        var fIdx = row.focus != null ? row.focus : o.focus;
+        var fAmt = row.focus != null ? row.focusAmt : o.focusAmt;
+        if (fIdx != null && fIdx !== i) {
+          strength = 1 - (fAmt == null ? 1 : fAmt) * (1 - DIMMED);
         }
         // The colour FADES UP over the same move that sizes the segment. It
         // used to flip from grey to colour at divide 0.5, which read as the
@@ -1001,6 +1003,11 @@
     return out;
   }
 
+  // The one segment chapter 9 is about: Debt Payments & Major Projects, 6.2%
+  // of the budget. L033 picks it out of the bar and L034 zooms into it, so it
+  // is named once here rather than twice as a bare 6.
+  var ZOOM_SEG = 6;
+
   function drawBudgetBar(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
@@ -1104,15 +1111,43 @@
       // grows back around it. "That same number inside the whole picture."
       barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
       var out = at(scene, 'zoomAt', t, 2.2);
-      opts.openIndex = 6;                        // Debt Payments: a small one
+      opts.openIndex = ZOOM_SEG;
       opts.openGrow = 1 - out;
       opts.labelAlpha = out;
       icicle(ctx, [{ segs: LA_OUT, current: true }], opts);
+
+      // THE NUMBER, while the segment is alone. The line is "hearing a number
+      // on its own can be made to mean almost anything", and the frame used to
+      // show a featureless orange bar with no number on it at all — seven
+      // seconds of it, which is long enough to lose the thread of the
+      // sentence. It carries the figure now, big, with nothing around it,
+      // which is the thing the line is describing. It fades as the rest of the
+      // bar grows back, because from then on the picture IS the context.
+      var alone = 1 - ease(Math.min(1, out * 1.6));
+      if (alone > 0.01) {
+        var seg = LA_OUT[ZOOM_SEG], mid = box.y + H * ROW_CUR * 0.5;
+        ctx.save();
+        ctx.globalAlpha = a * alone;
+        fitLabel(ctx, moneyFull(seg.amt), box.x + box.w * 0.5, mid + H * 0.012,
+                 box.w * 0.80, H * 0.062, ONSEG, "800", "center");
+        fitLabel(ctx, seg.label, box.x + box.w * 0.5, mid - H * 0.040,
+                 box.w * 0.80, H * 0.026, "rgba(16,19,26,0.72)", "700", "center");
+        ctx.restore();
+      }
       return;
     }
 
     // 'whole': the bar, nothing arriving, the scene the cast stands in front of.
+    //
+    // `pokeAt` picks ONE segment out of it — the small one chapter 9 is about.
+    // L033's own direction note asks for a Bobit pointing at a small segment;
+    // the figure that did that is gone, so the bar does the pointing, and the
+    // segment it points at is the one L034 then zooms into.
     barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
+    if (scene.pokeAt != null) {
+      opts.focus = ZOOM_SEG;
+      opts.focusAmt = at(scene, 'pokeAt', t, 0.6);
+    }
     var end = icicle(ctx, [{ segs: LA_OUT, current: true }], opts);
     ctx.save(); ctx.globalAlpha = a;
     fitLabel(ctx, BASIS, box.x, end + H * 0.035, box.w, H * 0.018, DIM, "500");
@@ -1851,13 +1886,21 @@
   // every state in roughly its own place. The old map was a 16x7 rectangle
   // with four cells lit, which said the product covers four towns.
   //
-  // It covers 8,925 governments in all 51 states — read on 2026-10-13 from
+  // It covers 8,924 governments across all fifty states — read on 2026-10-13 from
   // api.empowered.vote/api/treasury/cities, counting every entity that carries
   // at least one year of data. The counts are nothing like even: Pennsylvania
   // has 2,620 and nineteen states have exactly one, which is a true and more
   // interesting picture than a scatter of identical blocks. So a cell's
   // BRIGHTNESS is its state's count, on a log scale, and the caption carries
   // the number.
+  //
+  // 8,924 and FIFTY, not 8,925 and fifty-one. The API answers with 51 distinct
+  // state codes and one of them is US — the federal government, which is not a
+  // state and already has its own line under the map. The District of Columbia
+  // is a cell in the grid and carries no data, so it never lights. A platform
+  // asking people to trust it with a budget does not miscount the states, and
+  // 18-treasury.cjs now reads both numbers in the caption back out of
+  // MAP_COUNT rather than taking them on trust.
   var MAP_COLS = 11, MAP_ROWS = 8;
   var MAP_GRID = [
     ["AK", "",   "",   "",   "",   "",   "",   "",   "",   "",   "ME"],
@@ -1877,7 +1920,7 @@
     ME: 1, MO: 1, MT: 1, NE: 1, NV: 1, NH: 1, NJ: 1, NM: 1, OK: 1, RI: 1,
     VT: 1, WV: 1, WY: 1
   };
-  var MAP_TOTAL = "8,925 governments, in all 51 states";
+  var MAP_TOTAL = "8,924 governments, in all 50 states";
 
   function drawCoverage(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
