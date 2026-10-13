@@ -21,11 +21,11 @@ Almost nobody ever finds what happens next. Not because it's a secret, but becau
 
 ## L003
 > Direction: an enormous document drops in beside the Bobit and lands heavily.
-Your city publishes its budget, but it's usually a few hundred pages and it's full of lines that read: fund one-oh-one, department zero-eight, account four-two-zero-one-zero.
+Your city publishes its budget, but it's usually a few hundred pages and it's full of lines that read: fund zero-one-zero, department zero-eight, account four-two-zero-one-zero.
 
 ## L004
 > Direction: the Bobit beside the document. `exhausted`.
-Technically, you can read it. But 'Technically' is carrying a lot of weight in that sentence. Public and readable are not the same thing.
+Technically you can read it, but technically it's carrying a lot of weight in that sentence. Public and readable are not the same thing.
 
 ## L005
 > Direction: title card on Inform yellow.
