@@ -44,6 +44,39 @@ every beat the script claims, with real data:
 | L025, every view names its source | "CA State Controller - Expenditures · as of 2026-08-20", linked |
 | L026, whose wording | chips reading "Government-reported" against "computed by Treasury Tracker" |
 
+**The federal view is confirmed too**, checked in a real browser on 2026-10-12.
+It is `?entity=united-states-us`, reached from the breadcrumb — whose items are
+`<button>`s, not anchors, which is why a link query finds nothing. Chapter 5's
+federal beats all render:
+
+| Script beat | What the federal view actually has |
+|---|---|
+| L020–L021, for it or who spends it | a **"What it's for" / "Who spends it"** toggle |
+| L023, per person | a **"$" / "Per person"** toggle — and a "Per taxpayer" mode the script does not mention |
+| L027, the method written out | a panel headed **"How to read these numbers"** |
+
+L027 names four things and the panel has all four, under these real headings:
+
+| L027 says | The panel's heading |
+|---|---|
+| what is counted and what is not | **What we count** |
+| why the picture can add up to more than the official total | **Why the spending visual totals more than the official number** |
+| where a negative amount went | **Negative money isn't hidden** |
+| how far into the year the data runs | **Partial year** |
+
+It carries three more the script does not claim — "How deep the data goes",
+"Can these numbers be audited?" and "Scale modes". **These seven headings are
+what `drawSourceCard` prints for L027.** They are real, so they can be shown;
+the body under them stays rule-lines, for the reason in Direction rules.
+
+Federal Money Out, FY2024, top level: Social Security $1,460.9B, Interest on
+the debt $1,133.0B, Health care programs $911.3B, Medicare $874.1B, National
+defense $873.5B, Income support programs $670.5B.
+
+The federal page also demonstrates L027's own example in its numbers: the cards
+read Money Out $7,195.8B while the prose reads outlays $6,735.3B, and the panel
+explains the gap. That is the chapter's point, visible without being staged.
+
 Money Out's top level, FY2024, total $21.5B:
 
 | Segment | Amount |
@@ -248,16 +281,15 @@ These are not restated for completeness; each one has already cost a review roun
 2. **Which year leads.** The live page opened on FY2024. Chapter 4 changes the
    year — which years does `years-across` show, and does the episode open on
    2024 or on the latest available?
-3. **The federal beats are unverified.** L020, L021, L023 and L027 describe
-   federal-only behaviour — the purpose/department toggle, per-capita, and the
-   written method panel. I tried to check them on 2026-10-12 and could not reach
-   the federal view: `?entity=federal` returns "we couldn't find a government
-   matching", and the breadcrumb's "United States" is not an anchor element, so
-   it needs a real click in a browser. **Resolve this before planning**, because
-   four scenes depend on behaviour nobody has confirmed renders. If the federal
-   method panel does not exist as the script describes, L027 changes or goes.
 
-   One thing that check did confirm: the unknown-entity message is real. The
-   site answers an entity it does not have with "We couldn't find a government
-   matching 'federal'. The link may be out of date..." — which is L031's claim,
-   that it will not quietly hand you somebody else's budget instead, working.
+   The live federal page says "Latest available: FY2025. FY2026 data not yet
+   published by United States", so the newest year is not the same at every
+   level — Los Angeles showed FY2024 and the federal view offers FY2025.
+   Whatever `years-across` shows must be a year every level in chapter 5 has.
+
+**Closed during review.** A third question — whether the federal beats render
+at all — was open when this spec was first written. They were checked in a real
+browser on 2026-10-12 and all four are there; what they are is recorded under
+"What is settled" above. That check also confirmed L031 incidentally: an entity
+the site does not have returns "We couldn't find a government matching...",
+rather than quietly showing somebody else's budget.
