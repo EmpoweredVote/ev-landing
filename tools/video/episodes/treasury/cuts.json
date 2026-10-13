@@ -11,5 +11,18 @@
     "take": "DJI_35_20261011_092809.WAV",
     "start": 53.40,
     "_heard": "'...it usually, your-' and then 3.9s of nothing before the line is read whole. The fragment is an abandoned attempt, not the opening of the line."
+  },
+
+  "L037": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 615.31,
+    "end": 623.61,
+    "_heard": "Read twice. 603.85-612.50 ends 'see how it feels to know'; 615.31-623.61 ends 'see how it feels to actually know', which is the written line and the LATER reading. align.mjs chose the earlier one, which is neither last nor complete — it flips to the later one if 'actually' is removed from the script, so it is not simply preferring the better match. The splitter produced both of these boundaries itself, so they are its own silence-aligned seconds; the pin only decides WHICH reading."
+  },
+
+  "L030": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "end": 537.99,
+    "_heard": "The line ends 'Find the filing. Read it. Map it. Check it.' He leaves 0.74s between 'map it,' (ends 536.93) and 'check it.' (537.67-537.99), and the cut stopped inside that gap at 537.03 — so the finished line lost its last two words. 537.99 is where the silence after 'check it.' begins; the next line does not start until 540.24. clipped() did not report this, which is why the word sheet is read against the script line by line."
   }
 }

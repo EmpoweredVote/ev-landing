@@ -13,7 +13,7 @@ Chapter 1 — the money leaves and nothing comes back
 
 ## L001
 > Direction: a Bobit holds a pay stub. One line on it is picked out. `read`.
-Look at a pay stub. Or a property tax bill, or a receipt with sales tax on it. There is a line on it where your money leaves you and becomes part of somebody's budget.
+Look at a pay stub. Or a property tax bill, or a receipt with sales tax on it. There is a line on it where your money leaves you and becomes part of somebody else's budget.
 
 ## L002
 > Direction: the Bobit lowers the stub and looks up. `ponder`.
@@ -115,7 +115,7 @@ Which raises the question you should ask of any chart anybody ever shows you. Wh
 
 ## L025
 > Direction: `art` — a source line appears under the chart, naming a document and linking to it.
-Out of the government's own filings. The published budget, the annual financial report, the Treasury's own spending records. Every view names its source and links to it.
+Out of the government's own filings. The published budget, the annual financial report, the Treasury's own spending records. Every view names its source and links directly to it.
 
 ## L026
 > Direction: `art` — two descriptions side by side, one labelled as the government's wording.
