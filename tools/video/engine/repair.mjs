@@ -103,6 +103,52 @@ export function offsetWords(words, start) {
  * the stream. Keeping those would say a line was read twice when it was read
  * once — the very fault this exists to undo.
  */
+// A cut that moves by less than one frame at 30fps has not moved. Rounding in
+// and out of the sheet makes these, and reporting them teaches people to skip
+// the list.
+const FRAME = 1 / 30;
+
+/**
+ * Which cuts moved since the last split, loudest first.
+ *
+ * A re-split is never a no-op and must never be a silent one. Every in-scene
+ * second in episode.mjs and art.js is measured from its line's cut START, so a
+ * cut that moves invalidates every number written against that line. Episode 1
+ * paid a session for this: 27 seconds written against cuts that had moved, five
+ * of them found only in a final sweep after a build had started.
+ *
+ * Two ways it happens with NO code change:
+ *   - the transcript is not reproducible. Re-transcribing the Compass take with
+ *     the same model and the same file gave 1236 words against the 1220 its
+ *     committed cuts came from, 246 of them different, and L020 ran 11.5s
+ *     longer.
+ *   - a pipeline improvement lands, and a recovered reading moves a cut, which
+ *     is the repair pass working rather than failing.
+ *
+ * `dStart` and `dEnd` are what to go and look for: subtract the delta from the
+ * old value to find the word that number used to mark, then read the word's new
+ * time. Do not apply the delta — the two disagree exactly where it matters.
+ */
+export function movedCuts(was, now) {
+  if (!was || !was.length) return [];
+  const before = new Map(was.map(c => [c.id, c]));
+  const after = new Map((now || []).map(c => [c.id, c]));
+  const out = [];
+  for (const [id, a] of before) {
+    const b = after.get(id);
+    if (!b) { out.push({ id, what: 'gone', dStart: 0, dEnd: 0, worst: Infinity }); continue; }
+    const dStart = +(b.start - a.start).toFixed(3);
+    const dEnd = +(b.end - a.end).toFixed(3);
+    if (Math.abs(dStart) < FRAME && Math.abs(dEnd) < FRAME) continue;
+    out.push({ id, what: 'moved', dStart, dEnd,
+               from: a, to: b, worst: Math.max(Math.abs(dStart), Math.abs(dEnd)) });
+  }
+  for (const [id, b] of after) {
+    if (!before.has(id)) out.push({ id, what: 'new', dStart: 0, dEnd: 0, to: b, worst: Infinity });
+  }
+  return out.sort((x, y) => y.worst - x.worst);
+}
+
 export function spliceWords(words, repairs) {
   const found = [];
   for (const r of repairs || []) {

@@ -33,7 +33,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScript } from './script.mjs';
 import { alignTake, cutPoints, openingPause, applyPins, clipped } from './align.mjs';
-import { lostSpans, offsetWords, spliceWords } from './repair.mjs';
+import { lostSpans, offsetWords, spliceWords, movedCuts } from './repair.mjs';
 
 const NOISE = -40;        // dB; below this counts as silence
 const MINSIL = 0.35;      // seconds; shorter than this is a pause inside a line
@@ -167,6 +167,35 @@ async function words(wav, cacheDir, model, opts = {}) {
     { size: st.size, mtime: st.mtimeMs, model, repair: REPAIR, words: got }), 'utf8');
   await unlink(tmp).catch(() => {});
   return got;
+}
+
+// Name every cut that moved since the last split, so a re-time is a decision
+// rather than a discovery. Reads the _source.json already beside the build;
+// nothing to compare against is a first split and says nothing.
+async function reportMoved(voDir, now) {
+  const f = path.join(voDir, '_source.json');
+  if (!existsSync(f)) return;
+  let was = null;
+  try {
+    const held = JSON.parse(await readFile(f, 'utf8'));
+    was = Array.isArray(held) ? held : held.lines;
+  } catch (e) { return; }         // an unreadable record is not a reason to stop
+
+  const moved = movedCuts(was, now);
+  if (!moved.length) return;
+
+  console.log(`\n${moved.length} cut${moved.length === 1 ? '' : 's'} MOVED since the last split. ` +
+    `Every in-scene second in episode.mjs and art.js is measured from its line's\n` +
+    `cut start, so each of these invalidates the numbers written against it:`);
+  for (const m of moved.slice(0, 40)) {
+    if (m.what !== 'moved') { console.log(`  ${m.id}  ${m.what.toUpperCase()}`); continue; }
+    const d = n => (n >= 0 ? '+' : '') + n.toFixed(3) + 's';
+    console.log(`  ${m.id}  start ${d(m.dStart)}, end ${d(m.dEnd)}   ` +
+      `(${m.from.start.toFixed(2)}–${m.from.end.toFixed(2)} -> ${m.to.start.toFixed(2)}–${m.to.end.toFixed(2)})`);
+  }
+  if (moved.length > 40) console.log(`  ...and ${moved.length - 40} more`);
+  console.log('Read the word again; do not apply the delta. See "A re-split invalidates\n' +
+    'every one of those seconds" in tools/video/README.md.\n');
 }
 
 export async function split(episodeDir, takes, opts = {}) {
@@ -309,6 +338,21 @@ export async function split(episodeDir, takes, opts = {}) {
     console.log(`gain: ${gainDb >= 0 ? '+' : ''}${gainDb} dB on every line ` +
       `(loudest take peaked at ${Math.max(...peaks)} dBFS)`);
   }
+
+  // ---- what this re-split would change, before it changes it ----
+  //
+  // A re-split is never a no-op, and the danger is that nothing says so. Every
+  // in-scene second in episode.mjs and art.js is measured from its line's cut
+  // START, so a cut that moves invalidates every number written against that
+  // line. Episode 1 paid a session for exactly this.
+  //
+  // It happens with no code change at all: re-transcribing the Compass take
+  // with the same model and the same file gave 1236 words where the committed
+  // cuts came from 1220, and L020 ran 11.5 seconds longer.
+  await reportMoved(voDir, lines.map(l => {
+    const r = reads.get(l.id);
+    return { id: l.id, start: r.start, end: r.end };
+  }));
 
   if (opts.dry) {
     for (const l of lines) {
