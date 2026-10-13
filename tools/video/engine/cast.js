@@ -49,13 +49,46 @@
   // two actions — and one scene is one line, which is the rule that makes a
   // re-time a single number. Each keyframe's animation plays from ITS own
   // zero: an animation joined halfway through starts mid-stride.
+  // `rate` plays the cycle faster or slower, and `phase` starts it part way
+  // in. Both exist because of one note from a review: two figures doing the
+  // same thing at the same speed from the same zero are one figure drawn
+  // twice, and a pair of them pulsing together reads as a bug rather than as
+  // two people. A different rate is what stops them ever falling back into
+  // step; a phase is what keeps them out of it from the first frame. Both are
+  // pure functions of t, so determinism survives.
+  //
+  // `rate` may also sit on a keyframe, because a line can be calm and then
+  // not: "they both yell at each other, but the arms move slightly faster" is
+  // one figure, one scene, and two speeds.
   function acting(entry, t) {
-    if (!Array.isArray(entry.anim)) return { name: entry.anim, since: t };
+    var phase = entry.phase || 0;
+    if (!Array.isArray(entry.anim)) {
+      return { name: entry.anim, since: t * (entry.rate == null ? 1 : entry.rate) + phase };
+    }
     var k = entry.anim[0];
     for (var i = 0; i < entry.anim.length; i++) {
       if (t >= entry.anim[i].t) k = entry.anim[i]; else break;
     }
-    return { name: k.anim, since: Math.max(0, t - (k.t || 0)) };
+    var rate = k.rate == null ? (entry.rate == null ? 1 : entry.rate) : k.rate;
+    return { name: k.anim, since: Math.max(0, t - (k.t || 0)) * rate + phase };
+  }
+
+  // Which way the figure faces, which can change inside a scene.
+  //
+  // A figure that walks left while drawn facing right is walking backwards,
+  // and that is exactly what it looks like. `flip` is therefore allowed to be
+  // a list of [{ t, flip }] like `anim` is: turn to walk, then turn back to
+  // point at the thing you walked to. Splitting the figure into two cast
+  // entries with `show` windows would do the same job and would break the one
+  // rule this file exists to keep — one figure is one entry, so it cannot
+  // teleport between them.
+  function facing(entry, t) {
+    if (!Array.isArray(entry.flip)) return !!entry.flip;
+    var k = entry.flip[0];
+    for (var i = 0; i < entry.flip.length; i++) {
+      if (t >= entry.flip[i].t) k = entry.flip[i]; else break;
+    }
+    return !!k.flip;
   }
 
   // Where the figure is at time t, as fractions of the frame.
@@ -127,7 +160,7 @@
 
     ctx.save();
     ctx.translate(cx, pelvisY);
-    ctx.scale(entry.flip ? -scale : scale, scale);
+    ctx.scale(facing(entry, t) ? -scale : scale, scale);
     var j = R.computePose(pose, R.CFG, { x: 0, y: 0 });
     R.draw(ctx, j, R.CFG, opts);
     ctx.restore();

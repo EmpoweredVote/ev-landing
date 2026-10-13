@@ -32,13 +32,18 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScript } from './script.mjs';
-import { alignTake, cutPoints, openingPause, applyPins } from './align.mjs';
+import { alignTake, cutPoints, openingPause, applyPins, clipped } from './align.mjs';
+import { lostSpans, offsetWords, spliceWords, movedCuts, wordSheet, tighten } from './repair.mjs';
 
 const NOISE = -40;        // dB; below this counts as silence
 const MINSIL = 0.35;      // seconds; shorter than this is a pause inside a line
 const GAP = 0.45;         // seconds between lines in the joined vo.wav
 const OVERRIDE = 0.75;    // a later take must read this well to beat an earlier one
 const PEAK = -3;          // dBFS the whole set is lifted to, unless --no-gain
+const PAD = 0.6;          // air either side of a repair slice, so the model has context
+// Bumped when the repair pass changes what it returns, so a cached word stream
+// from an older run is re-made instead of silently reused.
+const REPAIR = 1;
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
@@ -84,25 +89,132 @@ async function silences(file, duration, noise, minsil) {
   return out;
 }
 
+// `python` is not a command on every machine. A Windows box with only the
+// launcher installed resolves it to the Microsoft Store shim, which exits
+// non-zero after printing an advert. Probed once and remembered, because the
+// repair pass below calls it once per lost span.
+let PYTHON = null;
+async function python() {
+  if (PYTHON) return PYTHON;
+  for (const cmd of ['python', 'py', 'python3']) {
+    try {
+      const { out } = await run(cmd, ['-c', 'import sys; print(sys.version_info[0])']);
+      if (out.trim() === '3') { PYTHON = cmd; return cmd; }
+    } catch (e) { /* try the next one */ }
+  }
+  throw new Error('no python 3 on PATH: tried python, py, python3 — faster-whisper needs one');
+}
+
+async function transcribe(wav, out, model) {
+  const py = path.join(path.dirname(fileURLToPath(import.meta.url)), 'transcribe.py');
+  await run(await python(), [py, wav, out, '--model', model]);
+  return JSON.parse(await readFile(out, 'utf8')).words || [];
+}
+
+// A gap in the word stream is NOT evidence of silence. Whatever the model, a
+// long file makes it skip, and what it skips is usually one half of a line the
+// reader read twice — which downstream looks like a line abandoned mid-
+// sentence. See repair.mjs for what this cost before it existed.
+//
+// So every gap that the tape was speaking through is transcribed again on its
+// own, where there is no long-file context to skip over, and spliced back.
+async function repairLost(wav, ws, sil, duration, model, cacheDir) {
+  const spans = lostSpans(ws, sil, duration);
+  if (!spans.length) return ws;
+
+  console.log(`the transcript has no words for ${spans.length} span(s) the tape was ` +
+    `speaking through — transcribing each one on its own:`);
+  const slice = path.join(cacheDir, '_repair.wav');
+  const out = path.join(cacheDir, '_repair.json');
+  const repairs = [];
+  for (const sp of spans) {
+    const from = Math.max(0, sp.from - PAD);
+    const to = Math.min(duration, sp.to + PAD);
+    await run('ffmpeg', ['-hide_banner', '-nostats', '-y', '-ss', String(from),
+      '-t', String(to - from), '-i', wav, '-ac', '1', '-ar', '16000', slice]);
+    const got = offsetWords(await transcribe(slice, out, model), from);
+    const kept = got.filter(w => w.s >= sp.from && w.s < sp.to);
+    console.log(`  ${sp.from.toFixed(2)}–${sp.to.toFixed(2)}s (${sp.sound.toFixed(2)}s of sound): ` +
+      (kept.length ? '"' + kept.map(x => x.w.trim()).join(' ') + '"' : 'no words — not speech'));
+    repairs.push({ from: sp.from, to: sp.to, words: got });
+  }
+  await unlink(slice).catch(() => {});
+  await unlink(out).catch(() => {});
+
+  const merged = spliceWords(ws, repairs);
+  const gained = merged.length - ws.length;
+  console.log(`recovered ${gained} word${gained === 1 ? '' : 's'} the first pass lost`);
+  return merged;
+}
+
 // Transcribing ten minutes of speech is the slow step, so the result is kept
 // beside the build and reused until the take itself changes.
-async function words(wav, cacheDir, model) {
+async function words(wav, cacheDir, model, opts = {}) {
   const st = await stat(wav);
   const key = path.basename(wav).replace(/[^\w.-]+/g, '_') + '.words.json';
   const cache = path.join(cacheDir, key);
   if (existsSync(cache)) {
     const held = JSON.parse(await readFile(cache, 'utf8'));
-    if (held.size === st.size && held.mtime === st.mtimeMs && held.model === model) {
+    // noise and minsil are part of the key because the repair pass SPLICES
+    // words into the cached stream, and which spans it repairs comes from the
+    // silences those two thresholds decide. Re-running with --noise would
+    // otherwise read back a stream repaired under the old threshold and hand
+    // cutPoints two inconsistent views of one tape.
+    if (held.size === st.size && held.mtime === st.mtimeMs && held.model === model &&
+        held.repair === REPAIR && held.noise === opts.noise && held.minsil === opts.minsil) {
       return held.words;
     }
   }
   const tmp = cache + '.tmp';
-  const py = path.join(path.dirname(fileURLToPath(import.meta.url)), 'transcribe.py');
-  await run('python', [py, wav, tmp, '--model', model]);
-  const got = JSON.parse(await readFile(tmp, 'utf8'));
+  let got = await transcribe(wav, tmp, model);
+  if (opts.silences) got = await repairLost(wav, got, opts.silences, opts.duration, model, cacheDir);
   await writeFile(cache, JSON.stringify(
-    { size: st.size, mtime: st.mtimeMs, model, words: got.words }), 'utf8');
-  return got.words;
+    { size: st.size, mtime: st.mtimeMs, model, repair: REPAIR,
+      noise: opts.noise, minsil: opts.minsil, words: got }), 'utf8');
+  await unlink(tmp).catch(() => {});
+  return got;
+}
+
+// Name every cut that moved since the last split, so a re-time is a decision
+// rather than a discovery. Reads the _source.json already beside the build;
+// nothing to compare against is a first split and says nothing.
+async function reportMoved(voDir, now) {
+  const f = path.join(voDir, '_source.json');
+  // build/ is git-ignored, so "no record" is the normal state of a fresh clone
+  // or a second machine — exactly where somebody is most likely to re-split
+  // without knowing what it costs. Saying nothing there is the silent failure
+  // this whole report exists to prevent.
+  if (!existsSync(f)) {
+    console.log('\nno previous split beside this build, so this run cannot say ' +
+      'what moved.\nIf episode.mjs or art.js already carry seconds, re-read every ' +
+      'one of them.\n');
+    return;
+  }
+  let was = null;
+  try {
+    const held = JSON.parse(await readFile(f, 'utf8'));
+    was = Array.isArray(held) ? held : held.lines;
+  } catch (e) {
+    console.log('\nthe previous split record is unreadable, so this run cannot ' +
+      'say what moved.\n');
+    return;
+  }
+
+  const moved = movedCuts(was, now);
+  if (!moved.length) return;
+
+  console.log(`\n${moved.length} cut${moved.length === 1 ? '' : 's'} MOVED since the last split. ` +
+    `Every in-scene second in episode.mjs and art.js is measured from its line's\n` +
+    `cut start, so each of these invalidates the numbers written against it:`);
+  for (const m of moved.slice(0, 40)) {
+    if (m.what !== 'moved') { console.log(`  ${m.id}  ${m.what.toUpperCase()}`); continue; }
+    const d = n => (n >= 0 ? '+' : '') + n.toFixed(3) + 's';
+    console.log(`  ${m.id}  start ${d(m.dStart)}, end ${d(m.dEnd)}   ` +
+      `(${m.from.start.toFixed(2)}–${m.from.end.toFixed(2)} -> ${m.to.start.toFixed(2)}–${m.to.end.toFixed(2)})`);
+  }
+  if (moved.length > 40) console.log(`  ...and ${moved.length - 40} more`);
+  console.log('Read the word again; do not apply the delta. See "A re-split invalidates\n' +
+    'every one of those seconds" in tools/video/README.md.\n');
 }
 
 export async function split(episodeDir, takes, opts = {}) {
@@ -133,12 +245,16 @@ export async function split(episodeDir, takes, opts = {}) {
   const reads = new Map();                       // line id -> {take, start, end, score}
   const perTake = [];
   const silByTake = [];
+  const wordsByTake = [];
   const usedPins = [];
   for (let t = 0; t < takes.length; t++) {
     const wav = path.resolve(takes[t]);
     const duration = await probeDuration(wav);
-    const ws = await words(wav, voDir, model);
+    // The silences come first: the repair pass inside words() needs them to
+    // know which gaps in the transcript the tape was speaking through.
     const sil = await silences(wav, duration, noise, minsil);
+    const ws = await words(wav, voDir, model,
+      { duration, silences: sil, noise: noise, minsil: minsil });
     const { cuts, missing } = alignTake(ws, lines);
     const mine = {};
     for (const [k, v] of Object.entries(pins)) {
@@ -159,8 +275,23 @@ export async function split(episodeDir, takes, opts = {}) {
     }
     perTake.push({ wav, duration, read: cuts.length, missing, silences: sil.length });
     silByTake.push(sil);
+    wordsByTake.push(ws);
     console.log(`take ${t + 1}: ${path.basename(wav)}  ${(duration / 60).toFixed(1)} min, ` +
       `${cuts.length} of ${lines.length} lines`);
+  }
+
+  // A pin that matched no take is a pin that did nothing. The stray check above
+  // catches a pin naming a line the script does not have; this catches one
+  // naming a take that was not passed — after a rename, a re-encode, or a
+  // forgotten pickup. align.mjs puts it plainly: a pin that silently does
+  // nothing is how a cut stays wrong after somebody has fixed it.
+  const pinned = Object.keys(pins).filter(k => !k.startsWith('_'));
+  const landed = new Set(usedPins.map(u => u.split(' ')[0]));
+  const idle = pinned.filter(id => !landed.has(id));
+  if (idle.length) {
+    throw new Error('cuts.json pins ' + idle.join(', ') + ', and no take passed to ' +
+      'this run matched — check the "take" filename in each. A pin that silently ' +
+      'does nothing is how a cut stays wrong after somebody has fixed it.');
   }
 
   // A line the reader broke in half and picked up seconds later is kept whole
@@ -199,6 +330,33 @@ export async function split(episodeDir, takes, opts = {}) {
     for (const x of suspects) console.log('  ' + x);
   }
 
+  // A cut that does not hold the whole line it is named after. The words are
+  // there on the tape, in the script, and in no WAV — see `clipped`. Reported
+  // per take, against the cut that was actually chosen, so a pin that fixed
+  // one of these stops it being raised again.
+  // A pinned line has already been decided by the ear, so it is not raised
+  // again — the same rule the false-start report follows, and for the same
+  // reason: a warning that keeps firing after somebody has answered it is a
+  // warning that gets ignored on the line where it matters.
+  const short = [];
+  const byTake = new Map();
+  for (const l of lines) {
+    const r = reads.get(l.id);
+    if (!r || pins[l.id]) continue;
+    if (!byTake.has(r.take)) byTake.set(r.take, []);
+    byTake.get(r.take).push({ id: l.id, start: r.start, end: r.end });
+  }
+  for (const [t, spans] of byTake) {
+    for (const c of clipped(spans, wordsByTake[t] || [], lines)) {
+      if (c.head) short.push(`${c.id} opens ${c.head} word(s) in — "${c.headWords}" is not in the cut`);
+      if (c.tail) short.push(`${c.id} stops ${c.tail} word(s) early — "${c.tailWords}" is not in the cut`);
+    }
+  }
+  if (short.length) {
+    console.log('cut does not hold the whole line — listen, then pin in cuts.json:');
+    for (const x of short) console.log('  ' + x);
+  }
+
   const absent = lines.filter(l => !reads.has(l.id)).map(l => l.id);
   if (absent.length) {
     throw new Error('no take holds ' + absent.join(', ') +
@@ -214,6 +372,21 @@ export async function split(episodeDir, takes, opts = {}) {
     console.log(`gain: ${gainDb >= 0 ? '+' : ''}${gainDb} dB on every line ` +
       `(loudest take peaked at ${Math.max(...peaks)} dBFS)`);
   }
+
+  // ---- what this re-split would change, before it changes it ----
+  //
+  // A re-split is never a no-op, and the danger is that nothing says so. Every
+  // in-scene second in episode.mjs and art.js is measured from its line's cut
+  // START, so a cut that moves invalidates every number written against that
+  // line. Episode 1 paid a session for exactly this.
+  //
+  // It happens with no code change at all: re-transcribing the Compass take
+  // with the same model and the same file gave 1236 words where the committed
+  // cuts came from 1220, and L020 ran 11.5 seconds longer.
+  await reportMoved(voDir, lines.map(l => {
+    const r = reads.get(l.id);
+    return { id: l.id, start: r.start, end: r.end };
+  }));
 
   if (opts.dry) {
     for (const l of lines) {
@@ -231,17 +404,48 @@ export async function split(episodeDir, takes, opts = {}) {
   await run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi',
     '-i', 'anullsrc=r=48000:cl=mono', '-t', String(gap), silence]);
 
+  const trimmed = [];
+  const keptByLine = new Map();
   let clock = 0;
   for (const line of lines) {
     const r = reads.get(line.id);
     const wav = path.join(voDir, line.id + '.wav');
     const filters = ['aresample=48000'];
     if (gainDb) filters.push(`volume=${gainDb}dB`);
-    // -ss and -t before -i would seek on the input and lose sample accuracy on
-    // a long file; after -i, ffmpeg decodes and trims exactly where asked.
-    await run('ffmpeg', ['-y', '-v', 'error', '-i', r.wav,
-      '-ss', String(r.start), '-to', String(r.end),
-      '-af', filters.join(','), '-ac', '1', '-c:a', 'pcm_s16le', wav]);
+
+    // A `trim` in cuts.json shortens every silence INSIDE this line to that
+    // many seconds. A pin decides where a line starts and where it ends; this
+    // is the only thing that reaches the dead air in the middle of one, which
+    // is where "there's too much dead air in my read" lands.
+    //
+    // aselect keeps the spans tighten() chose and asetpts restamps what is
+    // left, so the output is one continuous line with the air gone. It happens
+    // in the same pass as the gain: a second encode of a cut is a second
+    // chance to lose a sample.
+    const pin = pins[line.id];
+    const trimSec = pin && (!pin.take || pin.take === path.basename(r.wav))
+      ? Number(pin.trim) || 0 : 0;
+    let keepSpans = null;
+    if (trimSec > 0) {
+      const tt = tighten(r.start, r.end, silByTake[r.take] || [], trimSec);
+      if (tt.removed > 0.01) {
+        keepSpans = tt.keep;
+        trimmed.push({ id: line.id, removed: tt.removed, joins: tt.keep.length - 1 });
+      }
+    }
+    if (keepSpans) {
+      const sel = keepSpans.map(k => `between(t\\,${k[0].toFixed(4)}\\,${k[1].toFixed(4)})`).join('+');
+      await run('ffmpeg', ['-y', '-v', 'error', '-i', r.wav,
+        '-af', [`aselect=${sel}`, 'asetpts=N/SR/TB'].concat(filters).join(','),
+        '-ac', '1', '-c:a', 'pcm_s16le', wav]);
+      keptByLine.set(line.id, keepSpans);
+    } else {
+      // -ss and -t before -i would seek on the input and lose sample accuracy on
+      // a long file; after -i, ffmpeg decodes and trims exactly where asked.
+      await run('ffmpeg', ['-y', '-v', 'error', '-i', r.wav,
+        '-ss', String(r.start), '-to', String(r.end),
+        '-af', filters.join(','), '-ac', '1', '-c:a', 'pcm_s16le', wav]);
+    }
     const dur = await probeDuration(wav);
     await writeFile(path.join(voDir, line.id + '.txt'), line.text, 'utf8');
     timings.lines.push({ id: line.id, text: line.text, direction: line.direction, start: clock, dur });
@@ -249,6 +453,12 @@ export async function split(episodeDir, takes, opts = {}) {
     clock += dur + gap;
   }
   timings.total = clock;
+  if (trimmed.length) {
+    console.log('trimmed dead air inside ' + trimmed.length + ' line(s):');
+    for (const t of trimmed) {
+      console.log(`  ${t.id}  -${t.removed.toFixed(2)}s across ${t.joins} join(s)`);
+    }
+  }
 
   // Anything numbered that the script no longer has. The synthesized voice
   // leaves a .wav, a .txt and an .mp3 per line, and a line deleted from the
@@ -272,6 +482,23 @@ export async function split(episodeDir, takes, opts = {}) {
     concat.map(f => "file '" + f.replace(/\\/g, '/') + "'").join('\n') + '\n', 'utf8');
   await run('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0',
     '-i', listFile, '-c', 'copy', path.join(outDir, 'vo.wav')]);
+
+  // The word sheet. EVERY in-scene second in episode.mjs is read off this, so
+  // it is derived here rather than kept by hand: a hand-written one goes on
+  // printing the cut seconds it was written against while the cuts underneath
+  // it move, and it reads exactly like a measurement while it does it.
+  const wordsFor = {};
+  for (let i = 0; i < perTake.length; i++) {
+    wordsFor[path.basename(perTake[i].wav)] = wordsByTake[i] || [];
+  }
+  // A trimmed line's words go through its kept spans, not the take's own
+  // clock: the air is out of the file the picture is cut against, so a second
+  // read off the take would name a second the scene never reaches.
+  await writeFile(path.join(outDir, 'words.md'), wordSheet(lines.map(l => {
+    const r = reads.get(l.id);
+    return { id: l.id, take: path.basename(r.wav), start: r.start, end: r.end,
+             match: r.score, hole: r.hole, keep: keptByLine.get(l.id) || null };
+  }), wordsFor, id), 'utf8');
 
   await writeFile(path.join(outDir, 'timings.json'), JSON.stringify(timings, null, 2), 'utf8');
   // Which seconds of which take each line came from. Not read by the pipeline;

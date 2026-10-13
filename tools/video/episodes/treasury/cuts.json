@@ -2,14 +2,66 @@
   "_why": [
     "Cuts settled by listening, because the words cannot settle them.",
     "Seconds into the named take. Only the fields given here are pinned.",
-    "The other lines this take reports as suspects were checked and left alone:",
-    "L006, L007 and L017 are the reader pausing in the middle of a sentence,",
-    "and the words on both sides of each pause join up into the line."
+    "Chris restarts a line fast — he does not wait between attempts — so a",
+    "false start is a short burst and a second of silence, not the long pause",
+    "align.mjs looks for. The three start pins below were each found the same",
+    "way: ffmpeg silencedetect over the take, then each burst transcribed on",
+    "its own. Every one of them is 'the last complete reading wins'.",
+    "",
+    "A \"trim\" is different from a pin. A pin moves where a line starts or ends.",
+    "A trim shortens every silence INSIDE the line to that many seconds, taking",
+    "the air out of the middle of each gap and leaving half the maximum on each",
+    "side of the join. It is for dead air in the read, not for a mistake."
   ],
 
   "L003": {
     "take": "DJI_35_20261011_092809.WAV",
     "start": 53.40,
-    "_heard": "'...it usually, your-' and then 3.9s of nothing before the line is read whole. The fragment is an abandoned attempt, not the opening of the line."
+    "trim": 0.35,
+    "_heard": "'...it usually, your-' and then 3.9s of nothing before the line is read whole. The fragment is an abandoned attempt, not the opening of the line.",
+    "_trimmed": "Chris: 'at :25 seconds I say And it's full of... liness that read... fund 010. Can you remove the length of those pauses? It should flow smoother and there's too much dead air in my read.' The three gaps he hears are 0.90s after 'full of', 0.43s after '010' and 0.61s before 'Department'. The word stream shows a 2.4s hole between '010' and 'Department' that is NOT there: he is speaking through it and the recogniser mis-timed it. The audio decided this, not the transcript."
+  },
+
+  "L006": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 101.98,
+    "_heard": "Two attempts. 98.86-99.64 is 'treasury tacker' and stops; 102.13-115.57 is the line read whole. The 2.49s between them is the restart, and the cut used to open on the fumble and then hold that silence — which is the 2.48-second beat in the middle of the scene. Both were one span to the recogniser, which stamped 'Treasury Tracker takes' on the first attempt's seconds and the rest of the line on the second's."
+  },
+
+  "L007": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 120.80,
+    "_heard": "Two attempts. 118.15-119.55 is 'Which means before you have re-' and stops; 120.95-129.90 is the line read whole. 1.40s between them."
+  },
+
+  "L017": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 301.36,
+    "_heard": "Two attempts. 298.84-299.38 is 'One tel-' and stops; 301.51-310.28 is the line read whole. 2.13s between them."
+  },
+
+  "L024": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 401.91,
+    "_heard": "Two attempts. 399.91-401.20 is 'Which raises the question you sho-' and stops; 402.06-408.60 is the line read whole, 'Which raises the question you should ask of any chart anybody ever shows you.' 0.86s between them. Found the same way as L006, L007 and L017: silencedetect over the head of the line, then each burst transcribed on its own."
+  },
+
+  "L027": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "trim": 0.35,
+    "_trimmed": "Chris: 'Why the picture can...add up to more than the official total. Can you reduce the pause between can and add?' The audible gap is the 0.58s after 'add', before 'up'; the line also carries 0.74s, 0.58s and 0.67s gaps elsewhere, and the whole read sits slower than the chapter around it."
+  },
+
+  "L037": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 615.31,
+    "end": 623.61,
+    "_heard": "Read twice. 603.85-612.50 ends 'see how it feels to know'; 615.31-623.61 ends 'see how it feels to actually know', which is the written line and the LATER reading. align.mjs chose the earlier one, which is neither last nor complete — it flips to the later one if 'actually' is removed from the script, so it is not simply preferring the better match. The splitter produced both of these boundaries itself, so they are its own silence-aligned seconds; the pin only decides WHICH reading."
+  },
+
+  "L030": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "end": 537.99,
+    "_heard": "The line ends 'Find the filing. Read it. Map it. Check it.' He leaves 0.74s between 'map it,' (ends 536.93) and 'check it.' (537.67-537.99), and the cut stopped inside that gap at 537.03 — so the finished line lost its last two words. 537.99 is where the silence after 'check it.' begins; the next line does not start until 540.24. clipped() did not report this, which is why the word sheet is read against the script line by line."
   }
 }

@@ -121,8 +121,13 @@
     return { img: img, ready: ready };
   }
   var shotA = load(window.EVCompassShot);
+  // The browse view, captured separately. Optional on purpose: an episode
+  // whose second still has not been grabbed yet falls back to the first one
+  // rather than rendering an empty box, and the fallback is visible in the
+  // contact sheet instead of hiding as a blank frame.
+  var browseA = load(window.EVCompassBrowseShot);
   var logoA = load(window.EVCompassLogo);
-  var shot = shotA.img, logo = logoA.img;
+  var browse = browseA.img, logo = logoA.img;
 
   function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
   function fade(t, t0, dur) { return ease((t - t0) / dur); }
@@ -358,15 +363,17 @@
     //
     // The seconds are read off the recording. In the spectrum beat the
     // narration names one end of the ladder and then the other, so the dot
-    // goes to each as it is named: "letting the market decide" lands at 7.0s,
-    // "the government building low-income housing" at 10.1s. Moving the dot
+    // goes to each as it is named: "letting the market decide" lands at 6.60s
+    // and "the government building low-income housing" at 9.62s, both re-read
+    // off the 2026-10-12 cut. The dot arrives a beat ahead of each, on "not
+    // intervening" and in the pause after "at the other end". Moving the dot
     // with the words is the whole point of the beat -- the viewer watches the
     // line change length as the answer changes, which is what choosing a
     // different answer does.
     var at2 = -1, pos = null;
     if (at === 2) {
-      if (t >= 9.4) { at2 = STOPS - 1; pos = rung(0) + ease((t - 9.4) / 1.2) * (rung(STOPS - 1) - rung(0)); }
-      else if (t >= 5.7) { at2 = 0; pos = rung(0); }
+      if (t >= 8.95) { at2 = STOPS - 1; pos = rung(0) + ease((t - 8.95) / 1.2) * (rung(STOPS - 1) - rung(0)); }
+      else if (t >= 5.25) { at2 = 0; pos = rung(0); }
     } else if (at >= 3) {
       at2 = PICKED;
       pos = rung(STOPS - 1) + ease(t / 1.4) * (rung(PICKED) - rung(STOPS - 1));
@@ -387,8 +394,9 @@
     if (at < 1) return;
 
     // the axis, drawn out from the centre as "a line running out from a
-    // centre point" is said
-    var grow = at === 1 ? ease((t - 4.4) / 1.4) : 1;
+    // centre point" is said — "a line" is 3.95s into the re-split cut, so the
+    // stroke starts just under it and has finished by "point".
+    var grow = at === 1 ? ease((t - 3.7) / 1.4) : 1;
     if (grow <= 0) return;
     ctx.save();
     ctx.strokeStyle = GRID;
@@ -401,7 +409,7 @@
 
     // the stops, so "further out" reads as a scale and not a drift
     for (var k = 0; k < STOPS; k++) {
-      var ta = at === 1 ? fade(t, 6.4 + k * 0.08, 0.4) : 1;
+      var ta = at === 1 ? fade(t, 5.7 + k * 0.08, 0.4) : 1;
       if (ta <= 0) continue;
       ctx.save();
       ctx.globalAlpha = ta * 0.8;
@@ -415,7 +423,7 @@
 
     // the five answers, named, one at a time
     for (var m = 0; m < STOPS; m++) {
-      var la = at === 1 ? fade(t, 7.4 + m * 0.55, 0.4) : 1;
+      var la = at === 1 ? fade(t, 6.7 + m * 0.55, 0.4) : 1;
       if (la <= 0) continue;
       var lit = m === at2;
       ctx.save();
@@ -858,8 +866,8 @@
     if (cardAlpha > 0) {
       if (stage === "ask") {
         // The cursor walks down the answers and settles on one of them.
-        var walk = Math.min(HOUSING.length - 1, Math.floor(ease(t / 2.6) * HOUSING.length));
-        var chosen = t > 3.0;
+        var walk = Math.min(HOUSING.length - 1, Math.floor(ease(t / 2.1) * HOUSING.length));
+        var chosen = t > 2.5;
         card(ctx, t, W, H, scene, {
           alpha: cardAlpha, question: HOUSING_Q,
           rows: HOUSING, single: true,
@@ -892,7 +900,7 @@
     // from ASK_ORDER, because two of the rows never become spokes.
     for (var i = 0; i < g.n; i++) {
       var row = ASK_ORDER.indexOf(LABELS[i]);
-      var la = stage === "names" ? fade(t, 0.65 + row * 0.38, 0.3) : 1;
+      var la = stage === "names" ? fade(t, 0.45 + row * 0.38, 0.3) : 1;
       if (la <= 0) continue;
       label(ctx, g, i, H, MUTED, la);
     }
@@ -901,7 +909,7 @@
 
     // Your answers land on the spokes one at a time: "for each topic, where
     // do you actually land".
-    var upTo = stage === "dots" ? Math.floor((t - 0.45) / 0.62) + 1 : g.n;
+    var upTo = stage === "dots" ? Math.floor((t - 0.25) / 0.62) + 1 : g.n;
     for (var k = 0; k < g.n; k++) {
       if (k >= upTo || YOU[k] === 0) continue;
       dot(ctx, g, k, YOU[k], H, YOU_C);
@@ -911,14 +919,14 @@
 
     // The outline closes, and only in the last beat is it filled — that fill
     // is "what comes out the other side".
-    var grow = stage === "choose" ? ease((t - 3.0) / 2.2) : 1;
+    var grow = stage === "choose" ? ease((t - 2.65) / 2.2) : 1;
     if (grow <= 0) return;
     ctx.save();
     ctx.globalAlpha = grow;
     if (stage === "shape") {
       // "What comes out the other side" -- the answers become one shape, so
       // the colour floods in rather than being there at the cut.
-      ctx.globalAlpha = fade(t, 0.5, 1.6);
+      ctx.globalAlpha = fade(t, 0.15, 1.6);
       ctx.fillStyle = YOU_FILL;
       polygon(ctx, g, YOU); ctx.fill();
       ctx.globalAlpha = 1;
@@ -933,7 +941,11 @@
     var g = geom(W, H), accent = scene.accent || "#FFD426";
     var stage = scene.stage || "spokes";
 
-    var shown = stage === "spokes" ? Math.min(g.n, Math.floor(ease(t / 2.4) * g.n + 0.001)) : g.n;
+    // The eighth spoke has to be up BEFORE the cut. The re-split took this
+    // line to 2.14s, and over 2.4s the last spoke never arrived — it popped in
+    // on the next scene instead, which shows all eight. 1.8s puts the last one
+    // up at 1.77s, under "on your list", with a third of a second to spare.
+    var shown = stage === "spokes" ? Math.min(g.n, Math.floor(ease(t / 1.8) * g.n + 0.001)) : g.n;
     axes(ctx, g, H, shown);
     for (var i = 0; i < shown; i++) label(ctx, g, i, H, MUTED);
 
@@ -1015,13 +1027,13 @@
     // "Where the two shapes cover the same ground, you agree." Three spokes
     // carry the live chart's yellow agreement dot, and three small yellow dots
     // on a chart holding two filled shapes are easy to miss, so an arrow runs
-    // out to each one as the words are said — 2.1s in, which is where "the
-    // same ground" lands on the recording.
+    // out to each one as the words are said — 1.6s in, which is where "the
+    // same ground" lands on the 2026-10-12 cut ("the" 1.12s, "ground" 1.54s).
     if (stage === "overlap") {
       var shown = 0;
       for (var s0 = 0; s0 < g.n; s0++) {
         if (!sameAnswer(s0)) continue;
-        var aa = fade(t, 2.1 + shown * 0.35, 0.4);
+        var aa = fade(t, 1.6 + shown * 0.35, 0.4);
         shown++;
         if (aa > 0) arrowTo(ctx, g, s0, YOU[s0], H, aa);
       }
@@ -1051,8 +1063,11 @@
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.font = "500 " + Math.round(H * 0.024) + "px " + FONT;
+      // The three of them land across "issues you never put on your list" —
+      // "issues" is 0.18s into the re-split cut and "list" 1.48s, and the last
+      // chip has finished arriving at 1.50s.
       for (var q = 0; q < OFF_LIST.length; q++) {
-        var a = fade(t, 0.35 + q * 0.45, 0.4);
+        var a = fade(t, 0.2 + q * 0.45, 0.4);
         if (a <= 0) continue;
         // Above the two of them, not beside them: set to the right of the
         // figures the chips read as a third thing standing next to the
@@ -1131,7 +1146,7 @@
     // It holds through "that is most of the work behind this tool", which is
     // still about the card, and clears in the beat of silence before the first
     // number is named.
-    var sink = at === 3 ? 1 - fade(t, 1.9, 0.8) : 1;
+    var sink = at === 3 ? 1 - fade(t, 1.95, 0.8) : 1;
 
     // The two shapes, small, on the left — the SAME picture chapter 6 ended
     // on, filled and in the product's colours. It was an outline of a stale
@@ -1191,11 +1206,12 @@
     ctx.restore();
 
     // The ladder, with both answers on it. The first beat opens on the rungs
-    // alone, and the two answers land 6.1s in, under "this is where this
-    // person stands" — read off the recording. Held back to the next line,
+    // alone, and the two answers land 5.7s in, under "this is where this
+    // person stands" — re-read off the 2026-10-12 cut, where "this is where"
+    // begins at 5.75s. Held back to the next line,
     // the viewer looked at an unanswered ladder through the whole sentence
     // that says where the person stands.
-    var mark = at >= 1 ? 1 : fade(t, 6.1, 0.7);
+    var mark = at >= 1 ? 1 : fade(t, 5.7, 0.7);
     for (var k = 0; k < STOPS; k++) {
       var yy = ly + k * lrow;
       var mine = mark >= 0.5 && k === PICKED, theirs = mark >= 0.5 && k === LEADER_RUNG;
@@ -1278,14 +1294,15 @@
     // age faster than the narration.
     if (at >= 3) {
       // Each number arrives on the words that name it, read off the
-      // recording: "tens of thousands of positions" at 3.0s, "across thousands
-      // of officials" at 4.5s, "tens of thousands of references" at 6.9s. Put
-      // up on a cadence of their own they were all three on screen before the
-      // sentence about them had started.
+      // recording: "tens of thousands of positions" at 2.89s, "across
+      // thousands of officials" at 4.41s, "tens of thousands of references" at
+      // 6.81s, all re-read off the 2026-10-12 cut. Put up on a cadence of their
+      // own they were all three on screen before the sentence about them had
+      // started.
       var counts = [
-        { at: 3.0, n: "39,000", what: "researched positions" },
-        { at: 4.5, n: "4,200",  what: "civic leaders" },
-        { at: 6.9, n: "69,000", what: "references behind them" }
+        { at: 2.9, n: "39,000", what: "researched positions" },
+        { at: 4.4, n: "4,200",  what: "civic leaders" },
+        { at: 6.8, n: "69,000", what: "references behind them" }
       ];
       ctx.save();
       ctx.textAlign = "left";
@@ -1307,7 +1324,30 @@
   }
 
   // Chapter 8: a few seconds of the real screen, to prove the thing exists.
+  //
+  // TWO screens now, and which one a scene shows is the scene's own business.
+  // The first is the compass itself. The second is the browse view, where that
+  // same compass is held up against a city's worth of sitting officials —
+  // which is what L039 says out loud, and it lives on the Essentials host, so
+  // the caption under it has to say so rather than repeat the compass address.
+  //
+  // A tall shot is PANNED rather than shrunk to fit, which is how episode 2's
+  // close works — same two fields, same meaning, so there is one way of doing
+  // this in the series and not two. `panFrom` is where the scene opens, in
+  // fractions of the travel, and `panRate` is fractions per second, so the
+  // picture never has to be told how long its line is.
+  //
+  // The window is the same box both shots get. A shot that already fits inside
+  // it has no travel, the clip does nothing and the pan fields are ignored —
+  // the wide calibrated compass of L038 draws exactly as it did before the pan
+  // existed. The browse shot is 1654x2141: scaled to the box width it stands
+  // 1889px tall in a 670px window, so there are 1219px to travel, and L039's
+  // 7.62s covers them at about 160px a second. That leaves any one card on
+  // screen for four seconds, which is long enough to read a name and see the
+  // two shapes laid over each other.
   function drawLiveScreen(ctx, t, W, H, scene) {
+    var shot = scene.shot === 'browse' && browse.naturalWidth ? browse : shotA.img;
+    var host = scene.host || 'compass.empowered.vote';
     var a = scene.settled ? 1 : fade(t, 0.2, 0.8);
     var pad = W * 0.12;
     var boxW = W - pad * 2;
@@ -1319,25 +1359,34 @@
       ctx.fillStyle = MUTED;
       ctx.textAlign = "center";
       ctx.font = "600 " + Math.round(H * 0.040) + "px " + FONT;
-      ctx.fillText("compass.empowered.vote", W / 2, H * 0.45);
+      ctx.fillText(host, W / 2, H * 0.45);
       ctx.restore();
       return;
     }
 
-    var boxH = boxW * (shot.naturalHeight / shot.naturalWidth);
     var maxH = H * 0.62;   // still clears the Bobit standing in front of it
-    if (boxH > maxH) { boxH = maxH; boxW = boxH * (shot.naturalWidth / shot.naturalHeight); x = (W - boxW) / 2; }
+    var full = boxW * (shot.naturalHeight / shot.naturalWidth);
+    var boxH = Math.min(full, maxH);
+    var travel = full - boxH;
+    var frac = Math.max(0, Math.min(1, (scene.panFrom || 0) + t * (scene.panRate || 0)));
 
     ctx.save();
     ctx.globalAlpha = a;
-    ctx.drawImage(shot, x, y, boxW, boxH);
+    ctx.beginPath();
+    ctx.rect(x, y, boxW, boxH);
+    ctx.clip();
+    ctx.drawImage(shot, x, y - travel * frac, boxW, full);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = a;
     ctx.strokeStyle = scene.accent || "#FFD426";
     ctx.lineWidth = Math.max(2, H * 0.005);
     ctx.strokeRect(x, y, boxW, boxH);
     ctx.fillStyle = MUTED;
     ctx.textAlign = "center";
     ctx.font = "600 " + Math.round(H * 0.032) + "px " + FONT;
-    ctx.fillText("compass.empowered.vote", W / 2, y + boxH + H * 0.055);
+    ctx.fillText(host, W / 2, y + boxH + H * 0.055);
     ctx.restore();
   }
 
@@ -1353,5 +1402,5 @@
     drawSourceCard: drawSourceCard,
     drawLiveScreen: drawLiveScreen
   });
-  window.EVArt.ready = Promise.all([shotA.ready, logoA.ready]);
+  window.EVArt.ready = Promise.all([shotA.ready, browseA.ready, logoA.ready]);
 })();

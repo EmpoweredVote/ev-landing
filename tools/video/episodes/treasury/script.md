@@ -13,19 +13,19 @@ Chapter 1 — the money leaves and nothing comes back
 
 ## L001
 > Direction: a Bobit holds a pay stub. One line on it is picked out. `read`.
-Look at a pay stub. Or a property tax bill, or a receipt with sales tax on it. There is a line on it where your money leaves you and becomes part of somebody's budget.
+Look at a pay stub. Or a property tax bill, or a receipt with sales tax on it. There is a line on it where your money leaves you and becomes part of somebody else's budget.
 
 ## L002
 > Direction: the Bobit lowers the stub and looks up. `ponder`.
-Almost nobody ever finds out what happened next. Not because it is a secret. Because the answer is long, and dull, and written for auditors.
+Almost nobody ever finds what happens next. Not because it's a secret, but because the answer is long and dull and written for auditors.
 
 ## L003
 > Direction: an enormous document drops in beside the Bobit and lands heavily.
-Your city publishes its budget. But it is usually a few hundred pages, and it is full of lines that read: fund one-oh-one, department zero-eight, account four-two-zero-one-zero.
+Your city publishes its budget, but it's usually a few hundred pages and it's full of lines that read: fund zero-one-zero, department zero-eight, account four-two-zero-one-zero.
 
 ## L004
 > Direction: the Bobit beside the document. `exhausted`.
-Technically, you can read it. But 'Technically' is carrying a lot of weight in that sentence. Public and readable are not the same thing.
+Technically you can read it, but technically it's carrying a lot of weight in that sentence. Public and readable are not the same thing.
 
 ## L005
 > Direction: title card on Inform yellow.
@@ -59,7 +59,7 @@ And where the records support it, one step further. The individual payments. Who
 
 ## L012
 > Direction: a Bobit `present` beside the finished bar.
-That is the whole trick. It is not new data. It is the same data the government already published, arranged so a person can follow it instead of exploring spreadsheets.
+That's the whole trick. It's not new data. It's the same data the government already published, arranged so a person can follow it instead of exploring spreadsheets.
 
 Chapter 3 — more than one question
 
@@ -71,9 +71,12 @@ A budget answers more than one question, so the tool keeps them apart.
 > Direction: `art` — each card is picked out in turn as it is named.
 Money out: how the money is spent. Money in: where it came from in the first place. And for the governments that publish it, a third: what the workforce is paid, department by department.
 
-## L015
-> Direction: `art` — the money-out bar alone, then the money-in bar joining it.
-Most budget coverage only ever shows you the first one. Spending without revenue is half a story, and it is the half that makes everything look like waste.
+<!-- L015 was cut on 2026-10-13. "Most budget coverage only ever shows you
+     the first one. Spending without revenue is half a story, and it is the half
+     that makes everything look like waste." Chris: "Omit that section; sounds
+     too AI." The chapter now cuts from naming the three questions straight to
+     changing the year. Line numbers are not renumbered: every cut, pin and
+     scene keys off them, and L022 is already missing for the same reason. -->
 
 Chapter 4 — across time
 
@@ -115,7 +118,7 @@ Which raises the question you should ask of any chart anybody ever shows you. Wh
 
 ## L025
 > Direction: `art` — a source line appears under the chart, naming a document and linking to it.
-Out of the government's own filings. The published budget, the annual financial report, the Treasury's own spending records. Every view names its source and links to it.
+Out of the government's own filings. The published budget, the annual financial report, the Treasury's own spending records. Every view names its source and links directly to it.
 
 ## L026
 > Direction: `art` — two descriptions side by side, one labelled as the government's wording.
@@ -147,10 +150,10 @@ Chapter 8 — what this is for
 
 ## L032
 > Direction: a Bobit `standstill`, the budget bar behind it, calm.
-It is worth saying what this is for.  
+It's worth saying what this is for.  
 
 ## L033
-> Direction: a second Bobit `annoyed`, pointing at one small segment.
+> Direction: one small segment is picked out of the bar; the Bobit watches.
 Not to make you angry about a line item. Angry is easy. 
 
 ## L034
@@ -158,7 +161,7 @@ Not to make you angry about a line item. Angry is easy.
 It's so you can vote with confidence and context.  Hearing a number on its own can be made to mean almost anything. That same number inside the whole picture usually means just one thing.
 
 ## L035
-> Direction: two Bobits in front of the bar, `present` and `ponder`.
+> Direction: the Bobit in front of the bar, `present`.
 If we want a democracy that is run by the people, we need to make it easier for the people to understand where their money is going.
 
 Chapter 9 — close

@@ -40,7 +40,7 @@ export default {
     // drawn as they go in, then stands at the booth. One entry cannot do that,
     // because a figure that keeps being drawn stands on the threshold for the
     // rest of the line.
-    { id: 'open-ballot', type: 'art', vo: 'L001', art: 'drawBallot', enter: true, dim: 7.4,
+    { id: 'open-ballot', type: 'art', vo: 'L001', art: 'drawBallot', enter: true, dim: 7.1,
       cast: [{ anim: 'stroll', color: YOU, show: [0, 3.5],
                path: [{ t: 0, at: [0.06, 0.90] }, { t: 3.3, at: [0.50, 0.90] }] },
              { at: [0.44, 0.93], anim: 'ponder', color: YOU, show: [4.3, 99] }] },
@@ -53,7 +53,9 @@ export default {
       cast: [{ at: [0.44, 0.93], anim: 'spent', color: YOU }] },
 
     // The party letters arrive on the ballot that is already there, as "you
-    // look for the letter next to the name" is said — 2.7s into the line.
+    // look for the letter next to the name" is said — "look" is 2.73s in.
+    // L003 is one of the three pinned cuts, so the re-split did not move it
+    // and this second is unchanged.
     { id: 'open-letters', type: 'art', vo: 'L003', art: 'drawBallot',
       continues: true, dim: 0, letters: 2.7,
       cast: [{ at: [0.44, 0.93], anim: 'confused', color: YOU }] },
@@ -79,16 +81,29 @@ export default {
     // different boxes" are told by where the figures are rather than by
     // redrawing the set each time. They face each other here — `notlistening`
     // turned back to back, which is a different argument from this one.
+    // A row has turns in it. Both of them waving the same arm at the same
+    // speed from the same zero was one figure drawn twice: he shouts, she
+    // shrugs and he stops, she shouts and he shrugs, and only then do they
+    // both go at once — faster, and never in step, which is what `rate` and
+    // `phase` are for.
     { id: 'why-disagree', type: 'art', vo: 'L007', art: 'drawBoxes', stage: 'hold',
-      cast: [{ at: [0.19, 0.88], anim: 'elderangry', tone: 0, scale: 0.9 },
-             { at: [0.33, 0.88], anim: 'elderangry', tone: 1, scale: 0.9, flip: true }] },
+      cast: [{ at: [0.19, 0.88], tone: 0, scale: 0.9,
+               anim: [{ t: 0, anim: 'elderangry' }, { t: 2.4, anim: 'standstill' },
+                      { t: 3.6, anim: 'shrug' }, { t: 5.4, anim: 'scold', rate: 1.3 }] },
+             { at: [0.33, 0.88], tone: 1, scale: 0.9, flip: true, phase: 0.4,
+               anim: [{ t: 0, anim: 'standstill' }, { t: 1.2, anim: 'shrug' },
+                      { t: 2.4, anim: 'elderangry' }, { t: 5.4, anim: 'scold', rate: 1.18 }] }] },
 
     // "Two people in DIFFERENT boxes": one in each, reaching toward the other
     // across the gap. They stay put — the line is that the boxes make the
     // agreement hard to see, so the boxes have to still be between them.
     { id: 'why-agree', type: 'art', vo: 'L008', art: 'drawBoxes', stage: 'hold',
-      cast: [{ at: [0.26, 0.88], anim: 'showTo', tone: 0, scale: 0.9 },
-             { at: [0.72, 0.88], anim: 'showTo', tone: 1, scale: 0.9, flip: true }] },
+      cast: [{ at: [0.26, 0.88], tone: 0, scale: 0.9,
+               anim: [{ t: 0, anim: 'elderangry' }, { t: 4.6, anim: 'peek' },
+                      { t: 7.2, anim: 'shrug' }] },
+             { at: [0.72, 0.88], tone: 1, scale: 0.9, flip: true, phase: 0.5,
+               anim: [{ t: 0, anim: 'peek' }, { t: 2.6, anim: 'shrug' },
+                      { t: 4.6, anim: 'scold', rate: 1.2 }] }] },
 
     // The boxes go. Only then do the two of them walk to each other, slowly,
     // and start talking — so the walk reads as a consequence of the boxes
@@ -99,7 +114,7 @@ export default {
                       { t: 5.8, anim: 'friendly' }],
                path: [{ t: 0, at: [0.26, 0.88] }, { t: 1.6, at: [0.26, 0.88] },
                       { t: 5.8, at: [0.42, 0.88] }, { t: 9.4, at: [0.42, 0.88] }] },
-             { tone: 1, scale: 0.9, flip: true,
+             { tone: 1, scale: 0.9, flip: true, rate: 0.86, phase: 1.1,
                anim: [{ t: 0, anim: 'standstill' }, { t: 1.6, anim: 'stroll' },
                       { t: 5.8, anim: 'friendly' }],
                path: [{ t: 0, at: [0.72, 0.88] }, { t: 1.6, at: [0.72, 0.88] },
@@ -109,8 +124,16 @@ export default {
     // this chapter the viewer stands in ONE place at ONE size: four scenes at
     // four different x positions read as the figure jumping about, which is
     // the first thing a reviewer noticed and the hardest to stop seeing.
+    // The viewer ARRIVES here. This is the line where the episode turns from
+    // the parties to the person, so the person walks on, says hello and then
+    // stands still facing the camera, rather than being discovered already
+    // in the corner pointing at nothing.
     { id: 'why-start', type: 'art', vo: 'L010', art: 'drawBrandMark',
-      cast: [{ at: [0.78, 0.88], anim: 'present', color: YOU, scale: 0.95 }] },
+      cast: [{ color: YOU, scale: 0.95,
+               anim: [{ t: 0, anim: 'scurry' }, { t: 1.8, anim: 'greet' },
+                      { t: 4.4, anim: 'standstill' }],
+               path: [{ t: 0, at: [0.28, 0.88] }, { t: 1.8, at: [0.50, 0.88] },
+                      { t: 10.6, at: [0.50, 0.88] }] }] },
 
     // The person on screen through this chapter is the viewer, and the viewer
     // is purple everywhere else in the episode. A tone-palette yellow here
@@ -119,22 +142,27 @@ export default {
     // default height the two were a few pixels apart and read as one block.
     { id: 'why-driven', type: 'art', vo: 'L011', art: 'drawBrandMark', continues: true,
       headline: 'Voter driven, not party driven', headlineAt: 0.3, headlineY: 0.44,
-      cast: [{ at: [0.78, 0.88], anim: 'present', color: YOU, scale: 0.95 }] },
+      cast: [{ at: [0.50, 0.88], anim: 'standstill', color: YOU, scale: 0.95 }] },
 
-    // Each line of type arrives with the words that say it, not before. The
-    // seconds are measured off the recording: "Not every opinion you hold"
-    // begins 4.2s into the line and "just the few" at 5.9s.
-    // Every line of type waits for the words that say it. "vote-worthy
-    // issues" is spoken 2.3s in, "Not every opinion you hold" at 4.2s and
-    // "just the few" at 5.9s, all read off the recording.
+    // Every line of type waits for the words that say it, and the seconds
+    // are read off the recording — re-read after the re-split, not shifted by
+    // a delta. "vote-worthy" is spoken 1.32s into the line, "Not every opinion
+    // you hold" at 3.22s and "just the few" at 4.94s. Each number below sits a
+    // tenth after its word, so the type lands ON it instead of ahead of it.
     { id: 'why-define', type: 'art', vo: 'L012', art: 'drawBrandMark', continues: true,
-      headline: 'Vote-worthy issues', headlineAt: 2.4, headlineY: 0.36,
-      bullets: [{ t: 4.3, text: 'Not every opinion you hold' },
-                { t: 6.0, text: 'The few that change your vote' }],
-      cast: [{ at: [0.78, 0.88], anim: 'present', color: YOU, scale: 0.95 }] },
+      headline: 'Vote-worthy issues', headlineAt: 1.4, headlineY: 0.36,
+      bullets: [{ t: 3.3, text: 'Not every opinion you hold' },
+                { t: 5.0, text: 'The few that change your vote' }],
+      // This is the line that brings type with it, so he walks out of its way
+      // first and then stands with his arms down. He stays in that corner for
+      // the rest of the chapter.
+      cast: [{ color: YOU, scale: 0.95,
+               anim: [{ t: 0, anim: 'scurry' }, { t: 1.6, anim: 'standstill' }],
+               path: [{ t: 0, at: [0.50, 0.88] }, { t: 1.6, at: [0.78, 0.88] },
+                      { t: 9.6, at: [0.78, 0.88] }] }] },
 
     { id: 'why-goal', type: 'art', vo: 'L013', art: 'drawBrandMark', continues: true,
-      headline: 'Turn your priorities into a picture', headlineAt: 3.4, headlineY: 0.40,
+      headline: 'Turn your priorities into a picture', headlineAt: 2.9, headlineY: 0.40,
       cast: [{ at: [0.78, 0.88], anim: 'present', color: YOU, scale: 0.95 }] },
 
     // ── 3. How: calibrate ───────────────────────────────────────────────
@@ -161,8 +189,12 @@ export default {
 
     { id: 'cal-shape', type: 'art', vo: 'L018', art: 'drawCalibrate', stage: 'shape',
       continues: true,
+      // He turns to walk and turns back to point. Without the second half of
+      // that he crossed the frame leftwards while drawn facing right, which
+      // reads as walking backwards and is the only thing anybody sees.
       cast: [{ color: YOU, scale: 0.60,
                anim: [{ t: 0, anim: 'stroll' }, { t: 3.0, anim: 'present' }],
+               flip: [{ t: 0, flip: true }, { t: 3.0, flip: false }],
                path: [{ t: 0, at: [0.53, 0.97] }, { t: 3.0, at: [0.18, 0.95] },
                       { t: 7.5, at: [0.18, 0.95] }] }] },
 
@@ -219,17 +251,17 @@ export default {
       continues: true,
       cast: [{ at: [0.18, 0.95], anim: 'present', color: YOU, scale: 0.60 },
              { color: LEADER, scale: 0.60,
-               anim: [{ t: 0, anim: 'stroll' }, { t: 2.7, anim: 'standstill' }],
-               path: [{ t: 0, at: [-0.08, 0.95] }, { t: 2.7, at: [0.34, 0.95] },
+               anim: [{ t: 0, anim: 'stroll' }, { t: 2.4, anim: 'standstill' }],
+               path: [{ t: 0, at: [-0.08, 0.95] }, { t: 2.4, at: [0.34, 0.95] },
                       { t: 4.3, at: [0.34, 0.95] }] }] },
 
     { id: 'lay-second', type: 'art', vo: 'L028', art: 'drawCompassOverlay', stage: 'second',
-      headline: 'Their shape, your spokes', headlineAt: 2.1,
+      headline: 'Their shape, your spokes', headlineAt: 2.0,
       cast: [{ at: [0.18, 0.95], anim: 'showTo', color: YOU, scale: 0.60 },
              { at: [0.34, 0.95], anim: 'present', color: LEADER, scale: 0.60 }] },
 
     { id: 'lay-overlap', type: 'art', vo: 'L029', art: 'drawCompassOverlay', stage: 'overlap',
-      headline: 'Where you agree', headlineAt: 0.3,
+      headline: 'Where you agree', headlineAt: 0.2,
       cast: [{ at: [0.18, 0.95], anim: 'present', color: YOU, scale: 0.60 },
              { at: [0.34, 0.95], anim: 'friendly', color: LEADER, scale: 0.60 }] },
 
@@ -274,7 +306,21 @@ export default {
     // ── 8. Close ────────────────────────────────────────────────────────
     { id: 'live-screen', type: 'art', vo: 'L038', art: 'drawLiveScreen', hold: 1.2 },
 
-    { id: 'live-use', type: 'art', vo: 'L039', art: 'drawLiveScreen', settled: true,
+    // "Calibrate once. After that, every election, you hold your shape up
+    // against whoever is asking" — so this scene shows the browse view, where
+    // the calibrated compass is held against a city's worth of sitting
+    // officials. It is a different picture from the one before it, so it does
+    // NOT carry `settled`: the screen crosses rather than cutting, which is
+    // the one place in the episode where a change of shot is the point.
+    //
+    // And it SCROLLS. "A city's worth" is a claim about quantity, and one
+    // static frame of four cards does not make it — the page has to keep
+    // coming. The rate covers the whole travel across the measured line, so
+    // the pan reaches the bottom of the capture on the last frame rather than
+    // stopping somewhere arbitrary and sitting there.
+    { id: 'live-use', type: 'art', vo: 'L039', art: 'drawLiveScreen',
+      shot: 'browse', host: 'essentials.empowered.vote',
+      panFrom: 0, panRate: 0.131,
       cast: [{ at: [0.18, 0.95], anim: 'present', color: YOU, scale: 0.60 }] },
 
     // "That's the Empowered Compass" cuts back to the product's own lockup —

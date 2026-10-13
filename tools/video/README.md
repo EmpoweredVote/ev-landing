@@ -175,6 +175,180 @@ because a pin that silently does nothing is how a cut stays wrong after somebody
 has fixed it. Say in `_heard` what is actually on the tape before the pinned
 second: a bare number is a decision nobody can check later.
 
+### The recogniser can lose a whole reading
+
+**A gap in the word stream is not evidence of silence.** On the Treasury take
+the `small.en` transcript holds no words at all between 196.58s and 207.18s,
+so `align.mjs` reported a 10.6s hole inside a 20.53s L012 and the line was
+written up as unusable and needing a re-record. It needed neither.
+`silencedetect` over the same span finds **5.04 seconds of sound**, and
+transcribing that slice on its own returns a complete second reading of the
+line. The reader had simply read it twice.
+
+Three gaps on that one take held speech the transcript had no words for:
+
+| Span | What was actually on the tape |
+|---|---|
+| 196.58–207.18 | a whole second reading of L012 |
+| 228.30–230.72 | a stutter-repeat inside L014 — "money out, how the money is spent, money out." |
+| 241.02–247.46 | an abandoned start of L015 — "Most budget coverage only have..." |
+
+This is the second time a recogniser has cost this series real work. The first
+was `base.en` ending a line four words early, which is why the default model is
+`small.en`. This one is worse, because the failure does not look like a
+failure: it looks like a reader who stopped mid-line.
+
+**The splitter repairs this by itself, and says so.** After transcribing a
+take it asks which gaps in the word stream the tape was speaking through, cuts
+each one out with a little air either side, transcribes that slice on its own —
+where there is no long file to skip over — and splices the words back. The
+deciding is three pure functions in `engine/repair.mjs`, tested without any
+audio in `tests/video/16-repair.cjs`; the slicing is in `split.mjs`.
+
+A gap counts as lost speech when it is longer than 2.0s and holds more than
+0.8s of sound. Below that it is a breath, a chair or a lip noise — the head of
+the Essentials take holds 0.30s of it across fifteen seconds of nothing, and
+reporting that would send somebody to listen to silence.
+
+The run says what it found, and this is worth reading rather than scrolling
+past, because it is telling you the reader read a line twice:
+
+```
+the transcript has no words for 3 span(s) the tape was speaking through —
+transcribing each one on its own:
+  196.58–207.18s (5.04s of sound): "That's the whole trick. It's not new data. It's the same data the government already published"
+  241.02–247.46s (2.00s of sound): "Most budget coverage only have"
+  228.30–230.72s (1.46s of sound): "money out, how the money is spent, money out."
+recovered 31 words the first pass lost
+```
+
+Words a slice transcribes that fall OUTSIDE its own span are dropped. The air
+around the slice is there to give the model context, and it lets the model run
+on into the next line and hand back words that are already in the stream;
+keeping those would say a line was read twice when it was read once, which is
+the fault this exists to undo.
+
+The repaired stream is what gets cached, and the cache carries a `repair`
+version. Bump `REPAIR` in `split.mjs` when the pass changes what it returns,
+or an old word stream is silently reused.
+
+**Two traps this cost on the way in**, both worth knowing before touching it.
+
+`ffmpeg` writes `silencedetect` to **stderr** and exits **0**. `execFileSync`
+only hands back stderr by throwing, so a catch-block version of this scan reads
+an empty string, finds nothing, and says the take is clean. Use `spawnSync` and
+read `.stderr` whatever the exit code. The first run of this scan reported "no
+lost audio" over the take that had three.
+
+`split.mjs` used to spawn `python` outright. On a Windows box where only the
+`py` launcher is installed that resolves to the Microsoft Store shim, which
+prints an advert and exits non-zero. It stayed hidden for as long as a cached
+`words.json` meant no transcription ran — and the repair pass transcribes once
+per lost span, so it would have surfaced immediately. It now probes `python`,
+`py` and `python3` once and uses whichever answers as Python 3.
+
+**Why it happens at all.** The reader does not pause between attempts. Chris:
+"I typically won't with VO as I often need to intuit the feedback into my next
+run immediately, and waiting 2 seconds is not how I work." The false-start
+detector below looks for a long silence, so a restart a second later is not a
+false start as far as it is concerned, and the two readings are cut as one line.
+
+**And the rule that settles which one to keep:** default to the LAST take. The
+reader is trying to end on a good one, so the latest complete reading wins. That
+is already what `align.mjs` does for a line it can see twice, and now that the
+repair pass puts the second reading back in the stream, it is what decides these
+too — automatically, with no pin.
+
+**A read that differs from the script is usually an edit, not a mistake.**
+Chris's booth changes are script changes: contractions, present tense, shorter
+sentences, less flourish. Where the match score is low, compare the written line
+with what was said and move the SCRIPT, unless it is a genuine flub, cough or
+mess-up. A closer script is not cosmetic either — the take is aligned against
+the whole script at once, so every line that fits better makes its neighbours
+fit better too.
+
+### Nobody speaks during a silence
+
+`cutPoints` used to move a cut outward only, because the recogniser's word
+boundary lands a tenth of a second inside the first consonant. It goes wrong
+the other way too: on a line the reader began quietly, or after a long pause,
+the recogniser puts the first word up to a second before any sound, and the cut
+then opens on a second of room tone. Essentials had 1.84 s of nothing between
+"search the donors by name" and "and kept separate from all of it", and a
+dozen more joins over a second.
+
+The silence settles it. If the recogniser's start lies INSIDE a silence that the
+line reads out of, the line cannot have begun there — it began where that
+silence ended, and the same at the other end. That one rule took every join in
+the episode down to the 0.45 s the splitter puts between lines on purpose, with
+no pins at all. It only ever moves a cut inward, and only to a boundary the
+audio itself drew.
+
+### The cut that holds all of the line but the beginning
+
+The splitter also prints the cuts that do not hold their whole line:
+
+```
+cut does not hold the whole line — listen, then pin in cuts.json:
+  L003 opens 3 word(s) in — "the information exists" is not in the cut
+```
+
+This is the fault that hides best, and it is NOT the same as a false start.
+Where a reader pauses between the first sentence of a line and the rest, the
+window that reads best can be the rest on its own — every word in it is the
+line's, in order, and the match score barely moves. Essentials L003 came out as
+"It is just kept in a dozen places. The city clerk has the council…" at a match
+of 0.923, which is the score of a line that is fine. "The information exists."
+was recorded, is in the script, and was in no WAV. Everything downstream — the
+scene's length, every word time read off it, the picture built against those
+times — was then built on a line that is not the line, and nothing anywhere
+said so.
+
+`clipped()` in `align.mjs` answers one question per cut: how many of the line's
+own words are missing from each end. A count of words is a thing a person can
+check against the tape in ten seconds. It reports rather than cuts, for the same
+reason the false-start check does — a reader who drops a word is ordinary, and
+only the ear can say whether what is missing was said. Contractions are expanded
+before the comparison, because the script writes "It is worth saying" and the
+recogniser writes "It's", and a warning that fires on lines that are fine is a
+warning nobody reads.
+
+### A false start can be one second away from the good take
+
+The false-start check looks for a short burst, then a long silence, then the
+line. It finds the ones where the reader stopped, thought, and began again.
+
+It does not find the ones where the reader did not stop. Chris restarts
+immediately — he is carrying the feedback from the attempt he just made into
+the next one, and waiting two seconds is not how he works. Three Treasury
+lines opened on a fumble with 1.4s, 2.1s and 2.5s of silence after it, and the
+cut kept both the fumble and the silence. One of those is the "2.48 second
+beat" in the middle of L006 that nobody put there.
+
+Worse, the recogniser hides them. Running `medium.en` over the whole take
+transcribed "Treasury Tracker takes" and then "that document and draws it…"
+with a three-second hole between them, as though one reading had a gap in it.
+It had stamped the first three words on the FUMBLE's seconds and the rest of
+the line on the good take's, and no amount of re-reading the transcript shows
+that. The audio does:
+
+```bash
+# where the sound actually is, around the head of the line
+ffmpeg -ss 97 -t 10 -i take.WAV -af silencedetect=noise=-42dB:d=0.10 -f null -
+```
+
+Speech is what sits BETWEEN a `silence_end` and the next `silence_start`. Two
+bursts with a gap between them at the head of a line is two attempts. Slice
+each one on its own and transcribe it — a one-second slice has no long-file
+context to skip over, and it comes back as `'treasury tacker'` and
+`'Treasury Tracker takes that document…'`, which settles it.
+
+Then pin the START of the later one in `cuts.json`, about 0.15s before the
+sound begins, which is the air every other line in the episode opens on. **The
+last complete reading wins**, always. Chris treats the booth as an edit: his
+read IS the script, and he finishes on the take he wants. Only a cough, a flub
+or a broken sentence is a mistake.
+
 The level is left alone except for one gain, the same for every line and every
 take, that lifts the loudest take to -3 dBFS. Dynamics are a mix decision and
 belong in Resolve, not here. `--no-gain` turns even that off.
@@ -212,6 +386,12 @@ An art scene may carry any extra fields its draw function reads; they are part
 of the cache key, so changing one re-renders that scene. The Compass episode
 uses these:
 
+> The cache key digests EVERY `.js` file in the episode directory, not just
+> `art.js` — `screen.js` and `brand.js` are in it too. So refreshing the live
+> still or the lockup re-renders all 37 scenes, exactly as an `art.js` edit
+> does. Worth knowing before deciding to swap a capture at the end of a review
+> round: it costs a full build, so batch it with whatever else is outstanding.
+
 | Field | Used by | Meaning |
 |---|---|---|
 | `continues` | every draw function, via `arrive()` | the picture was already on screen, so nothing in it fades in again |
@@ -243,6 +423,44 @@ respawning for three scenes after the one that brought them in, under a
 `continues` flag that was doing its job everywhere else. Only a POSITIVE time
 animates.
 
+**A field that nobody set is a THIRD state, and `since` cannot see it.** It has
+no second, so it reads as zero, and zero means "already on screen" — so a thing
+that should not be in this scene at all is drawn from its first frame. In
+episode 2 that put the mini compass, the stance drawer, the blank topic and the
+coverage message between one and two scenes ahead of the lines that introduce
+them, and every one of them looked deliberate. The three states are:
+
+| | |
+|---|---|
+| absent | the scene never names the field |
+| `0` | it was on screen before this scene started |
+| `> 0` | it arrives at that second |
+
+So an optional thing asks for its field BY NAME — `at(scene, 'compassAt', t,
+dur)` rather than `since(t, scene.compassAt \|\| 0, dur)` — and a scene that
+wants to keep something writes an explicit `0`, the way episode 1 writes `dim:
+0` and `letters: 0`. The explicit zero is not noise; it is the scene saying
+out loud that it inherited the thing.
+
+The same zero bites a second time wherever it is used as a CLOCK ORIGIN rather
+than as a flag. `searchAt` opens the donor search and also starts the query
+typing itself in, `ease((t - searchAt - 0.4) / 0.9)`. The three later scenes
+inherit the field as `0` — correctly, "it was already there" — and the typing
+clock read that as "start typing at t = 0.4", so the word typed itself in again
+in the outside-spending scene and again in the filings scene. One query, three
+scenes, typed three times. Anything that animates from a field's value has to
+ask whether the field is positive before it runs, not just whether it exists.
+
+**Two lists that have to stay in step are one list.** Episode 2's ballot had
+`JOBS` — the offices — and `TOUCHES` — what each office decides — as two arrays
+read at the same index. They are not in the same order and never could be: the
+offices arrive in the order chapter 1 reads them out and the labels arrive in
+the order chapter 7 reads THOSE out, which is the point of the chapter. So
+zoning hung off the assessor, the school day off the water board, and every one
+of the five labels pointed at the wrong row. It is one array now, and each row
+owns both of its seconds. This is the same rule as "write a fact down once",
+read from the other end: if two structures must agree, they are one structure.
+
 The same rule covers the cast, and there it is just arithmetic: a figure at
 `[0.74, 0.88]` in one scene and `[0.80, 0.88]` at `scale: 0.9` in the next
 teleports, and across four scenes it reads as the thing that is wrong with the
@@ -262,6 +480,64 @@ the words on screen, read off the recording — `vo/<take>.words.json` has every
 word's start. Type that appears before the voice gets there is read ahead of the
 voice, and from then on the viewer is reading instead of listening.
 
+### A re-split invalidates every one of those seconds
+
+Every in-scene second is measured from its line's cut START, so re-splitting a
+take moves all of them — by that line's own delta, which is different for every
+line. The 2026-10-12 Compass re-split moved 30 of 39 lines by more than 0.08s,
+from 0.004s up to 0.98s. There is no single offset to apply, and a line that
+barely moved sitting next to one that moved a second is exactly how a re-time
+gets half done.
+
+**They are not only in `episode.mjs`.** That file holds `headlineAt`, the bullet
+`t`s, `dim` and `letters`, and they are easy to find. `art.js` holds as many
+again, buried inside draw functions as bare numbers — the second a ladder's
+rungs appear, the second a dot moves to the end of a spectrum it has just been
+told about, the second a card clears. Re-timing Compass meant 8 numbers in
+`episode.mjs` and 19 in `art.js` — and the last 5 of those 19 turned up only in a
+final sweep, after the rest had been done and a build started. Grep both for
+`fade(t,`, `ease((t -`, `ease(t /` and every `+ i *` style stagger, and decide
+about each hit, BEFORE building.
+
+**Read the word again; do not apply the delta.** The delta only tells you WHICH
+word to go and look for: subtract it from the old value to find what that number
+used to mark, then set the new value from where that word is now. The two agree
+most of the time, and the times they do not are the point — Compass L029's cut
+moved 0.5s later, which put its old `headlineAt` at minus 0.2s, before the scene
+it belongs to even starts.
+
+Read the words against the new cuts out of `build/<episode>/words.md`, which
+the splitter writes on every run. It is every word of the take laid out under
+the line it was cut into, each with the second it starts **relative to that
+line's own cut start** — which is the only clock `episode.mjs` and `art.js`
+use. It was kept by hand until 2026-10-13, and a sheet that is kept by hand
+goes on printing the cut it was written against: after a re-split moved three
+Treasury cuts by up to 3.2s, the sheet still showed the old ones, and it reads
+exactly like a measurement while it does it.
+
+A word that began before its cut prints a NEGATIVE second. That is information,
+not an error — it says the cut is tight against that word, or that the
+recogniser stretched the word back over the silence in front of it. See "The
+recogniser's time for the FIRST word of a line is not evidence", below.
+
+**The recogniser's time for the FIRST word of a line is not evidence.** It
+stretches that word back across the silence in front of it — the same artefact
+the cut rule in "Nobody speaks during a silence" exists to undo. On the Compass
+take it put "If" at 294.74s when `silencedetect` shows no sound at all between
+292.5s and 295.54s. Ask the audio, not the transcript, before deciding a pinned
+cut has eaten a word:
+
+```bash
+ffmpeg -ss 292.5 -t 6 -i take.WAV -af silencedetect=noise=-45dB:d=0.08 -f null -
+```
+
+**And check what no longer FITS.** A shorter line breaks any animation whose
+duration was chosen against the old one. Compass L023 came out 0.46s shorter,
+its eight spokes grew over a fixed 2.4s, and the last one never arrived — it
+popped in at the cut instead, on a scene that draws all eight. Nothing failed
+and no test went red. Walk every `t /` divisor and every late cast beat against
+the new duration before building.
+
 **A box is as big as what is in it.** The source card was a fixed height, and
 the fourth reference printed below its own border; the questionnaire card was a
 fixed row height, and a ten-item list ran off the bottom of the frame. Both now
@@ -269,6 +545,18 @@ measure their contents first — the question is wrapped with `wrapLines()` befo
 the box is drawn, and the card either grows to fit or tightens its rows against
 a floor. A number somebody chose once, for the content there was at the time, is
 a bug waiting for the next line of copy.
+
+Episode 2 found the same fault three more times, in three different functions,
+and fixed each one where it happened — which is why it happened again somewhere
+else. The ballot was `H * 0.70` tall with five rows under the fold and the sixth
+printed off the bottom of the paper. The profile's district line ran out through
+the side of the card. The reasoning drawer was wrapped to the PANEL's width and
+printed past its own border and the panel's. So there is now one `fitLabel()`
+beside `label()` — same arguments plus the width of the box — and anything
+printed inside a box goes through it. It shrinks rather than clips or wraps: a
+clipped word is a word cut in half, and a line that wraps changes the height of
+whatever holds it. **Where the same fault turns up twice, the fix is a shared
+function, not a second patch.**
 
 **Write a fact down once.** The Compass episode's Housing ladder is five named
 solutions, the viewer picks one of them, and three separate chapters draw that

@@ -1,0 +1,41 @@
+{
+  "_why": "Cuts the words could not settle. Each one was found by listening to the seconds named in _heard, not by reading the transcript: the recogniser writes a false start and the reading that replaced it down as one run of words, so the word stream shows neither a pause nor a repeat.",
+
+  "L003": {
+    "take": "DJI_33_20261011_090906.WAV",
+    "start": 42.7,
+    "_heard": "42.82-43.84 is 'The information exists.', and the alignment started the line at 44.44, on 'It's just kept in a dozen places.' The first sentence of the line was recorded, is in the script, and was not in the cut."
+  },
+
+  "L005": {
+    "take": "DJI_36_20261011_100456.WAV",
+    "start": 21.38,
+    "end": 23.8,
+    "_heard": "21.49-23.62 is the read. The cut ran 21.28-23.88, which put a fifth of a second of room tone either side of a two-second title card."
+  },
+
+  "L010": {
+    "take": "DJI_33_20261011_090906.WAV",
+    "start": 126.6,
+    "_heard": "120.84-123.97 is 'That list, on its own, is more than most voters have-', then 2.74s of nothing. The reading that counts starts at 126.71 and runs to 133.66."
+  },
+
+  "L016": {
+    "take": "DJI_33_20261011_090906.WAV",
+    "start": 203.27,
+    "end": 210.52,
+    "_heard": "the line is read twice and both readings are complete: 194.28-200.78, then 203.37-210.42. The alignment took the first. The reader was told the last reading counts, so this is the last one."
+  },
+
+  "L028": {
+    "take": "DJI_33_20261011_090906.WAV",
+    "start": 393.97,
+    "_heard": "the line starts at 394.07. The cut opened at 391.74, which is 2.3s of room tone before the first word."
+  },
+
+  "L030": {
+    "take": "DJI_33_20261011_090906.WAV",
+    "start": 425.45,
+    "_heard": "417.30-422.74 is a reading abandoned four times over; the one that counts starts at 425.56. The cut opened at 422.88, which is 2.7s of room tone before the first word."
+  }
+}
