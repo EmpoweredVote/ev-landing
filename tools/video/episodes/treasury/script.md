@@ -17,11 +17,11 @@ Look at a pay stub. Or a property tax bill, or a receipt with sales tax on it. T
 
 ## L002
 > Direction: the Bobit lowers the stub and looks up. `ponder`.
-Almost nobody ever finds out what happened next. Not because it is a secret. Because the answer is long, and dull, and written for auditors.
+Almost nobody ever finds what happens next. Not because it's a secret, but because the answer is long and dull and written for auditors.
 
 ## L003
 > Direction: an enormous document drops in beside the Bobit and lands heavily.
-Your city publishes its budget. But it is usually a few hundred pages, and it is full of lines that read: fund one-oh-one, department zero-eight, account four-two-zero-one-zero.
+Your city publishes its budget, but it's usually a few hundred pages and it's full of lines that read: fund one-oh-one, department zero-eight, account four-two-zero-one-zero.
 
 ## L004
 > Direction: the Bobit beside the document. `exhausted`.
@@ -59,7 +59,7 @@ And where the records support it, one step further. The individual payments. Who
 
 ## L012
 > Direction: a Bobit `present` beside the finished bar.
-That is the whole trick. It is not new data. It is the same data the government already published, arranged so a person can follow it instead of exploring spreadsheets.
+That's the whole trick. It's not new data. It's the same data the government already published. Arranged, so a person can follow it instead of exploring spreadsheets.
 
 Chapter 3 — more than one question
 
@@ -147,7 +147,7 @@ Chapter 8 — what this is for
 
 ## L032
 > Direction: a Bobit `standstill`, the budget bar behind it, calm.
-It is worth saying what this is for.  
+It's worth saying what this is for.  
 
 ## L033
 > Direction: a second Bobit `annoyed`, pointing at one small segment.

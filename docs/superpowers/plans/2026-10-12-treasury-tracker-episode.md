@@ -109,130 +109,216 @@ hostname on an empty stage, and nothing failed.
 
 ---
 
-## Task 1: The pickup, the re-split, and the word sheet
+## Task 1: Recover the lost readings, take Chris's edits into the script, re-split
 
-**This task cannot start until Chris has recorded the L012 pickup.** If
-`audio/` holds no new take, stop and say so. Everything after this task is
-written against the numbers this task produces, and writing the picture against
-stale cuts is what cost episode 1 a whole session.
+**REVISED 2026-10-12, after listening. There is no re-record.** This task was
+written as "Chris re-records L012, then we re-split". He does not have to. L012
+was read TWICE and the `small.en` transcript of the whole take silently dropped
+the second reading — 5.04 seconds of clean speech transcribed as nothing, which
+`align.mjs` then reported as a 10.6s hole in an unusable 20.5s line. The second
+reading is there, on the tape, and it is good.
+
+**Two rules from Chris, 2026-10-12, that decide every ambiguous case here:**
+
+1. **What he changes in the booth is a script edit, not a mistake.** Where his
+   read differs from the written line, the LINE changes. He edits toward plainer
+   speech — contractions, present tense, shorter sentences, less flourish —
+   because the written version "started sounding very AI". Only a genuine flub,
+   cough or mess-up gets overruled.
+2. **Default to the last take.** He reads a line repeatedly and tries to end on
+   a good one, so the latest complete reading wins. This is already
+   `align.mjs`'s rule; it is now also the tie-breaker for anything this task
+   finds by hand.
+
+And one fact about how he works that the pipeline was not built for: **he does
+not pause between attempts.** "Waiting 2 seconds is not how I work." The
+splitter's false-start detector looks for a long silence, so his restarts — a
+second or less apart, sometimes overlapping the previous attempt's tail — are
+not detected and the two readings are cut as one line.
 
 **Files:**
-- Modify: `tools/video/episodes/treasury/cuts.json` (only if the re-split reports a false start the ear confirms)
-- Produce: `tools/video/build/treasury/vo/` — per-line WAVs, `_source.json`, `<take>.WAV.words.json` (git-ignored)
-- Produce: `tools/video/build/treasury/words.md` — the word sheet every later task reads (git-ignored)
-- Write scratch scripts into the session scratchpad, never into the repo.
+- Modify: `tools/video/episodes/treasury/script.md` (Chris's booth edits)
+- Modify: `tools/video/episodes/treasury/cuts.json` (pins for the recovered readings)
+- Modify: `tools/video/engine/transcribe.py` and/or `split.mjs` only if Step 2 shows the bigger model is the right default
+- Produce: `tools/video/build/treasury/vo/` and `words.md` (git-ignored)
 
 **Interfaces:**
 - Consumes: nothing.
 - Produces: `build/treasury/words.md`, one section per line, shaped
   `## L014  cut 118.42 -> 131.07  (12.65s, take <name>, match 0.95)` followed by
-  every word as `word[s.ss]`, where `s.ss` is seconds from THAT line's cut
-  start. Tasks 3 to 8 read every `*At` second out of this file and nowhere else.
+  every word as `word[s.ss]`, seconds from THAT line's cut start. Tasks 3 to 8
+  read every `*At` second out of this file and nowhere else.
 
-- [ ] **Step 1: Confirm the pickup exists and name the takes**
+- [ ] **Step 1: Find every place the transcript lost audio**
 
-Run: `ls -la audio/`
-
-Expected: the five takes already there, plus at least one newer WAV holding the
-L012 pickup. If there is no newer file, STOP and report that Task 1 is blocked
-on Chris. Do not proceed to Task 3 without it — Task 2 can run in the meantime.
-
-- [ ] **Step 2: Dry-run the re-split and read what it reports**
-
-Run:
-
-```bash
-node tools/video/engine/split.mjs tools/video/episodes/treasury \
-  audio/DJI_35_20261011_092809.WAV audio/<PICKUP>.WAV --dry
-```
-
-Expected: a plan and no files written. Read three things out of it:
-
-- **"may open on a false start"** — L006 (2.489s), L007 (1.412s) and L017
-  (2.137s) are already known and already judged. `cuts.json` records that they
-  are the reader pausing mid-sentence, with the words on both sides joining up.
-  They are reported every run because they are not pinned, which is correct.
-  Any OTHER line reported here is new: listen to it before deciding.
-- **"cut does not hold the whole line"** — `clipped()` naming the words missing
-  from each end. Each one needs a decision, not a glance.
-- **L012's match.** It was 0.772 with a 10.60s hole. The pickup must beat that
-  and report no hole. If it does not, the pickup is unusable and Chris records
-  again.
-
-- [ ] **Step 3: Listen to anything new before pinning it**
-
-For any line the dry run reports that `cuts.json` does not already cover:
-
-```bash
-ffmpeg -ss <START-2> -t 8 -i audio/<TAKE>.WAV \
-  -af silencedetect=noise=-45dB:d=0.08 -f null - 2>&1 | grep silence
-```
-
-The recogniser's time for the FIRST word of a line is not evidence: it stretches
-that word back across the silence in front of it. On the Compass take it put
-"If" at 294.74s when `silencedetect` showed no sound at all between 292.5s and
-295.54s. Ask the audio. If it is a false start, add a pin to `cuts.json` with
-`take`, `start` and a `_heard` that says what is actually on the tape before the
-pinned second. A bare number is a decision nobody can check later.
-
-- [ ] **Step 4: Run the re-split for real**
-
-Run:
-
-```bash
-node tools/video/engine/split.mjs tools/video/episodes/treasury \
-  audio/DJI_35_20261011_092809.WAV audio/<PICKUP>.WAV
-```
-
-Expected: 37 per-line `.wav` and `.txt` files in `tools/video/build/treasury/vo/`,
-plus `_source.json`. Later takes win, so the pickup's L012 replaces the original.
-A named missing line stops the run — that is the splitter working, not a bug.
-
-- [ ] **Step 5: Measure every join from the AUDIO, not from the word times**
-
-Write `joins.mjs` into the scratchpad:
+A gap in the word stream that is not silent is speech the recogniser dropped.
+This is the check that found L012, and it generalises — run it before trusting
+any take.
 
 ```js
-import { readdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+// scratchpad/lostaudio.mjs
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 
-const dir = 'tools/video/build/treasury/vo';
-const files = readdirSync(dir).filter(n => /^L\d+\.wav$/.test(n)).sort();
-let prevTail = 0, prevId = null;
+const TAKE = 'audio/DJI_35_20261011_092809.WAV';
+const WORDS = 'tools/video/build/treasury/vo/DJI_35_20261011_092809.WAV.words.json';
+const words = JSON.parse(readFileSync(WORDS, 'utf8')).words;
 
-for (const f of files) {
-  let out = '';
-  try {
-    execFileSync('ffmpeg', ['-i', dir + '/' + f, '-af',
-      'silencedetect=noise=-45dB:d=0.05', '-f', 'null', '-'],
-      { encoding: 'utf8' });
-  } catch (e) { out = String(e.stderr || ''); }
-  const hms = /time=(\d+):(\d+):([\d.]+)/.exec(out);
-  const dur = hms ? +hms[1] * 3600 + +hms[2] * 60 + +hms[3] : 0;
-  const starts = [...out.matchAll(/silence_start: ([\d.]+)/g)].map(m => +m[1]);
-  const ends = [...out.matchAll(/silence_end: ([\d.]+)/g)].map(m => +m[1]);
-  const head = starts.length && starts[0] < 0.02 && ends.length ? ends[0] : 0;
-  const tail = starts.length > ends.length ? dur - starts[starts.length - 1] : 0;
-  if (prevId) {
-    const join = prevTail + 0.45 + head;
-    console.log(prevId + ' -> ' + f.slice(0, 4) + '  join ' + join.toFixed(2) + 's' +
-      (join > 0.65 ? '   <-- LOOK' : ''));
+// ffmpeg writes silencedetect to STDERR and exits 0, so execFileSync's catch
+// never sees it and the scan silently finds nothing. spawnSync hands back both
+// streams whatever the exit code. This bug cost a first pass that reported
+// "no lost audio" over a take with three lost passes in it.
+function silentSeconds(from, len) {
+  const r = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-ss', String(from),
+    '-t', String(len), '-i', TAKE, '-af', 'silencedetect=noise=-45dB:d=0.20',
+    '-f', 'null', '-'], { encoding: 'utf8' });
+  const out = (r.stderr || '') + (r.stdout || '');
+  const marks = [];
+  for (const m of out.matchAll(/silence_start: (-?[\d.]+)/g)) marks.push(['s', Math.max(0, +m[1])]);
+  for (const m of out.matchAll(/silence_end: ([\d.]+)/g)) marks.push(['e', Math.min(len, +m[1])]);
+  marks.sort((a, b) => a[1] - b[1]);
+  let silent = 0, openAt = 0, open = true;   // a gap between words begins in silence
+  for (const [k, v] of marks) {
+    if (k === 's') { openAt = v; open = true; }
+    else if (open) { silent += Math.max(0, v - openAt); open = false; }
   }
-  prevTail = tail;
-  prevId = f.slice(0, 4);
+  if (open) silent += Math.max(0, len - openAt);
+  return Math.min(len, silent);
+}
+
+const lost = [];
+for (let i = 1; i < words.length; i++) {
+  const len = words[i].s - words[i - 1].e;
+  if (len <= 2.0) continue;
+  const sound = len - silentSeconds(words[i - 1].e, len);
+  if (sound > 0.8) lost.push({ from: words[i - 1].e, to: words[i].s, len, sound,
+    before: words[i - 1].w.trim(), after: words[i].w.trim() });
+}
+lost.sort((a, b) => b.sound - a.sound);
+console.log('gaps holding sound the transcript has no words for:', lost.length);
+for (const g of lost) {
+  console.log('  ' + g.from.toFixed(2) + '-' + g.to.toFixed(2) + '  gap ' +
+    g.len.toFixed(2) + 's, sound ' + g.sound.toFixed(2) + 's   "' +
+    g.before + '" ... "' + g.after + '"');
 }
 ```
 
-Run it. Expected: every join between 0.45s and about 0.60s — the Compass
-re-split came out 0.52 to 0.58. Anything over 0.65s is dead air a listener will
-hear and name; Chris has named two before. Fix a long join by pinning the cut,
-never by trimming the WAV.
+Run: `node "$TMP/lostaudio.mjs" 2>/dev/null`
 
-- [ ] **Step 6: Write the word sheet**
+Expected on the `small.en` transcript, exactly these three:
 
-Write `words.mjs` into the scratchpad:
+```
+  196.58-207.18  gap 10.60s, sound 5.04s   "publish." ... "Arranged,"
+  241.02-247.46  gap  6.44s, sound 2.00s   "department." ... "Most"
+  228.30-230.72  gap  2.42s, sound 1.46s   "place." ... "And"
+```
+
+- [ ] **Step 2: Hear what is in each one, and decide whether the model changes**
+
+Slice each span out and transcribe it on its own. A short slice does not have
+the long-file context that makes the recogniser skip:
+
+```bash
+ffmpeg -hide_banner -loglevel error -ss <FROM> -t <LEN> \
+  -i audio/DJI_35_20261011_092809.WAV -ac 1 -ar 16000 "$TMP/slice.wav" -y
+py tools/video/engine/transcribe.py "$TMP/slice.wav" "$TMP/slice.json" --model small.en
+```
+
+**`py`, not `python`.** `split.mjs:101` spawns `python`, which on this machine
+resolves to the Microsoft Store shim and fails. It has not bitten yet only
+because the cached `words.json` means no transcription runs. It will bite on
+the first fresh take.
+
+What the three slices hold, already heard on 2026-10-12:
+
+| Span | What is on the tape |
+|---|---|
+| 196.58–207.18 | a **complete second reading of L012**: "That's the whole trick. It's not new data. It's the same data the government already published" |
+| 228.30–230.72 | a stutter-repeat inside **L014**: "money out, how the money is spent, money out." — he restarts the sentence |
+| 241.02–247.46 | an abandoned start of **L015**: "Most budget coverage only have..." The splitter already cuts L015 at 247.46, past it, so this one needs nothing. |
+
+A full re-transcription at `medium.en` is running to see whether the bigger
+model recovers all three at source. If it does, change the default in
+`transcribe.py` and re-split; the pins below then shrink to whatever is left.
+If it does not, pin by hand. Either way the words must come from the audio, not
+from a guess.
+
+- [ ] **Step 3: Take Chris's booth edits into `script.md`**
+
+Compare the written line against what he actually said, for every line the
+matcher scored under about 0.90. These are his edits and the script is what
+changes. Confirmed on 2026-10-12:
+
+| Line | Written | What he said |
+|---|---|---|
+| L002 | "Almost nobody ever finds out what happened next. Not because it is a secret. Because the answer is long, and dull, and written for auditors." | "Almost nobody ever finds what happens next. Not because it's a secret, but because the answer is long and dull and written for auditors." |
+| L003 | "...But it is usually a few hundred pages, and it is full of lines that read..." | "...but it's usually a few hundred pages and it's full of lines that read..." |
+| L012 | "That is the whole trick. It is not new data. It is the same data the government already published, arranged so a person can follow it instead of exploring spreadsheets." | "That's the whole trick. It's not new data. It's the same data the government already published. Arranged, so a person can follow it instead of exploring spreadsheets." |
+| L032 | "It is worth saying what this is for." | "It's worth saying what this is for." |
+
+**Do not change what the recogniser merely rendered differently.** L036 and
+L038 scored 0.727 and 0.8 only because it wrote the spoken address as
+"TreasuryTracker .Empowered .Vote"; he said what is written. L003's fund and
+account numbers come back as digits because the recogniser normalises them, not
+because he read them differently — leave them spelled out.
+
+A closer script is not cosmetic: `align.mjs` matches the take against the WHOLE
+script at once, so every line it fits better makes every neighbouring line fit
+better too.
+
+- [ ] **Step 4: Pin what is left, and say what is on the tape**
+
+For L012, pin the START to the second reading. Per Chris's rule the last
+complete reading wins, and `silencedetect` puts its first sound at 201.04 —
+the recogniser's 200.60 is the known artefact of stretching the first word back
+across the silence in front of it.
+
+```json
+  "L012": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 201.04,
+    "_heard": "190.3-196.2 is a complete reading ending 'this is the same data governments already publish', then 4.3s of nothing. 201.04 starts the SECOND reading, 'That's the whole trick...', which runs into 'Arranged, so a person can follow it' at 207.25 with only a 0.68s sentence break. The small.en transcript of the whole take has no words at all between 196.58 and 207.18, which is why this looked like a 10.6s hole."
+  }
+```
+
+L014 needs the same treatment if the re-split still reports its 2.42s pause:
+the repeat is at 228.10–230.90 and the keeper is whatever follows it.
+
+A pin is the last word on where its line starts or stops; everything else about
+the line is still measured. A pin naming a line the script does not have stops
+the run. Say in `_heard` what is actually on the tape — a bare number is a
+decision nobody can check later.
+
+- [ ] **Step 5: Re-split**
+
+```bash
+node tools/video/engine/split.mjs tools/video/episodes/treasury \
+  audio/DJI_35_20261011_092809.WAV
+```
+
+Expected: 37 per-line `.wav` and `.txt` files, plus `_source.json`. L012 is now
+about 10s with no hole. The three lines the splitter always reports as possible
+false starts — L006 (2.489s), L007 (1.412s), L017 (2.137s) — are already judged
+in `cuts.json` as the reader pausing mid-sentence, with the words on both sides
+joining up; they are reported every run because they are not pinned, which is
+correct. **L006 is worth one more listen anyway:** its cut is 16.81s, longer
+than its words need, which is the shape of a line read twice.
+
+- [ ] **Step 6: Measure every join from the AUDIO**
+
+Use the same `silentSeconds` helper from Step 1 — with `spawnSync`, for the
+same reason — over each per-line WAV, and report `previous tail + 0.45 + this
+head` for every pair.
+
+Expected: every join between 0.45s and about 0.60s. The Compass re-split came
+out 0.52 to 0.58. Anything over 0.65s is dead air a listener will hear and name;
+Chris has named two before. Fix a long join by pinning the cut, never by
+trimming the WAV.
+
+- [ ] **Step 7: Write the word sheet**
 
 ```js
+// scratchpad/words.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const dir = 'tools/video/build/treasury';
@@ -264,24 +350,27 @@ Run it, then `head -20 tools/video/build/treasury/words.md`.
 Expected: 37 sections, each opening with its cut and its measured length. Every
 later task quotes from this file and never from memory.
 
-- [ ] **Step 7: Commit, if anything in the repo changed**
+- [ ] **Step 8: Write up the lost-reading check in the pipeline README**
 
-Only `cuts.json` can have changed; `build/` is git-ignored and stays out.
+This is the second recogniser failure the series has paid for — the first was
+`base.en` ending a line four words early, which is why the default is
+`small.en`. This one is worse: a whole 5-second reading transcribed as nothing,
+presented downstream as a line needing a re-record. The README's "When the
+words cannot settle it" section is where it goes, with the `spawnSync` trap and
+the `py`-not-`python` note.
 
-Run: `git status --short tools/video/episodes/treasury/`
-
-If `cuts.json` changed:
+- [ ] **Step 9: Commit**
 
 ```bash
-git add tools/video/episodes/treasury/cuts.json
-git commit -m "fix(video): re-split Treasury against the L012 pickup
+git add tools/video/episodes/treasury/script.md \
+        tools/video/episodes/treasury/cuts.json \
+        tools/video/README.md
+git commit -m "fix(video): Treasury L012 was read twice, not broken
 
-<one line per new pin, saying what is on the tape>
+<what the lost-audio scan found, and what each pin hears>
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
-
-If it did not, skip the commit and say so in the handover.
 
 ---
 
@@ -1907,7 +1996,7 @@ is not Los Angeles; and the longest join the re-split left.
 | Risk | Handling |
 |---|---|
 | **L011 may have no live panel to draw.** Only two entities carry transaction rows app-wide, and Los Angeles is not one. | Task 4 Step 4 verifies it before a line is drawn and STOPS if it cannot. The answer is Chris's — cut the line or name the other government — not a table of invented payees. |
-| Chris's pickup never arrives, or still has a hole | Task 1 Step 1 and Step 2 stop. Task 2 can run meanwhile; Tasks 3 onward cannot. |
+| A recogniser that drops a whole reading | Found and fixed in Task 1: L012 needed no re-record. The lost-audio scan runs before any take is trusted, and the README carries it. |
 | The episode runs long — near 6:20 against 5:06 and 5:26 | Chris chose on 2026-10-12 to judge it from the stitched cut. Task 9 Step 6 puts the number in front of him. |
 | A re-split after any art is written | Every in-scene second dies. If it happens, re-read every one from `words.md`; do not apply a delta. Grep both files for `fade(t,`, `ease((t -`, `ease(t /` and every `+ i *` stagger. Compass needed 8 numbers in `episode.mjs` and 19 in `art.js`, and the last 5 turned up only in a final sweep after a build had started. |
 | An asset refresh after the art is written | `codeKey` digests every `.js` in the directory, so it invalidates every scene and costs a full rebuild. That is why Task 2 runs before Task 3. |
