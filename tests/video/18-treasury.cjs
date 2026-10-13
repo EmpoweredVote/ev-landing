@@ -78,7 +78,10 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   // An earlier version of this check asked whether bar-collapse drilled. It
   // could not fail: that stage hard-codes its rows and never reads openAt. A
   // test that cannot fail for the reason it names is worse than no test.
-  const verbBand = [Math.round(W * 0.74), Math.round(W * 0.97)];
+  // The verbs print down a fixed column at 0.56 of the frame, to the right
+  // of the state grid. They used to be measured off the map; the map got
+  // narrower and they moved with it.
+  const verbBand = [Math.round(W * 0.55), Math.round(W * 0.95)];
   {
     const shot = await pixels(sceneAt('cover-alpha'), 2.1);
     let n = 0;
@@ -176,7 +179,7 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   }
   for (const id of ['bar-named', 'bar-open', 'bar-trail', 'bar-items',
                     'bar-payments', 'bar-trick', 'three-cards', 'three-named',
-                    'three-half', 'years-change', 'years-across', 'levels-city',
+                    'years-change', 'years-across', 'levels-city',
                     'levels-four', 'levels-fed', 'levels-two', 'levels-person',
                     'close-follow']) {
     const early = await inkCount(sceneAt(id), 0.02);
@@ -222,12 +225,16 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   // episode 2 used 0.25 where its real figure was 0.264 and the page jumped
   // fifty pixels back up, which is the one thing a continuous pan must not do.
   {
-    // L036's measured length, pinned here rather than read out of
-    // build/treasury/timings.json — that path is gitignored, so depending on it
-    // meant this assertion silently disappeared on a clean checkout. If a
-    // re-split moves L036 this number changes with it, and the splitter now
-    // says so out loud.
-    const dur = 4.768;
+    // The SCENE's length, not the voice's: 4.768s of recorded line plus the
+    // 0.45s gap timing.mjs leaves after every one. The pan runs for the scene,
+    // so a panFrom computed from the voice alone lands 44 pixels short and the
+    // page jumps back up at the cut — which is exactly what shipped.
+    //
+    // Pinned here rather than read out of build/treasury/timings.json: that
+    // path is gitignored, so depending on it meant this assertion silently
+    // disappeared on a clean checkout. If a re-split moves L036 this number
+    // changes with it, and the splitter says so out loud.
+    const dur = 4.768 + 0.45;
     const a = sceneAt('close-screen'), b = sceneAt('close-follow');
     const endA = (a.panFrom || 0) + (a.panRate || 0) * dur;
     const startB = b.panFrom || 0;
@@ -381,11 +388,12 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
       }
       return false;
     };
-    const cardTop = Math.round(H * 0.085);
-    const cardX = i => {
-      const gap = 0.02, w = (BAR_W - gap * 2) / 3;
-      return atX((i * (w + gap) + w / 2) / BAR_W);
+    const cardTop = Math.round(H * 0.055);
+    const cardBand = i => {
+      const gap = 0.022, w = (BAR_W - gap * 2) / 3;
+      return [atX((i * (w + gap)) / BAR_W), atX((i * (w + gap) + w) / BAR_W)];
     };
+    const cardX = i => { const b = cardBand(i); return Math.round((b[0] + b[1]) / 2); };
     for (const [t, want] of [[1.0, 1], [4.0, 0], [10.0, 2]]) {
       const shot = await pixels(sceneAt('three-named'), t);
       let on = 0;
@@ -398,7 +406,7 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     }
     // The bar below follows the selection. Money Out's widest segment is 25.9%
     // of its bar; Money In's is 30.1% of its own.
-    const widest = (shot, y) => {
+    function widest(shot, y) {
       let best = 0, run = 0, prev = null;
       for (let x = atX(0); x < atX(1); x++) {
         const key = rgb(shot, x, y).join(',');
@@ -406,7 +414,7 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
         if (run > best) best = run;
       }
       return best / (atX(1) - atX(0));
-    };
+    }
     const y = H * rowProbe(['c'], 0);
     const out = widest(await pixels(sceneAt('three-named'), 1.6), y);
     const inn = widest(await pixels(sceneAt('three-named'), 7.5), y);
@@ -415,18 +423,38 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     assert.ok(Math.abs(inn - 0.301) < 0.02,
       'selecting Money In must redraw the bar as Money In, widest segment ' +
       inn.toFixed(3) + ' — expected 0.301');
-    // Employees is a share OF Money Out: $7.4B of $21.5B, 34.4% of the bar.
+    // Choosing Employees swaps the DATASET, the way the live page does: the
+    // bar becomes what the city pays its workforce, department by department.
+    // Water and Power is the widest of those, $2.12B of $7.35B.
+    //
+    // The first version of this drew an orange block over a third of the
+    // budget bar. That answered the question with the wrong picture — it said
+    // the first three and a half departments ARE the payroll — and it is not
+    // what the product does.
     {
       const shot = await pixels(sceneAt('three-named'), 11.5);
-      let run = 0;
-      for (let x = atX(0); x < atX(1); x++) {
-        const c = rgb(shot, x, y);
-        if (c[0] > 180 && c[0] > c[1] + 40 && c[1] > c[2]) run++; else break;
-      }
-      const share = run / (atX(1) - atX(0));
-      assert.ok(Math.abs(share - 0.344) < 0.02,
-        'the Employees card must fill the share of Money Out that pays people, ' +
-        '$7.4B of $21.5B — the fill covers ' + share.toFixed(3) + ' of the bar');
+      const w = widest(shot, y);
+      assert.ok(Math.abs(w - 0.288) < 0.02,
+        'selecting Employees must redraw the bar as the payroll by department, ' +
+        'widest segment ' + w.toFixed(3) + ' — expected 0.288 for Water and Power');
+    }
+    // ...and the Money Out card carries the share, on its right-hand third,
+    // which is where the live page puts it.
+    {
+      const shot = await pixels(sceneAt('three-named'), 11.5);
+      const band = cardBand(1);
+      const cy = Math.round(H * 0.055 + H * 0.110 * 0.5);
+      // The SAME place on the card beside it, which carries no fill, is the
+      // control: comparing one card's left to its own right reads the big
+      // figure printed across it instead of the fill.
+      const other = cardBand(0);
+      const inset = Math.round((band[1] - band[0]) * 0.04);
+      const right = rgb(shot, band[1] - inset, cy);
+      const plain = rgb(shot, other[1] - inset, cy);
+      assert.ok(right[0] > plain[0] + 20 && right[0] > right[2] + 20,
+        'with Employees chosen the Money Out card must carry an orange fill on ' +
+        'its right-hand third: it reads ' + right.join(',') + ' where the ' +
+        'Money In card at the same place reads ' + plain.join(','));
     }
   }
 

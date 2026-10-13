@@ -24,6 +24,11 @@
 // episodes 1 and 2 used for the same person.
 const VIEWER = '#7C6B9E';
 
+// The second figure is somebody ELSE, so it is not the viewer's purple. Green
+// is the cast palette's own, and the two read as two people from the moment
+// the second one walks on.
+const FRIEND = '#43D07E';
+
 export default {
   id: 'treasury',
   title: 'Treasury Tracker',
@@ -76,9 +81,11 @@ export default {
       cast: [{ at: [0.74, 0.93], anim: 'standstill', color: VIEWER, scale: 0.95 }] },
 
     // The document is already there and does not land again. Only the figure
-    // changes — it has read enough.
+    // changes — it has read enough. "but technically is carrying a lot of
+    // weight in that sentence" starts at 2.18, which is where the swirl starts
+    // turning over its head.
     { id: 'stub-tired', type: 'art', vo: 'L004', art: 'drawDocument', continues: true,
-      codeAt: [0, 0, 0],
+      codeAt: [0, 0, 0], swirlAt: 2.18,
       cast: [{ at: [0.74, 0.93], anim: 'exhausted', color: VIEWER, scale: 0.95 }] },
 
     // ── 2. Title ────────────────────────────────────────────────────────
@@ -160,19 +167,29 @@ export default {
     // too AI" — so chapter 3 ends on the three cards and this chapter opens
     // straight after it. There is no three-half scene any more; drawThreeCards
     // still answers to stage 'half' and nothing calls it.
-    // The line is three seconds long. "Change the year" at 0.17, "the whole
-    // shape redraws" from 1.15 — so the change starts on the instruction and
-    // is still moving while he describes it.
+    // The line is three seconds long and it describes an ACTION, so the frame
+    // shows the action: the year picker opens on "Change the year" at 0.57,
+    // FY2020 is chosen at 1.15, and the bar is still redrawing while he says
+    // "the whole shape redraws" (1.15 to 2.01).
+    //
+    // 2020, not 2021: it is the earliest year the live picker offers Los
+    // Angeles that still carries a Money Out budget, and the five years it
+    // opens up are the five the next scene stacks.
     { id: 'years-change', type: 'art', vo: 'L016', art: 'drawYears', stage: 'change',
-      continues: true, changeAt: 0.57 },
+      continues: true, changeAt: 0.57, chooseAt: 1.15, redrawAt: 1.25 },
 
-    // The four columns arrive while he says "Several years tells you how it is
-    // evolving" (2.50 to 4.76), so the picture is complete before the sentence
-    // that reads it. Then "What grew" at 5.76 and "shrank" at 6.82. All six
-    // moved by 2.61s when the false start at the head of this line was cut out.
+    // FY2020 is already on screen — L016 chose it — and the other FOUR join it
+    // underneath while he says "Several years tells you how it is evolving"
+    // (2.50 to 4.76), so the picture is complete before the sentence that
+    // reads it. colAt is therefore indexed by the years that ARRIVE: 2021,
+    // 2022, 2023, 2024.
+    //
+    // No grewAt or shrankAt. They printed two sentences naming what grew and
+    // what fell, under four columns, and with five bars stacked there is
+    // neither room for them nor a need: the yellow band widening down the
+    // stack is the point, and a caption saying so is a caption nobody reads.
     { id: 'years-across', type: 'art', vo: 'L017', art: 'drawYears', stage: 'across',
-      continues: true, colAt: [2.50, 3.06, 3.62, 4.18],
-      grewAt: 5.76, shrankAt: 6.82 },
+      continues: true, colAt: [2.50, 3.06, 3.62, 4.18] },
 
     // ── 6. Across levels ────────────────────────────────────────────────
     // The CITY is already on screen and has been for five chapters, so it is
@@ -215,17 +232,22 @@ export default {
     { id: 'src-ask', type: 'art', vo: 'L024', art: 'drawSourceCard', stage: 'ask',
       titleAt: 4.77,
       cast: [{ at: [0.78, 0.94], anim: 'ponder', color: VIEWER, scale: 0.85 }] },
-    // "every view names its source" at 8.03 is when the line under the chart
-    // appears — late in an 11.3s line, because the first eight seconds are the
-    // list of filings it comes out of.
+    // The grey source line is already under the chart — it has been there
+    // since src-ask — and "out of the government's own filings" at 0.51 turns
+    // it white. Then "every view names its source" at 8.03 opens the filing
+    // itself, which is what pressing that line does on the live page.
     { id: 'src-line', type: 'art', vo: 'L025', art: 'drawSourceCard', stage: 'line',
-      continues: true, lineAt: 8.03 },
+      continues: true, whiteAt: 0.51, lineAt: 8.03 },
 
     // "it stays their wording" at 2.72, "where we summarised one" at 5.95.
     { id: 'src-wording', type: 'art', vo: 'L026', art: 'drawSourceCard', stage: 'wording',
       continues: true, leftAt: 2.72, rightAt: 5.95 },
 
-    // The panel OPENS here, which is the beat, so this scene does not continue.
+    // The panel OPENS here, which is the beat. The scene still CONTINUES: the
+    // chart was fading out at the cut, fading back in, and then being covered
+    // by the panel — "3:50 is pretty wonky, you despawn the bar, spawn it
+    // again, and then have it go away". The chart now stays until the panel
+    // covers it.
     // "the method is written out in full" at 1.34, then the four things he
     // names: what is counted 3.36, why it adds up to more 5.41, where a
     // negative went 8.82, how far into the year 10.31. Every one of them moved
@@ -237,7 +259,7 @@ export default {
     // nothing said about them. Chris: "let's remove those bottom 3 as they
     // don't spawn elegantly."
     { id: 'src-method', type: 'art', vo: 'L027', art: 'drawSourceCard', stage: 'method',
-      openAt: 1.34, rowAt: [3.36, 5.41, 8.82, 10.31] },
+      continues: true, openAt: 1.34, rowAt: [3.36, 5.41, 8.82, 10.31] },
 
     { id: 'src-why', type: 'art', vo: 'L028', art: 'drawSourceCard', stage: 'method',
       continues: true, openAt: 0, rowAt: [0, 0, 0, 0],
@@ -273,7 +295,7 @@ export default {
       continues: true,
       cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 },
              { anim: [{ t: 0, anim: 'toddlemarch' }, { t: 1.1, anim: 'annoyed' }],
-               color: VIEWER, scale: 0.85, flip: true,
+               color: FRIEND, scale: 0.85, flip: true,
                path: [{ t: 0, at: [1.12, 0.94] }, { t: 1.1, at: [0.70, 0.94] }] }] },
     // The scene opens zoomed IN on one segment — "hearing the number on its
     // own" at 3.76 — and pulls back on "that same number inside the whole
@@ -281,11 +303,11 @@ export default {
     { id: 'why-zoom', type: 'art', vo: 'L034', art: 'drawBudgetBar', stage: 'zoom',
       continues: true, zoomAt: 7.72,
       cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 },
-             { at: [0.70, 0.94], anim: 'annoyed', color: VIEWER, scale: 0.85, flip: true }] },
+             { at: [0.70, 0.94], anim: 'annoyed', color: FRIEND, scale: 0.85, flip: true }] },
     { id: 'why-democracy', type: 'art', vo: 'L035', art: 'drawBudgetBar', stage: 'whole',
       continues: true,
       cast: [{ at: [0.30, 0.94], anim: 'present', color: VIEWER, scale: 0.85 },
-             { at: [0.70, 0.94], anim: 'ponder', color: VIEWER, scale: 0.85, flip: true }] },
+             { at: [0.70, 0.94], anim: 'ponder', color: FRIEND, scale: 0.85, flip: true }] },
 
     // ── 10. Close ───────────────────────────────────────────────────────
     // The real page, panned rather than held. The rates are fractions of the
@@ -293,21 +315,25 @@ export default {
     // is. There is ONE capture — the whole Los Angeles page, 1440x2274 — and
     // both scenes pan down it, which is the same shape episode 2's close has.
     // `close-follow` opens where `close-screen` stopped: 0.06 per second times
-    // its MEASURED 4.768s, which is 0.286. Not 0.3, and not 0.29 — episode 2
-    // used 0.25 where its real figure was 0.264 and the page jumped fifty
-    // pixels back up at the cut, which is the one thing a continuous pan must
-    // not do.
+    // the length of the SCENE, which is 5.218s — the 4.768s of voice plus the
+    // 0.45s gap timing.mjs leaves after every line. 0.286 was the voice alone,
+    // and the page jumped 44 pixels back up at the cut: "it pans down, then
+    // resets and pans down again from the top."
+    //
+    // The gap is the trap. timings.json reports the VOICE, the scene is the
+    // voice plus the gap, and the pan runs for the scene. Episode 2 made the
+    // same mistake a different way and jumped fifty pixels.
     { id: 'close-screen', type: 'art', vo: 'L036', art: 'drawLiveScreen',
       host: 'treasurytracker.empowered.vote',
       panFrom: 0, panRate: 0.06 },
     { id: 'close-follow', type: 'art', vo: 'L037', art: 'drawLiveScreen', continues: true,
       host: 'treasurytracker.empowered.vote',
-      panFrom: 0.286, panRate: 0.085,
+      panFrom: 0.3131, panRate: 0.085,
       cast: [{ at: [0.09, 0.97], anim: 'present', color: VIEWER, scale: 0.75 },
-             { at: [0.91, 0.97], anim: 'ponder', color: VIEWER, scale: 0.75, flip: true }] },
+             { at: [0.91, 0.97], anim: 'ponder', color: FRIEND, scale: 0.75, flip: true }] },
     { id: 'close-card', type: 'art', vo: 'L038', art: 'drawTitleCard', hold: 1.0,
       name: 'Treasury Tracker', sub: 'treasurytracker.empowered.vote',
       cast: [{ at: [0.42, 0.95], anim: 'cheer', color: VIEWER, scale: 0.85 },
-             { at: [0.58, 0.95], anim: 'cheer', color: VIEWER, scale: 0.85, flip: true }] }
+             { at: [0.58, 0.95], anim: 'cheer', color: FRIEND, scale: 0.85, flip: true }] }
   ]
 };

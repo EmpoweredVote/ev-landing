@@ -75,6 +75,31 @@
     { head: "Employees", amt: 7.4e9,  sub: "Employee compensation" }
   ];
 
+  // Employee compensation, department by department: what the live page draws
+  // when the Employees card is chosen. Read on 2026-10-13 from the FY2024
+  // salaries budget; the 46 departments add to $7,352,642,554, which is the
+  // $7.4B the card prints.
+  //
+  // Only the twelve the bar can label are listed by name. The rest are rolled
+  // into "Everything else" rather than dropped, because icicle scales a row to
+  // the sum of what it is handed and a short table draws every segment too
+  // wide — the fault that made every federal segment 7.5% wrong.
+  var LA_STAFF = [
+    { label: "Water and Power",     amt: 2120531853, c: "#3AABB8" },
+    { label: "Police",              amt: 1727460783, c: "#FF5740" },
+    { label: "Fire",                amt:  814652107, c: "#FED12E" },
+    { label: "Airports",            amt:  360702576, c: "#9788B8" },
+    { label: "Sanitation",          amt:  350666022, c: "#74B589" },
+    { label: "Parks & Recreation",  amt:  227361251, c: "#59B0C4" },
+    { label: "Transportation",      amt:  185126089, c: "#C2674A" },
+    { label: "City Attorney",       amt:  161250991, c: "#D4940B" },
+    { label: "General Services",    amt:  146386988, c: "#4D8FC2" },
+    { label: "Harbor",              amt:  136119145, c: "#8F9EBC" },
+    { label: "Street Services",     amt:  129338611, c: "#3AABB8" },
+    { label: "Building & Safety",   amt:  125534407, c: "#FF5740" },
+    { label: "Everything else",     amt:  867511723, c: "#5A5A68" }
+  ];
+
   // One drill, all the way to the line items. The breadcrumb is the page's.
   var LA_DRILL = {
     crumb: ["United States", "California", "Los Angeles County", "Los Angeles",
@@ -128,41 +153,57 @@
     });
   }
 
-  // Four years of EVERY top-level segment, in LA_OUT's order, so "change the
+  // FIVE years of EVERY top-level segment, in LA_OUT's order, so "change the
   // year and the whole shape redraws" can redraw the whole shape rather than
-  // two of it. `amt` in billions; `pct` is the share the page prints.
+  // two of it. `amt` in dollars, exactly as the API reports it; `pct` is the
+  // share the page prints.
+  //
+  // Read on 2026-10-13 from api.empowered.vote/api/treasury, the all_funds
+  // operating budget for each year — the same scope the page draws, which is
+  // why FY2024 here is the same $21,517,484,103 LA_OUT adds up to. The first
+  // version of this table was read off the rendered bar and rounded to two
+  // figures; these are the filed numbers.
+  //
+  // FY2020 is here because the year picker in L016 opens on it: Chris asked
+  // for a year to be chosen on screen rather than implied, and 2020 is the
+  // earliest year the live picker offers for Los Angeles that still carries a
+  // Money Out budget.
   //
   // One thing the live chart does that this does not: it re-sorts the segments
   // by size each year, so Water and Health swap places between FY2022 and
   // FY2023. Re-sorting mid-animation would be a frame of chaos and would stop
   // the viewer following any one segment, which is the whole point of the
   // chapter. Each segment therefore keeps its place and its colour, and only
-  // its width moves. The year that is on screen longest — FY2024, every other
-  // chapter — is exact.
+  // its width moves.
   var YEAR_ROWS = [
-    { year: 2021, total: 17.3e9,
-      amt: [4.70, 3.90, 2.20, 1.60, 1.40, 1.30, 1.20, 0.6163, 0.4539, 0.0368],
-      pct: [27.4, 22.5, 12.6,  9.0,  7.8,  7.5,  6.8,  3.6,    2.6,    0.2] },
-    { year: 2022, total: 18.4e9,
-      amt: [4.90, 4.40, 2.40, 1.70, 1.40, 1.50, 1.00, 0.6731, 0.4442, 0.0433],
-      pct: [26.4, 23.6, 13.1,  9.4,  7.6,  8.1,  5.5,  3.7,    2.4,    0.2] },
-    { year: 2023, total: 19.5e9,
-      amt: [5.00, 4.70, 2.50, 2.10, 1.50, 1.50, 0.8985, 0.8014, 0.5127, 0.0559],
-      pct: [25.5, 24.1, 12.9, 10.5,  7.9,  7.6,  4.6,    4.1,    2.6,    0.3] },
-    { year: 2024, total: 21.5e9,
-      amt: [5.60, 4.50, 3.50, 2.20, 1.70, 1.50, 1.30, 0.7568, 0.4611, 0.0659],
-      pct: [25.9, 20.8, 16.1, 10.2,  7.7,  7.2,  6.2,  3.5,    2.1,    0.3] }
+    { year: 2020, total: 16988602989,
+      amt: [4737622598, 3816544856, 2005479186, 1684906626, 1383307429,
+            1184168094, 976500715, 678494397, 469441000, 52138088],
+      pct: [27.9, 22.5, 11.8, 9.9, 8.1, 7.0, 5.7, 4.0, 2.8, 0.3] },
+    { year: 2021, total: 17310021336,
+      amt: [4744356917, 3886406011, 2185683267, 1558198506, 1351162513,
+            1293736555, 1183412819, 616340044, 453878000, 36846704],
+      pct: [27.4, 22.5, 12.6, 9.0, 7.8, 7.5, 6.8, 3.6, 2.6, 0.2] },
+    { year: 2022, total: 18439009336,
+      amt: [4860582084, 4352657000, 2417638611, 1742406864, 1404751112,
+            1487766000, 1012591665, 673122000, 444157000, 43337000],
+      pct: [26.4, 23.6, 13.1, 9.4, 7.6, 8.1, 5.5, 3.7, 2.4, 0.2] },
+    { year: 2023, total: 19535449964,
+      amt: [4975852376, 4698985919, 2523153705, 2050092709, 1542508905,
+            1476344788, 898480702, 801431812, 512682940, 55916108],
+      pct: [25.5, 24.1, 12.9, 10.5, 7.9, 7.6, 4.6, 4.1, 2.6, 0.3] },
+    { year: 2024, total: 21517484103,
+      amt: [5566403825, 4469616159, 3465929518, 2203928039, 1660295337,
+            1538668516, 1328902295, 756821264, 461054977, 65864173],
+      pct: [25.9, 20.8, 16.1, 10.2, 7.7, 7.2, 6.2, 3.5, 2.1, 0.3] }
   ];
-  // The two the closing sentence is about. Roads rises and Electric falls back:
-  // "what grew, what shrank". The real four values, neither series smoothed and
-  // neither pair chosen to flatter the line.
-  var GREW = 2, SHRANK = 1;              // indices into LA_OUT
+
 
   // One year's segments, in LA_OUT's order, ready for icicle().
   function yearSegs(i) {
     var row = YEAR_ROWS[i], out = [];
     for (var k = 0; k < LA_OUT.length; k++) {
-      out.push({ label: LA_OUT[k].label, c: LA_OUT[k].c, amt: row.amt[k] * 1e9, pct: row.pct[k] });
+      out.push({ label: LA_OUT[k].label, c: LA_OUT[k].c, amt: row.amt[k], pct: row.pct[k] });
     }
     return out;
   }
@@ -170,7 +211,7 @@
   function yearSegsBetween(a, b, u) {
     var A = YEAR_ROWS[a], B = YEAR_ROWS[b], out = [];
     for (var k = 0; k < LA_OUT.length; k++) {
-      var amt = (A.amt[k] + (B.amt[k] - A.amt[k]) * u) * 1e9;
+      var amt = A.amt[k] + (B.amt[k] - A.amt[k]) * u;
       out.push({ label: LA_OUT[k].label, c: LA_OUT[k].c, amt: amt,
                  pct: A.pct[k] + (B.pct[k] - A.pct[k]) * u });
     }
@@ -302,7 +343,7 @@
               "Each segment shows the share of all funds received."],
     "out":   [CHART_HEAD, CHART_SUB],
     "staff": ["What Los Angeles pays the people who work for it",
-              "Employee compensation as a share of what the city spends."]
+              "Each segment is one department's share of the payroll."]
   };
   var BASIS = "Top-level descriptions from GASB Statement No. 34 — Basic Financial Statements.";
   // What the site says when it does not have a government. Confirmed live.
@@ -672,9 +713,21 @@
         if (row.focus != null && row.focus !== i) {
           strength = 1 - (row.focusAmt == null ? 1 : row.focusAmt) * (1 - DIMMED);
         }
+        // The colour FADES UP over the same move that sizes the segment. It
+        // used to flip from grey to colour at divide 0.5, which read as the
+        // bar resizing a second time — "the sections of the bar move when they
+        // are colored, and then they move again when we put labels on it".
+        // There is one move now, and nothing moves after it.
+        var dv = o.divide == null ? 1 : o.divide;
         ctx.globalAlpha = alpha * strength;
-        ctx.fillStyle = o.divide != null && o.divide < 0.5 ? GRID : s.c;
+        ctx.fillStyle = GRID;
         ctx.fillRect(Math.round(cx), Math.round(y), Math.max(0, Math.round(sw) - 1), h);
+        if (dv > 0) {
+          ctx.globalAlpha = alpha * strength * dv;
+          ctx.fillStyle = s.c;
+          ctx.fillRect(Math.round(cx), Math.round(y), Math.max(0, Math.round(sw) - 1), h);
+          ctx.globalAlpha = alpha * strength;
+        }
 
         // The name, on the current row AND on the ancestors above it. Dropping
         // every ancestor label is how the drill lost the one word that made it
@@ -762,6 +815,38 @@
     ctx.globalAlpha = alpha;
     fitLabel(ctx, head, box.x, box.y - H * 0.075, box.w, H * 0.034, FG, "700");
     if (sub) fitLabel(ctx, sub, box.x, box.y - H * 0.040, box.w, H * 0.021, MUTED, "500");
+    ctx.restore();
+  }
+
+  // A swirl over a figure's head: the one piece of cartoon shorthand in the
+  // series, and it earns its place on L004 — "technically is carrying a lot of
+  // weight in that sentence" is the line where the reader gives up, and a
+  // figure standing still says nothing about that.
+  //
+  // Positioned off the cast entry's own `at`, which is where its FEET are, so
+  // the swirl and the figure cannot drift apart when either one moves. 0.255 of
+  // the frame above the feet is just clear of the head at scale 1.
+  function confusion(ctx, W, H, at, figScale, t, alpha) {
+    if (alpha <= 0) return;
+    var cx = at[0] * W, cy = at[1] * H - H * 0.255 * figScale;
+    var r = H * 0.038 * figScale;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = MUTED;
+    ctx.lineCap = "round";
+    ctx.lineWidth = Math.max(2, H * 0.005 * figScale);
+    // Two and a bit turns of a spiral, drawn as one path, rotating slowly.
+    ctx.beginPath();
+    var turns = 2.4, steps = 72, spin = t * 0.9;
+    for (var i = 0; i <= steps; i++) {
+      var u = i / steps;
+      var ang = spin + u * turns * Math.PI * 2;
+      var rad = r * (0.18 + 0.82 * u);
+      var px = cx + Math.cos(ang) * rad * 1.35;
+      var py = cy + Math.sin(ang) * rad * 0.62;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -855,6 +940,16 @@
                H * 0.030, FG, "700");
       ctx.restore();
     }
+
+    // L004's own picture: the reader has stopped taking it in. swirlAt is
+    // where it starts turning, over the head of whichever figure the scene
+    // placed — read off the cast entry, so the two cannot drift apart when
+    // either one moves.
+    var fig = (scene.cast && scene.cast[0]) || null;
+    if (fig && fig.at) {
+      confusion(ctx, W, H, fig.at, fig.scale == null ? 1 : fig.scale, t,
+                a * at(scene, 'swirlAt', t, 0.7));
+    }
   }
 
   // ── Title card ─────────────────────────────────────────────────────────
@@ -891,30 +986,19 @@
   // ── Chapter 2: the budget as a picture ─────────────────────────────────
   // Six scenes of one object. Every second below is read off words.md and
   // named in episode.mjs; nothing here chooses its own moment.
-  // The two largest segments, named, with the share the page prints beside the
-  // money. L007's own picture, and the picture the first second of L008 has to
-  // keep showing: two scenes that draw the same names two ways blink at the
-  // cut between them. `nameAt` null means both are already there.
-  function topTwoNames(ctx, W, H, a, nameAt, t) {
-    if (a <= 0) return;
-    var box = barBox(W, H), total = 0, k;
-    for (k = 0; k < LA_OUT.length; k++) total += LA_OUT[k].amt;
-    var cx = box.x, rowH = Math.round(H * ROW_CUR);
-    for (k = 0; k < 2; k++) {
-      var segW = box.w * (LA_OUT[k].amt / total);
-      var on = nameAt ? atIndex(nameAt, k, t, 0.4) : 1;
-      if (on > 0) {
-        ctx.save();
-        ctx.globalAlpha = a * on;
-        fitLabel(ctx, LA_OUT[k].label, cx + rowH * 0.22, box.y + rowH * 0.44,
-                 segW - rowH * 0.44, H * 0.022, ONSEG, "700", "left");
-        fitLabel(ctx, money(LA_OUT[k].amt) + "  ·  " + LA_OUT[k].pct + "%",
-                 cx + rowH * 0.22, box.y + rowH * 0.82, segW - rowH * 0.44,
-                 H * 0.020, "rgba(16,19,26,0.80)", "600", "left");
-        ctx.restore();
-      }
-      cx += segW;
+  // LA_OUT with the share printed beside the money on the segments that have
+  // been named. A segment's `shown` is icicle's own hook for a figure the page prints that
+  // is not simply the amount, so this needs no second label pass and cannot
+  // disagree with the bar it sits on.
+  function withShares(segs, nameAt, t) {
+    if (!nameAt) return segs;
+    var out = segs.slice();
+    for (var i = 0; i < nameAt.length && i < out.length; i++) {
+      if (atIndex(nameAt, i, t, 0.4) <= 0.5) continue;
+      out[i] = Object.assign({}, out[i],
+        { shown: money(out[i].amt) + '  ·  ' + out[i].pct + '%' });
     }
+    return out;
   }
 
   function drawBudgetBar(ctx, t, W, H, scene) {
@@ -941,12 +1025,17 @@
       }
       var shaped = at(scene, 'shapeAt', t, 1.0);
       if (shaped <= 0) return;
-      // Divided at sliceAt, sized at sizeAt: the two halves of the sentence.
-      var divided = at(scene, 'sliceAt', t, 0.9);
-      var sized = at(scene, 'sizeAt', t, 1.2);
+      // ONE move. The bar divides into its true sizes and its own colours in a
+      // single pass at sliceAt, and the names arrive at sizeAt over a picture
+      // that has stopped moving. It used to size halfway at sliceAt and the
+      // rest of the way at sizeAt, which is two resizes for one sentence:
+      // "we should not need to change the sizes of the sections on the bar
+      // during that sequence".
+      var divided = at(scene, 'sliceAt', t, 1.1);
+      var sized = at(scene, 'sizeAt', t, 0.8);
       barHead(ctx, W, H, a * shaped, CHART_HEAD, CHART_SUB);
       opts.alpha = a * shaped;
-      opts.divide = Math.max(divided * 0.5, sized);
+      opts.divide = divided;
       opts.labelAlpha = sized;
       rows = [{ segs: LA_OUT, current: true }];
       icicle(ctx, rows, opts);
@@ -954,13 +1043,16 @@
     }
 
     if (stage === 'named') {
-      // The two largest gain their names as he reaches the answer, so the
-      // question that follows lands on a picture that already answers it.
+      // EVERY name stays. This stage used to print only the two largest, so at
+      // the cut out of bar-collapse — which ends with all five labelled — the
+      // other three blinked out and came back a chapter later: "at 1:02, all
+      // the labels go away and start spawning in slower".
+      //
+      // What arrives here is the SHARE on the two he names: "$5.6B · 25.9%"
+      // where the bar was printing "$5.6B". The picture already answers the
+      // question, which is what the line says about it.
       barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
-      rows = [{ segs: LA_OUT, current: true }];
-      opts.labelAlpha = 0;                      // the names are drawn below
-      icicle(ctx, rows, opts);
-      topTwoNames(ctx, W, H, a, scene.nameAt, t);
+      icicle(ctx, [{ segs: withShares(LA_OUT, scene.nameAt, t), current: true }], opts);
       return;
     }
 
@@ -979,12 +1071,8 @@
       var deeper = at(scene, 'deeperAt', t, 0.9);
       barHead(ctx, W, H, a, CHART_HEAD, null);
       if (opened <= 0) {
-        // Still the bar L007 left on screen, with the same two names on it.
-        // Letting icicle label everything here would pop eight more names on
-        // at the cut, which is the blink that continues exists to stop.
-        opts.labelAlpha = 0;
-        icicle(ctx, [{ segs: LA_OUT, current: true }], opts);
-        topTwoNames(ctx, W, H, a, null, t);
+        // Still the bar L007 left on screen, shares and all.
+        icicle(ctx, [{ segs: withShares(LA_OUT, [0, 0], t), current: true }], opts);
         return;
       }
       var OPENED = 0;        // Government & Public Safety, in LA_OUT
@@ -1001,9 +1089,6 @@
       }
       opts.labelAlpha = opened;
       icicle(ctx, rows, opts);
-      // The top row's two big names cross-fade into the small ancestor names
-      // icicle prints, rather than one set cutting to the other.
-      if (opened < 1) topTwoNames(ctx, W, H, a * (1 - opened), null, t);
 
       // 5 parts before anything opens, 6 at the first drill, 7 at the second.
       // The trail is complete by the end of L008, so L009's own beat is the
@@ -1140,10 +1225,14 @@
   // ── Chapter 3: more than one question ──────────────────────────────────
   // The three cards the live page puts above the chart, in its own words. The
   // bar carries on underneath: this chapter does not draw one of its own.
+  // The cards sit higher and shorter than they did: they used to end at 0.22
+  // of the frame with the chart heading at 0.265 and the bar at 0.34, and the
+  // three of them crowded. 0.055 to 0.165 leaves a tenth of the frame of air
+  // between the cards and the heading under them.
   function cardBox(W, H, i) {
     var box = barBox(W, H);
-    var gap = W * 0.02, w = (box.w - gap * 2) / 3;
-    return { x: box.x + i * (w + gap), y: H * 0.085, w: w, h: H * 0.135 };
+    var gap = W * 0.022, w = (box.w - gap * 2) / 3;
+    return { x: box.x + i * (w + gap), y: H * 0.055, w: w, h: H * 0.110 };
   }
   // Which picture a card stands for. Money In is a bar of its own; Employees
   // is not a bar at all but a SHARE of Money Out, so it is drawn differently
@@ -1152,7 +1241,9 @@
 
   // Employee compensation against the money the city spends: $7.4B of $21.5B.
   // Read from LA_CARDS so the bar and the card above it can never disagree.
-  var STAFF_C = "#FF7A1A";
+  // #EA580C is the colour the live page fills the Money Out card with when
+  // Employees is chosen, measured off it on 2026-10-13.
+  var STAFF_C = "#EA580C";
   function staffShare() { return LA_CARDS[2].amt / LA_CARDS[1].amt; }
 
   // The bar under the three cards, for whichever card is selected.
@@ -1170,22 +1261,14 @@
              { x: box.x, y: box.y, w: box.w, H: H, alpha: alpha });
       return;
     }
-    var h = Math.round(H * ROW_CUR), share = staffShare();
-    var sw = Math.round(box.w * share);
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = EDGE;
-    ctx.fillRect(Math.round(box.x), Math.round(box.y), Math.round(box.w), h);
-    ctx.fillStyle = STAFF_C;
-    ctx.fillRect(Math.round(box.x), Math.round(box.y), sw, h);
-    var pad = Math.max(4, h * 0.15);
-    segLabel(ctx, "Employee compensation",
-             money(LA_CARDS[2].amt) + "  ·  " + Math.round(share * 100) + "% of Money Out",
-             box.x + pad, box.y, sw - pad * 2, h, H * 0.022, true);
-    ctx.globalAlpha = alpha * 0.85;
-    fitLabel(ctx, "Everything else the city spends", box.x + sw + pad,
-             box.y + h * 0.56, box.w - sw - pad * 2, H * 0.022, MUTED, "600", "left");
-    ctx.restore();
+    // Choosing Employees on the live page swaps the dataset: the bar becomes
+    // what the city pays its workforce, department by department. The first
+    // version of this drew an orange block over a third of the budget bar,
+    // which was the wrong picture twice over — it said the first three and a
+    // half departments ARE the payroll, and it answered a question the page
+    // answers differently.
+    icicle(ctx, [{ segs: LA_STAFF, current: true }],
+           { x: box.x, y: box.y, w: box.w, H: H, alpha: alpha });
   }
 
   function drawThreeCards(ctx, t, W, H, scene) {
@@ -1263,6 +1346,25 @@
       var strength = Math.max(base, on);
       panel(ctx, b.x, b.y, b.w, b.h, H, a * strength,
             i === pick ? (scene.accent || "#FFD426") : EDGE);
+
+      // With Employees chosen, the live page fills the RIGHT-HAND third of the
+      // Money Out card with an orange gradient: the share of what the city
+      // spends that pays the people who work for it. Measured off the live
+      // page — 150px of a 443px card, 33.9%, fading leftward from
+      // rgba(234,88,12,0.3). Chris asked for the left third; the product does
+      // it on the right, and the card is the product's.
+      if (i === 1 && nowMode === "staff") {
+        var fw = b.w * staffShare();
+        var g = ctx.createLinearGradient(b.x + b.w - fw, 0, b.x + b.w, 0);
+        g.addColorStop(0, "rgba(234,88,12,0.10)");
+        g.addColorStop(1, "rgba(234,88,12,0.48)");
+        ctx.save();
+        ctx.globalAlpha = a * swap;
+        ctx.fillStyle = g;
+        roundRect(ctx, b.x + b.w - fw, b.y, fw, b.h, H * 0.018);
+        ctx.fill();
+        ctx.restore();
+      }
       ctx.save();
       ctx.globalAlpha = a * strength;
       fitLabel(ctx, c.head, b.x + b.w * 0.07, b.y + b.h * 0.30, b.w * 0.86,
@@ -1278,100 +1380,124 @@
   // ── Chapter 4: across time ─────────────────────────────────────────────
   // The same bar, re-timed. Every width below comes from YEAR_ROWS, which is
   // every top-level segment in all four years as the live page reports them.
+  // The year control the live page puts above the chart, as a drop-down that
+  // is seen to be used. "Change the year" was a bar that redrew itself with
+  // nothing on screen doing the changing, so the sentence described an action
+  // the picture never showed.
+  function yearPicker(ctx, W, H, a, open, picked, chosen) {
+    var box = barBox(W, H);
+    var bw = W * 0.135, bh = H * 0.052;
+    var bx = box.x + box.w - bw, by = box.y - H * 0.088;
+    ctx.save();
+    ctx.globalAlpha = a;
+    panel(ctx, bx, by, bw, bh, H, a, open > 0 ? (chosen || "#FFD426") : EDGE);
+    fitLabel(ctx, "FY " + picked, bx + bw * 0.09, by + bh * 0.66, bw * 0.62,
+             H * 0.026, FG, "700");
+    // the little chevron, pointing down shut and up open
+    ctx.strokeStyle = MUTED;
+    ctx.lineWidth = Math.max(2, H * 0.0028);
+    ctx.lineCap = "round";
+    var ax = bx + bw * 0.84, ay = by + bh * 0.5, aw = bw * 0.055, ah = bh * 0.14;
+    var dir = open > 0.5 ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(ax - aw, ay - ah * dir);
+    ctx.lineTo(ax, ay + ah * dir);
+    ctx.lineTo(ax + aw, ay - ah * dir);
+    ctx.stroke();
+    ctx.restore();
+    if (open <= 0) return;
+
+    // The list, newest first, the way the picker orders it.
+    var rows = YEAR_ROWS.length, rh = H * 0.046;
+    var ly = by + bh + H * 0.006, lh = rows * rh + H * 0.012;
+    ctx.save();
+    ctx.globalAlpha = a * open;
+    panel(ctx, bx, ly, bw, lh, H, a * open, EDGE);
+    for (var i = 0; i < rows; i++) {
+      var yr = YEAR_ROWS[rows - 1 - i].year;
+      var ry = ly + H * 0.006 + i * rh;
+      if (yr === picked) {
+        ctx.fillStyle = "rgba(255,212,38,0.14)";
+        roundRect(ctx, bx + bw * 0.04, ry, bw * 0.92, rh, H * 0.008);
+        ctx.fill();
+      }
+      fitLabel(ctx, String(yr), bx + bw * 0.10, ry + rh * 0.70, bw * 0.80,
+               H * 0.024, yr === picked ? (chosen || "#FFD426") : MUTED,
+               yr === picked ? "700" : "600");
+    }
+    ctx.restore();
+  }
+
   function drawYears(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
     var box = barBox(W, H);
 
     if (scene.stage === 'across') {
-      // Four years side by side, one column each, and the two the closing
-      // sentence is about picked out of the rest.
-      // Until the first column lands the inherited bar is still what is on
-      // screen. Without this the frame held a heading and nothing else for
-      // five seconds, one scene after the same fault was fixed in bar-collapse.
-      var anyCol = 0;
-      for (var q = 0; q < YEAR_ROWS.length; q++) {
-        anyCol = Math.max(anyCol, atIndex(scene.colAt, q, t, 0.35));
+      // FIVE years, each a bar of its own, stacked down the frame in the same
+      // shape as the bar above them — so the cut into this scene is seamless
+      // and the eye can run one colour down the column. They used to be
+      // vertical columns side by side, which made the chapter change its own
+      // grammar halfway through.
+      //
+      // FY2020 is already on screen: L016 chose it in the picker. The other
+      // four arrive while he says "several years tells you how it is evolving".
+      var arrived = [], anyNew = 0, y;
+      for (y = 0; y < YEAR_ROWS.length; y++) {
+        arrived[y] = y === 0 ? 1 : atIndex(scene.colAt, y - 1, t, 0.35);
+        if (y > 0) anyNew = Math.max(anyNew, arrived[y]);
       }
-      if (anyCol <= 0) {
-        barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
-        icicle(ctx, [{ segs: yearSegs(3), current: true }],
-               { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
-        return;
+      barHead(ctx, W, H, a,
+              anyNew > 0.5 ? "Los Angeles, FY2020 to FY2024" : CHART_HEAD, CHART_SUB);
+
+      // Every row shrinks together as the stack fills: one full-height bar at
+      // the cut, five ancestor-height bars once they are all in. Shrinking
+      // only the new ones would step the first bar's height at the join.
+      var rows = [];
+      for (y = 0; y < YEAR_ROWS.length; y++) {
+        if (arrived[y] <= 0) continue;
+        rows.push({ segs: yearSegs(y), current: 1 - anyNew, alive: arrived[y] });
       }
-      barHead(ctx, W, H, a, "Los Angeles, FY2021 to FY2024", CHART_SUB);
-      var colW = (box.w - W * 0.018 * 3) / 4;
-      for (var y = 0; y < YEAR_ROWS.length; y++) {
-        var on = atIndex(scene.colAt, y, t, 0.35);
-        if (on <= 0) continue;
-        var cx = box.x + y * (colW + W * 0.018);
+      icicle(ctx, rows, { x: box.x, y: box.y, w: box.w, H: H, alpha: a,
+                          minLabelPx: box.w * 0.15 });
+
+      // The year, in the gutter beside its own bar. Read off the same row
+      // heights icicle used, so a label cannot drift off its bar.
+      var rowH = H * (ROW_ANC + (ROW_CUR - ROW_ANC) * (1 - anyNew));
+      var gap = Math.max(1, H * ROW_GAP), cy = box.y;
+      for (y = 0; y < YEAR_ROWS.length; y++) {
+        if (arrived[y] <= 0) continue;
+        var h = rowH * arrived[y];
         ctx.save();
-        ctx.globalAlpha = a * on;
-        label(ctx, "FY" + YEAR_ROWS[y].year, cx, box.y - H * 0.014,
-              H * 0.022, MUTED, "700");
+        ctx.globalAlpha = a * arrived[y];
+        label(ctx, "FY" + YEAR_ROWS[y].year, box.x - W * 0.012,
+              cy + h * 0.60, H * 0.021, y === YEAR_ROWS.length - 1 ? FG : MUTED,
+              "700", "right");
         ctx.restore();
-        // A vertical stack: each segment's share of that year, top to bottom.
-        var segs = yearSegs(y), total = 0, k;
-        for (k = 0; k < segs.length; k++) total += segs[k].amt;
-        var cy = box.y, colH = H * 0.34;
-        for (k = 0; k < segs.length; k++) {
-          var sh = colH * (segs[k].amt / total);
-          // The two the closing sentence is about are full strength from the
-          // moment their column lands; everything else is dimmed. The beats at
-          // grewAt and shrankAt name them in the legend below, which is what
-          // those seconds are for.
-          var tracked = (k === GREW || k === SHRANK);
-          ctx.save();
-          ctx.globalAlpha = a * on * (tracked ? 1 : 0.22);
-          ctx.fillStyle = segs[k].c;
-          ctx.fillRect(Math.round(cx), Math.round(cy), Math.round(colW),
-                       Math.max(1, Math.round(sh) - 1));
-          ctx.restore();
-          if ((k === GREW || k === SHRANK) && sh > H * 0.028) {
-            ctx.save();
-            ctx.globalAlpha = a * on;
-            fitLabel(ctx, segs[k].pct.toFixed(1) + "%", cx + colW * 0.06,
-                     cy + sh * 0.62, colW * 0.88, H * 0.021, ONSEG, "700");
-            ctx.restore();
-          }
-          cy += sh;
-        }
-      }
-      // Which two the eye is meant to follow, named once under the columns.
-      var namedGrew = at(scene, 'grewAt', t, 0.4), namedShrank = at(scene, 'shrankAt', t, 0.4);
-      var ly = box.y + H * 0.385;
-      if (namedGrew > 0) {
-        ctx.save(); ctx.globalAlpha = a * namedGrew;
-        ctx.fillStyle = LA_OUT[GREW].c;
-        ctx.fillRect(box.x, ly - H * 0.016, H * 0.020, H * 0.020);
-        label(ctx, LA_OUT[GREW].label + " grew, 12.6% to 16.1%",
-              box.x + H * 0.030, ly, H * 0.022, FG, "600");
-        ctx.restore();
-      }
-      if (namedShrank > 0) {
-        ctx.save(); ctx.globalAlpha = a * namedShrank;
-        ctx.fillStyle = LA_OUT[SHRANK].c;
-        ctx.fillRect(box.x, ly + H * 0.022, H * 0.020, H * 0.020);
-        label(ctx, LA_OUT[SHRANK].label + " fell back, 22.5% to 20.8%",
-              box.x + H * 0.030, ly + H * 0.038, H * 0.022, FG, "600");
-        ctx.restore();
+        cy += h + gap * arrived[y];
       }
       return;
     }
 
-    // 'change': the year steps and every segment moves with it.
-    var u = at(scene, 'changeAt', t, 1.3);
-    var segsNow = u <= 0 ? yearSegs(2) : yearSegsBetween(2, 3, u);
-    var shown = u < 0.5 ? YEAR_ROWS[2] : YEAR_ROWS[3];
+    // 'change': the picker opens, FY2020 is chosen, and the bar redraws.
+    // changeAt is "change the year"; the list opens there and the choice lands
+    // a beat later, which is when the shape starts moving.
+    var opened = at(scene, 'changeAt', t, 0.35);
+    var chose = at(scene, 'chooseAt', t, 0.25);
+    var u = at(scene, 'redrawAt', t, 1.1);
+    var segsNow = u <= 0 ? yearSegs(YEAR_ROWS.length - 1)
+                         : yearSegsBetween(YEAR_ROWS.length - 1, 0, u);
     barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
     icicle(ctx, [{ segs: segsNow, current: true }],
            { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
+    // The list closes again once the choice is made, the way a picker does.
+    yearPicker(ctx, W, H, a, Math.max(0, opened - chose),
+               chose > 0.5 ? YEAR_ROWS[0].year : YEAR_ROWS[YEAR_ROWS.length - 1].year,
+               scene.accent);
     ctx.save();
     ctx.globalAlpha = a;
-    label(ctx, "FY" + shown.year, box.x + box.w, box.y - H * 0.040,
-          H * 0.030, scene.accent || "#FFD426", "700", "right");
-    label(ctx, money(shown.total) + " spent", box.x + box.w, box.y - H * 0.012,
-          H * 0.021, MUTED, "600", "right");
+    label(ctx, money(u < 0.5 ? YEAR_ROWS[YEAR_ROWS.length - 1].total : YEAR_ROWS[0].total) +
+          " spent", box.x + box.w, box.y - H * 0.012, H * 0.021, MUTED, "600", "right");
     ctx.restore();
   }
 
@@ -1389,27 +1515,58 @@
     var i, on;
 
     if (stage === 'nest') {
-      // The city sits inside the county, inside the state, inside the federal.
-      // Outermost first, so each one wraps the last.
+      // The address bar, which is how the live page actually moves between
+      // governments: United States / California / Los Angeles County / Los
+      // Angeles, each one a link, the one you are on picked out. Click any
+      // part and the chart becomes that government's.
+      //
+      // What was here was four nested rounded rectangles with the city inside
+      // them. It read as a diagram of containment that nothing in the product
+      // draws, and it did not say what the chapter needs it to say: that these
+      // are four places you can go.
       barHead(ctx, W, H, a, "Four governments, one taxpayer", null);
-      var cx = W / 2, cy = H * 0.50;
+      var cy = H * 0.46, pad = W * 0.016, gapw = W * 0.020;
+      ctx.font = "700 " + Math.round(H * 0.030) + "px " + FONT;
+      var widths = [], total = 0;
+      for (i = 0; i < LEVELS.length; i++) {
+        widths[i] = ctx.measureText(LEVELS[i].name).width + pad * 2;
+        total += widths[i];
+      }
+      total += gapw * (LEVELS.length - 1);
+      var cx2 = (W - total) / 2, chipH = H * 0.078;
       for (i = 0; i < LEVELS.length; i++) {
         on = atIndex(scene.ringAt, i, t, 0.45);
-        if (on <= 0) continue;
-        var shrink = 1 - i * 0.21;
-        var rw = W * 0.62 * shrink, rh = H * 0.34 * shrink;
-        ctx.save();
-        ctx.globalAlpha = a * on;
-        ctx.strokeStyle = i === LEVELS.length - 1 ? (scene.accent || "#FFD426") : EDGE;
-        ctx.fillStyle = i === LEVELS.length - 1 ? "rgba(255,212,38,0.10)" : CARD;
-        ctx.lineWidth = Math.max(1, H * 0.003);
-        roundRect(ctx, cx - rw / 2, cy - rh / 2, rw, rh, H * 0.016);
-        ctx.fill(); ctx.stroke();
-        fitLabel(ctx, LEVELS[i].name, cx - rw / 2 + W * 0.014,
-                 cy - rh / 2 + H * 0.034, rw * 0.5, H * 0.022,
-                 i === LEVELS.length - 1 ? FG : MUTED, "700");
-        ctx.restore();
+        var here = i === LEVELS.length - 1;          // Los Angeles: where we are
+        if (on > 0) {
+          ctx.save();
+          ctx.globalAlpha = a * on;
+          ctx.fillStyle = here ? "rgba(255,212,38,0.12)" : CARD;
+          roundRect(ctx, cx2, cy - chipH / 2, widths[i], chipH, H * 0.012);
+          ctx.fill();
+          ctx.strokeStyle = here ? (scene.accent || "#FFD426") : EDGE;
+          ctx.lineWidth = Math.max(1, H * 0.0025);
+          ctx.stroke();
+          fitLabel(ctx, LEVELS[i].name, cx2 + pad, cy + H * 0.010,
+                   widths[i] - pad * 2, H * 0.030, here ? FG : MUTED, "700");
+          ctx.restore();
+        }
+        if (i < LEVELS.length - 1) {
+          var sepOn = Math.min(on, atIndex(scene.ringAt, i + 1, t, 0.45));
+          if (sepOn > 0) {
+            ctx.save();
+            ctx.globalAlpha = a * sepOn;
+            label(ctx, "/", cx2 + widths[i] + gapw / 2, cy + H * 0.010,
+                  H * 0.030, DIM, "500", "center");
+            ctx.restore();
+          }
+        }
+        cx2 += widths[i] + gapw;
       }
+      ctx.save();
+      ctx.globalAlpha = a * atIndex(scene.ringAt, 0, t, 0.45);
+      label(ctx, "Press any one of them and the chart becomes that government's.",
+            W / 2, cy + H * 0.105, H * 0.022, DIM, "500", "center");
+      ctx.restore();
       return;
     }
 
@@ -1536,34 +1693,39 @@
       // is a claim, and inventing one in order to show how careful the real
       // ones are would undo the chapter. Episode 1's source card is drawn the
       // same way for the same reason.
+      // The chart stays underneath until the panel covers it. src-method
+      // carries continues: true now, so the bar does not fade out at the cut,
+      // fade back in, and then be covered — "3:50 is pretty wonky, you despawn
+      // the bar, spawn it again, and then have it go away".
       var open = at(scene, 'openAt', t, 0.7);
-      if (open <= 0) {
-        // The panel has not opened yet, so the chart is still what is on
-        // screen. Returning here left 1.34s of black at the cut.
-        barHead(ctx, W, H, a, CHART_HEAD, null);
+      barHead(ctx, W, H, a * (1 - open), CHART_HEAD, null);
+      if (open < 1) {
         icicle(ctx, [{ segs: LA_OUT, current: true }],
-               { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
-        return;
+               { x: box.x, y: box.y, w: box.w, H: H, alpha: a * (1 - open) });
       }
-      var pw = box.w, px = box.x, py = H * 0.17, rowH = H * 0.094;
-      var ph = H * 0.055 + METHOD.rows.length * rowH;
+      if (open <= 0) return;
+      var shownRows = METHOD.rows.slice(0, 4);
+      var pw = box.w, px = box.x, py = H * 0.20, rowH = H * 0.098;
+      var ph = H * 0.055 + shownRows.length * rowH;
       panel(ctx, px, py, pw, ph, H, a * open, EDGE);
       ctx.save();
       ctx.globalAlpha = a * open;
       fitLabel(ctx, METHOD.head, px + pw * 0.025, py + H * 0.042, pw * 0.95,
                H * 0.030, FG, "700");
       ctx.restore();
-      for (var r = 0; r < METHOD.rows.length; r++) {
-        // The first four arrive as he names them; the other three are there
-        // from the moment the panel opens, because he does not claim them.
-        var on = r < 4 ? atIndex(scene.rowAt, r, t, 0.3) : open;
+      for (var r = 0; r < shownRows.length; r++) {
+        // Every heading here is one he names. Three more real ones used to
+        // stand underneath from the moment the panel opened, with nothing said
+        // about them — "let's remove those bottom 3 as they don't spawn
+        // elegantly". METHOD still carries all seven; the panel shows four.
+        var on = atIndex(scene.rowAt, r, t, 0.3);
         if (on <= 0) continue;
         var ry = py + H * 0.072 + r * rowH;
         ctx.save();
         ctx.globalAlpha = a * open * on;
         ctx.fillStyle = scene.accent || "#FFD426";
         ctx.fillRect(px + pw * 0.025, ry + H * 0.004, H * 0.004, H * 0.024);
-        fitLabel(ctx, METHOD.rows[r], px + pw * 0.045, ry + H * 0.024,
+        fitLabel(ctx, shownRows[r], px + pw * 0.045, ry + H * 0.024,
                  pw * 0.93, H * 0.023, FG, "600");
         ctx.restore();
         ruleLines(ctx, px + pw * 0.045, ry + H * 0.036, pw * 0.86, 2,
@@ -1573,29 +1735,81 @@
     }
 
     // Every other stage keeps the chart and puts something under it.
+    //
+    // 'ask' used to draw the whole chart at 0.45, labels included, so the one
+    // thing on screen during a line about trusting a chart was a chart nobody
+    // could read. The FILL steps back; the type does not.
     barHead(ctx, W, H, a, CHART_HEAD, null);
-    var dim = stage === 'ask' ? 0.45 : 1;
+    // The chart steps back behind the filing when it opens, so a document
+    // lying across the right-hand half of the bar reads as being ON TOP of it
+    // rather than as a bar that has been cut in half.
+    var docOpen = stage === 'line' ? at(scene, 'lineAt', t, 0.6) : 0;
+    var dim = (stage === 'ask' ? 0.70 : 1) * (1 - 0.55 * docOpen);
     icicle(ctx, [{ segs: LA_OUT, current: true }],
-           { x: box.x, y: box.y, w: box.w, H: H, alpha: a * dim, labelAlpha: dim });
+           { x: box.x, y: box.y, w: box.w, H: H, alpha: a * dim, labelAlpha: 1 });
     var under = box.y + H * ROW_CUR + H * 0.045;
 
-    if (stage === 'line') {
-      // The source line the live page prints under the chart: the document's
-      // name, when it was read, and the link glyph. Los Angeles's own — every
-      // level cites a different one, which is why SOURCES is keyed by name.
-      var on = at(scene, 'lineAt', t, 0.5);
-      if (on <= 0) return;
-      var src = SOURCES["Los Angeles"];
+    // The source line the live page prints under the chart. It is HERE, in
+    // grey, from the moment the chapter starts — "a light grey [line] that is
+    // under the bar graph" — and L025 turns it white as he says where the
+    // numbers come from. A line that arrives at the moment it is named is a
+    // line the viewer reads instead of listening to him.
+    var src = SOURCES["Los Angeles"];
+    var white = stage === 'line' ? at(scene, 'whiteAt', t, 0.5) : 0;
+    if (stage === 'ask' || stage === 'line') {
       ctx.save();
-      ctx.globalAlpha = a * on;
+      ctx.globalAlpha = a;
       ctx.font = "600 " + Math.round(H * 0.024) + "px " + FONT;
       var txt = src.name + "  ·  " + src.asOf;
       var tw = ctx.measureText(txt).width + W * 0.028;
-      panel(ctx, box.x, under, tw, H * 0.052, H, a * on, EDGE);
-      label(ctx, txt, box.x + W * 0.014, under + H * 0.035, H * 0.024, FG, "600");
+      panel(ctx, box.x, under, tw, H * 0.052, H,
+            a * (0.45 + 0.55 * white), white > 0.5 ? (scene.accent || "#FFD426") : EDGE);
+      label(ctx, txt, box.x + W * 0.014, under + H * 0.035, H * 0.024,
+            white > 0.5 ? FG : DIM, "600");
       label(ctx, "↗", box.x + tw - W * 0.012, under + H * 0.035,
-            H * 0.024, scene.accent || "#FFD426", "700", "right");
+            H * 0.024, white > 0.5 ? (scene.accent || "#FFD426") : DIM, "700");
       ctx.restore();
+    }
+
+    if (stage === 'ask') {
+      // The chapter's question, printed as one. It is the only line in the
+      // episode that is a question to the viewer rather than a description.
+      var titled = at(scene, 'titleAt', t, 0.5);
+      if (titled > 0) {
+        ctx.save();
+        ctx.globalAlpha = a * titled;
+        fitLabel(ctx, "Where did these numbers come from?", W / 2, H * 0.135,
+                 W * 0.80, H * 0.052, FG, "800", "center");
+        ctx.restore();
+      }
+      return;
+    }
+
+    if (stage === 'line') {
+      // Pressing the source line opens the filing it names. "Every view names
+      // its source" is the claim, and a named source you cannot reach is a
+      // citation rather than a source, so the document itself rises over the
+      // chart as he says it.
+      //
+      // Its BODY is rule-lines. The filing is real and its name is on the
+      // panel; writing out sentences and presenting them as a state
+      // controller's words would be inventing a public record, which is the
+      // one thing this chapter exists to argue against.
+      var on = docOpen;
+      if (on <= 0) return;
+      var dw = W * 0.46, dx = box.x + box.w - dw, dy = H * 0.16, dh = H * 0.56;
+      ctx.save();
+      ctx.globalAlpha = a * on;
+      panel(ctx, dx, dy, dw, dh, H, a * on, scene.accent || "#FFD426");
+      fitLabel(ctx, src.name, dx + dw * 0.07, dy + H * 0.062, dw * 0.86,
+               H * 0.028, FG, "700");
+      fitLabel(ctx, src.asOf, dx + dw * 0.07, dy + H * 0.095, dw * 0.86,
+               H * 0.020, MUTED, "500");
+      ctx.fillStyle = EDGE;
+      ctx.fillRect(dx + dw * 0.07, dy + H * 0.115, dw * 0.86, Math.max(1, H * 0.002));
+      ctx.restore();
+      ruleLines(ctx, dx + dw * 0.07, dy + H * 0.145, dw * 0.86, 14,
+                H * 0.028, a * on * 0.9, 17);
       return;
     }
 
@@ -1633,9 +1847,38 @@
   // for the country, with the ones this episode has actually shown lit and the
   // rest dark. No cell is labelled with a coverage claim that has not been
   // checked — the chapter is about being honest on exactly this point.
-  var MAP_COLS = 16, MAP_ROWS = 7;
-  // The places this episode has shown, as grid positions. Nothing else lights.
-  var SHOWN = [[5, 3], [5, 4], [4, 3], [11, 2]];
+  // The country, as the standard state tile grid: eleven columns, eight rows,
+  // every state in roughly its own place. The old map was a 16x7 rectangle
+  // with four cells lit, which said the product covers four towns.
+  //
+  // It covers 8,925 governments in all 51 states — read on 2026-10-13 from
+  // api.empowered.vote/api/treasury/cities, counting every entity that carries
+  // at least one year of data. The counts are nothing like even: Pennsylvania
+  // has 2,620 and nineteen states have exactly one, which is a true and more
+  // interesting picture than a scatter of identical blocks. So a cell's
+  // BRIGHTNESS is its state's count, on a log scale, and the caption carries
+  // the number.
+  var MAP_COLS = 11, MAP_ROWS = 8;
+  var MAP_GRID = [
+    ["AK", "",   "",   "",   "",   "",   "",   "",   "",   "",   "ME"],
+    ["",   "",   "",   "",   "",   "",   "",   "",   "VT", "NH", "MA"],
+    ["WA", "ID", "MT", "ND", "MN", "IL", "WI", "MI", "NY", "CT", "RI"],
+    ["OR", "NV", "WY", "SD", "IA", "IN", "OH", "PA", "NJ", "",   ""],
+    ["CA", "UT", "CO", "NE", "MO", "KY", "WV", "VA", "MD", "DE", ""],
+    ["AZ", "NM", "KS", "AR", "TN", "NC", "SC", "DC", "",   "",   ""],
+    ["",   "",   "OK", "LA", "MS", "AL", "GA", "",   "",   "",   ""],
+    ["HI", "",   "TX", "",   "",   "",   "",   "FL", "",   "",   ""]
+  ];
+  var MAP_COUNT = {
+    PA: 2620, MI: 1857, MN: 944, NY: 780, IN: 660, CA: 538, FL: 480, MA: 357,
+    OH: 342, VA: 162, SC: 60, TX: 17, UT: 16, WA: 13, OR: 11, NC: 7, AZ: 6,
+    GA: 5, CO: 5, SD: 3, MS: 3, ND: 3, KS: 3, WI: 3, KY: 2, MD: 2, TN: 2,
+    AL: 1, AK: 1, AR: 1, CT: 1, DE: 1, HI: 1, ID: 1, IL: 1, IA: 1, LA: 1,
+    ME: 1, MO: 1, MT: 1, NE: 1, NV: 1, NH: 1, NJ: 1, NM: 1, OK: 1, RI: 1,
+    VT: 1, WV: 1, WY: 1
+  };
+  var MAP_TOTAL = "8,925 governments, in all 51 states";
+
   function drawCoverage(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
@@ -1665,29 +1908,30 @@
       return;
     }
 
-    // 'alpha' and 'map': the country, mostly unfilled.
-    var gx = W * 0.10, gy = H * 0.20, gw = W * 0.62;
+    // 'alpha' and 'map': the country, state by state.
+    var gx = W * 0.07, gy = H * 0.21, gw = W * 0.40;
     var cell = gw / MAP_COLS, gh = cell * MAP_ROWS;
     var fed = stage === 'map' ? at(scene, 'fedAt', t, 0.9) : 0;
+    var cityOn = stage === 'map' ? atIndex(scene.cityAt, 0, t, 0.8) : 0;
     ctx.save();
-    ctx.globalAlpha = a;
     for (var r = 0; r < MAP_ROWS; r++) {
       for (var c = 0; c < MAP_COLS; c++) {
-        // A rough country shape: the corners are cut away so the grid reads as
-        // a map rather than a spreadsheet.
-        if ((r === 0 && (c < 2 || c > 13)) || (r === MAP_ROWS - 1 && (c < 3 || c > 11))) continue;
-        var isShown = false;
-        for (var k = 0; k < SHOWN.length; k++) {
-          if (SHOWN[k][0] === c && SHOWN[k][1] === r) isShown = true;
-        }
-        var cityOn = isShown ? atIndex(scene.cityAt, 0, t, 0.6) : 0;
-        ctx.fillStyle = "#1C1C22";
+        var code = MAP_GRID[r][c];
+        if (!code) continue;
+        var n = MAP_COUNT[code] || 0;
+        var cxp = gx + c * cell + 1, cyp = gy + r * cell + 1, cw = cell - 2;
         ctx.globalAlpha = a * (0.55 + 0.45 * fed);
-        ctx.fillRect(gx + c * cell + 1, gy + r * cell + 1, cell - 2, cell - 2);
-        if (cityOn > 0) {
-          ctx.globalAlpha = a * cityOn;
+        ctx.fillStyle = "#1C1C22";
+        ctx.fillRect(cxp, cyp, cw, cw);
+        if (n > 0 && cityOn > 0) {
+          // Log scale, because the counts run from 1 to 2,620 and a linear
+          // one would light Pennsylvania and leave forty-nine states black.
+          // The floor of 0.30 is there so a state with one government still
+          // reads as covered, which it is.
+          var lit = 0.30 + 0.70 * (Math.log(n) / Math.log(2620));
+          ctx.globalAlpha = a * cityOn * lit;
           ctx.fillStyle = scene.accent || "#FFD426";
-          ctx.fillRect(gx + c * cell + 1, gy + r * cell + 1, cell - 2, cell - 2);
+          ctx.fillRect(cxp, cyp, cw, cw);
         }
       }
     }
@@ -1695,11 +1939,16 @@
 
     ctx.save();
     ctx.globalAlpha = a;
-    fitLabel(ctx, "Treasury Tracker is in alpha", gx, gy - H * 0.040,
-             gw, H * 0.034, FG, "700");
+    fitLabel(ctx, "Treasury Tracker is in alpha", gx, gy - H * 0.062,
+             gw * 1.4, H * 0.034, FG, "700");
+    if (cityOn > 0) {
+      ctx.globalAlpha = a * cityOn;
+      fitLabel(ctx, MAP_TOTAL, gx, gy - H * 0.026, gw * 1.4, H * 0.024,
+               scene.accent || "#FFD426", "600");
+    }
     if (fed > 0) {
       ctx.globalAlpha = a * fed;
-      label(ctx, "The federal budget is there for anybody.", gx, gy + gh + H * 0.055,
+      label(ctx, "The federal budget is there for anybody.", gx, gy + gh + H * 0.052,
             H * 0.024, MUTED, "600");
     }
     ctx.restore();
@@ -1712,7 +1961,10 @@
       if (vo <= 0) continue;
       ctx.save();
       ctx.globalAlpha = a * vo;
-      label(ctx, verbs[v], gx + gw + W * 0.045, gy + H * 0.055 + v * H * 0.058,
+      // A fixed column, not one measured off the map: the map is narrower
+      // now that it is the state grid, and "just to the right of it" put the
+      // verbs in the middle of the frame.
+      label(ctx, verbs[v], W * 0.56, gy + H * 0.055 + v * H * 0.058,
             H * 0.028, FG, "600");
       ctx.restore();
     }
