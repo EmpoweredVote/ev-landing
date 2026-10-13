@@ -33,7 +33,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScript } from './script.mjs';
 import { alignTake, cutPoints, openingPause, applyPins, clipped } from './align.mjs';
-import { lostSpans, offsetWords, spliceWords, movedCuts } from './repair.mjs';
+import { lostSpans, offsetWords, spliceWords, movedCuts, wordSheet } from './repair.mjs';
 
 const NOISE = -40;        // dB; below this counts as silence
 const MINSIL = 0.35;      // seconds; shorter than this is a pause inside a line
@@ -255,6 +255,7 @@ export async function split(episodeDir, takes, opts = {}) {
     const sil = await silences(wav, duration, noise, minsil);
     const ws = await words(wav, voDir, model,
       { duration, silences: sil, noise: noise, minsil: minsil });
+    wordsByTake[t] = ws;
     const { cuts, missing } = alignTake(ws, lines);
     const mine = {};
     for (const [k, v] of Object.entries(pins)) {
@@ -445,6 +446,20 @@ export async function split(episodeDir, takes, opts = {}) {
     concat.map(f => "file '" + f.replace(/\\/g, '/') + "'").join('\n') + '\n', 'utf8');
   await run('ffmpeg', ['-y', '-v', 'error', '-f', 'concat', '-safe', '0',
     '-i', listFile, '-c', 'copy', path.join(outDir, 'vo.wav')]);
+
+  // The word sheet. EVERY in-scene second in episode.mjs is read off this, so
+  // it is derived here rather than kept by hand: a hand-written one goes on
+  // printing the cut seconds it was written against while the cuts underneath
+  // it move, and it reads exactly like a measurement while it does it.
+  const wordsFor = {};
+  for (let i = 0; i < perTake.length; i++) {
+    wordsFor[path.basename(perTake[i].wav)] = wordsByTake[i] || [];
+  }
+  await writeFile(path.join(outDir, 'words.md'), wordSheet(lines.map(l => {
+    const r = reads.get(l.id);
+    return { id: l.id, take: path.basename(r.wav), start: r.start, end: r.end,
+             match: r.score, hole: r.hole };
+  }), wordsFor, id), 'utf8');
 
   await writeFile(path.join(outDir, 'timings.json'), JSON.stringify(timings, null, 2), 'utf8');
   // Which seconds of which take each line came from. Not read by the pipeline;

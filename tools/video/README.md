@@ -313,6 +313,42 @@ before the comparison, because the script writes "It is worth saying" and the
 recogniser writes "It's", and a warning that fires on lines that are fine is a
 warning nobody reads.
 
+### A false start can be one second away from the good take
+
+The false-start check looks for a short burst, then a long silence, then the
+line. It finds the ones where the reader stopped, thought, and began again.
+
+It does not find the ones where the reader did not stop. Chris restarts
+immediately — he is carrying the feedback from the attempt he just made into
+the next one, and waiting two seconds is not how he works. Three Treasury
+lines opened on a fumble with 1.4s, 2.1s and 2.5s of silence after it, and the
+cut kept both the fumble and the silence. One of those is the "2.48 second
+beat" in the middle of L006 that nobody put there.
+
+Worse, the recogniser hides them. Running `medium.en` over the whole take
+transcribed "Treasury Tracker takes" and then "that document and draws it…"
+with a three-second hole between them, as though one reading had a gap in it.
+It had stamped the first three words on the FUMBLE's seconds and the rest of
+the line on the good take's, and no amount of re-reading the transcript shows
+that. The audio does:
+
+```bash
+# where the sound actually is, around the head of the line
+ffmpeg -ss 97 -t 10 -i take.WAV -af silencedetect=noise=-42dB:d=0.10 -f null -
+```
+
+Speech is what sits BETWEEN a `silence_end` and the next `silence_start`. Two
+bursts with a gap between them at the head of a line is two attempts. Slice
+each one on its own and transcribe it — a one-second slice has no long-file
+context to skip over, and it comes back as `'treasury tacker'` and
+`'Treasury Tracker takes that document…'`, which settles it.
+
+Then pin the START of the later one in `cuts.json`, about 0.15s before the
+sound begins, which is the air every other line in the episode opens on. **The
+last complete reading wins**, always. Chris treats the booth as an edit: his
+read IS the script, and he finishes on the take he wants. Only a cough, a flub
+or a broken sentence is a mistake.
+
 The level is left alone except for one gain, the same for every line and every
 take, that lifts the loudest take to -3 dBFS. Dynamics are a mix decision and
 belong in Resolve, not here. `--no-gain` turns even that off.
@@ -470,12 +506,19 @@ most of the time, and the times they do not are the point — Compass L029's cut
 moved 0.5s later, which put its old `headlineAt` at minus 0.2s, before the scene
 it belongs to even starts.
 
-Print the words against the new cuts rather than reading `_source.json` by eye:
+Read the words against the new cuts out of `build/<episode>/words.md`, which
+the splitter writes on every run. It is every word of the take laid out under
+the line it was cut into, each with the second it starts **relative to that
+line's own cut start** — which is the only clock `episode.mjs` and `art.js`
+use. It was kept by hand until 2026-10-13, and a sheet that is kept by hand
+goes on printing the cut it was written against: after a re-split moved three
+Treasury cuts by up to 3.2s, the sheet still showed the old ones, and it reads
+exactly like a measurement while it does it.
 
-```js
-const w = words[line.take].filter(x => x.e > line.start && x.s < line.end);
-for (const x of w) out += `${x.w.trim()}[${(x.s - line.start).toFixed(2)}] `;
-```
+A word that began before its cut prints a NEGATIVE second. That is information,
+not an error — it says the cut is tight against that word, or that the
+recogniser stretched the word back over the silence in front of it. See "The
+recogniser's time for the FIRST word of a line is not evidence", below.
 
 **The recogniser's time for the FIRST word of a line is not evidence.** It
 stretches that word back across the silence in front of it — the same artefact

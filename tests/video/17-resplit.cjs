@@ -27,7 +27,7 @@ const path = require('path');
 const ROOT = 'C:/ev-landing/ev-landing-main';
 
 (async function () {
-  const { movedCuts } =
+  const { movedCuts, wordSheet } =
     await import(pathToFileURL(path.join(ROOT, 'tools/video/engine/repair.mjs')).href);
 
   // Nothing moved: the common case, and it must stay quiet.
@@ -93,6 +93,39 @@ const ROOT = 'C:/ev-landing/ev-landing-main';
     const now = [{ id: 'L001', start: 1.2, end: 5 }, { id: 'L002', start: 9, end: 12 }];
     const moved = movedCuts(was, now);
     assert.strictEqual(moved[0].id, 'L002', 'the 3s move must come before the 0.2s one');
+  }
+
+  // ---- the word sheet is GENERATED, not kept by hand ---------------------
+  // build/<episode>/words.md is where every in-scene second in episode.mjs is
+  // read from. It was written by hand, so after a re-split it still printed
+  // the old cut seconds while the cuts underneath it had moved by three — a
+  // sheet that reads as measurement and is a memory. It is derived now, and
+  // these are the two things that make it safe to read.
+  {
+    const lines = [{ id: 'L001', take: 't.wav', start: 10, end: 14, match: 1, hole: 0.2 },
+                   { id: 'L002', take: 't.wav', start: 20, end: 23, match: 0.9 }];
+    const words = { 't.wav': [
+      { w: 'one', s: 9.8, e: 10.2 },        // starts just before the cut
+      { w: 'two', s: 11.5, e: 11.9 },
+      { w: 'gap', s: 17.0, e: 17.4 },       // between the cuts, in neither
+      { w: 'three', s: 20.4, e: 20.9 }
+    ] };
+    const md = wordSheet(lines, words);
+
+    // The header carries the seconds this line was ACTUALLY cut at.
+    assert.ok(md.indexOf('## L001  cut 10.00 -> 14.00  (4.00s') === md.indexOf('## L001'),
+      'the header must print the cut this line was made from:\n' + md);
+    assert.ok(/## L002 {2}cut 20\.00 -> 23\.00/.test(md), 'L002 header wrong:\n' + md);
+
+    // Every word's second is relative to its own cut start, which is what
+    // every *At in episode.mjs is measured against. A word that began before
+    // the cut reads negative rather than being dropped or shifted.
+    assert.ok(md.indexOf('one[-0.20]') > 0, 'a word starting before the cut reads negative:\n' + md);
+    assert.ok(md.indexOf('two[1.50]') > 0, 'word times are relative to the cut start:\n' + md);
+    assert.ok(md.indexOf('three[0.40]') > 0, 'the second line restarts from its own cut:\n' + md);
+
+    // A word in neither cut belongs to neither line.
+    assert.strictEqual(md.indexOf('gap['), -1, 'a word between two cuts is in neither:\n' + md);
   }
 
   console.log('PASS 17-resplit (movedCuts)');
