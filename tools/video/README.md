@@ -175,6 +175,89 @@ because a pin that silently does nothing is how a cut stays wrong after somebody
 has fixed it. Say in `_heard` what is actually on the tape before the pinned
 second: a bare number is a decision nobody can check later.
 
+### The recogniser can lose a whole reading
+
+**A gap in the word stream is not evidence of silence.** On the Treasury take
+the `small.en` transcript holds no words at all between 196.58s and 207.18s,
+so `align.mjs` reported a 10.6s hole inside a 20.53s L012 and the line was
+written up as unusable and needing a re-record. It needed neither.
+`silencedetect` over the same span finds **5.04 seconds of sound**, and
+transcribing that slice on its own returns a complete second reading of the
+line. The reader had simply read it twice.
+
+Three gaps on that one take held speech the transcript had no words for:
+
+| Span | What was actually on the tape |
+|---|---|
+| 196.58–207.18 | a whole second reading of L012 |
+| 228.30–230.72 | a stutter-repeat inside L014 — "money out, how the money is spent, money out." |
+| 241.02–247.46 | an abandoned start of L015 — "Most budget coverage only have..." |
+
+This is the second time a recogniser has cost this series real work. The first
+was `base.en` ending a line four words early, which is why the default model is
+`small.en`. This one is worse, because the failure does not look like a
+failure: it looks like a reader who stopped mid-line.
+
+**So find the gaps that are not silent, before trusting a take.** For every gap
+over about two seconds in the word stream, measure how much of it is sound:
+
+```js
+import { spawnSync } from 'node:child_process';
+
+function silentSeconds(take, from, len) {
+  const r = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-ss', String(from),
+    '-t', String(len), '-i', take, '-af', 'silencedetect=noise=-45dB:d=0.20',
+    '-f', 'null', '-'], { encoding: 'utf8' });
+  const out = (r.stderr || '') + (r.stdout || '');
+  const marks = [];
+  for (const m of out.matchAll(/silence_start: (-?[\d.]+)/g)) marks.push(['s', Math.max(0, +m[1])]);
+  for (const m of out.matchAll(/silence_end: ([\d.]+)/g)) marks.push(['e', Math.min(len, +m[1])]);
+  marks.sort((a, b) => a[1] - b[1]);
+  let silent = 0, openAt = 0, open = true;   // a gap between words begins in silence
+  for (const [k, v] of marks) {
+    if (k === 's') { openAt = v; open = true; }
+    else if (open) { silent += Math.max(0, v - openAt); open = false; }
+  }
+  if (open) silent += Math.max(0, len - openAt);
+  return Math.min(len, silent);
+}
+```
+
+Anything over about 0.8s of sound is a reading the transcript lost. Cut that
+span out and transcribe it on its own — a short slice has none of the long-file
+context that makes the model skip — and then decide what it is.
+
+**Two traps in writing that check.**
+
+`ffmpeg` writes `silencedetect` to **stderr** and exits **0**. `execFileSync`
+only hands back stderr by throwing, so a catch-block version of this scan reads
+an empty string, finds nothing, and says the take is clean. Use `spawnSync` and
+read `.stderr` whatever the exit code. The first run of this scan reported "no
+lost audio" over the take that had three.
+
+`split.mjs` spawns `python`. On a Windows box where only the `py` launcher is
+installed that resolves to the Microsoft Store shim and fails. It stays hidden
+for as long as a cached `words.json` means no transcription runs.
+
+**Why it happens at all.** The reader does not pause between attempts. Chris:
+"I typically won't with VO as I often need to intuit the feedback into my next
+run immediately, and waiting 2 seconds is not how I work." The false-start
+detector below looks for a long silence, so a restart a second later is not a
+false start as far as it is concerned, and the two readings are cut as one line.
+
+**And the rule that settles which one to keep:** default to the LAST take. The
+reader is trying to end on a good one, so the latest complete reading wins. That
+is already what `align.mjs` does for a line it can see twice; it is also the
+tie-breaker for anything a scan like this turns up by hand.
+
+**A read that differs from the script is usually an edit, not a mistake.**
+Chris's booth changes are script changes: contractions, present tense, shorter
+sentences, less flourish. Where the match score is low, compare the written line
+with what was said and move the SCRIPT, unless it is a genuine flub, cough or
+mess-up. A closer script is not cosmetic either — the take is aligned against
+the whole script at once, so every line that fits better makes its neighbours
+fit better too.
+
 ### Nobody speaks during a silence
 
 `cutPoints` used to move a cut outward only, because the recogniser's word
