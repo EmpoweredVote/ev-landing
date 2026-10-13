@@ -33,12 +33,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseScript } from './script.mjs';
 import { alignTake, cutPoints, openingPause, applyPins, clipped } from './align.mjs';
+import { lostSpans, offsetWords, spliceWords } from './repair.mjs';
 
 const NOISE = -40;        // dB; below this counts as silence
 const MINSIL = 0.35;      // seconds; shorter than this is a pause inside a line
 const GAP = 0.45;         // seconds between lines in the joined vo.wav
 const OVERRIDE = 0.75;    // a later take must read this well to beat an earlier one
 const PEAK = -3;          // dBFS the whole set is lifted to, unless --no-gain
+const PAD = 0.6;          // air either side of a repair slice, so the model has context
+// Bumped when the repair pass changes what it returns, so a cached word stream
+// from an older run is re-made instead of silently reused.
+const REPAIR = 1;
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
@@ -84,25 +89,84 @@ async function silences(file, duration, noise, minsil) {
   return out;
 }
 
+// `python` is not a command on every machine. A Windows box with only the
+// launcher installed resolves it to the Microsoft Store shim, which exits
+// non-zero after printing an advert. Probed once and remembered, because the
+// repair pass below calls it once per lost span.
+let PYTHON = null;
+async function python() {
+  if (PYTHON) return PYTHON;
+  for (const cmd of ['python', 'py', 'python3']) {
+    try {
+      const { out } = await run(cmd, ['-c', 'import sys; print(sys.version_info[0])']);
+      if (out.trim() === '3') { PYTHON = cmd; return cmd; }
+    } catch (e) { /* try the next one */ }
+  }
+  throw new Error('no python 3 on PATH: tried python, py, python3 — faster-whisper needs one');
+}
+
+async function transcribe(wav, out, model) {
+  const py = path.join(path.dirname(fileURLToPath(import.meta.url)), 'transcribe.py');
+  await run(await python(), [py, wav, out, '--model', model]);
+  return JSON.parse(await readFile(out, 'utf8')).words || [];
+}
+
+// A gap in the word stream is NOT evidence of silence. Whatever the model, a
+// long file makes it skip, and what it skips is usually one half of a line the
+// reader read twice — which downstream looks like a line abandoned mid-
+// sentence. See repair.mjs for what this cost before it existed.
+//
+// So every gap that the tape was speaking through is transcribed again on its
+// own, where there is no long-file context to skip over, and spliced back.
+async function repairLost(wav, ws, sil, duration, model, cacheDir) {
+  const spans = lostSpans(ws, sil, duration);
+  if (!spans.length) return ws;
+
+  console.log(`the transcript has no words for ${spans.length} span(s) the tape was ` +
+    `speaking through — transcribing each one on its own:`);
+  const slice = path.join(cacheDir, '_repair.wav');
+  const out = path.join(cacheDir, '_repair.json');
+  const repairs = [];
+  for (const sp of spans) {
+    const from = Math.max(0, sp.from - PAD);
+    const to = Math.min(duration, sp.to + PAD);
+    await run('ffmpeg', ['-hide_banner', '-nostats', '-y', '-ss', String(from),
+      '-t', String(to - from), '-i', wav, '-ac', '1', '-ar', '16000', slice]);
+    const got = offsetWords(await transcribe(slice, out, model), from);
+    const kept = got.filter(w => w.s >= sp.from && w.s < sp.to);
+    console.log(`  ${sp.from.toFixed(2)}–${sp.to.toFixed(2)}s (${sp.sound.toFixed(2)}s of sound): ` +
+      (kept.length ? '"' + kept.map(x => x.w.trim()).join(' ') + '"' : 'no words — not speech'));
+    repairs.push({ from: sp.from, to: sp.to, words: got });
+  }
+  await unlink(slice).catch(() => {});
+  await unlink(out).catch(() => {});
+
+  const merged = spliceWords(ws, repairs);
+  const gained = merged.length - ws.length;
+  console.log(`recovered ${gained} word${gained === 1 ? '' : 's'} the first pass lost`);
+  return merged;
+}
+
 // Transcribing ten minutes of speech is the slow step, so the result is kept
 // beside the build and reused until the take itself changes.
-async function words(wav, cacheDir, model) {
+async function words(wav, cacheDir, model, opts = {}) {
   const st = await stat(wav);
   const key = path.basename(wav).replace(/[^\w.-]+/g, '_') + '.words.json';
   const cache = path.join(cacheDir, key);
   if (existsSync(cache)) {
     const held = JSON.parse(await readFile(cache, 'utf8'));
-    if (held.size === st.size && held.mtime === st.mtimeMs && held.model === model) {
+    if (held.size === st.size && held.mtime === st.mtimeMs && held.model === model &&
+        held.repair === REPAIR) {
       return held.words;
     }
   }
   const tmp = cache + '.tmp';
-  const py = path.join(path.dirname(fileURLToPath(import.meta.url)), 'transcribe.py');
-  await run('python', [py, wav, tmp, '--model', model]);
-  const got = JSON.parse(await readFile(tmp, 'utf8'));
+  let got = await transcribe(wav, tmp, model);
+  if (opts.silences) got = await repairLost(wav, got, opts.silences, opts.duration, model, cacheDir);
   await writeFile(cache, JSON.stringify(
-    { size: st.size, mtime: st.mtimeMs, model, words: got.words }), 'utf8');
-  return got.words;
+    { size: st.size, mtime: st.mtimeMs, model, repair: REPAIR, words: got }), 'utf8');
+  await unlink(tmp).catch(() => {});
+  return got;
 }
 
 export async function split(episodeDir, takes, opts = {}) {
@@ -138,8 +202,10 @@ export async function split(episodeDir, takes, opts = {}) {
   for (let t = 0; t < takes.length; t++) {
     const wav = path.resolve(takes[t]);
     const duration = await probeDuration(wav);
-    const ws = await words(wav, voDir, model);
+    // The silences come first: the repair pass inside words() needs them to
+    // know which gaps in the transcript the tape was speaking through.
     const sil = await silences(wav, duration, noise, minsil);
+    const ws = await words(wav, voDir, model, { duration, silences: sil });
     const { cuts, missing } = alignTake(ws, lines);
     const mine = {};
     for (const [k, v] of Object.entries(pins)) {

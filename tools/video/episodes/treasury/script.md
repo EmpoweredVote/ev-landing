@@ -59,7 +59,7 @@ And where the records support it, one step further. The individual payments. Who
 
 ## L012
 > Direction: a Bobit `present` beside the finished bar.
-That's the whole trick. It's not new data. It's the same data the government already published. Arranged, so a person can follow it instead of exploring spreadsheets.
+That's the whole trick. It's not new data. It's the same data the government already published, arranged so a person can follow it instead of exploring spreadsheets.
 
 Chapter 3 — more than one question
 

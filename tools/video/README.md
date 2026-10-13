@@ -198,36 +198,41 @@ was `base.en` ending a line four words early, which is why the default model is
 `small.en`. This one is worse, because the failure does not look like a
 failure: it looks like a reader who stopped mid-line.
 
-**So find the gaps that are not silent, before trusting a take.** For every gap
-over about two seconds in the word stream, measure how much of it is sound:
+**The splitter repairs this by itself, and says so.** After transcribing a
+take it asks which gaps in the word stream the tape was speaking through, cuts
+each one out with a little air either side, transcribes that slice on its own —
+where there is no long file to skip over — and splices the words back. The
+deciding is three pure functions in `engine/repair.mjs`, tested without any
+audio in `tests/video/16-repair.cjs`; the slicing is in `split.mjs`.
 
-```js
-import { spawnSync } from 'node:child_process';
+A gap counts as lost speech when it is longer than 2.0s and holds more than
+0.8s of sound. Below that it is a breath, a chair or a lip noise — the head of
+the Essentials take holds 0.30s of it across fifteen seconds of nothing, and
+reporting that would send somebody to listen to silence.
 
-function silentSeconds(take, from, len) {
-  const r = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-ss', String(from),
-    '-t', String(len), '-i', take, '-af', 'silencedetect=noise=-45dB:d=0.20',
-    '-f', 'null', '-'], { encoding: 'utf8' });
-  const out = (r.stderr || '') + (r.stdout || '');
-  const marks = [];
-  for (const m of out.matchAll(/silence_start: (-?[\d.]+)/g)) marks.push(['s', Math.max(0, +m[1])]);
-  for (const m of out.matchAll(/silence_end: ([\d.]+)/g)) marks.push(['e', Math.min(len, +m[1])]);
-  marks.sort((a, b) => a[1] - b[1]);
-  let silent = 0, openAt = 0, open = true;   // a gap between words begins in silence
-  for (const [k, v] of marks) {
-    if (k === 's') { openAt = v; open = true; }
-    else if (open) { silent += Math.max(0, v - openAt); open = false; }
-  }
-  if (open) silent += Math.max(0, len - openAt);
-  return Math.min(len, silent);
-}
+The run says what it found, and this is worth reading rather than scrolling
+past, because it is telling you the reader read a line twice:
+
+```
+the transcript has no words for 3 span(s) the tape was speaking through —
+transcribing each one on its own:
+  196.58–207.18s (5.04s of sound): "That's the whole trick. It's not new data. It's the same data the government already published"
+  241.02–247.46s (2.00s of sound): "Most budget coverage only have"
+  228.30–230.72s (1.46s of sound): "money out, how the money is spent, money out."
+recovered 31 words the first pass lost
 ```
 
-Anything over about 0.8s of sound is a reading the transcript lost. Cut that
-span out and transcribe it on its own — a short slice has none of the long-file
-context that makes the model skip — and then decide what it is.
+Words a slice transcribes that fall OUTSIDE its own span are dropped. The air
+around the slice is there to give the model context, and it lets the model run
+on into the next line and hand back words that are already in the stream;
+keeping those would say a line was read twice when it was read once, which is
+the fault this exists to undo.
 
-**Two traps in writing that check.**
+The repaired stream is what gets cached, and the cache carries a `repair`
+version. Bump `REPAIR` in `split.mjs` when the pass changes what it returns,
+or an old word stream is silently reused.
+
+**Two traps this cost on the way in**, both worth knowing before touching it.
 
 `ffmpeg` writes `silencedetect` to **stderr** and exits **0**. `execFileSync`
 only hands back stderr by throwing, so a catch-block version of this scan reads
@@ -235,9 +240,12 @@ an empty string, finds nothing, and says the take is clean. Use `spawnSync` and
 read `.stderr` whatever the exit code. The first run of this scan reported "no
 lost audio" over the take that had three.
 
-`split.mjs` spawns `python`. On a Windows box where only the `py` launcher is
-installed that resolves to the Microsoft Store shim and fails. It stays hidden
-for as long as a cached `words.json` means no transcription runs.
+`split.mjs` used to spawn `python` outright. On a Windows box where only the
+`py` launcher is installed that resolves to the Microsoft Store shim, which
+prints an advert and exits non-zero. It stayed hidden for as long as a cached
+`words.json` meant no transcription ran — and the repair pass transcribes once
+per lost span, so it would have surfaced immediately. It now probes `python`,
+`py` and `python3` once and uses whichever answers as Python 3.
 
 **Why it happens at all.** The reader does not pause between attempts. Chris:
 "I typically won't with VO as I often need to intuit the feedback into my next
@@ -247,8 +255,9 @@ false start as far as it is concerned, and the two readings are cut as one line.
 
 **And the rule that settles which one to keep:** default to the LAST take. The
 reader is trying to end on a good one, so the latest complete reading wins. That
-is already what `align.mjs` does for a line it can see twice; it is also the
-tie-breaker for anything a scan like this turns up by hand.
+is already what `align.mjs` does for a line it can see twice, and now that the
+repair pass puts the second reading back in the stream, it is what decides these
+too — automatically, with no pin.
 
 **A read that differs from the script is usually an edit, not a mistake.**
 Chris's booth changes are script changes: contractions, present tense, shorter
