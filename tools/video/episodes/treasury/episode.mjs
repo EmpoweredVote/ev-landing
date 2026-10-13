@@ -256,8 +256,11 @@ export default {
              { anim: [{ t: 0, anim: 'toddlemarch' }, { t: 1.1, anim: 'annoyed' }],
                color: VIEWER, scale: 0.85, flip: true,
                path: [{ t: 0, at: [1.12, 0.94] }, { t: 1.1, at: [0.70, 0.94] }] }] },
+    // The scene opens zoomed IN on one segment — "hearing the number on its
+    // own" at 3.76 — and pulls back on "that same number inside the whole
+    // picture" at 7.72, which is the sentence the picture is making.
     { id: 'why-zoom', type: 'art', vo: 'L034', art: 'drawBudgetBar', stage: 'zoom',
-      continues: true,
+      continues: true, zoomAt: 7.72,
       cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 },
              { at: [0.70, 0.94], anim: 'annoyed', color: VIEWER, scale: 0.85, flip: true }] },
     { id: 'why-democracy', type: 'art', vo: 'L035', art: 'drawBudgetBar', stage: 'whole',
@@ -270,14 +273,17 @@ export default {
     // travel per second, so the pan does not need to be told how long its line
     // is. There is ONE capture — the whole Los Angeles page, 1440x2274 — and
     // both scenes pan down it, which is the same shape episode 2's close has.
-    // `close-follow` opens where `close-screen` stopped: its rate times its
-    // MEASURED length, filled in from timings.json rather than rounded.
+    // `close-follow` opens where `close-screen` stopped: 0.06 per second times
+    // its MEASURED 4.768s, which is 0.286. Not 0.3, and not 0.29 — episode 2
+    // used 0.25 where its real figure was 0.264 and the page jumped fifty
+    // pixels back up at the cut, which is the one thing a continuous pan must
+    // not do.
     { id: 'close-screen', type: 'art', vo: 'L036', art: 'drawLiveScreen',
       host: 'treasurytracker.empowered.vote',
       panFrom: 0, panRate: 0.06 },
     { id: 'close-follow', type: 'art', vo: 'L037', art: 'drawLiveScreen', continues: true,
       host: 'treasurytracker.empowered.vote',
-      panFrom: 0, panRate: 0.085,
+      panFrom: 0.286, panRate: 0.085,
       cast: [{ at: [0.09, 0.97], anim: 'present', color: VIEWER, scale: 0.75 },
              { at: [0.91, 0.97], anim: 'ponder', color: VIEWER, scale: 0.75, flip: true }] },
     { id: 'close-card', type: 'art', vo: 'L038', art: 'drawTitleCard', hold: 1.0,

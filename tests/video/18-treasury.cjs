@@ -191,7 +191,38 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     }
   }
 
+  // ---- REVIEW FOCUS 5 ----------------------------------------------------
+  // The close must not pan backwards at the cut. close-follow opens where
+  // close-screen stopped, which is its rate times its MEASURED length —
+  // episode 2 used 0.25 where its real figure was 0.264 and the page jumped
+  // fifty pixels back up, which is the one thing a continuous pan must not do.
+  {
+    const timings = JSON.parse(fs.readFileSync(
+      path.join(ROOT, 'tools/video/build/treasury/timings.json'), 'utf8'));
+    const dur = timings.lines.find(l => l.id === 'L036').dur;
+    const a = sceneAt('close-screen'), b = sceneAt('close-follow');
+    const endA = (a.panFrom || 0) + (a.panRate || 0) * dur;
+    const startB = b.panFrom || 0;
+    assert.ok(Math.abs(endA - startB) < 0.004,
+      'close-follow opens at ' + startB + ' but close-screen stopped at ' +
+      endA.toFixed(3) + ' after its measured ' + dur + 's — the page jumps at the cut');
+  }
+  // And the pan actually moves: a rate of zero would pass the check above.
+  {
+    const early = await pixels(sceneAt('close-screen'), 0.5);
+    const late = await pixels(sceneAt('close-screen'), 4.5);
+    let same = 0;
+    const y = Math.round(H * 0.40);
+    for (let x = 0; x < early.w; x++) {
+      const i = (y * early.w + x) * 4;
+      if (early.data[i] === late.data[i] && early.data[i + 1] === late.data[i + 1]) same++;
+    }
+    assert.ok(same < early.w * 0.9,
+      'close-screen is not panning: ' + same + ' of ' + early.w +
+      ' pixels are identical four seconds apart');
+  }
+
   assert.deepStrictEqual(errors, [], 'the page threw while rendering');
   await browser.close();
-  console.log('PASS 18-treasury (no early drill, no label too small, no re-entry, four honest denominators)');
+  console.log('PASS 18-treasury (no early drill, no label too small, no re-entry, honest denominators, the pan joins up)');
 })().catch(e => { console.error('FAIL', e.message); process.exit(1); });

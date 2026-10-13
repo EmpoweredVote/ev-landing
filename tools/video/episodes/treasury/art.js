@@ -1372,10 +1372,62 @@
     }
   }
 
+  // ── The close: the real screen, panned ─────────────────────────────────
+  // This is episode 1's drawLiveScreen, unchanged but for which global it
+  // reads. There is ONE way to pan a screen in this series and this episode
+  // does not invent a second: `panFrom` is a fraction of the travel and
+  // `panRate` is fractions per second, so the pan is never told how long its
+  // line is. A picture that already fits has no travel and draws exactly as it
+  // did before the pan existed.
+  function drawLiveScreen(ctx, t, W, H, scene) {
+    var host = scene.host || 'treasurytracker.empowered.vote';
+    var a = scene.settled ? 1 : fade(t, 0.2, 0.8);
+    var pad = W * 0.12;
+    var boxW = W - pad * 2;
+    var x = pad, y = H * 0.12;
+
+    if (!shot.complete || !shot.naturalWidth) {
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = MUTED;
+      ctx.textAlign = "center";
+      ctx.font = "600 " + Math.round(H * 0.040) + "px " + FONT;
+      ctx.fillText(host, W / 2, H * 0.45);
+      ctx.restore();
+      return;
+    }
+
+    var maxH = H * 0.62;   // still clears the Bobit standing in front of it
+    var full = boxW * (shot.naturalHeight / shot.naturalWidth);
+    var boxH = Math.min(full, maxH);
+    var travel = full - boxH;
+    var frac = Math.max(0, Math.min(1, (scene.panFrom || 0) + t * (scene.panRate || 0)));
+
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.beginPath();
+    ctx.rect(x, y, boxW, boxH);
+    ctx.clip();
+    ctx.drawImage(shot, x, y - travel * frac, boxW, full);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = scene.accent || "#FFD426";
+    ctx.lineWidth = Math.max(2, H * 0.005);
+    ctx.strokeRect(x, y, boxW, boxH);
+    ctx.fillStyle = MUTED;
+    ctx.textAlign = "center";
+    ctx.font = "600 " + Math.round(H * 0.032) + "px " + FONT;
+    ctx.fillText(host, W / 2, y + boxH + H * 0.055);
+    ctx.restore();
+  }
+
   window.EVArt = Object.assign(window.EVArt || {}, {
     drawStub: drawStub,
     drawDocument: drawDocument,
     drawTitleCard: drawTitleCard,
+    drawLiveScreen: drawLiveScreen,
     drawBudgetBar: drawBudgetBar,
     drawLineItems: drawLineItems,
     drawPayments: drawPayments,
