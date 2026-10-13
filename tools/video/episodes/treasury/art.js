@@ -1183,6 +1183,195 @@
     ctx.restore();
   }
 
+  // ── Chapter 6: where the numbers come from ─────────────────────────────
+  function drawSourceCard(ctx, t, W, H, scene) {
+    var a = arrive(scene, t, 0.1, 0.5);
+    if (a <= 0) return;
+    var box = barBox(W, H);
+    var stage = scene.stage || 'ask';
+
+    if (stage === 'method') {
+      // The federal method panel. SEVEN REAL HEADINGS — the four L027 names
+      // and three it does not claim — over rule-lines. Nothing under a heading
+      // is written out: a drawn sentence presented as the product's own words
+      // is a claim, and inventing one in order to show how careful the real
+      // ones are would undo the chapter. Episode 1's source card is drawn the
+      // same way for the same reason.
+      var open = at(scene, 'openAt', t, 0.7);
+      if (open <= 0) return;
+      var pw = box.w, px = box.x, py = H * 0.17, rowH = H * 0.094;
+      var ph = H * 0.055 + METHOD.rows.length * rowH;
+      panel(ctx, px, py, pw, ph, H, a * open, EDGE);
+      ctx.save();
+      ctx.globalAlpha = a * open;
+      fitLabel(ctx, METHOD.head, px + pw * 0.025, py + H * 0.042, pw * 0.95,
+               H * 0.030, FG, "700");
+      ctx.restore();
+      for (var r = 0; r < METHOD.rows.length; r++) {
+        // The first four arrive as he names them; the other three are there
+        // from the moment the panel opens, because he does not claim them.
+        var on = r < 4 ? atIndex(scene.rowAt, r, t, 0.3) : open;
+        if (on <= 0) continue;
+        var ry = py + H * 0.072 + r * rowH;
+        ctx.save();
+        ctx.globalAlpha = a * open * on;
+        ctx.fillStyle = scene.accent || "#FFD426";
+        ctx.fillRect(px + pw * 0.025, ry + H * 0.004, H * 0.004, H * 0.024);
+        fitLabel(ctx, METHOD.rows[r], px + pw * 0.045, ry + H * 0.024,
+                 pw * 0.93, H * 0.023, FG, "600");
+        ctx.restore();
+        ruleLines(ctx, px + pw * 0.045, ry + H * 0.036, pw * 0.86, 2,
+                  H * 0.021, a * open * on * 0.8, r * 7);
+      }
+      return;
+    }
+
+    // Every other stage keeps the chart and puts something under it.
+    barHead(ctx, W, H, a, CHART_HEAD, null);
+    var dim = stage === 'ask' ? 0.45 : 1;
+    icicle(ctx, [{ segs: LA_OUT, current: true }],
+           { x: box.x, y: box.y, w: box.w, H: H, alpha: a * dim, labelAlpha: dim });
+    var under = box.y + H * ROW_CUR + H * 0.045;
+
+    if (stage === 'line') {
+      // The source line the live page prints under the chart: the document's
+      // name, when it was read, and the link glyph. Los Angeles's own — every
+      // level cites a different one, which is why SOURCES is keyed by name.
+      var on = at(scene, 'lineAt', t, 0.5);
+      if (on <= 0) return;
+      var src = SOURCES["Los Angeles"];
+      ctx.save();
+      ctx.globalAlpha = a * on;
+      ctx.font = "600 " + Math.round(H * 0.024) + "px " + FONT;
+      var txt = src.name + "  ·  " + src.asOf;
+      var tw = ctx.measureText(txt).width + W * 0.028;
+      panel(ctx, box.x, under, tw, H * 0.052, H, a * on, EDGE);
+      label(ctx, txt, box.x + W * 0.014, under + H * 0.035, H * 0.024, FG, "600");
+      label(ctx, "↗", box.x + tw - W * 0.012, under + H * 0.035,
+            H * 0.024, scene.accent || "#FFD426", "700", "right");
+      ctx.restore();
+      return;
+    }
+
+    if (stage === 'wording') {
+      // The same segment, twice: the government's own wording and ours, each
+      // under the chip the page puts on it. Both strings already live together
+      // on LA_OUT, which is why the chapter cannot pair the wrong two.
+      var seg = LA_OUT[1];                       // City Electric Utility
+      var pair = [{ chip: WORDING.gov, text: seg.gov, key: 'leftAt' },
+                  { chip: WORDING.ours, text: seg.label, key: 'rightAt' }];
+      var cw = (box.w - W * 0.025) / 2;
+      for (var i = 0; i < 2; i++) {
+        var lit = at(scene, pair[i].key, t, 0.45);
+        if (lit <= 0) continue;
+        var cxp = box.x + i * (cw + W * 0.025);
+        panel(ctx, cxp, under, cw, H * 0.145, H, a * lit, EDGE);
+        ctx.save();
+        ctx.globalAlpha = a * lit;
+        ctx.fillStyle = i === 0 ? "#2A3340" : "#3A3222";
+        roundRect(ctx, cxp + cw * 0.04, under + H * 0.022, cw * 0.56, H * 0.036, H * 0.018);
+        ctx.fill();
+        fitLabel(ctx, pair[i].chip, cxp + cw * 0.07, under + H * 0.047, cw * 0.50,
+                 H * 0.019, i === 0 ? "#8FB4D9" : (scene.accent || "#FFD426"), "700");
+        fitLabel(ctx, pair[i].text, cxp + cw * 0.04, under + H * 0.100, cw * 0.92,
+                 H * 0.028, FG, "600");
+        ctx.restore();
+      }
+      return;
+    }
+    // 'ask': the chart alone, dimmed, with the figure in front of it.
+  }
+
+  // ── Chapter 7: what we actually cover ──────────────────────────────────
+  // The map is a shape, not a dataset. It is drawn as a grid of cells standing
+  // for the country, with the ones this episode has actually shown lit and the
+  // rest dark. No cell is labelled with a coverage claim that has not been
+  // checked — the chapter is about being honest on exactly this point.
+  var MAP_COLS = 16, MAP_ROWS = 7;
+  // The places this episode has shown, as grid positions. Nothing else lights.
+  var SHOWN = [[5, 3], [5, 4], [4, 3], [11, 2]];
+  function drawCoverage(ctx, t, W, H, scene) {
+    var a = arrive(scene, t, 0.1, 0.5);
+    if (a <= 0) return;
+    var stage = scene.stage || 'alpha';
+
+    if (stage === 'search') {
+      // A plain message card, in the product's real words. Confirmed live: an
+      // entity the site does not have returns this, rather than quietly
+      // showing somebody else's budget, which is exactly what L031 claims.
+      var on = at(scene, 'cardAt', t, 0.5);
+      if (on <= 0) return;
+      var pw = W * 0.56, px = (W - pw) / 2 - W * 0.06, py = H * 0.28;
+      panel(ctx, px, py, pw, H * 0.26, H, a * on, EDGE);
+      ctx.save();
+      ctx.globalAlpha = a * on;
+      // The search box above it, with a city typed in.
+      ctx.fillStyle = "#101014";
+      roundRect(ctx, px + pw * 0.05, py + H * 0.035, pw * 0.90, H * 0.062, H * 0.010);
+      ctx.fill();
+      ctx.strokeStyle = EDGE; ctx.lineWidth = Math.max(1, H * 0.002); ctx.stroke();
+      fitLabel(ctx, "Springfield", px + pw * 0.09, py + H * 0.077, pw * 0.80,
+               H * 0.026, MUTED, "500");
+      fitLabel(ctx, NOTFOUND + "...", px + pw * 0.05, py + H * 0.155, pw * 0.90,
+               H * 0.028, FG, "600");
+      ruleLines(ctx, px + pw * 0.05, py + H * 0.185, pw * 0.70, 2, H * 0.026, a * on * 0.8, 5);
+      ctx.restore();
+      return;
+    }
+
+    // 'alpha' and 'map': the country, mostly unfilled.
+    var gx = W * 0.10, gy = H * 0.20, gw = W * 0.62;
+    var cell = gw / MAP_COLS, gh = cell * MAP_ROWS;
+    var fed = stage === 'map' ? at(scene, 'fedAt', t, 0.9) : 0;
+    ctx.save();
+    ctx.globalAlpha = a;
+    for (var r = 0; r < MAP_ROWS; r++) {
+      for (var c = 0; c < MAP_COLS; c++) {
+        // A rough country shape: the corners are cut away so the grid reads as
+        // a map rather than a spreadsheet.
+        if ((r === 0 && (c < 2 || c > 13)) || (r === MAP_ROWS - 1 && (c < 3 || c > 11))) continue;
+        var isShown = false;
+        for (var k = 0; k < SHOWN.length; k++) {
+          if (SHOWN[k][0] === c && SHOWN[k][1] === r) isShown = true;
+        }
+        var cityOn = isShown ? atIndex(scene.cityAt, 0, t, 0.6) : 0;
+        ctx.fillStyle = "#1C1C22";
+        ctx.globalAlpha = a * (0.55 + 0.45 * fed);
+        ctx.fillRect(gx + c * cell + 1, gy + r * cell + 1, cell - 2, cell - 2);
+        if (cityOn > 0) {
+          ctx.globalAlpha = a * cityOn;
+          ctx.fillStyle = scene.accent || "#FFD426";
+          ctx.fillRect(gx + c * cell + 1, gy + r * cell + 1, cell - 2, cell - 2);
+        }
+      }
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = a;
+    fitLabel(ctx, "Treasury Tracker is in alpha", gx, gy - H * 0.040,
+             gw, H * 0.034, FG, "700");
+    if (fed > 0) {
+      ctx.globalAlpha = a * fed;
+      label(ctx, "The federal budget is there for anybody.", gx, gy + gh + H * 0.055,
+            H * 0.024, MUTED, "600");
+    }
+    ctx.restore();
+
+    // The four verbs, each on the second he says it. One line of work per
+    // government, which is the honest answer to "why is my city not in yet".
+    var verbs = ["Find the filing.", "Read it.", "Map it.", "Check it."];
+    for (var v = 0; v < verbs.length; v++) {
+      var vo = atIndex(scene.verbAt, v, t, 0.3);
+      if (vo <= 0) continue;
+      ctx.save();
+      ctx.globalAlpha = a * vo;
+      label(ctx, verbs[v], gx + gw + W * 0.045, gy + H * 0.055 + v * H * 0.058,
+            H * 0.028, FG, "600");
+      ctx.restore();
+    }
+  }
+
   window.EVArt = Object.assign(window.EVArt || {}, {
     drawStub: drawStub,
     drawDocument: drawDocument,
@@ -1192,7 +1381,9 @@
     drawPayments: drawPayments,
     drawThreeCards: drawThreeCards,
     drawYears: drawYears,
-    drawLevels: drawLevels
+    drawLevels: drawLevels,
+    drawSourceCard: drawSourceCard,
+    drawCoverage: drawCoverage
   });
   window.EVArt.ready = Promise.all([logoA.ready, shotA.ready]);
 })();

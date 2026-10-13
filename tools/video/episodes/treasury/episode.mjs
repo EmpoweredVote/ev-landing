@@ -200,23 +200,46 @@ export default {
     // ── 7. Where the numbers come from ──────────────────────────────────
     { id: 'src-ask', type: 'art', vo: 'L024', art: 'drawSourceCard', stage: 'ask',
       cast: [{ at: [0.78, 0.94], anim: 'ponder', color: VIEWER, scale: 0.85 }] },
+    // "every view names its source" at 8.03 is when the line under the chart
+    // appears — late in an 11.3s line, because the first eight seconds are the
+    // list of filings it comes out of.
     { id: 'src-line', type: 'art', vo: 'L025', art: 'drawSourceCard', stage: 'line',
-      continues: true },
+      continues: true, lineAt: 8.03 },
+
+    // "it stays their wording" at 2.72, "where we summarised one" at 5.95.
     { id: 'src-wording', type: 'art', vo: 'L026', art: 'drawSourceCard', stage: 'wording',
-      continues: true },
+      continues: true, leftAt: 2.72, rightAt: 5.95 },
+
     // The panel OPENS here, which is the beat, so this scene does not continue.
-    { id: 'src-method', type: 'art', vo: 'L027', art: 'drawSourceCard', stage: 'method' },
+    // "the method is written out in full" at 1.34, then the four things he
+    // names: what is counted 3.64, why it adds up to more 6.12, where a
+    // negative went 9.98, how far into the year 12.00. The other three real
+    // headings are there from the moment it opens, because he does not claim
+    // them and type that arrives unannounced is type the viewer reads instead
+    // of listening.
+    { id: 'src-method', type: 'art', vo: 'L027', art: 'drawSourceCard', stage: 'method',
+      openAt: 1.34, rowAt: [3.64, 6.12, 9.98, 12.00] },
+
     { id: 'src-why', type: 'art', vo: 'L028', art: 'drawSourceCard', stage: 'method',
-      continues: true, openAt: 0,
+      continues: true, openAt: 0, rowAt: [0, 0, 0, 0],
       cast: [{ at: [0.78, 0.94], anim: 'present', color: VIEWER, scale: 0.85 }] },
 
     // ── 8. What we actually cover ───────────────────────────────────────
+    // The line is 2.18s and says one thing. Nothing arrives.
     { id: 'cover-alpha', type: 'art', vo: 'L029', art: 'drawCoverage', stage: 'alpha',
       cast: [{ at: [0.76, 0.94], anim: 'standstill', color: VIEWER, scale: 0.90 }] },
+
+    // "there for anybody" at 1.35 fills the federal layer; "city by city" at
+    // 3.09 lights the places this episode has actually shown; then the four
+    // verbs — find 9.69, read 10.81, map 11.89, check 12.73.
     { id: 'cover-map', type: 'art', vo: 'L030', art: 'drawCoverage', stage: 'map',
-      continues: true,
+      continues: true, fedAt: 1.35, cityAt: [3.09],
+      verbAt: [9.69, 10.81, 11.89, 12.73],
       cast: [{ at: [0.76, 0.94], anim: 'standstill', color: VIEWER, scale: 0.90 }] },
+
+    // "the site says so plainly" at 2.50.
     { id: 'cover-search', type: 'art', vo: 'L031', art: 'drawCoverage', stage: 'search',
+      cardAt: 2.50,
       cast: [{ at: [0.76, 0.94], anim: 'offer', color: VIEWER, scale: 0.90 }] },
 
     // ── 9. What this is for ─────────────────────────────────────────────
