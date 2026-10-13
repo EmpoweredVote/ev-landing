@@ -90,21 +90,26 @@ export default {
 
     // ── 3. The budget as a picture ──────────────────────────────────────
     // The document is still on screen and BECOMES the bar: it starts leaving on
-    // "draws it in a way that anyone can read" at 5.82 and takes 1.4s, so the
-    // bar has to be there by 7.20 or the frame is empty between them. The
+    // "draws it in a way that anyone can read" at 2.60 and takes 1.4s, so the
+    // bar has to be there by 4.00 or the frame is empty between them. The
     // contact sheet caught exactly that — two seconds of nothing.
     //
     // shapeAt is therefore the one second here that is NOT a word: it is where
     // the document finishes going. The rest are his — "and every department is
-    // a slice of it" at 11.66, "sized by what it actually receives" at 14.18.
+    // a slice of it" at 8.44, "sized by what it actually receives" at 10.96.
+    //
+    // Every one of these moved by 3.22s when the false start at the head of
+    // this line was cut out. They are re-read off words.md, not shifted: a
+    // delta applied to a second is a guess about where a word is.
     { id: 'bar-collapse', type: 'art', vo: 'L006', art: 'drawBudgetBar', stage: 'collapse',
-      collapseAt: 5.82, shapeAt: 7.20, sliceAt: 11.66, sizeAt: 14.18 },
+      collapseAt: 2.60, shapeAt: 4.00, sliceAt: 8.44, sizeAt: 10.96 },
 
     // The two largest are named as he reaches the answer — "the answer" at
-    // 6.51, "anybody asks" at 8.15 — so the question at 9.77 lands on a
-    // picture that already answers it.
+    // 3.76, "anybody asks" at 5.40 — so the question at 7.02 lands on a
+    // picture that already answers it. Both moved by 2.75s when the false
+    // start at the head of this line was cut out.
     { id: 'bar-named', type: 'art', vo: 'L007', art: 'drawBudgetBar', stage: 'named',
-      continues: true, nameAt: [6.51, 8.15] },
+      continues: true, nameAt: [3.76, 5.40] },
 
     // "it opens" at 1.90. The second drill — "a division breaks into programs"
     // — at 5.24. The crumb is not named here, so it draws from `opened`.
@@ -162,11 +167,12 @@ export default {
       continues: true, changeAt: 0.57 },
 
     // The four columns arrive while he says "Several years tells you how it is
-    // evolving" (5.09 to 7.37), so the picture is complete before the sentence
-    // that reads it. Then "What grew" at 8.45 and "what shrank" at 9.45.
+    // evolving" (2.50 to 4.76), so the picture is complete before the sentence
+    // that reads it. Then "What grew" at 5.76 and "shrank" at 6.82. All six
+    // moved by 2.61s when the false start at the head of this line was cut out.
     { id: 'years-across', type: 'art', vo: 'L017', art: 'drawYears', stage: 'across',
-      continues: true, colAt: [5.09, 5.65, 6.21, 6.77],
-      grewAt: 8.45, shrankAt: 9.45 },
+      continues: true, colAt: [2.50, 3.06, 3.62, 4.18],
+      grewAt: 5.76, shrankAt: 6.82 },
 
     // ── 6. Across levels ────────────────────────────────────────────────
     // The CITY is already on screen and has been for five chapters, so it is

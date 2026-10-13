@@ -2,15 +2,35 @@
   "_why": [
     "Cuts settled by listening, because the words cannot settle them.",
     "Seconds into the named take. Only the fields given here are pinned.",
-    "The other lines this take reports as suspects were checked and left alone:",
-    "L006, L007 and L017 are the reader pausing in the middle of a sentence,",
-    "and the words on both sides of each pause join up into the line."
+    "Chris restarts a line fast — he does not wait between attempts — so a",
+    "false start is a short burst and a second of silence, not the long pause",
+    "align.mjs looks for. The three start pins below were each found the same",
+    "way: ffmpeg silencedetect over the take, then each burst transcribed on",
+    "its own. Every one of them is 'the last complete reading wins'."
   ],
 
   "L003": {
     "take": "DJI_35_20261011_092809.WAV",
     "start": 53.40,
     "_heard": "'...it usually, your-' and then 3.9s of nothing before the line is read whole. The fragment is an abandoned attempt, not the opening of the line."
+  },
+
+  "L006": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 101.98,
+    "_heard": "Two attempts. 98.86-99.64 is 'treasury tacker' and stops; 102.13-115.57 is the line read whole. The 2.49s between them is the restart, and the cut used to open on the fumble and then hold that silence — which is the 2.48-second beat in the middle of the scene. Both were one span to the recogniser, which stamped 'Treasury Tracker takes' on the first attempt's seconds and the rest of the line on the second's."
+  },
+
+  "L007": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 120.80,
+    "_heard": "Two attempts. 118.15-119.55 is 'Which means before you have re-' and stops; 120.95-129.90 is the line read whole. 1.40s between them."
+  },
+
+  "L017": {
+    "take": "DJI_35_20261011_092809.WAV",
+    "start": 301.36,
+    "_heard": "Two attempts. 298.84-299.38 is 'One tel-' and stops; 301.51-310.28 is the line read whole. 2.13s between them."
   },
 
   "L037": {
