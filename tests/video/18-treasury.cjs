@@ -126,10 +126,21 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   // bar-trick, NOT bar-named: the 'named' stage sets labelAlpha to 0, so
   // icicle draws no segment labels at all and the width gate under test never
   // runs. bar-trick is the plain bar with every label icicle will print.
-  const rowY = Math.round(H * 0.34 + H * 0.045);      // through the label glyphs
+  // Read the WHOLE row and keep the busiest line in it. A label that takes two
+  // lines moves its glyphs off whichever single scanline this used to read, so
+  // one row through the middle of the bar now answers a question about layout
+  // rather than about type.
+  function maxDarkRuns(shot, x0, x1, minRun) {
+    let best = 0;
+    for (let y = Math.round(H * 0.34); y < Math.round(H * (0.34 + (64 / 1080) * 2.2)); y++) {
+      const n = darkRuns(shot, y, x0, x1, minRun);
+      if (n > best) best = n;
+    }
+    return best;
+  }
   {
     const shot = await pixels(sceneAt('bar-trick'), 3);
-    const runs = darkRuns(shot, rowY, W * 0.70, W * 0.92, 3);
+    const runs = maxDarkRuns(shot, W * 0.70, W * 0.92, 3);
     assert.strictEqual(runs, 0,
       'a narrow segment printed a label over its neighbours: ' + runs +
       ' strokes of type across the small end of the bar');
@@ -138,7 +149,7 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
   // drawing nothing at all.
   {
     const shot = await pixels(sceneAt('bar-trick'), 3);
-    const runs = darkRuns(shot, rowY, W * 0.09, W * 0.28, 2);
+    const runs = maxDarkRuns(shot, W * 0.09, W * 0.28, 2);
     assert.ok(runs > 4, 'the largest segment must print its name, found ' + runs + ' strokes');
   }
 
@@ -186,7 +197,11 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
     const shot = await pixels(sceneAt('levels-four'), 6);
     const x0 = Math.round(W * 0.08), x1 = Math.round(W * 0.92);
     for (const [row, expected] of [[0, 0.203], [3, 0.260]]) {
-      const y = Math.round(H * (0.31 + row * 0.125 + 0.039));
+      // Near the TOP of the row. A segment name takes two lines where it needs
+      // to, so the middle of a row is now type as often as it is fill, and a
+      // longest-run-of-one-colour measurement there measures the gap between
+      // two letters.
+      const y = Math.round(H * (0.31 + row * 0.125 + 0.008));
       let best = 0, run = 0, prev = null;
       for (let x = x0; x < x1; x++) {
         const i = (y * shot.w + x) * 4;
@@ -235,6 +250,186 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
       ' pixels are identical four seconds apart');
   }
 
+  // ---- the picture a reviewer watching it actually sees ------------------
+  // Everything below came off one viewing of the cut. Each is a thing that
+  // read wrong on screen while every structural test was green.
+
+  // The bar's geometry, once. icicle() lays rows out from barBox().y with an
+  // ancestor at half the height of the current row; these are those numbers as
+  // fractions of the frame, so a test can name a row instead of guessing.
+  const BAR_X = 0.08, BAR_W = 0.84, BAR_Y = 0.34;
+  const R_ANC = (32 / 1080) * 2.2, R_CUR = (64 / 1080) * 2.2, R_GAP = 6 / 1080;
+  const rowBand = (kinds, i) => {                 // kinds: 'a' | 'c', in order
+    let y = BAR_Y;
+    for (let k = 0; k < i; k++) y += (kinds[k] === 'c' ? R_CUR : R_ANC) + R_GAP;
+    return [y, y + (kinds[i] === 'c' ? R_CUR : R_ANC)];
+  };
+  // Near the TOP of a row, above every glyph: a label's first line starts at
+  // 30% of the row's height and its ascenders reach about 18%, so 6% is fill.
+  const rowProbe = (kinds, i) => {
+    const b = rowBand(kinds, i);
+    return b[0] + (b[1] - b[0]) * 0.06;
+  };
+  const atX = frac => Math.round(W * (BAR_X + BAR_W * frac));
+  const rgb = (shot, x, y) => {
+    const i = (Math.round(y) * shot.w + Math.round(x)) * 4;
+    return [shot.data[i], shot.data[i + 1], shot.data[i + 2]];
+  };
+  // How far a pixel is from the empty stage. A segment drawn at a reduced
+  // alpha over the stage keeps its hue and loses this in proportion, so the
+  // ratio between two frames IS the dim factor — which a brightness
+  // comparison between two different segment colours can never be.
+  const fromStage = (shot, x, y) => {
+    const bg = rgb(shot, 3, 3), c = rgb(shot, x, y);
+    return Math.abs(c[0] - bg[0]) + Math.abs(c[1] - bg[1]) + Math.abs(c[2] - bg[2]);
+  };
+
+  // ---- a long name on a wide segment is split, not shrunk ----------------
+  // "Roads & Community Development" is twenty-nine characters on a segment
+  // 16.1% of the bar. On one line it only fits by shrinking to the smallest
+  // size fitLabel will go to, which is what shipped: legible on the canvas at
+  // 1920 and unreadable on a phone. It has the height for two lines, so it
+  // takes two.
+  {
+    const shot = await pixels(sceneAt('bar-trick'), 3);
+    const band = rowBand(['c'], 0);
+    const x0 = atX(0.4780), x1 = atX(0.6230);        // inside segment 2, no edges
+    const bands = [];
+    let open = null;
+    for (let y = Math.round(H * band[0]); y < Math.round(H * band[1]); y++) {
+      let runs = 0, run = 0;
+      for (let x = x0; x < x1; x++) {
+        if (lit(shot, x, y) < 220) run++;            // near-black type on yellow
+        else { if (run >= 2) runs++; run = 0; }
+      }
+      if (run >= 2) runs++;
+      if (runs >= 2) { if (open === null) open = y; }
+      else if (open !== null) { bands.push([open, y]); open = null; }
+    }
+    if (open !== null) bands.push([open, Math.round(H * band[1])]);
+    assert.ok(bands.length >= 3,
+      'the yellow segment must print its name on two rows above its amount — ' +
+      'found ' + bands.length + ' rows of type, not 3');
+    const tallest = Math.max.apply(null, bands.map(b => b[1] - b[0]));
+    assert.ok(tallest >= H * 0.011,
+      'the label on the yellow segment is still shrunk to fit: its tallest row ' +
+      'of type is ' + tallest + 'px, under the ' + Math.round(H * 0.011) +
+      'px a reader needs');
+  }
+
+  // ---- a drill dims what was not chosen ----------------------------------
+  // Opening a segment drew the children across the full width under an
+  // ancestor row that still looked untouched, so the frame never said WHICH
+  // segment had been opened. Everything but the chosen one steps back.
+  {
+    const flat = await pixels(sceneAt('bar-named'), 11);
+    const open = await pixels(sceneAt('bar-open'), 8);
+    const y = H * rowProbe(['a', 'a', 'c'], 0);
+    const chosen = atX(0.13), sibling = atX(0.36);   // segments 0 and 1
+    const yFlat = H * rowProbe(['c'], 0);
+    const keptR = fromStage(open, chosen, y) / fromStage(flat, chosen, yFlat);
+    const lostR = fromStage(open, sibling, y) / fromStage(flat, sibling, yFlat);
+    assert.ok(keptR > 0.85,
+      'the opened segment must stay at full strength, it is at ' + keptR.toFixed(2));
+    assert.ok(lostR < 0.60,
+      'the segments that were NOT opened must step back, they are at ' +
+      lostR.toFixed(2) + ' of full strength — the frame does not say which one was chosen');
+  }
+
+  // ---- the second drill adds a third row and dims the second -------------
+  // L008 is "the department breaks into its divisions, a division breaks into
+  // its programs" — two drills. Only the first was drawn, so the sentence's
+  // second half had no picture, and the line items that followed appeared from
+  // a level the viewer had never been shown.
+  {
+    const open = await pixels(sceneAt('bar-open'), 8);
+    const one = await pixels(sceneAt('bar-open'), 3);
+    const y3 = H * rowProbe(['a', 'a', 'c'], 2);
+    let edges = 0, prev = null;
+    for (let x = atX(0.01); x < atX(0.99); x++) {
+      const key = rgb(open, x, y3).join(',');
+      if (prev !== null && key !== prev) edges++;
+      prev = key;
+    }
+    assert.ok(edges >= 8,
+      'the third row must break Public Safety into its programmes, found ' +
+      edges + ' colour changes across it');
+    // and the division row above it steps back the same way the top row did
+    const y2 = H * rowProbe(['a', 'a', 'c'], 1);
+    const yWas = H * rowProbe(['a', 'c'], 1);
+    const keptR = fromStage(open, atX(0.40), y2) / fromStage(one, atX(0.40), yWas);
+    const lostR = fromStage(open, atX(0.95), y2) / fromStage(one, atX(0.95), yWas);
+    assert.ok(keptR > 0.85 && lostR < 0.60,
+      'drilling into Public Safety must dim General Government beside it: ' +
+      'chosen at ' + keptR.toFixed(2) + ', sibling at ' + lostR.toFixed(2));
+  }
+
+  // ---- the three cards are a selector, not three lamps -------------------
+  // The live page shows ONE of Money In, Money Out and Employees at a time and
+  // the bar below is whichever is selected. The episode lit each card as it
+  // was named and left it lit, so by the end of the line all three were on and
+  // the bar had never changed — the one thing the line says it does.
+  {
+    // The card's border is a 2px stroke centred on the top edge of the panel,
+    // so it lands on one of three rows depending on where the rounding falls.
+    // Read the band, not a row: a border test that misses by a pixel reports
+    // that nothing is ever selected.
+    const isAccent = (shot, x, yTop) => {
+      for (let y = yTop - 2; y <= yTop + 2; y++) {
+        const c = rgb(shot, x, y);
+        if (c[0] > 150 && c[1] > 120 && c[2] < 110 && c[0] > c[2] + 80) return true;
+      }
+      return false;
+    };
+    const cardTop = Math.round(H * 0.085);
+    const cardX = i => {
+      const gap = 0.02, w = (BAR_W - gap * 2) / 3;
+      return atX((i * (w + gap) + w / 2) / BAR_W);
+    };
+    for (const [t, want] of [[1.0, 1], [4.0, 0], [10.0, 2]]) {
+      const shot = await pixels(sceneAt('three-named'), t);
+      let on = 0;
+      for (let i = 0; i < 3; i++) if (isAccent(shot, cardX(i), cardTop)) on++;
+      assert.strictEqual(on, 1,
+        'exactly one card may be selected at ' + t + 's, ' + on + ' are lit');
+      // ...and it is the one he is naming: out, then in, then employees
+      assert.ok(isAccent(shot, cardX(want), cardTop),
+        'at ' + t + 's the selected card must be card ' + want);
+    }
+    // The bar below follows the selection. Money Out's widest segment is 25.9%
+    // of its bar; Money In's is 30.1% of its own.
+    const widest = (shot, y) => {
+      let best = 0, run = 0, prev = null;
+      for (let x = atX(0); x < atX(1); x++) {
+        const key = rgb(shot, x, y).join(',');
+        if (key === prev) run++; else { prev = key; run = 1; }
+        if (run > best) best = run;
+      }
+      return best / (atX(1) - atX(0));
+    };
+    const y = H * rowProbe(['c'], 0);
+    const out = widest(await pixels(sceneAt('three-named'), 1.6), y);
+    const inn = widest(await pixels(sceneAt('three-named'), 7.5), y);
+    assert.ok(Math.abs(out - 0.259) < 0.02,
+      'with Money Out selected the bar is Money Out, widest segment ' + out.toFixed(3));
+    assert.ok(Math.abs(inn - 0.301) < 0.02,
+      'selecting Money In must redraw the bar as Money In, widest segment ' +
+      inn.toFixed(3) + ' — expected 0.301');
+    // Employees is a share OF Money Out: $7.4B of $21.5B, 34.4% of the bar.
+    {
+      const shot = await pixels(sceneAt('three-named'), 11.5);
+      let run = 0;
+      for (let x = atX(0); x < atX(1); x++) {
+        const c = rgb(shot, x, y);
+        if (c[0] > 180 && c[0] > c[1] + 40 && c[1] > c[2]) run++; else break;
+      }
+      const share = run / (atX(1) - atX(0));
+      assert.ok(Math.abs(share - 0.344) < 0.02,
+        'the Employees card must fill the share of Money Out that pays people, ' +
+        '$7.4B of $21.5B — the fill covers ' + share.toFixed(3) + ' of the bar');
+    }
+  }
+
   // ---- every segment table sums to the total printed beside it ------------
   // icicle scales each row to the sum of what it is HANDED. FED_OUT listed
   // nine segments adding to $6,695.5B while the frame printed $7,195.8B, so
@@ -251,7 +446,8 @@ const FILES = ['brand.js', 'screen.js', 'art.js'];
         .reduce((a, m) => a + (+m[1]) * Math.pow(10, +m[2]), 0);
     };
     for (const [name, printed] of [['FED_OUT', 7195.8e9], ['FED_BY_DEPT', 7195.8e9],
-                                   ['LA_OUT', 21.5e9], ['COUNTY_OUT', 37.6e9],
+                                   ['LA_OUT', 21.5e9], ['LA_IN', 21.6e9],
+                                   ['COUNTY_OUT', 37.6e9],
                                    ['STATE_OUT', 190.3e9]]) {
       const off = Math.abs(sumOf(name) - printed) / printed;
       assert.ok(off < 0.01, name + ' sums to $' + (sumOf(name) / 1e9).toFixed(1) +

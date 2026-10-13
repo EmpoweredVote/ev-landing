@@ -50,12 +50,19 @@
 
   // Money In, same year, same palette order. Only the five the page labels are
   // listed; the rest are too narrow for a name on the real chart too.
+  //
+  // "Everything else" is the sixth, and it is not decoration. icicle() scales a
+  // row to the sum of what it is HANDED, so five segments adding to $17.9B under
+  // a card printing $21.6B would draw every one of them 21% too wide and lose
+  // $3.7B without a mark. This bar is on screen from L014 on, so it needs the
+  // remainder for the same reason FED_OUT does.
   var LA_IN = [
     { label: "Tax Revenue",           amt: 6.5e9, c: "#3AABB8" },
     { label: "City Electric Utility", amt: 5.2e9, c: "#FF5740" },
     { label: "City Airport",          amt: 2.4e9, c: "#FED12E" },
     { label: "Service Fees",          amt: 2.0e9, c: "#9788B8" },
-    { label: "City Water Utility",    amt: 1.8e9, c: "#74B589" }
+    { label: "City Water Utility",    amt: 1.8e9, c: "#74B589" },
+    { label: "Everything else",       amt: 3.7e9, c: "#59B0C4" }
   ];
 
   // The three cards above the chart, in the product's own words and order.
@@ -96,6 +103,30 @@
     total: 4801317960,
     legend: ["Under Budget", "On Budget", "Over Budget"]
   };
+
+  // Public Safety's programmes: the THIRD row of the drill, and the same six
+  // rows the line-item table under the bar prints. L008 is "the department
+  // breaks into its divisions, a division breaks into its programs" — two
+  // drills — and only the first was drawn, so the second half of the sentence
+  // had no picture and the line items that followed arrived from a level the
+  // viewer had never been shown.
+  //
+  // Derived from LA_ITEMS rather than typed again. Two copies of six numbers is
+  // how a bar stops agreeing with the table beneath it, and they are the same
+  // six numbers: they add to $4,801,317,960, which is Public Safety.
+  //
+  // "_Current Expenditures" is the account type in the filing, not the name of
+  // the programme, so the segment carries the programme and the table below
+  // keeps the filing's own wording in full.
+  var DRILL_C = ["#3AABB8", "#FF5740", "#FED12E", "#9788B8", "#74B589", "#59B0C4"];
+  LA_DRILL.level2 = [];
+  for (var li = 0; li < LA_ITEMS.rows.length; li++) {
+    LA_DRILL.level2.push({
+      label: LA_ITEMS.rows[li].desc.split("_")[0],
+      amt: LA_ITEMS.rows[li].budget,
+      c: DRILL_C[li % DRILL_C.length]
+    });
+  }
 
   // Four years of EVERY top-level segment, in LA_OUT's order, so "change the
   // year and the whole shape redraws" can redraw the whole shape rather than
@@ -262,6 +293,17 @@
   // level. All three are the live page's words.
   var CHART_HEAD = "How Los Angeles spends its budget";
   var CHART_SUB = "Each segment shows the share of the total budget.";
+  // One heading per card, because the three cards are a selector and the bar
+  // under them changes with it. Leaving "How Los Angeles spends its budget"
+  // above the Money In bar labelled revenue as spending, which is the exact
+  // confusion L015 says this chapter exists to prevent.
+  var CARD_HEAD = {
+    "in":    ["Where Los Angeles's budget comes from",
+              "Each segment shows the share of all funds received."],
+    "out":   [CHART_HEAD, CHART_SUB],
+    "staff": ["What Los Angeles pays the people who work for it",
+              "Employee compensation as a share of what the city spends."]
+  };
   var BASIS = "Top-level descriptions from GASB Statement No. 34 — Basic Financial Statements.";
   // What the site says when it does not have a government. Confirmed live.
   var NOTFOUND = "We couldn't find a government matching";
@@ -421,6 +463,95 @@
     label(ctx, s, x, y, size, color, weight, align);
     return size;
   }
+  // ── A segment's own name ───────────────────────────────────────────────
+  // A chart segment is as wide as its share of the money, so most names do not
+  // fit on one line in it. fitLabel's answer is to shrink, and shrink is what
+  // shipped: "Roads & Community Development" set at MINSIZE on a segment 16% of
+  // the bar wide — legible on a 1920 canvas and unreadable on the phone most of
+  // this will be watched on.
+  //
+  // A segment has the HEIGHT for two lines and does not have the width for one,
+  // so the name takes two lines before it takes a smaller size. Below SEG_MIN
+  // it is not printed at all: a name set at two thirds is a name nobody reads,
+  // and a name that runs under its neighbour is worse than no name.
+  var SEG_MIN = 0.74;
+
+  // The split point that makes the two lines as even as possible. Greedy
+  // wrapping puts "Development" alone on line two and sets the whole label to
+  // the width of line one, which is the thing being avoided.
+  function split2(ctx, s) {
+    var words = String(s).split(" ");
+    if (words.length < 2) return null;
+    var best = null, bestW = Infinity;
+    for (var k = 1; k < words.length; k++) {
+      var a = words.slice(0, k).join(" "), b = words.slice(k).join(" ");
+      var w = Math.max(ctx.measureText(a).width, ctx.measureText(b).width);
+      if (w < bestW) { bestW = w; best = [a, b]; }
+    }
+    return { lines: best, width: bestW };
+  }
+
+  // Draw a segment's name, and its amount where there is a row tall enough to
+  // carry one. Returns false where the name does not fit at all, so the caller
+  // can leave the segment bare rather than print into its neighbour.
+  function segLabel(ctx, name, amt, x, y, w, h, size, two) {
+    ctx.font = "700 " + Math.round(size) + "px " + FONT;
+    var oneW = ctx.measureText(name).width;
+    var s1 = oneW > 0 ? Math.min(1, w / oneW) : 1;
+    var pair = two ? split2(ctx, name) : null;
+    var s2 = pair && pair.width > 0 ? Math.min(1, w / pair.width) : 0;
+
+    var lines, scale;
+    // Nearly fitting on one line counts as fitting: "City Airport" set as
+    // "City" over "Airport" to save four per cent is two lines for nothing.
+    if (s1 >= 0.92) { lines = [name]; scale = Math.min(1, s1); }
+    else if (s2 >= s1) { lines = pair.lines; scale = s2; }
+    else { lines = [name]; scale = s1; }
+    if (scale < SEG_MIN) return false;
+
+    var px = Math.round(size * scale);
+    var lead = px * 1.2;                       // between the two name lines
+
+    // THREE registers have to fit in the row: name line one, name line two
+    // where there is one, and the amount. A row drawn at rowScale 0.60 is two
+    // thirds of the height the main bar's row is, and the fixed baselines that
+    // fit three registers in one put the amount straight through the second
+    // line of the name in the other — which is what the four-government frame
+    // shipped looking like.
+    //
+    // So the baselines come from the room there is. The amount stays on one
+    // baseline for the whole row wherever it can, because a row of segments
+    // whose figures sit at three heights stops reading as a row.
+    var amtY = h * 0.82;
+    var top = h * (lines.length === 2 ? 0.30 : (amt ? 0.44 : 0.62));
+    if (lines.length === 2 && amt) {
+      var need = top + lead + px * 1.05;
+      if (need > amtY) amtY = Math.min(h - px * 0.28, need);
+      if (need > amtY) top = amtY - lead - px * 1.05;
+      // Still no room: the row is too short to carry a name on two lines at
+      // all, so it carries one line or none, which fits() already decides.
+      if (top < px * 0.95) {
+        if (s1 < SEG_MIN) return false;
+        lines = [name];
+        px = Math.round(size * Math.min(1, s1));
+        top = h * 0.44;
+        amtY = h * 0.82;
+      }
+    }
+
+    ctx.fillStyle = ONSEG;
+    ctx.font = "700 " + px + "px " + FONT;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText(lines[0], x, y + top);
+    if (lines.length === 2) ctx.fillText(lines[1], x, y + top + lead);
+    if (amt) {
+      fitLabel(ctx, amt, x, y + amtY, w, size * 0.95,
+               "rgba(16,19,26,0.78)", "600", "left");
+    }
+    return true;
+  }
+
   // A row of grey rule-lines standing for text nobody is meant to read. Used by
   // the budget document, and by the method panel, where writing the real body
   // out would be inventing the product's own words.
@@ -468,6 +599,22 @@
   // proportions the spec calls faithful are the proportions on screen.
   var SCALE = 2.2;
   var ROW_ANC = (32 / 1080) * SCALE, ROW_CUR = (64 / 1080) * SCALE, ROW_GAP = 6 / 1080;
+  // Everything that was NOT chosen, as a fraction of its own strength. A drill
+  // that leaves the row above it untouched never says which segment was
+  // opened, which is the first thing a viewer asks of the picture.
+  var DIMMED = 0.26;
+
+  // Where one segment sits inside its own row, as two fractions of the row's
+  // width. The drill animates out of this span, so the child row is seen to
+  // come from the segment it came from.
+  function spanOf(segs, i) {
+    var total = 0, before = 0, k;
+    for (k = 0; k < segs.length; k++) total += segs[k].amt;
+    for (k = 0; k < i; k++) before += segs[k].amt;
+    if (!(total > 0)) return [0, 1];
+    return [before / total, (before + segs[i].amt) / total];
+  }
+
   function icicle(ctx, rows, o) {
     var H = o.H, w = o.w, x = o.x, y = o.y;
     var alpha = o.alpha == null ? 1 : o.alpha;
@@ -480,44 +627,77 @@
     ctx.globalAlpha = alpha;
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
-      var h = Math.max(2, Math.round(H * (row.current ? ROW_CUR : ROW_ANC) *
-                                    (o.rowScale == null ? 1 : o.rowScale)));
+      // `current` is a NUMBER, not a flag: a row that is becoming an ancestor
+      // because the drill went one level deeper has to travel between the two
+      // heights rather than halve between one frame and the next. true and
+      // false still read as 1 and 0, so every caller that names a flag is
+      // unchanged.
+      var cur = row.current === true ? 1 : (row.current ? row.current : 0);
+      var alive = row.alive == null ? 1 : row.alive;
+      var h = Math.max(0, Math.round(H * (ROW_ANC + (ROW_CUR - ROW_ANC) * cur) *
+                                     (o.rowScale == null ? 1 : o.rowScale) * alive));
+      if (h <= 0) continue;
       var total = 0, i;
       for (i = 0; i < row.segs.length; i++) total += row.segs[i].amt;
-      var cx = x;
+
+      // A row that has just been opened out of one segment of the row above
+      // starts the width of THAT segment and grows to the full bar. Without
+      // this the children appear full width under an untouched parent and the
+      // frame never shows the expansion it is describing.
+      var rx = x, rw = w;
+      if (row.growFrom && row.growFrom.u < 1) {
+        var sp = row.growFrom.span, u = row.growFrom.u;
+        rx = x + w * sp[0] * (1 - u);
+        rw = w * (sp[1] - sp[0]) * (1 - u) + w * u;
+      }
+
+      var cx = rx;
       for (i = 0; i < row.segs.length; i++) {
         var s = row.segs[i];
-        var sw = total > 0 ? w * (s.amt / total) : 0;
+        var sw = total > 0 ? rw * (s.amt / total) : 0;
         // `divide` runs 0 -> 1 as one undivided bar becomes its segments: at 0
         // every segment is an equal slice of plain grey, at 1 it is sized and
         // coloured. This is L006's "every department is a slice of it, sized by
         // what it actually receives", in that order.
         if (o.divide != null && o.divide < 1) {
-          sw = (w / row.segs.length) * (1 - o.divide) + sw * o.divide;
+          sw = (rw / row.segs.length) * (1 - o.divide) + sw * o.divide;
         }
         // One segment opening toward the full width, the rest closing.
-        if (row.current && o.openIndex != null && o.openGrow > 0) {
-          sw = o.openIndex === i ? sw + (w - sw) * o.openGrow : sw * (1 - o.openGrow);
+        if (cur >= 1 && o.openIndex != null && o.openGrow > 0) {
+          sw = o.openIndex === i ? sw + (rw - sw) * o.openGrow : sw * (1 - o.openGrow);
         }
+        // Everything that was not chosen steps back, by the same amount the
+        // choice itself arrived by, so the dimming and the drill are one move.
+        var strength = 1;
+        if (row.focus != null && row.focus !== i) {
+          strength = 1 - (row.focusAmt == null ? 1 : row.focusAmt) * (1 - DIMMED);
+        }
+        ctx.globalAlpha = alpha * strength;
         ctx.fillStyle = o.divide != null && o.divide < 0.5 ? GRID : s.c;
         ctx.fillRect(Math.round(cx), Math.round(y), Math.max(0, Math.round(sw) - 1), h);
-        if (row.current && sw >= minLabel && fits(ctx, s.label, sw - h * 0.30, H * 0.022) &&
-            (o.labelAlpha == null || o.labelAlpha > 0)) {
+
+        // The name, on the current row AND on the ancestors above it. Dropping
+        // every ancestor label is how the drill lost the one word that made it
+        // a drill: the row above has to keep saying "Government & Public
+        // Safety" or the row below is children of nothing.
+        var labelOn = o.labelAlpha == null ? 1 : o.labelAlpha;
+        if (sw >= minLabel && labelOn > 0) {
+          var pad = Math.max(4, h * 0.15);
           ctx.save();
-          ctx.globalAlpha = alpha * (o.labelAlpha == null ? 1 : o.labelAlpha);
-          fitLabel(ctx, s.label, cx + h * 0.15, y + h * 0.42, sw - h * 0.30,
-                   H * 0.022, ONSEG, "700", "left");
+          ctx.globalAlpha = alpha * strength * labelOn;
           // `shown` is a figure the PAGE prints that is not this segment's
           // dollar amount — the per-person mode's own rounding, for one. The
           // bar is still sized by the money either way, so the shape does not
           // change when the scale does, which is what the live toggle does.
-          fitLabel(ctx, s.shown || money(s.amt), cx + h * 0.15, y + h * 0.72,
-                   sw - h * 0.30, H * 0.021, "rgba(16,19,26,0.78)", "600", "left");
+          segLabel(ctx, s.label, cur >= 0.5 ? (s.shown || money(s.amt)) : null,
+                   cx + pad, y, sw - pad * 2, h,
+                   H * (cur >= 0.5 ? 0.022 : 0.017), cur >= 0.5);
           ctx.restore();
         }
         cx += sw;
       }
-      y += h + gap;
+      ctx.globalAlpha = alpha;
+      y += h + gap * alive;
     }
     ctx.restore();
     return y;
@@ -525,12 +705,30 @@
 
   // The trail above the bar. `shown` is how many parts are visible, so L009 can
   // build it one step at a time without a second copy of the list.
-  function breadcrumb(ctx, parts, shown, x, y, W, H, alpha) {
+  function breadcrumb(ctx, parts, shown, x, y, W, H, alpha, glow) {
     if (alpha <= 0 || shown <= 0) return;
     ctx.save();
     ctx.globalAlpha = alpha;
     var size = H * 0.020, cx = x;
     var n = Math.min(shown, parts.length);
+    // L009 is "the trail at the top always tells you where you are standing",
+    // and by then the trail is already complete — there is nothing left for it
+    // to build. So the beat is the trail being POINTED AT rather than grown: a
+    // rule under it, drawn in the accent, arriving as he says the words.
+    if (glow > 0) {
+      var wTot = 0, g;
+      ctx.font = "500 " + Math.round(size) + "px " + FONT;
+      for (g = 0; g < n; g++) {
+        ctx.font = (g === n - 1 ? "700 " : "500 ") + Math.round(size) + "px " + FONT;
+        wTot += ctx.measureText(parts[g]).width;
+        if (g < n - 1) wTot += ctx.measureText("  /  ").width;
+      }
+      ctx.save();
+      ctx.globalAlpha = alpha * glow;
+      ctx.fillStyle = "#FFD426";
+      ctx.fillRect(x, y + size * 0.42, wTot * glow, Math.max(1, H * 0.003));
+      ctx.restore();
+    }
     for (var i = 0; i < n; i++) {
       var last = i === n - 1;
       ctx.font = (last ? "700" : "500") + " " + Math.round(size) + "px " + FONT;
@@ -693,6 +891,32 @@
   // ── Chapter 2: the budget as a picture ─────────────────────────────────
   // Six scenes of one object. Every second below is read off words.md and
   // named in episode.mjs; nothing here chooses its own moment.
+  // The two largest segments, named, with the share the page prints beside the
+  // money. L007's own picture, and the picture the first second of L008 has to
+  // keep showing: two scenes that draw the same names two ways blink at the
+  // cut between them. `nameAt` null means both are already there.
+  function topTwoNames(ctx, W, H, a, nameAt, t) {
+    if (a <= 0) return;
+    var box = barBox(W, H), total = 0, k;
+    for (k = 0; k < LA_OUT.length; k++) total += LA_OUT[k].amt;
+    var cx = box.x, rowH = Math.round(H * ROW_CUR);
+    for (k = 0; k < 2; k++) {
+      var segW = box.w * (LA_OUT[k].amt / total);
+      var on = nameAt ? atIndex(nameAt, k, t, 0.4) : 1;
+      if (on > 0) {
+        ctx.save();
+        ctx.globalAlpha = a * on;
+        fitLabel(ctx, LA_OUT[k].label, cx + rowH * 0.22, box.y + rowH * 0.44,
+                 segW - rowH * 0.44, H * 0.022, ONSEG, "700", "left");
+        fitLabel(ctx, money(LA_OUT[k].amt) + "  ·  " + LA_OUT[k].pct + "%",
+                 cx + rowH * 0.22, box.y + rowH * 0.82, segW - rowH * 0.44,
+                 H * 0.020, "rgba(16,19,26,0.80)", "600", "left");
+        ctx.restore();
+      }
+      cx += segW;
+    }
+  }
+
   function drawBudgetBar(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
@@ -736,54 +960,57 @@
       rows = [{ segs: LA_OUT, current: true }];
       opts.labelAlpha = 0;                      // the names are drawn below
       icicle(ctx, rows, opts);
-      var total = 0, k;
-      for (k = 0; k < LA_OUT.length; k++) total += LA_OUT[k].amt;
-      var cx = box.x, rowH = Math.round(H * ROW_CUR);
-      for (k = 0; k < LA_OUT.length; k++) {
-        var segW = box.w * (LA_OUT[k].amt / total);
-        if (k < 2) {
-          var on = atIndex(scene.nameAt, k, t, 0.4);
-          if (on > 0) {
-            ctx.save();
-            ctx.globalAlpha = a * on;
-            fitLabel(ctx, LA_OUT[k].label, cx + rowH * 0.22, box.y + rowH * 0.44,
-                     segW - rowH * 0.44, H * 0.022, ONSEG, "700", "left");
-            fitLabel(ctx, money(LA_OUT[k].amt) + "  ·  " + LA_OUT[k].pct + "%",
-                     cx + rowH * 0.22, box.y + rowH * 0.82, segW - rowH * 0.44,
-                     H * 0.020, "rgba(16,19,26,0.80)", "600", "left");
-            ctx.restore();
-          }
-        }
-        cx += segW;
-      }
+      topTwoNames(ctx, W, H, a, scene.nameAt, t);
       return;
     }
 
     if (stage === 'open' || stage === 'trail') {
-      // The first row compresses to an ancestor and its first segment's
-      // children become the current row. "it opens" 1.90, then one level
-      // deeper at 5.24.
+      // TWO drills, because the line is two: "the department breaks into its
+      // divisions. A division breaks into its programs." The second half used
+      // to have no picture at all, and the line items in L010 then arrived out
+      // of a level the viewer had never been shown.
+      //
+      // Everything that was not pressed steps back, at the same moment and by
+      // the same amount the press happens, so the frame says which segment was
+      // opened. Without it the children appear across the full width under a
+      // parent row that still looks untouched, and the picture no longer reads
+      // as an expansion of anything.
       var opened = at(scene, 'openAt', t, 0.9);
       var deeper = at(scene, 'deeperAt', t, 0.9);
       barHead(ctx, W, H, a, CHART_HEAD, null);
       if (opened <= 0) {
+        // Still the bar L007 left on screen, with the same two names on it.
+        // Letting icicle label everything here would pop eight more names on
+        // at the cut, which is the blink that continues exists to stop.
+        opts.labelAlpha = 0;
         icicle(ctx, [{ segs: LA_OUT, current: true }], opts);
+        topTwoNames(ctx, W, H, a, null, t);
         return;
       }
-      rows = [{ segs: LA_OUT, current: false }, { segs: LA_DRILL.level1, current: true }];
+      var OPENED = 0;        // Government & Public Safety, in LA_OUT
+      var DEEPER = 0;        // Public Safety, inside it
+      rows = [
+        { segs: LA_OUT, current: false, focus: OPENED, focusAmt: opened },
+        { segs: LA_DRILL.level1, current: 1 - deeper, alive: opened,
+          focus: deeper > 0 ? DEEPER : null, focusAmt: deeper,
+          growFrom: { span: spanOf(LA_OUT, OPENED), u: opened } }
+      ];
+      if (deeper > 0) {
+        rows.push({ segs: LA_DRILL.level2, current: true, alive: deeper,
+                    growFrom: { span: spanOf(LA_DRILL.level1, DEEPER), u: deeper } });
+      }
       opts.labelAlpha = opened;
       icicle(ctx, rows, opts);
-      // bar-open leaves six parts showing. bar-trail must not start from one
-      // and fade in again — the trail is the one thing this line is about, and
-      // rebuilding it at the cut is the blink `continues` exists to stop. It
-      // builds from six to seven as he says "the trail at the top".
-      var SHOWN_AT_OPEN = 6;
-      crumbShown = stage === 'trail'
-        ? SHOWN_AT_OPEN + Math.round(Math.max(0, Math.min(1,
-            at(scene, 'crumbAt', t, 1.2))))
-        : 5 + Math.round(deeper);
-      crumbAlpha = a * (stage === 'trail' ? 1 : opened);
-      breadcrumb(ctx, LA_DRILL.crumb, crumbShown, box.x, box.y - H * 0.038, W, H, crumbAlpha);
+      // The top row's two big names cross-fade into the small ancestor names
+      // icicle prints, rather than one set cutting to the other.
+      if (opened < 1) topTwoNames(ctx, W, H, a * (1 - opened), null, t);
+
+      // 5 parts before anything opens, 6 at the first drill, 7 at the second.
+      // The trail is complete by the end of L008, so L009's own beat is the
+      // rule under it rather than another part.
+      crumbShown = 5 + Math.round(opened) + Math.round(deeper);
+      breadcrumb(ctx, LA_DRILL.crumb, crumbShown, box.x, box.y - H * 0.038, W, H,
+                 a, stage === 'trail' ? at(scene, 'crumbAt', t, 1.2) : 0);
       return;
     }
 
@@ -815,11 +1042,12 @@
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
     var box = barBox(W, H);
-    var below = icicle(ctx, [{ segs: LA_OUT, current: false },
-                             { segs: LA_DRILL.level1, current: true }],
+    var below = icicle(ctx, [{ segs: LA_OUT, current: false, focus: 0 },
+                             { segs: LA_DRILL.level1, current: false, focus: 0 },
+                             { segs: LA_DRILL.level2, current: true }],
                        { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
     barHead(ctx, W, H, a, CHART_HEAD, null);
-    breadcrumb(ctx, LA_DRILL.crumb, LA_DRILL.crumb.length, box.x, box.y - H * 0.038, W, H, a);
+    breadcrumb(ctx, LA_DRILL.crumb, LA_DRILL.crumb.length, box.x, box.y - H * 0.038, W, H, a, 0);
 
     var ty = below + H * 0.045;
     var colX = [box.x, box.x + box.w * 0.52, box.x + box.w * 0.70, box.x + box.w * 0.88];
@@ -862,15 +1090,20 @@
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
     var box = barBox(W, H);
-    var below = icicle(ctx, [{ segs: LA_OUT, current: false },
-                             { segs: LA_DRILL.level1, current: true }],
+    var below = icicle(ctx, [{ segs: LA_OUT, current: false, focus: 0 },
+                             { segs: LA_DRILL.level1, current: false, focus: 0 },
+                             { segs: LA_DRILL.level2, current: true }],
                        { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
     barHead(ctx, W, H, a, CHART_HEAD, null);
-    breadcrumb(ctx, LA_DRILL.crumb, LA_DRILL.crumb.length, box.x, box.y - H * 0.038, W, H, a);
+    breadcrumb(ctx, LA_DRILL.crumb, LA_DRILL.crumb.length, box.x, box.y - H * 0.038, W, H, a, 0);
 
+    // The bar above is three rows deep now, so the panel is shorter by the row
+    // that was added and its rows are closer together. The numbers are the
+    // frame's, not a taste: 0.27 of the height starting at 0.657 reaches 0.927,
+    // and the cast in chapter 9 stands at 0.94.
     var open = at(scene, 'panelAt', t, 0.5);
     if (open <= 0) return;
-    var py = below + H * 0.045, ph = H * 0.30;
+    var py = below + H * 0.045, ph = H * 0.27;
     panel(ctx, box.x, py, box.w, ph, H, a * open, EDGE);
 
     ctx.save();
@@ -893,7 +1126,7 @@
       ctx.restore();
     }
 
-    var rowH = H * 0.034;
+    var rowH = H * 0.030;
     for (var i = 0; i < 5; i++) {
       var ron = atIndex(scene.rowAt, i, t, 0.22);
       if (ron <= 0) continue;
@@ -912,6 +1145,49 @@
     var gap = W * 0.02, w = (box.w - gap * 2) / 3;
     return { x: box.x + i * (w + gap), y: H * 0.085, w: w, h: H * 0.135 };
   }
+  // Which picture a card stands for. Money In is a bar of its own; Employees
+  // is not a bar at all but a SHARE of Money Out, so it is drawn differently
+  // and named differently.
+  function cardMode(i) { return i === 0 ? "in" : i === 2 ? "staff" : "out"; }
+
+  // Employee compensation against the money the city spends: $7.4B of $21.5B.
+  // Read from LA_CARDS so the bar and the card above it can never disagree.
+  var STAFF_C = "#FF7A1A";
+  function staffShare() { return LA_CARDS[2].amt / LA_CARDS[1].amt; }
+
+  // The bar under the three cards, for whichever card is selected.
+  //
+  // The Employees bar FLATTENS the departments. An orange band laid over the
+  // coloured segments would say the first three and a half departments ARE the
+  // payroll, and they are not — employee compensation is spread across every
+  // one of them. Flat, the bar is simply "all the money the city spends", and
+  // the orange is the part of it that pays people, which is what it is.
+  function cardBar(ctx, W, H, alpha, mode) {
+    if (alpha <= 0) return;
+    var box = barBox(W, H);
+    if (mode !== "staff") {
+      icicle(ctx, [{ segs: mode === "in" ? LA_IN : LA_OUT, current: true }],
+             { x: box.x, y: box.y, w: box.w, H: H, alpha: alpha });
+      return;
+    }
+    var h = Math.round(H * ROW_CUR), share = staffShare();
+    var sw = Math.round(box.w * share);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = EDGE;
+    ctx.fillRect(Math.round(box.x), Math.round(box.y), Math.round(box.w), h);
+    ctx.fillStyle = STAFF_C;
+    ctx.fillRect(Math.round(box.x), Math.round(box.y), sw, h);
+    var pad = Math.max(4, h * 0.15);
+    segLabel(ctx, "Employee compensation",
+             money(LA_CARDS[2].amt) + "  ·  " + Math.round(share * 100) + "% of Money Out",
+             box.x + pad, box.y, sw - pad * 2, h, H * 0.022, true);
+    ctx.globalAlpha = alpha * 0.85;
+    fitLabel(ctx, "Everything else the city spends", box.x + sw + pad,
+             box.y + h * 0.56, box.w - sw - pad * 2, H * 0.022, MUTED, "600", "left");
+    ctx.restore();
+  }
+
   function drawThreeCards(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
@@ -941,26 +1217,52 @@
     }
 
     // 'two' and 'named': the bar below, the three cards above.
-    barHead(ctx, W, H, a, CHART_HEAD, CHART_SUB);
-    icicle(ctx, [{ segs: LA_OUT, current: true }],
-           { x: box.x, y: box.y, w: box.w, H: H, alpha: a });
+    //
+    // The cards are a SELECTOR, not three lamps. The live page shows ONE of
+    // Money In, Money Out and Employees at a time and the chart under them is
+    // whichever is chosen. Lighting each card as it was named and leaving it
+    // lit ended the line with all three on, and the bar below had never
+    // changed — which is the one thing the line says the tool does.
+    //
+    // `cardAt` is indexed by CARD, in LA_CARDS' order — Money In, Money Out,
+    // Employees — NOT by the order the script names them. He says money out
+    // first. Reading two arrays at the same index that were never in the same
+    // order put every label on the wrong row in episode 2.
+    var pick = -1, pickT = -1e9, prev = -1, prevT = -1e9, p;
+    if (stage === 'named' && scene.cardAt) {
+      for (p = 0; p < scene.cardAt.length; p++) {
+        var tp = scene.cardAt[p];
+        if (tp == null || t < tp) continue;
+        if (tp > pickT) { prev = pick; prevT = pickT; pick = p; pickT = tp; }
+        else if (tp > prevT) { prev = p; prevT = tp; }
+      }
+    }
+    // Half a second to change over, which is about as fast as a click feels.
+    var swap = pick < 0 ? 1 : ease(Math.min(1, Math.max(0, (t - pickT) / 0.5)));
+    var nowMode = cardMode(pick), wasMode = cardMode(prev);
+    if (nowMode === wasMode) swap = 1;
+
+    if (swap >= 1) {
+      barHead(ctx, W, H, a, CARD_HEAD[nowMode][0], CARD_HEAD[nowMode][1]);
+      cardBar(ctx, W, H, a, nowMode);
+    } else {
+      barHead(ctx, W, H, a * (1 - swap), CARD_HEAD[wasMode][0], CARD_HEAD[wasMode][1]);
+      barHead(ctx, W, H, a * swap, CARD_HEAD[nowMode][0], CARD_HEAD[nowMode][1]);
+      cardBar(ctx, W, H, a * (1 - swap), wasMode);
+      cardBar(ctx, W, H, a * swap, nowMode);
+    }
 
     for (var i = 0; i < LA_CARDS.length; i++) {
       var c = LA_CARDS[i], b = cardBox(W, H, i);
       // The third card is present and FAINT from the first scene — "a third
-      // joins them faintly" — and only lights when he names it. `cardAt` is
-      // indexed by CARD, in this array's order, NOT by the order the script
-      // names them: he says money out first, and reading the two arrays at the
-      // same index put every label on the wrong row in episode 2.
-      // The third card is faint until it is NAMED, in both stages. Gating this
+      // joins them faintly" — and only lights when it is selected. Gating this
       // on stage === 'two' meant it jumped to full strength at the cut into
-      // 'named' — 8.4s before he says "a third" — and cardAt only changed the
-      // border colour.
-      var base = (i === 2) ? 0.35 : 1;
-      var on = stage === 'named' ? atIndex(scene.cardAt, i, t, 0.4) : 0;
+      // 'named', 8.4s before he says "a third".
+      var base = (i === 2) ? 0.35 : 0.72;
+      var on = i === pick ? Math.max(swap, 0.35) : 0;
       var strength = Math.max(base, on);
       panel(ctx, b.x, b.y, b.w, b.h, H, a * strength,
-            on > 0.5 ? (scene.accent || "#FFD426") : EDGE);
+            i === pick ? (scene.accent || "#FFD426") : EDGE);
       ctx.save();
       ctx.globalAlpha = a * strength;
       fitLabel(ctx, c.head, b.x + b.w * 0.07, b.y + b.h * 0.30, b.w * 0.86,
