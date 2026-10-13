@@ -852,6 +852,27 @@
     ctx.restore();
   }
 
+  // A question mark over a figure's head. Same place as the swirl and read off
+  // the same cast entry, so the two cannot be drawn to different heights.
+  //
+  // Still, not bobbing. The one piece of animation this chapter had was a
+  // second figure swaying, and it was cut for being distracting; a mark that
+  // moves would put the same problem back in a smaller way.
+  function question(ctx, W, H, at, figScale, alpha) {
+    if (alpha <= 0) return;
+    // 0.285 of the frame above the feet, which clears the top of the head by
+    // about its own radius. 0.250 put it ON the head.
+    var cx = at[0] * W, cy = at[1] * H - H * 0.288 * figScale;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = MUTED;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "800 " + Math.round(H * 0.098 * figScale) + "px " + FONT;
+    ctx.fillText("?", cx, cy);
+    ctx.restore();
+  }
+
   // ── Chapter 1: the money leaves ────────────────────────────────────────
   // A pay stub held at the left of the frame, with ONE line on it picked out:
   // the line where the money goes. The stub is a prop, so its rows are rule-
@@ -1123,6 +1144,18 @@
       // sentence. It carries the figure now, big, with nothing around it,
       // which is the thing the line is describing. It fades as the rest of the
       // bar grows back, because from then on the picture IS the context.
+      // The figure asks what the viewer is asking. `askAt` is "the number on
+      // its own" and `askGone` is where it leaves, before the bar grows back:
+      // a mark still hanging there once the picture has answered the question
+      // is a mark that contradicts the picture.
+      var fig0 = (scene.cast && scene.cast[0]) || null;
+      if (fig0 && fig0.at && scene.askAt != null) {
+        var asked = at(scene, 'askAt', t, 0.4);
+        var left = scene.askGone == null ? 0 : at(scene, 'askGone', t, 0.5);
+        question(ctx, W, H, fig0.at, fig0.scale == null ? 1 : fig0.scale,
+                 a * asked * (1 - left));
+      }
+
       var alone = 1 - ease(Math.min(1, out * 1.6));
       if (alone > 0.01) {
         var seg = LA_OUT[ZOOM_SEG], mid = box.y + H * ROW_CUR * 0.5;

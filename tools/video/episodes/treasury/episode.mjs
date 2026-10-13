@@ -307,8 +307,13 @@ export default {
     // it. It used to be a featureless orange bar for seven seconds: "4:34 just
     // shows an orange bar and I lose track of what I'm saying." A line about a
     // number on its own needs the number on it.
+    // A question mark over its head while the number stands alone: "on its
+    // own" at 4.36, gone again from 6.60, after "almost anything" at 6.34 and
+    // before the bar grows back at 7.72. Brief on purpose — once the whole
+    // picture is around the number, the question has been answered and a mark
+    // still hanging there would say the opposite.
     { id: 'why-zoom', type: 'art', vo: 'L034', art: 'drawBudgetBar', stage: 'zoom',
-      continues: true, zoomAt: 7.72,
+      continues: true, zoomAt: 7.72, askAt: 4.36, askGone: 6.60,
       cast: [{ at: [0.30, 0.94], anim: 'standstill', color: VIEWER, scale: 0.85 }] },
     { id: 'why-democracy', type: 'art', vo: 'L035', art: 'drawBudgetBar', stage: 'whole',
       continues: true,
