@@ -89,15 +89,43 @@ export default {
       name: 'Treasury Tracker' },
 
     // ── 3. The budget as a picture ──────────────────────────────────────
-    { id: 'bar-collapse', type: 'art', vo: 'L006', art: 'drawBudgetBar', stage: 'collapse' },
+    // The document is still on screen and becomes the bar, in the order the
+    // sentence gives it: "draws it in a way that anyone can read" at 5.82, "the
+    // whole budget becomes one shape" at 9.30, "and every department is a
+    // slice of it" at 11.66, "sized by what it actually receives" at 14.18.
+    // Four clauses, four things happening, none of them early.
+    { id: 'bar-collapse', type: 'art', vo: 'L006', art: 'drawBudgetBar', stage: 'collapse',
+      collapseAt: 5.82, shapeAt: 9.30, sliceAt: 11.66, sizeAt: 14.18 },
+
+    // The two largest are named as he reaches the answer — "the answer" at
+    // 6.51, "anybody asks" at 8.15 — so the question at 9.77 lands on a
+    // picture that already answers it.
     { id: 'bar-named', type: 'art', vo: 'L007', art: 'drawBudgetBar', stage: 'named',
-      continues: true },
+      continues: true, nameAt: [6.51, 8.15] },
+
+    // "it opens" at 1.90. The second drill — "a division breaks into programs"
+    // — at 5.24. The crumb is not named here, so it draws from `opened`.
     { id: 'bar-open', type: 'art', vo: 'L008', art: 'drawBudgetBar', stage: 'open',
-      continues: true },
+      continues: true, openAt: 1.90, deeperAt: 5.24 },
+
+    // The bar is already open and does not open again: openAt 0 says so. The
+    // trail builds from 0.33 ("keep going") and is named at 3.43 ("the trail at
+    // the top"), which is what crumbAt marks.
     { id: 'bar-trail', type: 'art', vo: 'L009', art: 'drawBudgetBar', stage: 'trail',
-      continues: true },
-    { id: 'bar-items', type: 'art', vo: 'L010', art: 'drawLineItems', continues: true },
-    { id: 'bar-payments', type: 'art', vo: 'L011', art: 'drawPayments', continues: true },
+      continues: true, openAt: 0, deeperAt: 0, crumbAt: 0.33 },
+
+    // "you reach the line items" 1.70; the rows arrive under it; "what was
+    // budgeted" 2.84 and "what was actually spent" 4.58 are the two columns,
+    // and the header has to be up before either.
+    { id: 'bar-items', type: 'art', vo: 'L010', art: 'drawLineItems', continues: true,
+      headAt: 1.70, rowAt: [2.00, 2.30, 2.60, 2.90, 3.20, 3.50] },
+
+    // "one step further" 2.34 opens the panel; "who was paid" 5.06, "how much"
+    // 6.38, "and when" 7.40 light the three columns in the order he says them.
+    { id: 'bar-payments', type: 'art', vo: 'L011', art: 'drawPayments', continues: true,
+      panelAt: 2.34, rowAt: [3.54, 3.78, 4.02, 4.26, 4.50],
+      colAt: [5.06, 6.38, 7.40] },
+
     { id: 'bar-trick', type: 'art', vo: 'L012', art: 'drawBudgetBar', stage: 'whole',
       continues: true,
       cast: [{ at: [0.78, 0.94], anim: 'present', color: VIEWER, scale: 0.85 }] },
