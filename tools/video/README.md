@@ -352,6 +352,57 @@ the words on screen, read off the recording — `vo/<take>.words.json` has every
 word's start. Type that appears before the voice gets there is read ahead of the
 voice, and from then on the viewer is reading instead of listening.
 
+### A re-split invalidates every one of those seconds
+
+Every in-scene second is measured from its line's cut START, so re-splitting a
+take moves all of them — by that line's own delta, which is different for every
+line. The 2026-10-12 Compass re-split moved 30 of 39 lines by more than 0.08s,
+from 0.004s up to 0.98s. There is no single offset to apply, and a line that
+barely moved sitting next to one that moved a second is exactly how a re-time
+gets half done.
+
+**They are not only in `episode.mjs`.** That file holds `headlineAt`, the bullet
+`t`s, `dim` and `letters`, and they are easy to find. `art.js` holds as many
+again, buried inside draw functions as bare numbers — the second a ladder's
+rungs appear, the second a dot moves to the end of a spectrum it has just been
+told about, the second a card clears. Re-timing Compass meant 8 numbers in
+`episode.mjs` and 19 in `art.js` — and the last 5 of those 19 turned up only in a
+final sweep, after the rest had been done and a build started. Grep both for
+`fade(t,`, `ease((t -`, `ease(t /` and every `+ i *` style stagger, and decide
+about each hit, BEFORE building.
+
+**Read the word again; do not apply the delta.** The delta only tells you WHICH
+word to go and look for: subtract it from the old value to find what that number
+used to mark, then set the new value from where that word is now. The two agree
+most of the time, and the times they do not are the point — Compass L029's cut
+moved 0.5s later, which put its old `headlineAt` at minus 0.2s, before the scene
+it belongs to even starts.
+
+Print the words against the new cuts rather than reading `_source.json` by eye:
+
+```js
+const w = words[line.take].filter(x => x.e > line.start && x.s < line.end);
+for (const x of w) out += `${x.w.trim()}[${(x.s - line.start).toFixed(2)}] `;
+```
+
+**The recogniser's time for the FIRST word of a line is not evidence.** It
+stretches that word back across the silence in front of it — the same artefact
+the cut rule in "Nobody speaks during a silence" exists to undo. On the Compass
+take it put "If" at 294.74s when `silencedetect` shows no sound at all between
+292.5s and 295.54s. Ask the audio, not the transcript, before deciding a pinned
+cut has eaten a word:
+
+```bash
+ffmpeg -ss 292.5 -t 6 -i take.WAV -af silencedetect=noise=-45dB:d=0.08 -f null -
+```
+
+**And check what no longer FITS.** A shorter line breaks any animation whose
+duration was chosen against the old one. Compass L023 came out 0.46s shorter,
+its eight spokes grew over a fixed 2.4s, and the last one never arrived — it
+popped in at the cut instead, on a scene that draws all eight. Nothing failed
+and no test went red. Walk every `t /` divisor and every late cast beat against
+the new duration before building.
+
 **A box is as big as what is in it.** The source card was a fixed height, and
 the fourth reference printed below its own border; the questionnaire card was a
 fixed row height, and a ten-item list ran off the bottom of the frame. Both now
