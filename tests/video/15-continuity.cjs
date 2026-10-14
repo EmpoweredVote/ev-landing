@@ -8,6 +8,7 @@
 // on screen.
 const { chromium } = require('playwright');
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -160,7 +161,18 @@ const ACCENT = '#FFD426';      // the three counts in the closing beat
   //    nothing else is drawn between the card edge and its first column.
   const refs = await scan(at('src-refs'), 6.0, { colour: CYAN, box: [0.40, 0, 1, 1] });
   const border = await scan(at('src-refs'), 6.0, { box: [0.412, 0, 0.436, 1] });
-  assert.ok(refs.n > 100, 'src-refs must print its references, got ' + refs.n + 'px');
+  // The floor follows the LIST, not a number tuned to how long it happened
+  // to be. HOSTS dropped from four to two when the secondary sources came out
+  // of it, and a hard 100 then failed on a frame that was drawing every
+  // reference it had, correctly and inside its card.
+  const compassArt = fs.readFileSync(
+    path.join(ROOT, 'tools/video/episodes/compass/art.js'), 'utf8');
+  const hostsBlock = compassArt.slice(compassArt.indexOf('var HOSTS = ['),
+                                      compassArt.indexOf('];', compassArt.indexOf('var HOSTS = [')));
+  const nHosts = (hostsBlock.match(/"/g) || []).length / 2;
+  assert.ok(nHosts >= 1, 'compass art.js has no HOSTS list to check against');
+  assert.ok(refs.n > 30 * nHosts,
+    'src-refs must print all ' + nHosts + ' of its references, got ' + refs.n + 'px');
   assert.ok(refs.low < border.low,
     'every reference must sit inside the card: last one at ' + refs.low.toFixed(3) +
     ' of the height, card bottom at ' + border.low.toFixed(3));

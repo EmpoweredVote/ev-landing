@@ -74,10 +74,21 @@
   var OFF_LIST = ASK_SKIP.map(function (i) { return ASK_ORDER[i]; })
                    .concat(["Parks and recreation"]);
   var HOUSING_Q = "What should the government's approach be to develop affordable housing?";
-  // The four most-cited reference hosts in the live table. Written here rather
-  // than inside the draw, because the card's height is measured from them.
-  var HOSTS = ["ontheissues.org", "en.wikipedia.org", "congress.gov",
-               "leginfo.legislature.ca.gov"];
+  // The reference hosts the card lists. Written here rather than inside the
+  // draw, because the card's height is measured from them.
+  //
+  // PRIMARY SOURCES ONLY. This listed ontheissues.org and en.wikipedia.org as
+  // well, because they are the most-cited hosts in the live table — and the
+  // line over them is "Voting records. Bill texts. Legislature sites. The
+  // public record it came out of", which is four kinds of primary source. The
+  // frame was contradicting the narration, and Chris Andrews is removing those
+  // two from the product for the same reason: a secondary source is a pointer
+  // to a primary one, not a receipt.
+  //
+  // Two, not four, on purpose: dropping a claim is honest, inventing two
+  // replacements is not. Re-capture from the live table once the product's own
+  // cleanup has landed and this can grow again.
+  var HOSTS = ["congress.gov", "leginfo.legislature.ca.gov"];
   // Every value sits ON a rung. A spoke records WHICH answer was picked off a
   // ladder of solutions, so a dot between two rungs would be an answer nobody
   // was offered — and chapter 4 opens one of these spokes up and names its

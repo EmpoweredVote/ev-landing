@@ -923,17 +923,18 @@
   // heavily beside the figure. It is DENSE on purpose — the point of the shot
   // is that it is unreadable — and the only legible things on it are the three
   // fund codes, which arrive as they are spoken.
-  function drawDocument(ctx, t, W, H, scene) {
-    var a = arrive(scene, t, 0.1, 0.5);
-    if (a <= 0) return;
-    // It drops in. Already-on-screen scenes inherit it at rest.
-    var drop = scene.continues ? 1 : ease(t / 0.75);
-    var w = W * 0.40, h = H * 0.74, x = W * 0.14;
-    var rest = H * 0.13, y = rest - (1 - drop) * H * 0.42;
+  // Where the budget document sits at rest, and what is on it. Both the scene
+  // that drops it in and the scene that collapses it into the bar draw it from
+  // here, so the thing that becomes the bar is visibly the thing the viewer was
+  // just reading. bar-collapse used to draw its own bare panel — a centred grey
+  // box of rule-lines with no heading and no codes on it — and at 0:46 nobody
+  // could tell what it was or that they had seen it before.
+  var DOC = { x: 0.14, y: 0.13, w: 0.40, h: 0.74 };
 
-    panel(ctx, x, y, w, h, H, a, EDGE);
+  function budgetDoc(ctx, W, H, x, y, w, h, alpha, codeOn) {
+    panel(ctx, x, y, w, h, H, alpha, EDGE);
     ctx.save();
-    ctx.globalAlpha = a;
+    ctx.globalAlpha = alpha;
     label(ctx, "ANNUAL BUDGET", x + w * 0.06, y + h * 0.075, H * 0.026, MUTED, "700");
     label(ctx, "FISCAL YEAR 2024 · 412 PAGES", x + w * 0.06, y + h * 0.115,
           H * 0.019, DIM, "600");
@@ -943,16 +944,16 @@
 
     // Two columns of rule-lines, tight enough to read as a wall of type.
     var top = y + h * 0.20, lineH = h * 0.0295, rows = 24;
-    ruleLines(ctx, x + w * 0.06, top, w * 0.40, rows, lineH, a * 0.8, 3);
-    ruleLines(ctx, x + w * 0.54, top, w * 0.40, rows, lineH, a * 0.8, 11);
+    ruleLines(ctx, x + w * 0.06, top, w * 0.40, rows, lineH, alpha * 0.8, 3);
+    ruleLines(ctx, x + w * 0.54, top, w * 0.40, rows, lineH, alpha * 0.8, 11);
 
     // The three codes he reads aloud, each landing on its own word.
     var cy = y + h * 0.60;
     for (var i = 0; i < CODES.length; i++) {
-      var on = atIndex(scene.codeAt, i, t, 0.3);
+      var on = codeOn(i);
       if (on <= 0) continue;
       ctx.save();
-      ctx.globalAlpha = a * on;
+      ctx.globalAlpha = alpha * on;
       var bw = w * 0.88, bh = h * 0.072, bx = x + w * 0.06, by = cy + i * (bh + h * 0.018);
       ctx.fillStyle = "#101014";
       roundRect(ctx, bx, by, bw, bh, H * 0.006); ctx.fill();
@@ -963,6 +964,18 @@
                H * 0.030, FG, "700");
       ctx.restore();
     }
+  }
+
+  function drawDocument(ctx, t, W, H, scene) {
+    var a = arrive(scene, t, 0.1, 0.5);
+    if (a <= 0) return;
+    // It drops in. Already-on-screen scenes inherit it at rest.
+    var drop = scene.continues ? 1 : ease(t / 0.75);
+    var w = W * DOC.w, h = H * DOC.h, x = W * DOC.x;
+    var y = H * DOC.y - (1 - drop) * H * 0.42;
+
+    budgetDoc(ctx, W, H, x, y, w, h, a,
+              function (i) { return atIndex(scene.codeAt, i, t, 0.3); });
 
     // L004's own picture: the reader has stopped taking it in. swirlAt is
     // where it starts turning, over the head of whichever figure the scene
@@ -1041,15 +1054,17 @@
       // The document is still here, and it becomes the bar. "draws it in a way
       // that anyone can read" 5.82, "becomes one shape" 9.30, "every
       // department" 11.66, "sized by what it actually receives" 14.18.
+      // THE SAME DOCUMENT, in the same place, with the same heading and the
+      // same three codes on it. This used to be a bare centred panel of
+      // rule-lines — no heading, no codes, a different size in a different
+      // place — so at 0:46 it read as an unexplained grey box rather than as
+      // the budget the viewer had been looking at thirty seconds earlier. The
+      // whole line is "Treasury Tracker takes THAT document and draws it in a
+      // way anyone can read", and the viewer has to recognise the document.
       var leaving = 1 - at(scene, 'collapseAt', t, 1.4);
       if (leaving > 0.01) {
-        ctx.save();
-        ctx.globalAlpha = a * leaving;
-        var dw = W * 0.40, dh = H * 0.62, dx = (W - dw) / 2, dy = H * 0.16;
-        panel(ctx, dx, dy, dw, dh, H, 1, EDGE);
-        ruleLines(ctx, dx + dw * 0.07, dy + dh * 0.10, dw * 0.38, 18, dh * 0.046, 0.9, 3);
-        ruleLines(ctx, dx + dw * 0.55, dy + dh * 0.10, dw * 0.38, 18, dh * 0.046, 0.9, 11);
-        ctx.restore();
+        budgetDoc(ctx, W, H, W * DOC.x, H * DOC.y, W * DOC.w, H * DOC.h,
+                  a * leaving, function () { return 1; });
       }
       var shaped = at(scene, 'shapeAt', t, 1.0);
       if (shaped <= 0) return;
