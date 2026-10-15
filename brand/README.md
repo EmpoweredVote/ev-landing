@@ -44,6 +44,28 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
   bright teal `#1DA8C6` (the dark-mode `--teal`), so the wordmark/mark read on
   dark backgrounds. Coral/yellow are unchanged.
 
+- **Compass rasters are generated** (2026-10-15). Everything under
+  `compass/Logo/PNG`, `compass/Symbol/PNG`, `compass/Favicon/PNG` and
+  `compass/Favicon/ICO` is built from the two Compass SVGs by
+  `tools/gen-compass-rasters.mjs`. Edit the SVG and re-run it; do not retouch
+  a PNG.
+
+  They had to be rebuilt because they did not match their own source. The red
+  ring measured 5px across in `compass-symbol-light-512.png` where a faithful
+  render of the SVG puts it at 18px — every stroke in the pack was about 3.5
+  times too thin, which is what an export that does not scale stroke widths
+  with the artboard looks like. At 64px the ring did not survive an alpha test
+  at all, so the favicon showed a hexagon in an invisible circle.
+
+  The same day the ring in the SVGs was thickened, 6 to 9.6, because it did
+  not read at small sizes even when rendered correctly. It went to 12 first
+  and came back to four fifths of that, which is where it sits. Both changes
+  are in the rebuilt files, so the pack's ring is much heavier than the one it
+  replaces.
+  Framing is unchanged for the square files. The logo PNGs keep their named
+  widths and their flush-left, 1%-padding convention, and their canvas height
+  follows the artwork, so 800w went from 800×217 to 800×224.
+
 - **Treasury Tracker dark symbol** (added 2026-09-08, for the Civic Spaces
   sidebar) — `treasury-tracker-symbol-dark.svg` here and `treasury-symbol-dark.svg`
   in `icons/`. Same recolor rule as Compass, but applied **selectively, not to
