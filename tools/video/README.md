@@ -760,3 +760,9 @@ entries. Rules:
 It randomizes its cast per page load and runs its own `requestAnimationFrame`
 loop. Both are right for the landing page and fatal for reproducible video.
 `tests/video/01-stage-loads.cjs` asserts it stays out.
+
+## Share cards
+
+`make-thumbnails.mjs` writes the YouTube and LinkedIn cards for all six
+features into `thumbnails/`. See `thumbnails/README.md`. The PNGs are
+generated; edit the script, not the files.
