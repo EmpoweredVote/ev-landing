@@ -766,3 +766,33 @@ loop. Both are right for the landing page and fatal for reproducible video.
 `make-thumbnails.mjs` writes the YouTube and LinkedIn cards for all six
 features into `thumbnails/`. See `thumbnails/README.md`. The PNGs are
 generated; edit the script, not the files.
+
+## Subtitles
+
+`make-captions.mjs <episode-dir>` writes `build/<ep>/<ep>.srt` and `.vtt` for
+the upload. YouTube and LinkedIn read the file; neither reads the picture.
+
+No second in it is estimated. `timings.json` gives each line its measured
+length, `vo/_source.json` gives the seconds of the take it was cut from, and
+`vo/<take>.words.json` gives every spoken word a clock, so a word spoken at
+take time `t` inside line L lands in the film at `scene.start + (t -
+source.start)`.
+
+The caption text is the SCRIPT, never the recogniser. A read agrees with the
+page on 80 to 100 per cent of its words, so the recogniser only supplies
+anchors and the rest are spread between them. Two things follow from that, and
+both are checks worth repeating after a re-split:
+
+- The subtitles concatenated back together equal the narration exactly, word
+  for word. Compass: 4,619 characters, identical.
+- An anchor is only kept when it is believable — inside its own line, no longer
+  than 0.9s for one word, and later than the anchor before it. The recogniser
+  smears: around compass L003 it put `the` and `ballot` at a second and a half
+  each and ran two seconds ahead of the energy onset the cut was made on. With
+  those anchors kept, that line held its first sentence for 4.4 seconds and
+  gave its last three words 0.3.
+
+Alignment is Needleman-Wunsch over the two word lists, not a greedy walk. Where
+the recogniser drops the first words of a line, a greedy walk starts out of
+phase and then matches a common word like `you` to the WRONG `you` seconds
+later.
