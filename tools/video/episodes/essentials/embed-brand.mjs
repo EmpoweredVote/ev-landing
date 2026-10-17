@@ -7,8 +7,10 @@
 // not. See tools/video/README.md.
 //
 // The DARK variants are the right ones here: the video stage is #111113, and
-// the brand pack's dark files swap the deep teal #00657C for the bright
-// #1DA8C6 so the wordmark and mark read on a dark background.
+// the brand pack swaps the deep teal #00657C for skyblue-500 #59B0C4 in a
+// -dark file, so the wordmark reads on a dark background: 7.57:1 against the
+// stage, where the deep teal is 2.83:1. (This symbol carries no teal at all —
+// its hairline strokes go yellow in the dark variant.)
 
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
