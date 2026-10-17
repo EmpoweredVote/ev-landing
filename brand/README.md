@@ -46,10 +46,11 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
   (`#6BA6B3` → `#AAE7F5`). When a dark variant looks wrong, diff its colour set
   against the light one and check it is that one substitution.
 
-  The **colour** is not negotiable; *which paths get it* occasionally is. The
-  Treasury Tracker symbol applies it selectively and says below exactly why. No
-  brand file should hold `#1DA8C6`: that is the dark-mode **UI** teal, and it
-  belongs in `--teal` on the site and in `ev-ui`'s `SiteFooter`, not in a mark.
+  The rule governs **type and line work**. A mark that is already drawn to sit on
+  any ground is exempt: the Treasury money graphic is outlined in brand yellow at
+  12.4:1, so its teal stays `#00657C` in both themes and the note below explains
+  why. No brand file should hold `#1DA8C6`: that is the dark-mode **UI** teal, and
+  it belongs in `--teal` on the site and in `ev-ui`'s `SiteFooter`, not in a mark.
 
 - **Compass dark variant** — the brand pack shipped no true dark logo (the dark
   files were copies of the light artwork). The dark SVGs and PNGs are a recolor
@@ -65,8 +66,12 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
   the rebuilt dark favicons here are byte-identical to the five it ships.
 
   This changed **nothing on UI surfaces**: `--teal` in the site pages and the
-  dark teal in `ev-ui`'s `SiteFooter` keep `#1DA8C6`. The Treasury Tracker dark
-  symbol below followed the same day, for the same reason.
+  dark teal in `ev-ui`'s `SiteFooter` keep `#1DA8C6`.
+
+  The Compass is not the Treasury case. Its hexagon and spokes **are** the teal —
+  there is no yellow outline carrying the shape — so on a dark ground the colour
+  is the only thing drawing the mark, and `#00657C` at 2.66:1 genuinely does not
+  read. That is why Compass takes the dark rule and the money graphic does not.
 
 - **Compass rasters are generated** (2026-10-15). Everything under
   `compass/Logo/PNG`, `compass/Symbol/PNG`, `compass/Favicon/PNG` and
@@ -92,44 +97,35 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
 
 - **Treasury Tracker dark symbol** (added 2026-09-08, for the Civic Spaces
   sidebar) — `treasury-tracker-symbol-dark.svg` here and `treasury-symbol-dark.svg`
-  in `icons/`. It follows the dark rule's **colour** but not its *completeness*:
-  the swap is applied **selectively, not to every teal in the file**. That part
-  is deliberate and matters if you regenerate it:
+  in `icons/`. ⚖ **DECIDED 2026-10-17: the money graphic is exempt from the dark
+  rule. Its teal stays `#00657C` on every ground, and these two files are
+  byte-identical to the light artwork.** Do not "fix" them.
 
-  | Element | Sits on | `#00657C` | `#59B0C4` |
-  | --- | --- | --- | --- |
-  | 3 stacked rects (fill) | the page background | 2.66:1 ✗ | **7.12:1 ✓** |
-  | magnifier hairline strokes | the page background | — | brightened to match |
-  | `$` glyph (fill) | its own yellow circle | **4.66:1 ✓** | 1.74:1 ✗ |
+  **Why the mark does not need a dark variant.** Each bill is a rect *outlined*
+  in brand yellow at `stroke-width="2"`, and the magnifier is a yellow fill. On
+  `#111827` that yellow is **12.4:1**. The shape is drawn by the outline, so the
+  fill never has to carry legibility — a dark fill inside a bright outline is
+  what a banknote looks like, and that read is the point of the mark.
 
-  Contrast ratios vs `#111827` (Tailwind `gray-900`, the dark card ground this was
-  derived for) and vs `#FFD426`. The margin only widens on a lighter dark ground —
-  on `gray-800` `#1F2937` it is 2.20:1 vs 5.89:1, same conclusion. A
-  blanket swap fixes the outer mark and **wrecks the `$` glyph** — skyblue on
-  brand yellow is 1.74:1, which mushes at a 24px sidebar icon size. So the `$`
-  path keeps `#00657C`; the file is 5 × `#59B0C4` + 1 × `#00657C` by design, and
-  that lone dark teal is not an oversight.
+  **What `#00657C` is doing is hue, not contrast.** All the candidates sit at the
+  same hue, 191°; they differ in saturation and lightness. `#00657C` is 100%
+  saturated at 24% lightness and reads as green. `#59B0C4` is 48% at 56% and
+  reads as pale blue. Brightening the bills measured 2.66:1 → 7.12:1 on the
+  *fill* and lost the thing the mark is for.
 
-  The rule this generalises to: brighten the teal that meets the **page ground**,
-  leave the teal that sits on **brand yellow** alone.
+  🪦 **The history, so nobody re-derives the wrong answer.** From 2026-09-08 this
+  file carried a selective recolor: five paths brightened to `#1DA8C6` "because
+  `#00657C` is only 2.66:1 on the page ground", with the `$` glyph left deep
+  because it sits on brand yellow. On 2026-10-17 those five moved to `#59B0C4`
+  (#31) to get the UI teal out of the brand library, and were reverted the same
+  day. **The 2.66:1 figure was measuring the wrong element** — see above. The `$`
+  glyph reasoning was always sound and is now moot, since nothing is brightened.
 
-  The five brightened paths were `#1DA8C6` until 2026-10-17, for the same reason
-  Compass was: the UI teal was reached for instead of the brand one. Both
-  arguments agreed, so it moved — `#59B0C4` is 7.12:1 against 6.31:1 on
-  `gray-900`, and the `$` glyph keeps `#00657C` either way.
-
-  🔴 **The dark Logo lockup does not carry this treatment.** Its wordmark is
-  `#59B0C4`, but the symbol half embedded in it is still 6 × `#00657C` — the same
-  three bills, hairlines and `$`, untouched since before the dark symbol existed.
-  So `brand/treasury-tracker/Logo/SVG/treasury-tracker-logo-dark.svg` and
-  `icons/treasury-tracker-logo-lg-dark.svg` render those bills at **2.66:1**, and
-  `icons/treasury-tracker-logo-lg-dark.svg` is what the homepage showcase uses
-  (`index.html:1509`). Fixing it means rebuilding the four dark Logo PNGs, and
-  **those are not reproducible from their SVG** — a faithful render of the light
-  SVG agrees with the shipped light PNG on only ~78% of pixels, so they are a
-  foreign export like the Compass pack was before `tools/gen-compass-rasters.mjs`.
-  That is a Compass-sized rebuild of all eight Logo PNGs, not a colour swap, and
-  it is **open**.
+  ✅ **The dark Logo lockup was right all along.** Its wordmark is `#59B0C4` and
+  the symbol half embedded in it is 6 × `#00657C`, which is exactly this rule:
+  **type follows the dark rule, the money graphic does not.** It was briefly
+  logged here as a defect needing an eight-PNG rebuild; it is not, and its
+  rasters are correct as shipped.
 
   **No dark symbol PNGs were generated** — no rasteriser was available on the
   machine that made these. `Symbol/PNG/` is still light-only, so anything needing
