@@ -46,6 +46,11 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
   (`#6BA6B3` → `#AAE7F5`). When a dark variant looks wrong, diff its colour set
   against the light one and check it is that one substitution.
 
+  The **colour** is not negotiable; *which paths get it* occasionally is. The
+  Treasury Tracker symbol applies it selectively and says below exactly why. No
+  brand file should hold `#1DA8C6`: that is the dark-mode **UI** teal, and it
+  belongs in `--teal` on the site and in `ev-ui`'s `SiteFooter`, not in a mark.
+
 - **Compass dark variant** — the brand pack shipped no true dark logo (the dark
   files were copies of the light artwork). The dark SVGs and PNGs are a recolor
   of the light artwork, and they follow the rule above.
@@ -59,9 +64,9 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
   against 6.71:1. CompassV2 had already moved its own rasters to `#59B0C4`, and
   the rebuilt dark favicons here are byte-identical to the five it ships.
 
-  This changes **nothing on UI surfaces**: `--teal` in the site pages, the dark
-  teal in `ev-ui`'s `SiteFooter`, and the Treasury Tracker dark symbol below all
-  keep `#1DA8C6`.
+  This changed **nothing on UI surfaces**: `--teal` in the site pages and the
+  dark teal in `ev-ui`'s `SiteFooter` keep `#1DA8C6`. The Treasury Tracker dark
+  symbol below followed the same day, for the same reason.
 
 - **Compass rasters are generated** (2026-10-15). Everything under
   `compass/Logo/PNG`, `compass/Symbol/PNG`, `compass/Favicon/PNG` and
@@ -87,33 +92,44 @@ back to the tuned `icons/` versions rather than pointing cards at these directly
 
 - **Treasury Tracker dark symbol** (added 2026-09-08, for the Civic Spaces
   sidebar) — `treasury-tracker-symbol-dark.svg` here and `treasury-symbol-dark.svg`
-  in `icons/`. This one is the exception to the dark rule twice over: it uses
-  the UI teal `#1DA8C6`, and it applies it **selectively, not to every teal in
-  the file**. The second part is deliberate and matters if you regenerate it:
+  in `icons/`. It follows the dark rule's **colour** but not its *completeness*:
+  the swap is applied **selectively, not to every teal in the file**. That part
+  is deliberate and matters if you regenerate it:
 
-  | Element | Sits on | `#00657C` | `#1DA8C6` |
+  | Element | Sits on | `#00657C` | `#59B0C4` |
   | --- | --- | --- | --- |
-  | 3 stacked rects (fill) | the page background | 2.66:1 ✗ | **6.31:1 ✓** |
+  | 3 stacked rects (fill) | the page background | 2.66:1 ✗ | **7.12:1 ✓** |
   | magnifier hairline strokes | the page background | — | brightened to match |
-  | `$` glyph (fill) | its own yellow circle | **4.66:1 ✓** | 1.97:1 ✗ |
+  | `$` glyph (fill) | its own yellow circle | **4.66:1 ✓** | 1.74:1 ✗ |
 
   Contrast ratios vs `#111827` (Tailwind `gray-900`, the dark card ground this was
   derived for) and vs `#FFD426`. The margin only widens on a lighter dark ground —
-  on `gray-800` `#1F2937` it is 2.20:1 vs 5.22:1, same conclusion. A
-  blanket swap fixes the outer mark and **wrecks the `$` glyph** — bright teal on
-  brand yellow is 1.97:1, which mushes at a 24px sidebar icon size. So the `$`
-  path keeps `#00657C`; the file is 5 × `#1DA8C6` + 1 × `#00657C` by design, and
+  on `gray-800` `#1F2937` it is 2.20:1 vs 5.89:1, same conclusion. A
+  blanket swap fixes the outer mark and **wrecks the `$` glyph** — skyblue on
+  brand yellow is 1.74:1, which mushes at a 24px sidebar icon size. So the `$`
+  path keeps `#00657C`; the file is 5 × `#59B0C4` + 1 × `#00657C` by design, and
   that lone dark teal is not an oversight.
 
   The rule this generalises to: brighten the teal that meets the **page ground**,
   leave the teal that sits on **brand yellow** alone.
 
-  ▶ Whether the five brightened paths should move from `#1DA8C6` to the brand
-  `#59B0C4`, the way Compass just did, is **open**. The contrast argument above
-  points that way — `#59B0C4` is 7.12:1 on `gray-900` and 5.89:1 on `gray-800` —
-  and the `$` glyph would keep `#00657C` either way, since skyblue on brand
-  yellow is 1.74:1, worse still. It is left alone here because this file is a
-  deliberate, documented decision and changing it is a separate call.
+  The five brightened paths were `#1DA8C6` until 2026-10-17, for the same reason
+  Compass was: the UI teal was reached for instead of the brand one. Both
+  arguments agreed, so it moved — `#59B0C4` is 7.12:1 against 6.31:1 on
+  `gray-900`, and the `$` glyph keeps `#00657C` either way.
+
+  🔴 **The dark Logo lockup does not carry this treatment.** Its wordmark is
+  `#59B0C4`, but the symbol half embedded in it is still 6 × `#00657C` — the same
+  three bills, hairlines and `$`, untouched since before the dark symbol existed.
+  So `brand/treasury-tracker/Logo/SVG/treasury-tracker-logo-dark.svg` and
+  `icons/treasury-tracker-logo-lg-dark.svg` render those bills at **2.66:1**, and
+  `icons/treasury-tracker-logo-lg-dark.svg` is what the homepage showcase uses
+  (`index.html:1509`). Fixing it means rebuilding the four dark Logo PNGs, and
+  **those are not reproducible from their SVG** — a faithful render of the light
+  SVG agrees with the shipped light PNG on only ~78% of pixels, so they are a
+  foreign export like the Compass pack was before `tools/gen-compass-rasters.mjs`.
+  That is a Compass-sized rebuild of all eight Logo PNGs, not a colour swap, and
+  it is **open**.
 
   **No dark symbol PNGs were generated** — no rasteriser was available on the
   machine that made these. `Symbol/PNG/` is still light-only, so anything needing
