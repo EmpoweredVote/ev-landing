@@ -1,5 +1,10 @@
 <title>Empowered Vote · Purpose</title>
 <link rel="canonical" href="https://empowered.vote/maps/purpose-map.html" />
+<!-- Site analytics (PostHog). This belongs HERE, in the template, not hand-added to the
+     built file afterwards: build.js regenerates purpose-map.html from scratch, so anything
+     pasted into the output is silently dropped by the next rebuild. That is exactly how the
+     /maps/ pages lost tracking once already (see the header comment in ev-landing's
+     analytics.js). The include is a no-op when the file is opened outside the site. -->
 <script src="/analytics.js"></script>
 <script>
 // Inherit the shared Empowered Vote colour-scheme preference (same key the main
@@ -855,6 +860,31 @@ function drawBook(ctx, x, y, color, rot) {
   ctx.restore();
 }
 
+// A puff of smoke: soft grey blobs scattered around (x, y), growing with `spread` and fading
+// with `alpha`. One function serves both the slow build-up under a doomed Bobit and the burst
+// when he goes — only spread and alpha differ. The scatter is derived from `seed` rather than
+// Math.random so a given frame is reproducible in tests; `t` (seconds) drifts the puffs so the
+// cloud churns instead of sitting still. Grey #8A8F98 reads against both themes' grounds.
+function drawSmoke(ctx, x, y, spread, alpha, seed, t) {
+  if (!(alpha > 0) || !(spread > 0)) return;
+  const N = 9;
+  ctx.save();
+  ctx.fillStyle = "#8A8F98";
+  for (let i = 0; i < N; i++) {
+    const ang = ((seed * 37 + i * 61) % 360) * D;          // deterministic angle
+    const rad = 0.35 + (((seed * 13 + i * 29) % 100) / 100) * 0.65;
+    const drift = Math.sin(t * (0.7 + i * 0.13) + i) * spread * 0.14;
+    const px = x + Math.cos(ang) * spread * rad + drift;
+    const py = y - Math.abs(Math.sin(ang)) * spread * rad * 0.85 - spread * 0.2;
+    const pr = spread * (0.26 + rad * 0.3);
+    ctx.globalAlpha = Math.min(1, alpha) * (0.4 + rad * 0.45);
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawPhone(ctx, x, y, color, rot) {
   ctx.save();
   ctx.translate(x, y);
@@ -1139,6 +1169,40 @@ const ANIMATIONS = {
     const g = makeGait({ label: "Carrying", mood: "beam coming through!", speed: 1.8, stride: 18, hunch: -14, knee: 22, arm: 0, bob: 2.5, head: -6 });
     const base = g.frame;
     g.frame = (t) => { const p = base(t); p.armRU = 16; p.armRF = 6; p.armLU = -16; p.armLF = -6; return p; };
+    return g;
+  })(),
+  // Hauling something far too big for two people: the beam crew's Fallacy Finders button is a
+  // ~340x102 slab, wider than four of them and taller than any. Everything here is `carry` pushed
+  // toward strain — shorter steps, folded deeper, arms hanging nearly straight so the hands sit as
+  // low as the rig reaches, the head lifted relative to the fold (so he is not simply staring at
+  // his shoes), and a small sag each time the weight lands on a foot.
+  //
+  // `head: 8` is relative to a spine already folded 26 forward, so the head still reads net-forward
+  // in world space. That is the intent: hunched over the load, not craning over it.
+  //
+  // Note the speed: the crew walks this load FASTER than the ball or the line, not slower. It
+  // covers part of the .meta-row on the way past, and pace is the only thing that keeps that brief.
+  // So the strain has to live entirely in the pose — which reads truer anyway. Someone hustling
+  // under a load too heavy for them, rather than someone crawling.
+  hefty: (() => {
+    const g = makeGait({ label: "Heavy haul", mood: "…who ordered the big one?", speed: 1.5, stride: 11, hunch: -26, knee: 16, arm: 0, bob: 2, head: 8 });
+    const base = g.frame;
+    g.frame = (t) => {
+      const p = base(t);
+      p.armRU = 2; p.armRF = 1; p.armLU = -2; p.armLF = -1;   // straight down: lowest hands the rig gives
+      // A sag onto the weight-bearing leg. Bounded, because makeGait leaves the planted (rear) leg
+      // fully straight — `legRF = legRU - max(0, sw) * knee` zeroes the knee bend on that side — so
+      // there is no slack to absorb a pelvis drop and the foot goes through the floor instead.
+      // Measured lowest ink below the floor line at the crew's S = 0.32, where every shipped gait
+      // already sits at 2px because of the round cap on the foot:
+      //     sag  0 -> 2px    8 -> 3px    16 -> 6px
+      //     sag  4 -> 2px   11 -> 4px    24 -> 8px
+      // 8 is the most weight available for 1px past the house baseline.
+      const plant = Math.max(0, -Math.sin(t * 1.5 * Math.PI));
+      p.bob += plant * 8;
+      p.lean = -4;                                            // braced back a touch against the load
+      return p;
+    };
     return g;
   })(),
   climb: {
@@ -1570,7 +1634,7 @@ function makeGait(g) {
 }
 ANIMATIONS.walk = ANIMATIONS.stroll;   // scene walker + old references
 
-const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "paddleball", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "sit", "read"];
+const ORDER = ["bored", "friendly", "present", "shrug", "confused", "spent", "notlistening", "witsend", "exhausted", "sassy", "paddleball", "stroll", "shuffle", "strut", "scurry", "march", "sneak", "trudge", "climb", "rope", "peek", "jump", "carry", "hefty", "sit", "read"];
 
 // ── singleton animation controller ─────────────────────────
 // Owns its own rAF + state so it is immune to React re-mounts.
@@ -1729,7 +1793,7 @@ function drawScene(c) {
 
 
 // ── classic-script global (loaded once via <script src>) ──
-window.LeremyRig = { CFG, REST, ANIMATIONS, ORDER, computePose, draw, drawShadow, drawSkeleton, attach, setAnim, setPlaying, setSpeed, setSkel };
+window.LeremyRig = { CFG, REST, ANIMATIONS, ORDER, computePose, draw, drawShadow, drawSmoke, drawSkeleton, attach, setAnim, setPlaying, setSpeed, setSkel };
 
 })();
 
@@ -1775,6 +1839,28 @@ window.LeremyRig = { CFG, REST, ANIMATIONS, ORDER, computePose, draw, drawShadow
       var s = osc(t, 0.7);
       p.armRU = 78 + s * 3;  p.armRF = 92 + s * 3;  // right arm reaches out, palm up
       p.headTilt = -3;
+      return p;
+    } },
+    // Thumbing a phone or tapping through a questionnaire. The off hand holds
+    // the device (pair it with prop {phone:true}); the near hand taps.
+    tap: { label: "Tap", mood: "answering, one at a time", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var s = osc(t, 1.25);
+      p.armLU = 46;  p.armLF = -118;                  // off hand holds the phone up
+      p.armRU = 40 + s * 2;  p.armRF = -104 + s * 9;  // near hand taps at it
+      p.headTilt = 16;
+      p.hunch = (p.hunch || 0) + 3;
+      return p;
+    } },
+    // Presenting a chart standing beside the figure: near arm swept out and
+    // level, head turned to what it is showing. Slower than `offer`.
+    showTo: { label: "Show to", mood: "look at this with me", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var s = osc(t, 0.38);
+      p.armRU = 96 + s * 4;  p.armRF = 74 + s * 5;
+      p.armLU = 8;  p.armLF = 14;
+      p.headTilt = -13 + s * 2;
+      p.lean = (p.lean || 0) + 2;
       return p;
     } }
   };
@@ -1848,6 +1934,52 @@ try {
 
 function hasPayload(n) {
   return n.x || (n.u && n.u.length) || n.v || n.img || (n.atts && n.atts.length) || n.pdf;
+}
+
+/* ---- Analytics: which parts of the map people actually open ----------------
+   Pageviews tell us people linger on this map; they cannot tell us what they
+   read while they are here, because the whole map is one URL. `map_node_opened`
+   fills that in: one event per explainer page a visitor opens.
+
+   Three things this deliberately does NOT do:
+
+   - It does not fire for nodes with no explainer. select() bails at
+     !hasPayload(n) before opening anything, and a click that opens nothing is
+     not a read.
+   - It does not fire for boot()'s automatic select(MAP). That opens the "start
+     here" page on every page load, so counting it would stamp a root-node event
+     on every single visit and drown the real signal. `trackOpens` stays false
+     until boot has finished.
+   - It does not fire when you re-click the node already showing. Closing the
+     panel and opening the same node again IS counted, because closeDetail()
+     clears `selected` -- that is a second deliberate read, not a stutter.
+
+   posthog comes from the site's /analytics.js include, which only exists when
+   this file is served from empowered.vote. Opened as a local build or an
+   artifact preview there is no posthog at all, so every call is guarded and
+   every failure swallowed. Analytics must never break map navigation. */
+let trackOpens = false;
+
+function trackNodeOpen(n, crumb, prev) {
+  if (!trackOpens) return;
+  if (prev && prev.id === n.id) return;
+  try {
+    const ph = window.posthog;
+    if (!ph || typeof ph.capture !== 'function') return;
+    const title = stripTags(n.t);
+    const depth = n.id.split('.').slice(1).length;
+    // crumb holds ancestors only, root first, so the node's own section is the
+    // node itself one level down and crumb[1] below that.
+    const branch = depth === 0 ? '(root)' : (depth === 1 ? title : crumb[1]);
+    ph.capture('map_node_opened', {
+      node_id: n.id,
+      node_title: title,
+      node_path: crumb.concat(title).join(' / '),
+      branch: branch,
+      depth: depth,
+      has_mascot: !!n.m
+    });
+  } catch (err) {}
 }
 
 /* ---- Color resolving (for the mascot ink; handles hex or var()) ---- */
@@ -2001,6 +2133,7 @@ function closeDetail() {
 }
 
 function select(n) {
+  const prev = selected;   // read before the assignment below; trackNodeOpen needs it
   selected = n;
   els.forEach(el => el.classList.remove('selected'));
   const el = els.get(n.id);
@@ -2013,6 +2146,7 @@ function select(n) {
   const path = n.id.split('.').slice(1);
   for (const i of path) { crumb.push(stripTags(cur.t)); cur = cur.c[+i]; }
   document.getElementById('dcrumb').textContent = crumb.join('  /  ') || 'Start here';
+  trackNodeOpen(n, crumb, prev);
   document.getElementById('dtitle').innerHTML = n.t;
   document.getElementById('dexplain').innerHTML = n.x || '';
 
@@ -2321,6 +2455,7 @@ function boot() {
   render();
   fitView();
   select(MAP);           // open the "start here" explainer
+  trackOpens = true;     // from here on, an open is a real user action
 }
 document.fonts.ready.then(() => { render(); fitView(); if (detail.classList.contains('hasfig')) sizeDfig(); });
 boot();
