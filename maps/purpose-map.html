@@ -1960,26 +1960,79 @@ function hasPayload(n) {
    every failure swallowed. Analytics must never break map navigation. */
 let trackOpens = false;
 
-function trackNodeOpen(n, crumb, prev) {
-  if (!trackOpens) return;
-  if (prev && prev.id === n.id) return;
+function phCapture(name, props) {
   try {
     const ph = window.posthog;
-    if (!ph || typeof ph.capture !== 'function') return;
-    const title = stripTags(n.t);
-    const depth = n.id.split('.').slice(1).length;
-    // crumb holds ancestors only, root first, so the node's own section is the
-    // node itself one level down and crumb[1] below that.
-    const branch = depth === 0 ? '(root)' : (depth === 1 ? title : crumb[1]);
-    ph.capture('map_node_opened', {
-      node_id: n.id,
-      node_title: title,
-      node_path: crumb.concat(title).join(' / '),
-      branch: branch,
-      depth: depth,
-      has_mascot: !!n.m
-    });
-  } catch (err) {}
+    if (!ph || typeof ph.capture !== 'function') return false;
+    ph.capture(name, props);
+    return true;
+  } catch (err) { return false; }
+}
+
+/* The six properties that identify a node. Shared by both events on purpose:
+   if open and close described a node differently they could not be grouped or
+   joined, and the pair would be useless. */
+function nodeProps(n, crumb) {
+  const title = stripTags(n.t);
+  const depth = n.id.split('.').slice(1).length;
+  // crumb holds ancestors only, root first, so the node's own section is the
+  // node itself one level down and crumb[1] below that.
+  const branch = depth === 0 ? '(root)' : (depth === 1 ? title : crumb[1]);
+  return {
+    node_id: n.id,
+    node_title: title,
+    node_path: crumb.concat(title).join(' / '),
+    branch: branch,
+    depth: depth,
+    has_mascot: !!n.m
+  };
+}
+
+/* ---- Dwell: how long a node is actually read ------------------------------
+   map_node_opened says which pages get opened. This says which ones hold
+   someone, which is the more useful half.
+
+   It counts VISIBLE time only -- the clock pauses whenever the tab is hidden.
+   That is the whole point, not a refinement. This page's own $pageleave data
+   shows what wall-clock dwell produces: a 48.7s median next to a 102,960s
+   maximum, which is one tab left open overnight rather than a reader. Counting
+   only foreground time keeps that out of the data entirely.
+
+   A hidden tab therefore pauses but does not close: ending the read when
+   someone glances at another tab would cut a read short, and firing again when
+   they came back would emit a close with no matching open. Opens and closes
+   pair 1:1, so the root page auto-opened at boot emits neither. */
+const nowMs = () => (window.performance && performance.now) ? performance.now() : Date.now();
+let dwell = null;   // { props, visibleMs, since }  -- since is 0 while hidden
+
+function closeDwell(reason) {
+  if (!dwell) return;
+  const visibleMs = dwell.visibleMs + (dwell.since ? nowMs() - dwell.since : 0);
+  const props = Object.assign({}, dwell.props, {
+    dwell_seconds: Math.round(visibleMs / 100) / 10,
+    close_reason: reason
+  });
+  dwell = null;    // cleared before the capture, so a throw cannot double-report
+  phCapture('map_node_closed', props);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!dwell) return;
+  if (document.visibilityState === 'hidden') {
+    if (dwell.since) { dwell.visibleMs += nowMs() - dwell.since; dwell.since = 0; }
+  } else if (!dwell.since) {
+    dwell.since = nowMs();
+  }
+});
+window.addEventListener('pagehide', () => closeDwell('left'));
+
+function trackNodeOpen(n, crumb, prev) {
+  if (!trackOpens) return;
+  if (prev && prev.id === n.id) return;   // same node still open: keep its clock running
+  closeDwell('switched');                 // the page being replaced ends here
+  const props = nodeProps(n, crumb);
+  if (!phCapture('map_node_opened', props)) return;   // no posthog: no dwell either
+  dwell = { props: props, visibleMs: 0, since: document.visibilityState === 'visible' ? nowMs() : 0 };
 }
 
 /* ---- Color resolving (for the mascot ink; handles hex or var()) ---- */
@@ -2126,6 +2179,7 @@ function cardFrame(now) {
 }
 
 function closeDetail() {
+  closeDwell('closed');
   detail.classList.remove('open');
   stopCardFig();
   selected = null;
@@ -2138,7 +2192,9 @@ function select(n) {
   els.forEach(el => el.classList.remove('selected'));
   const el = els.get(n.id);
   if (el) el.classList.add('selected');
-  if (!hasPayload(n)) { detail.classList.remove('open'); stopCardFig(); return; }
+  // A node with nothing to show closes the panel without going through
+  // closeDetail(), so the dwell has to be ended here too.
+  if (!hasPayload(n)) { closeDwell('switched'); detail.classList.remove('open'); stopCardFig(); return; }
   detail.style.setProperty('--bc', n.bc);
 
   const crumb = [];
