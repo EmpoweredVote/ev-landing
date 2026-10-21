@@ -581,7 +581,11 @@
 
         .showcase {
             display: grid;
-            grid-template-columns: minmax(0, 340px) 1fr;
+            /* 340 of tile plus the 52px explainer gutter. The gutter is padding on
+               .showcase-logos, so without this the tiles would be 288 and three of the
+               five lockups — Essentials, Compass and the 290px-wide Civic Trivia — would
+               hit max-width and be drawn smaller than the other two. */
+            grid-template-columns: minmax(0, 392px) 1fr;
             gap: 56px;
             align-items: center;
             max-width: 1320px;
@@ -655,6 +659,129 @@
         /* Description shown inline on mobile only; on desktop it lives in the preview panel */
         .logo-trigger .m-desc { display: none; }
 
+        /* ---- Explainer play buttons ----
+           Essentials and Compass have a film; the other three do not. The button is
+           a SIBLING of the tile's <a>, never a child — a button inside a link is
+           invalid markup, and the inner control stops being reachable by keyboard.
+           .tool-row wraps the pair so the button can be positioned against the tile
+           without being inside it. Every existing selector still matches, because
+           the showcase scripts all reach .logo-trigger by descendant or .closest(). */
+        .showcase-logos { padding-left: 52px; }
+        .tool-row { position: relative; display: block; }
+
+        /* The gutter exists because the lockups do not leave room. Essentials is more
+           than four times as wide as it is tall, so a triangle placed inside the tile
+           lands on the wordmark. Padding the whole column instead keeps all five tiles
+           sharing one left edge, which is the thing that makes the row read as a set. */
+        .play-btn {
+            position: absolute; top: 50%; left: -48px; z-index: 3;
+            width: 38px; height: 38px; padding: 0;
+            display: grid; place-items: center;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--teal);
+            cursor: pointer;
+            transform: translateY(-50%);
+            transition: transform .18s ease, box-shadow .18s ease,
+                        color .18s ease, opacity .18s ease, filter .18s ease;
+        }
+        .play-btn svg { width: 13px; height: 13px; margin-left: 2px; fill: currentColor; }
+        .play-btn:hover { color: var(--coral); box-shadow: var(--shadow-sm); transform: translateY(-50%) scale(1.09); }
+        .play-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+        /* Dims in step with its own tile, which .logo-trigger does through the
+           .has-active rule above. The button is outside that <a>, so it needs its own. */
+        .showcase-logos.has-active .tool-row:has(.logo-trigger:not(.is-active)) .play-btn {
+            opacity: .45; filter: grayscale(1);
+        }
+
+        .play-tip {
+            /* Left-anchored rather than centred: in the gutter the button sits close
+               enough to the viewport edge that a centred tip is cut off. */
+            position: absolute; left: 0; bottom: calc(100% + 12px);
+            transform: translateY(4px);
+            background: var(--teal); color: #FFF;
+            font-size: 12px; font-weight: 600; letter-spacing: .01em;
+            padding: 6px 10px; border-radius: 7px; white-space: nowrap;
+            opacity: 0; pointer-events: none;
+            transition: opacity .16s ease, transform .16s ease;
+        }
+        .play-tip::after {
+            content: ""; position: absolute; top: 100%; left: 14px;
+            border: 5px solid transparent; border-top-color: var(--teal);
+        }
+        @media (hover: hover) {
+            .play-btn:hover .play-tip,
+            .play-btn:focus-visible .play-tip { opacity: 1; transform: translateY(0); }
+        }
+        /* A tooltip needs a pointer that can rest somewhere. On a touch screen the
+           press just opens the film. */
+        @media (hover: none) { .play-tip { display: none; } }
+
+        /* Below 901px the tiles become one full-width stacked column with the lockup
+           top-left and the description under it. The left edge is taken there — the
+           yellow active bar, then the logo — and a 52px gutter out of a 390px screen
+           costs the description two lines. The triangle takes the empty top-right
+           corner instead, level with the lockup. */
+        @media (max-width: 900px) {
+            .showcase-logos { padding-left: 0; }
+            .play-btn {
+                left: auto; right: 18px; top: 20px; transform: none;
+                width: 38px; height: 38px;
+            }
+            .play-btn:hover { transform: none; }
+        }
+
+        /* ---- Explainer lightbox ---- */
+        .ev-lb[hidden] { display: none; }
+        .ev-lb {
+            position: fixed; inset: 0; z-index: 999;
+            display: grid; place-items: center;
+            padding: 24px;
+        }
+        .ev-lb-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(10, 10, 12, .82);
+            backdrop-filter: blur(3px);
+        }
+        .ev-lb-frame {
+            position: relative;
+            width: min(1100px, 92vw);
+            animation: evLbIn .18s ease-out;
+        }
+        @keyframes evLbIn { from { opacity: 0; transform: translateY(8px) scale(.99); } }
+        .ev-lb-frame video {
+            display: block; width: 100%; aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
+        }
+        .ev-lb-close {
+            position: absolute; top: -17px; left: -17px; z-index: 2;
+            width: 40px; height: 40px; padding: 0;
+            border-radius: 50%; cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, .28);
+            background: #1C1C1F; color: #FFF;
+            font-size: 17px; line-height: 1;
+            display: grid; place-items: center;
+            transition: background .16s ease, transform .16s ease;
+        }
+        .ev-lb-close:hover { background: var(--coral); transform: scale(1.06); }
+        .ev-lb-close:focus-visible { outline: 2px solid #FFF; outline-offset: 2px; }
+        .ev-lb-cap {
+            margin: 14px 2px 0; color: #E9E9EC;
+            font-size: 14px; letter-spacing: .01em;
+        }
+        @media (max-width: 760px) {
+            .ev-lb { padding: 12px; }
+            /* Inside the corner on a small screen: there is no room to hang off it. */
+            .ev-lb-close { top: 8px; left: 8px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .ev-lb-frame { animation: none; }
+            .play-btn, .play-tip, .ev-lb-close { transition: none; }
+        }
+
         /* Preview panel — right side, a touch smaller. The frame is always visible
            (EV mark at rest); only the description fills in once a tool is highlighted. */
         .showcase-preview {
@@ -704,7 +831,7 @@
         }
 
         @media (max-width: 1024px) {
-            .showcase { grid-template-columns: minmax(320px, 40%) 1fr; gap: 36px; }
+            .showcase { grid-template-columns: minmax(392px, 40%) 1fr; gap: 36px; }
             .logo-trigger { min-height: 84px; }
             .logo-trigger img { height: 52px; }
         }
@@ -1485,18 +1612,32 @@
 
             <div class="showcase">
                 <div class="showcase-logos" aria-label="Empowered Vote tools">
-                    <a class="logo-trigger" data-tool="essentials" data-name="Essentials"
-                       href="https://essentials.empowered.vote" target="_blank" rel="noopener">
-                        <img class="logo-l" src="icons/essentials-logo-lg-light.svg" alt="Essentials" />
-                        <img class="logo-d" src="icons/essentials-logo-lg-dark.svg" alt="" aria-hidden="true" />
-                        <span class="m-desc">Enter your address and instantly see who represents you at every level — from city council to Congress — with their terms, contact details, and where their campaign money comes from.</span>
-                    </a>
-                    <a class="logo-trigger" data-tool="compass" data-name="Compass"
-                       href="https://compass.empowered.vote" target="_blank" rel="noopener">
-                        <img class="logo-l" src="brand/compass/Logo/SVG/compass-logo-light.svg" alt="Compass" />
-                        <img class="logo-d" src="brand/compass/Logo/SVG/compass-logo-dark.svg" alt="" aria-hidden="true" />
-                        <span class="m-desc">Rank where you stand on the issues you care about, then see how your compass compares to politicians and candidates — measured on the exact same scale.</span>
-                    </a>
+                    <div class="tool-row">
+                        <a class="logo-trigger" data-tool="essentials" data-name="Essentials"
+                           href="https://essentials.empowered.vote" target="_blank" rel="noopener">
+                            <img class="logo-l" src="icons/essentials-logo-lg-light.svg" alt="Essentials" />
+                            <img class="logo-d" src="icons/essentials-logo-lg-dark.svg" alt="" aria-hidden="true" />
+                            <span class="m-desc">Enter your address and instantly see who represents you at every level — from city council to Congress — with their terms, contact details, and where their campaign money comes from.</span>
+                        </a>
+                        <button class="play-btn" type="button" data-film="essentials"
+                                aria-label="Watch Explainer Video">
+                            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z"/></svg>
+                            <span class="play-tip" aria-hidden="true">Watch Explainer Video</span>
+                        </button>
+                    </div>
+                    <div class="tool-row">
+                        <a class="logo-trigger" data-tool="compass" data-name="Compass"
+                           href="https://compass.empowered.vote" target="_blank" rel="noopener">
+                            <img class="logo-l" src="brand/compass/Logo/SVG/compass-logo-light.svg" alt="Compass" />
+                            <img class="logo-d" src="brand/compass/Logo/SVG/compass-logo-dark.svg" alt="" aria-hidden="true" />
+                            <span class="m-desc">Rank where you stand on the issues you care about, then see how your compass compares to politicians and candidates — measured on the exact same scale.</span>
+                        </a>
+                        <button class="play-btn" type="button" data-film="compass"
+                                aria-label="Watch Explainer Video">
+                            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z"/></svg>
+                            <span class="play-tip" aria-hidden="true">Watch Explainer Video</span>
+                        </button>
+                    </div>
                     <a class="logo-trigger" data-tool="readrank" data-name="Read &amp; Rank"
                        href="https://readrank.empowered.vote" target="_blank" rel="noopener">
                         <img class="logo-l" src="icons/readrank-logo-lg-light.svg" alt="Read &amp; Rank" />
@@ -2399,5 +2540,102 @@
     <script src="ev-lines.js"></script>
     <script src="ev-quotes.js"></script>
     <script src="ev-figures.js"></script>
+    <!-- Explainer lightbox. One dialog, reused by both films: the <video> is given
+         its source when a triangle is pressed and has it taken away on close, so a
+         closed lightbox is not quietly holding a download open. -->
+    <div class="ev-lb" id="ev-lb" hidden>
+        <div class="ev-lb-backdrop" data-close></div>
+        <div class="ev-lb-frame" role="dialog" aria-modal="true" aria-label="Explainer video">
+            <button class="ev-lb-close" type="button" data-close aria-label="Close video">&#10005;</button>
+            <video id="ev-lb-video" controls playsinline preload="none"></video>
+            <p class="ev-lb-cap" id="ev-lb-cap"></p>
+        </div>
+    </div>
+
+    <script>
+    // Explainer lightbox.
+    (function () {
+        var FILMS = {
+            essentials: { file: 'essentials', name: 'Empowered Essentials', len: '5:25' },
+            compass:    { file: 'compass',    name: 'Empowered Compass',    len: '5:06' }
+        };
+
+        var lb = document.getElementById('ev-lb');
+        if (!lb) return;
+        var video  = document.getElementById('ev-lb-video');
+        var cap    = document.getElementById('ev-lb-cap');
+        var frame  = lb.querySelector('.ev-lb-frame');
+        var closer = lb.querySelector('.ev-lb-close');
+        var opener = null;
+
+        function open(key) {
+            var f = FILMS[key];
+            if (!f) return;
+            opener = document.activeElement;
+
+            video.innerHTML = '';
+            video.poster = 'video/' + f.file + '.jpg';
+            video.src    = 'video/' + f.file + '.mp4';
+
+            // The browser offers its own captions control because of this track.
+            var track = document.createElement('track');
+            track.kind = 'captions';
+            track.label = 'English';
+            track.srclang = 'en';
+            track.src = 'video/' + f.file + '.vtt';
+            video.appendChild(track);
+
+            cap.textContent = f.name + '  \u00b7  ' + f.len;
+            lb.hidden = false;
+            document.body.style.overflow = 'hidden';
+            closer.focus();
+            // Rejected when the browser blocks sound without a gesture. The film then
+            // waits on its poster with the controls up, which is a fine place to be.
+            video.play().catch(function () {});
+
+            if (window.posthog) posthog.capture('landing_explainer_played', { film: key });
+        }
+
+        function close() {
+            video.pause();
+            video.removeAttribute('src');
+            video.removeAttribute('poster');
+            video.innerHTML = '';
+            video.load();           // drops the buffer; without it the download continues
+            lb.hidden = true;
+            document.body.style.overflow = '';
+            if (opener && opener.focus) opener.focus();
+        }
+
+        document.querySelectorAll('.play-btn[data-film]').forEach(function (b) {
+            b.addEventListener('click', function (e) {
+                e.preventDefault();
+                open(b.getAttribute('data-film'));
+            });
+        });
+
+        lb.addEventListener('click', function (e) {
+            if (e.target.hasAttribute('data-close')) close();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (lb.hidden) return;
+            if (e.key === 'Escape') { close(); return; }
+            // Keep Tab inside the dialog. Only the close button and the player are
+            // focusable in here, so the cycle is short.
+            if (e.key === 'Tab') {
+                var stops = [closer, video];
+                var i = stops.indexOf(document.activeElement);
+                if (i === -1) { e.preventDefault(); closer.focus(); return; }
+                var next = e.shiftKey ? i - 1 : i + 1;
+                if (next < 0 || next >= stops.length) {
+                    e.preventDefault();
+                    stops[e.shiftKey ? stops.length - 1 : 0].focus();
+                }
+            }
+        });
+    })();
+    </script>
+
 </body>
 </html>
