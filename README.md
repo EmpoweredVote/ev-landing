@@ -18,6 +18,39 @@ python3 -m http.server 5173
 # then visit http://localhost:5173
 ```
 
+## Tests
+
+Playwright drives every test against `file://` URLs. The library is a
+devDependency; the browsers it needs are not, because npm installs the library
+and Playwright downloads the browsers separately:
+
+```bash
+npm install
+npx playwright install    # ~300MB, once per Playwright version
+```
+
+There is no runner. Each file is its own script, prints PASS, and throws on
+failure:
+
+```bash
+node tests/layout/beam-play-pass.cjs
+```
+
+**The version is pinned exactly, not caret-ranged, and that is deliberate.**
+Each Playwright release expects its own browser builds, and `npx playwright
+install` prunes the builds it no longer wants. Under a floating range an
+ordinary `npm install` can move the library ahead of the browsers on disk and
+every test then dies at launch with "Executable doesn't exist" — which reads
+like a broken test rather than a version skew. That happened here on
+2026-10-22: a stray 1.62.1 in `node_modules` with no browsers shadowed a
+global 1.61.1 that had them, and because a local `node_modules` always beats
+`NODE_PATH`, the command printed in every test header stopped working. Pinning
+and committing the lockfile is what keeps the library and the browsers in step.
+
+Five test headers still name a machine-specific `NODE_PATH` from before
+Playwright was a dependency. They are stale; the plain `node <file>` above is
+the command.
+
 ## Analytics
 
 We use PostHog to see how many people visit each page and how long they stay.

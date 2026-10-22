@@ -12,9 +12,8 @@
 // Drives the REAL beamPick through the debug hook. Re-implementing or regex-extracting it would test
 // a copy, which is exactly the thing that cannot regress.
 //
-// Needs Playwright, which is not a repo dependency:
-//   NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" \
-//     node tests/layout/beam-load-cycle.cjs
+// Needs Playwright and its browsers — see "Tests" in README.md:
+//   node tests/layout/beam-load-cycle.cjs
 const { chromium } = require('playwright');
 const assert = require('assert');
 

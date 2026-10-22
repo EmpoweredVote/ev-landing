@@ -23,9 +23,8 @@
 //      does NOT trip for a few pixels of hold height either way — it trips if the disc grows or
 //      rises far enough to cover him, which is the only part of that judgement a test can hold.
 //
-// Needs Playwright, which is not a repo dependency:
-//   NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" \
-//     node tests/layout/beam-play-pass.cjs
+// Needs Playwright and its browsers — see "Tests" in README.md:
+//   node tests/layout/beam-play-pass.cjs
 const { chromium } = require('playwright');
 const assert = require('assert');
 
