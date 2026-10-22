@@ -161,9 +161,10 @@
   }
   /* Past-briefings archive list.  Each edition is a dated snapshot and is never edited
      after publication, so the list only ever grows. */
-  .archive{list-style:none;margin:14px 0 0;padding:0;font-size:14px}
-  .archive li{padding:11px 0;border-bottom:1px solid var(--line)}
-  .archive li:last-child{border-bottom:none}
+  /* .archive and .atag lived here: a second copy of the Previous Briefings
+      picker, as a list under "Past Briefings". Removed 2026-10-21 -- the picker
+      is in the header where a reader looks before scrolling, and one list is
+      enough. Archived editions still carry theirs, frozen, as they should. */
   /* 44px is Apple's minimum tap target; the bare inline link rendered 19px tall,
      and these two links ARE the navigation for the archive.  Padding makes the
      target finger-sized and the negative margin cancels it, so the list looks
@@ -171,15 +172,11 @@
      footer permalink) are deliberately left alone -- padding a link inside a
      sentence breaks the line spacing around it, and a reader reaches those with
      a tap on a word, not a thumb aimed at a row. */
-  .archive a{color:var(--gold);text-decoration:none;font-weight:600;
-             display:inline-block;padding:13px 6px;margin:-13px -6px}
-  .archive a:hover{text-decoration:underline}
-  .archive small{display:block;color:var(--dim);font-size:13px;margin-top:3px}
-  .atag{display:inline-block;margin-left:8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--live);border:1px solid rgba(114,190,120,.4);background:rgba(114,190,120,.12);padding:2px 7px;border-radius:2px;vertical-align:1px}
   /* ---- "Previous Briefings", top right of the header -------------------
-     The archive section below is the full list, with a sentence saying what
-     each edition found.  This is the same list as NAVIGATION, put where a
-     reader looks for it before they have scrolled anywhere.
+     The only list of editions on this page, and the navigation for the whole
+     archive.  Until 2026-10-21 the "Past Briefings" section below carried the
+     same seven links again; this is now the single copy, put where a reader
+     looks for it before they have scrolled anywhere.
 
      <details>, not a scripted menu, so it opens with no JavaScript at all --
      the script at the foot of the page only adds close-on-outside-click and
@@ -387,15 +384,6 @@
 <div class="h2row" id="archive"><h2>Past Briefings</h2><p>Each update is a dated snapshot.  We do not edit one after publishing it.</p></div>
 <div class="card">
   <p><b>This page is the current briefing, and it always lives at <code>empowered.vote/briefing</code>.</b>  Every edition also keeps a permanent address of its own, so a number you read here can be checked against the date it was published on.  <b>There is a picker at the top of this page</b> that jumps to any of them.  Each update is written from scratch: work that runs for a month stays the headline, but the sentences around it are rewritten every time.  <b>We never edit a published edition.</b>  When an earlier one got something wrong, the next one says what it corrects.</p>
-  <ul class="archive">
-    <li><a href="/briefing/2026-10-20">October 20, 2026</a> <span class="atag">current</span><small>Georgia twice over: 2,246 governments get budgets and 15 officials get positions; every new budget arrives with no provenance grade; the slot-C question is answered.</small></li>
-    <li><a href="/briefing/2026-10-13">October 13, 2026</a><small>717 school districts and a kind of government we had never held; the stance line stops dead; a trivia fix that had landed all along.</small></li>
-    <li><a href="/briefing/2026-10-10">October 10, 2026</a><small>The stance total rose while the positions a voter can read fell; 8.4 million roll-call votes; New York City; all thirty-seven city positions approved.</small></li>
-    <li><a href="/briefing/2026-10-05">October 5, 2026</a><small>Six cities researched and nothing published; a sponsor list that seated four members; the first certified reliability stratum; a quiz answer that kept landing in slot C.</small></li>
-    <li><a href="/briefing/2026-09-29">September 29, 2026</a><small>Four states seated in eight days; the trivia bank audited collection by collection; a measurement that broke by being fixed.</small></li>
-    <li><a href="/briefing/2026-09-22">September 22, 2026</a><small>Three states seated; Tennessee 1 to 115; the Maine misfile corrected; On the Record restarts; a monitor that failed into a void.</small></li>
-    <li><a href="/briefing/2026-09-11">September 11, 2026</a><small>Treasury Tracker goes statewide in four states; Season 2 opens to voters; the first rise in the stance total in months.</small></li>
-  </ul>
   <p style="margin-top:14px;font-size:13px;color:var(--dim)"><b>No claim in the October 13 edition was found to be wrong, and that is a result rather than an absence.</b>  Five of its figures were re-derived from scratch this week and every one reproduced exactly: the 717 school districts still carry a real provenance grade across all 82,564 of their budgets; the unknown-grade pile it printed at 38,491 is still 38,491; the last stance row before this morning was indeed October 9; Season 3 is still a draft holding exactly 17 answers; and 70 of Puerto Rico&rsquo;s 78 alcaldes still have no portrait.  <b>Re-deriving a claim is the only way to find out whether it was wrong, so this page says plainly when the answer is that it was right.</b></p>
   <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>It also set a question, and this edition answers it.</b>  It said the remaining slot-C bias in freshly generated trivia questions could only be separated into &ldquo;working as designed&rdquo; and &ldquo;still broken&rdquo; by the trivia repository&rsquo;s own tooling rather than a database query, and that doing it was the next job.  <b>It was done, and the generator is not broken.</b>  The detail, including what is still wrong, is in the Inform table below.</p>
   <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>One figure is withdrawn, though, and it is one this page has now printed twice.</b>  The editions of October 10 and October 13 both said that <b>&ldquo;24 rungs&rdquo;</b> ask a genuinely different question in Season 2 than in Season 1.  <b>Nothing in the repository produces that number</b>, and this edition could not derive it.  Two related figures are documented and are not it &mdash; 29 of 60 topics whose rungs differ from the frozen table, and 13 whose rung text differs from what voters are shown, both measured in late September.  <b>A number this page cannot reproduce does not get carried forward just because it was here last time</b>, which is the same rule that retired the ev-accounts version label last edition.</p>

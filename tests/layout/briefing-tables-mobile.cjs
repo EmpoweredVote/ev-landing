@@ -188,7 +188,24 @@ const PAGES = [
             return a.getAttribute('href').slice(1);
           });
           if (target) {
-            await p.waitForTimeout(250);
+            // The strip is marked by a scroll handler deferred behind
+            // requestAnimationFrame, so reading it after a fixed delay is a race.
+            // It failed on Pixel 7 in two of six runs on 2026-10-21 with nothing
+            // wrong on the page: identical briefing files passed on main, passed
+            // in the same checkout minutes later, and failed twice in between.
+            //
+            // Waiting for the mark rather than for a stopwatch removes the race
+            // without blunting the check -- the timeout is swallowed on purpose,
+            // so a strip that genuinely never marks still reaches the assertion
+            // below and still fails, just 5s later instead of 250ms later.
+            //
+            // The scroll itself needs no waiting: the page sets scroll-behavior
+            // deliberately NOT to smooth (see its own comment on .h2row), so the
+            // jump is instant and only the marking lags.
+            await p.waitForFunction((id) => {
+              const a = document.querySelector('.jump a[aria-current="true"]');
+              return !!a && a.getAttribute('href') === '#' + id;
+            }, target, { timeout: 5000, polling: 'raf' }).catch(() => {});
             const landed = await p.evaluate((id) => {
               const h = document.getElementById(id).getBoundingClientRect();
               const strip = document.querySelector('.jump').getBoundingClientRect();

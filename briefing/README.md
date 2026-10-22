@@ -69,16 +69,19 @@ cp briefing/2026-09-22/index.html briefing/2026-10-06/index.html   # BEFORE step
 
 (Easier in practice: keep a copy of the forwarder, it is 30 lines and changes only its date.)
 
-- **4a. Add the new edition to the "Previous Briefings" picker** in the header, as the first
+- **4. Add the new edition to the "Previous Briefings" picker** in the header, as the first
   entry, carrying the `current` tag; the outgoing edition loses that tag but keeps its row.
-  The picker is the `<details class="prevdrop">` block at the top of `<header>` and it is a
-  SECOND copy of the archive list — it is written into each edition by hand and is frozen with
-  it, exactly like every other sentence on the page.  An archived edition therefore shows the
-  archive as it stood on its own publication day and will never list anything later.  That is
-  the intended behaviour, not a bug to fix: a shared list would silently rewrite the archive.
-  The two copies have to agree within one edition, so write them in the same pass.
-- **4. Add the outgoing edition to the "Past briefings" list** in the new page, and move the
-  `current` tag onto the new one.  The list only ever grows; nothing is removed from it.
+  The list only ever grows; nothing is removed from it.  The picker is the
+  `<details class="prevdrop">` block at the top of `<header>`, it is written into each edition
+  by hand, and it is frozen with that edition exactly like every other sentence on the page.
+  An archived edition therefore shows the archive as it stood on its own publication day and
+  will never list anything later.  That is the intended behaviour, not a bug to fix: a shared
+  list would silently rewrite the archive.
+
+  Until 2026-10-21 there were **two** copies of this list — the picker, and a `<ul class="archive">`
+  under the "Past Briefings" heading — which had to be written in the same pass and agree.  The
+  duplicate is gone from the current page.  Editions frozen before that date still carry both,
+  and are left alone.
 - **5. Update the dated permalink named in the footer** to the new date.
 - **6. Refresh the numbers** — see below — then commit and push.
 
