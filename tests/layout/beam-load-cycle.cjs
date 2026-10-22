@@ -1,25 +1,24 @@
-// The beam crew's pass picker. Two invariants have to survive adding a third load:
+// The beam crew's pass picker. Two invariants have to survive adding a third load or a third
+// special:
 //
 //   1. Every load in BEAM_LOADS actually gets a turn. A cycle that silently never yields one of
 //      them would leave that whole feature invisible while every other assertion stayed green.
 //   2. No action ever repeats back to back — loads and specials alike. That is what the original
 //      two-element flip-flop bought, and a naive `pick(BEAM_LOADS)` would throw it away.
 //
-// Deliberately parameterised on BEAM_LOADS rather than naming the loads, so this keeps covering the
-// set as it changes instead of needing an edit each time one is added.
+// Deliberately parameterised on BEAM_LOADS and BEAM_SPECIALS rather than naming them, so this keeps
+// covering both sets as they change instead of needing an edit each time one is added.
 //
 // Drives the REAL beamPick through the debug hook. Re-implementing or regex-extracting it would test
 // a copy, which is exactly the thing that cannot regress.
 //
-// Needs Playwright, which is not a repo dependency:
-//   NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" \
-//     node tests/layout/beam-load-cycle.cjs
+// Needs Playwright and its browsers — see "Tests" in README.md:
+//   node tests/layout/beam-load-cycle.cjs
 const { chromium } = require('playwright');
 const assert = require('assert');
 
 const URL = 'file:///C:/ev-landing/ev-landing-main/index.html#figdebug';
 const PASSES = 400;
-const SPECIALS = ['light', 'letters'];
 
 (async function () {
   const browser = await chromium.launch();
@@ -48,16 +47,27 @@ const SPECIALS = ['light', 'letters'];
     // have today. beamLoads is exposed by reference, so appending a probe load exercises the real
     // picker at n+1 without waiting for a new load to be wired up. Without this, a picker that
     // still only ever alternated two loads would pass every assertion above.
+    // The SPECIALS get the same treatment, and for the same reason: they were a hardwired
+    // two-element flip-flop until a third one was written, and a flip-flop passes every assertion
+    // above while starving whatever went in last to never.
+    var specials = d.beamSpecials.slice();
     d.beamLoads.push('__probe__');
+    d.beamSpecials.push('__probeSpecial__');
     var e2 = {
       dir: 1, bx: 0, lastLoad: real[0], lastAction: real[0],
-      lastSpecial: 'light', carryRun: 1, scene: 'carry', load: real[0]
+      lastSpecial: specials[0], carryRun: 1, scene: 'carry', load: real[0]
     };
     var seq2 = [];
     for (var j = 0; j < passes; j++) { d.beamPick(e2, 1280); seq2.push(e2.lastAction); }
     d.beamLoads.pop();
+    d.beamSpecials.pop();
 
-    return { loads: real, seq: seq, probeLoads: real.concat(['__probe__']), seq2: seq2 };
+    return {
+      loads: real, seq: seq, specials: specials,
+      probeLoads: real.concat(['__probe__']),
+      probeSpecials: specials.concat(['__probeSpecial__']),
+      seq2: seq2
+    };
   }, PASSES);
 
   assert.ok(!r.missing, '__evFigDebug.' + r.missing + ' is not exposed');
@@ -76,11 +86,19 @@ const SPECIALS = ['light', 'letters'];
       ' — the picker is meant to never repeat');
   }
 
-  // the specials must still come around; the carry<->special alternation is the point of carryRun
-  const missedSpecials = SPECIALS.filter(function (s) { return !counts[s]; });
+  // Every special must come around, not just some of them; the carry<->special alternation is the
+  // point of carryRun. Read off the rig rather than named here, so this keeps covering the set as
+  // it changes — the same reason the loads are read rather than named.
+  const missedSpecials = r.specials.filter(function (s) { return !counts[s]; });
   assert.deepStrictEqual(missedSpecials, [],
-    'the specials stopped happening: ' + missedSpecials.join(', ') +
-    ' (saw ' + JSON.stringify(counts) + ')');
+    'these specials never came up in ' + PASSES + ' passes, so they would never be seen: ' +
+    missedSpecials.join(', ') + ' (saw ' + JSON.stringify(counts) + ')');
+
+  // ...and none of them starved relative to its siblings
+  const specialCounts = r.specials.map(function (s) { return counts[s]; });
+  const slo = Math.min.apply(null, specialCounts), shi = Math.max.apply(null, specialCounts);
+  assert.ok(shi / slo < 2.5,
+    'specials are unevenly distributed (' + JSON.stringify(counts) + ') — one is being starved');
 
   // and no load should be starved relative to its siblings — a cycle that heavily favours one
   // would technically pass the "gets a turn" check while barely ever showing the others
@@ -93,10 +111,11 @@ const SPECIALS = ['light', 'letters'];
   const counts2 = {};
   r.seq2.forEach(function (a) { counts2[a] = (counts2[a] || 0) + 1; });
 
-  const missed2 = r.probeLoads.filter(function (l) { return !counts2[l]; });
+  const missed2 = r.probeLoads.concat(r.probeSpecials).filter(function (l) { return !counts2[l]; });
   assert.deepStrictEqual(missed2, [],
-    'with ' + r.probeLoads.length + ' loads in the pool these never came up: ' + missed2.join(', ') +
-    ' — the picker is still hardwired to a fixed number of loads rather than rotating BEAM_LOADS ' +
+    'with ' + r.probeLoads.length + ' loads and ' + r.probeSpecials.length +
+    ' specials in the pool these never came up: ' + missed2.join(', ') +
+    ' — the picker is still hardwired to a fixed number rather than rotating the lists ' +
     '(saw ' + JSON.stringify(counts2) + ')');
 
   for (let i = 1; i < r.seq2.length; i++) {
@@ -105,9 +124,11 @@ const SPECIALS = ['light', 'letters'];
       '" repeated back to back at pass ' + i);
   }
 
-  console.log('beam-load-cycle: PASS (' + PASSES + ' passes over [' + r.loads.join(', ') + '], ' +
+  console.log('beam-load-cycle: PASS (' + PASSES + ' passes over loads [' + r.loads.join(', ') +
+    '] and specials [' + r.specials.join(', ') + '], ' +
     Object.keys(counts).map(function (k) { return k + '=' + counts[k]; }).join(' ') + ')');
-  console.log('                 generalises to ' + r.probeLoads.length + ' loads: ' +
+  console.log('                 generalises to ' + r.probeLoads.length + ' loads and ' +
+    r.probeSpecials.length + ' specials: ' +
     Object.keys(counts2).map(function (k) { return k + '=' + counts2[k]; }).join(' '));
   await browser.close();
 })();

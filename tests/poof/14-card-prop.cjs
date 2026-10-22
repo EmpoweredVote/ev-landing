@@ -11,9 +11,8 @@
 // which is exactly the failure worth catching here — see the header of 12-drop-beat.cjs for the same
 // lesson learned the hard way.
 //
-// Needs Playwright, which is not a repo dependency:
-//   NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" \
-//     node tests/poof/14-card-prop.cjs
+// Needs Playwright and its browsers — see "Tests" in README.md:
+//   node tests/poof/14-card-prop.cjs
 const { chromium } = require('playwright');
 const assert = require('assert');
 

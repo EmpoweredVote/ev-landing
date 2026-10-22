@@ -16,9 +16,8 @@
 // reads `window.LeremyRig`, and it publishes the pose table only via that global. There is nothing
 // to require.
 //
-// Needs Playwright, which is not a repo dependency:
-//   NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" \
-//     node tests/layout/hefty-pose.cjs
+// Needs Playwright and its browsers — see "Tests" in README.md:
+//   node tests/layout/hefty-pose.cjs
 const { chromium } = require('playwright');
 const assert = require('assert');
 
