@@ -14,9 +14,8 @@
 // for reasons that have nothing to do with touch. The .hero .meta-row presenter is cast
 // unconditionally, so there is always one there.
 //
-// Needs Playwright, which is not a repo dependency:
-//   NODE_PATH="C:/Users/Chris/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules" \
-//     node tests/poof/15-touch-hold.cjs
+// Needs Playwright and its browsers — see "Tests" in README.md:
+//   node tests/poof/15-touch-hold.cjs
 const { chromium } = require('playwright');
 const assert = require('assert');
 

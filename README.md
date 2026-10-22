@@ -47,10 +47,6 @@ global 1.61.1 that had them, and because a local `node_modules` always beats
 `NODE_PATH`, the command printed in every test header stopped working. Pinning
 and committing the lockfile is what keeps the library and the browsers in step.
 
-Five test headers still name a machine-specific `NODE_PATH` from before
-Playwright was a dependency. They are stale; the plain `node <file>` above is
-the command.
-
 ## Analytics
 
 We use PostHog to see how many people visit each page and how long they stay.
