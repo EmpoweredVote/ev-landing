@@ -146,6 +146,15 @@
           if (e.vSt === 'walk' && Math.abs(ev.clientX - e._vSX) < 36 && ev.clientY > e._lFY - 104 && ev.clientY < e._lFY + 8) { e.vSt = 'fall'; e.vT = 0; return; }
           if (e.eSt === 'walk' && Math.abs(ev.clientX - e._eSX) < 36 && ev.clientY > e._lFY - 84 && ev.clientY < e._lFY + 8) { e.eSt = 'drop'; e.eT = 0; return; }
         }
+        // play-button carrier (a beam-crew pass): click him mid-carry → he trips and it rolls away;
+        // click the ROLLING button → it skids to a halt and he catches up, picks it up, walks on.
+        // A button already within 70px of the edge publishes no hitbox at all (see runPlay), so a
+        // late click is a miss rather than a stop — which is the nicer read, and saves runPlay a
+        // special case for a pickup that would land half off the canvas.
+        if (e.spec.mode === 'beam' && e.scene === 'play' && e._pFY != null) {
+          if (e.pSt === 'carry' && Math.abs(ev.clientX - e._pSX) < 36 && ev.clientY > e._pFY - 84 && ev.clientY < e._pFY + 8) { e.pSt = 'trip'; e.pT = 0; return; }
+          if (e._pBSX != null && !e.pStopping && Math.abs(ev.clientX - e._pBSX) < 26 && Math.abs(ev.clientY - e._pBSY) < 26) { e.pStopping = true; return; }
+        }
         // phone-sitter: click him → pocket the phone (hang out); click again → take it back out
         if (e.spec.mode === 'seat' && e.spec.phone && e._phSX != null) {
           if (Math.abs(ev.clientX - e._phSX) < 40 && ev.clientY > e._phFY - 104 && ev.clientY < e._phFY + 8) {
@@ -1029,6 +1038,7 @@
       if (m === 'beam') {
         if (e.scene === 'letters') return { kind: 'letter', x: e.eLX, y: e.eLY };
         if (e.scene === 'light') return { kind: 'light', x: e.lgX, y: null };
+        if (e.scene === 'play') return { kind: 'playbtn', x: e.pBX, y: e.pBY };
         // the button is a 340x102 slab, not a ball — it gets its own dropped form and its own weight
         if (e.load === 'button') return { kind: 'card', x: null, y: null };
         return { kind: 'beamload', x: null, y: null };
@@ -1069,6 +1079,13 @@
         ctx.stroke();
       } else if (kind === 'beamload' || kind === 'light') {
         ctx.beginPath(); ctx.arc(x, y - 7, 7, 0, Math.PI * 2); ctx.stroke();
+      } else if (kind === 'playbtn') {
+        // the disc plus the triangle that makes it a play button rather than another ball — the
+        // one dropped prop where a bare circle would be indistinguishable from the beam load
+        ctx.beginPath(); ctx.arc(x, y - 7, 7, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 2.5, y - 11); ctx.lineTo(x + 4, y - 7); ctx.lineTo(x - 2.5, y - 3);
+        ctx.closePath(); ctx.fill();
       } else if (kind === 'kite') {
         // A proper kite, not a bare diamond: cross spars and a tail, tilted as if the wind has it. The
         // first version drew an empty rhombus and read as a floating lozenge rather than the kite that
@@ -1354,10 +1371,10 @@
     var DROPS = [];
 
     // What lands hard enough to hurt. Ball, the beam crew's load, the Fallacy Finders button (the
-    // heaviest thing anybody here is carrying — it is the whole showcase button at full size) and a
-    // .vote logo piece have weight; a light, a book, a phone, a yo-yo or a paddle just clatters down
-    // beside him.
-    var HEAVY_PROP = { ball: 1, beamload: 1, letter: 1, card: 1 };
+    // heaviest thing anybody here is carrying — it is the whole showcase button at full size), the
+    // showcase play button and a .vote logo piece have weight; a light, a book, a phone, a yo-yo or
+    // a paddle just clatters down beside him.
+    var HEAVY_PROP = { ball: 1, beamload: 1, letter: 1, card: 1, playbtn: 1 };
 
     // Which document row counts as the SURFACE a figure was on — what he stands up onto, and what a
     // thing he drops comes to rest on.
@@ -1859,6 +1876,15 @@
     // call site in the file, including the ones written against this one. Don't add a local blend
     // helper here — it will silently lose to that one.
     var BEAM_LOADS = ['circle', 'line', 'button'];   // the ball, the yellow line, and the Fallacy Finders button (no notched triangle); beamPick rotates and avoids repeats
+    // The set-piece passes the crew runs INSTEAD of a two-carry: the light gag, the letter carriers,
+    // and the play-button carrier. Rotated by beamPick the same deterministic way as the loads.
+    //
+    // This was a two-element flip-flop written inline in beamPick — `lastSpecial === 'light' ?
+    // 'letters' : 'light'` — until 'play' joined them, and a flip-flop has no room for a third:
+    // whatever went in last would have been starved to never and the whole scene would have been
+    // invisible with every test still green. Adding to this list is now all a new special needs
+    // from the picker, and tests/layout/beam-load-cycle.cjs reads the list rather than naming them.
+    var BEAM_SPECIALS = ['light', 'letters', 'play'];
 
     // ── Fallacy Finders lockup, as canvas path data ────────────────────────────────────
     // GENERATED by tools/gen-fallacy-card-art.mjs from icons/fallacy-finders-logo-lg-*.svg.
@@ -3769,6 +3795,212 @@
       var eGone = (e.eSt === 'walk' && off(e.eX)) || (e.eSt === 'roll' && off(e.eX) && off(e.eLX));
       if (vGone && eGone) beamPick(e, w);                // hand back; next pass is anything but the letters again
     }
+    // ── PLAY-BUTTON CARRIER (a beam-crew pass): one Bobit walks the showcase play button across
+    //    the hero. Click him and he trips: the button leaves his hands and rolls on ahead of him,
+    //    he lies in a heap for a beat, gets up and runs after it.
+    //
+    //    What happens next is the visitor's call, which is the point of the scene:
+    //      leave it     the button rolls off the edge and he chases it off after it — pass over
+    //      click it     it skids to a halt, he catches up, picks it up and carries on carrying it
+    //
+    //    So the disc has almost no friction (DRAG is 12px/s² against a 215px/s launch — enough to
+    //    look like a rolling object losing a little steam, nowhere near enough to stop it inside a
+    //    viewport). It is the CLICK that stops it. A rolling thing that stopped on its own would
+    //    make the second half of the gag fire whether or not anybody did anything, and then the
+    //    one interactive beat in the scene would read as something the page did by itself.
+    var PLAY_R = 15;                     // the disc, canvas px. The page's own .play-btn is 38px across
+    var PLAY_LIE = 80 * Math.PI / 180;   // how far over he goes when he lands — the cartwheel heap's angle
+    // The showcase play button as a prop: the same disc as .play-btn — card fill, a ring, a teal
+    // triangle sitting right of centre — at close to the size it is on the page.
+    //
+    // Two deliberate departures from the real button's CSS. The ring is figColor(0) rather than
+    // --border, and it is 2px: --border is #E3E8EF on white and #2D2D32 on near-black, which is
+    // fine for a control sitting on a card but leaves a 30px disc on the hero with no readable
+    // outline in either theme — and the outline is the ONLY thing that says this is round. The
+    // fill stays --card so it still reads as a button face rather than a coloured token.
+    //
+    // `rot` is what makes the roll legible at all. A circle spinning about its own centre is
+    // indistinguishable from a circle standing still, so the triangle inside it does all the work
+    // of saying "this is rolling" — which is also why the triangle is drawn at full contrast.
+    function drawPlayButton(ctx, x, y, r, rot) {
+      var k = r / 19;                    // 19 = the real button's radius; the shape below is measured off it
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(rot || 0);
+      ctx.fillStyle = cssVar('--card', '#FFFFFF');
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = figColor(0); ctx.lineWidth = 2; ctx.stroke();
+      // The triangle, transcribed from the button's own SVG: a 12x14 viewBox drawn into a 13x13
+      // box, itself nudged 2px right of the disc centre (the optical centring every play button
+      // gets, so the shape looks middled rather than measuring middled).
+      ctx.fillStyle = figColor(0);
+      ctx.beginPath();
+      ctx.moveTo(-3.42 * k, -5.57 * k);
+      ctx.lineTo(7.42 * k, 0);
+      ctx.lineTo(-3.42 * k, 5.57 * k);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    function playCarry(t) {                              // both hands under the button, held out in front
+      var p = A.stroll.frame(t);
+      p.hunch = -14; p.lean = -2; p.headTilt = 4;
+      // Arms DOWN compared with the letter carrier he shares a rotation with (58/60 there). Both
+      // scenes hug their prop at the body centre — that is what this rig does with two arms on one
+      // object — but the e is an open glyph you can see him through and this is a solid disc. Held
+      // at the e's height it covered his head and he vanished behind his own cargo. At 30 of
+      // forearm the hands sit by his hips and the disc tops out below his chin.
+      p.armRU = 58; p.armRF = 30; p.armLU = -58; p.armLF = -30;
+      return p;
+    }
+    function playHeap(t) {                               // face down, limbs slack, a small twitch
+      var p = A.standstill.frame(0);
+      var wr = Math.sin(t * 6.5) * 3, wr2 = Math.sin(t * 5 + 1) * 4;
+      p.hunch = -42 + wr; p.bob = 10; p.lean = 5 + wr2; p.headTilt = -20 + wr;
+      p.legRU = 62 + Math.sin(t * 6) * 9; p.legRF = -34; p.legLU = 54 + wr2; p.legLF = -30;
+      p.armRU = 74; p.armRF = 52;                        // the arm he threw out to break the fall, still out front
+      p.armLU = -48; p.armLF = -34 + wr;
+      return p;
+    }
+    // one play-button pass: a single carrier entering from `dir`, the button already in his hands
+    function startPlay(e, w, dir) {
+      e.scene = 'play'; e.dir = dir;
+      e.pSt = 'carry'; e.pT = 0;
+      e.pX = dir > 0 ? -60 : w + 60;
+      e.pBX = e.pX; e.pBY = 0; e.pRot = 0; e.pV = 0; e.pStopping = false; e.pFall = null;
+      e._pBSX = null;
+    }
+    function runPlay(e, ctx, w, h, feetY, tt, shadow, dt, cr) {
+      var SP = 34, RUN = 130, DRAG = 12, SKID = 820, LAUNCH = 215;
+      var TRIP = 0.45, DOWN = 1.0, GETUP = 0.55, LIFT = 0.8, FALL = 0.22;
+      var oy = feetY - 112 * S, groundBY = feetY - (PLAY_R - 2);
+      // How far his pelvis drops when he goes over. The cartwheel heap uses feetY - 14 for the same
+      // 80-degree tip; this crew needs 26 because the hero canvas ends 6px below the floor line and
+      // the cartwheeler lands in the footer, where there is room to overhang. Measured by reading
+      // the canvas: at 14 the lying poses painted into the last row and were cut off, at 26 the
+      // lowest ink sits 2px past the line, which is where every shipped gait already sits.
+      var lieY = (feetY - 26) - oy;
+      // NOT the entry's own tone. The crew is teal (tone 0) and so is the button, so a teal carrier
+      // would be handing a teal disc to a teal silhouette; green is the nearest free slot that is
+      // also not the purple presenter standing directly above him in .meta-row.
+      var col = figColor(3);
+      // Which way he goes over. drawFig applies `rot` OUTSIDE the horizontal flip — translate,
+      // rotate, then scale(-s) — so a figure walking left is mirrored but his rotation is not, and
+      // a fixed +80 would tip him head-first the way he came. Signed by e.dir, he always lands
+      // face down along his direction of travel. (The cartwheeler never needed this: he only ever
+      // falls at the end of a wheel, which already carried him whichever way he was going.)
+      var lie = PLAY_LIE * e.dir;
+      var flip = e.dir < 0, rot = 0, yoff = 0, pose;
+      var gap = function () { return (e.pBX - e.pX) * e.dir; };   // how far ahead of him the button is
+      // The state the pose below is drawn FROM. Every branch of the switch advances e.pSt at its own
+      // end, so by the time the button is placed e.pSt can already name the state that starts NEXT
+      // frame while the pose variable is still the outgoing one. Placing the button off e.pSt put
+      // it in the carry's hands for the last frame of the lift, 8px above where the lift had just
+      // raised it to. `poseT` is the same guard for the clock: the lift zeroes e.pT on its way out,
+      // and the rise reads that clock, so the button dropped back to the floor for one frame.
+      var was = e.pSt, poseT = e.pT;
+
+      // ── the disc ── it only ever moves after the trip, and only ever in his direction of travel
+      if (e.pV > 0) {
+        e.pBX += e.dir * e.pV * dt;
+        e.pRot += e.dir * (e.pV / PLAY_R) * dt;         // spin tracks distance, so it stops turning when it stops
+        e.pV = Math.max(0, e.pV - (e.pStopping ? SKID : DRAG) * dt);
+      }
+
+      switch (e.pSt) {
+        case 'carry':
+          e.pX += e.dir * SP * dt;
+          // all the way across and out: nobody touched him, so the pass is over
+          if (e.dir > 0 ? e.pX > w + 70 : e.pX < -70) { beamPick(e, w); return; }
+          pose = playCarry(tt);
+          break;
+        case 'trip': {
+          e.pT += dt;
+          var u = smooth01(Math.min(1, e.pT / TRIP));
+          e.pX += e.dir * SP * (1 - u) * dt;            // the step he was halfway through still carries him on
+          pose = lerpPose(playCarry(tt), playHeap(0), u);
+          rot = lie * u; yoff = lieY * u;
+          if (e.pT >= TRIP) {
+            e.pSt = 'down'; e.pT = 0;
+            pushBeacon(cr.left + e.pX, cr.top + feetY, 'collapse');   // the ledge peeker leans out to look
+          }
+          break;
+        }
+        case 'down':
+          e.pT += dt;
+          pose = playHeap(e.pT); rot = lie + Math.sin(e.pT * 6) * 0.1 * e.dir; yoff = lieY;
+          if (e.pT >= DOWN) { e.pSt = 'getup'; e.pT = 0; }
+          break;
+        case 'getup': {
+          e.pT += dt;
+          var g = smooth01(e.pT / GETUP);
+          pose = lerpPose(playHeap(0), A.standstill.frame(0), g);
+          rot = lie * (1 - g); yoff = lieY * (1 - g);
+          if (g >= 1) { e.pSt = 'chase'; e.pT = 0; }
+          break;
+        }
+        case 'chase': {
+          e.pT += dt;
+          pose = A.scurry.frame(tt);
+          e.pX += e.dir * RUN * smooth01(e.pT / 0.5) * dt;          // ramps up out of a standstill
+          if (e.pV <= 0 && gap() < 24) {                            // caught up with a button that has stopped
+            e.pX = e.pBX - e.dir * 24; e.pSt = 'lift'; e.pT = 0;
+          } else if (gap() < 20) {
+            e.pX = e.pBX - e.dir * 20;                              // never overtake it
+          }
+          if (e.dir > 0 ? e.pX > w + 70 : e.pX < -70) { beamPick(e, w); return; }   // chased it clean off the edge
+          break;
+        }
+        case 'lift':
+          e.pT += dt; poseT = e.pT;
+          pose = A.heave.frame(poseT * (1.2 / LIFT));               // the scaled clock the crew's own pickup uses
+          if (e.pT >= LIFT) { e.pSt = 'carry'; e.pT = 0; e.pStopping = false; e.pRot = 0; }
+          break;
+      }
+
+      // ── where the button is this frame ──
+      // The hand point is read off the CARRY pose during the lift, not off the heave pose being
+      // drawn. A.heave ends with the arms where a two-man beam carry wants them, which is ~8px
+      // below where this one-man hug holds a disc — so aiming the rise at the heave hands landed
+      // the button in the right place for one frame and then popped it up on the handoff.
+      var handPose = (was === 'lift') ? playCarry(tt) : pose;
+      var j = R.computePose(handPose, CFG, { x: 0, y: 0 }), sgn = flip ? -1 : 1;
+      var handX = e.pX + ((j.hR.x + j.hL.x) / 2) * S * sgn + e.dir * 6;
+      var handY = oy + ((j.hR.y + j.hL.y) / 2) * S;
+      if (was === 'carry') {
+        e.pBX = handX; e.pBY = handY; e.pRot = 0; e.pFall = null;   // null re-arms the throw for a second trip
+      } else if (was === 'lift') {
+        var lu = smooth01(Math.max(0, poseT - LIFT * 0.35) / (LIFT * 0.55));
+        e.pBY = groundBY + (handY - groundBY) * lu;
+        e.pBX = e.pBX + (handX - e.pBX) * lu;
+      } else {
+        // Down and away: it leaves his hands on the first frame of the trip and falls to the floor
+        // over FALL seconds while it is already travelling, so it is thrown clear rather than set
+        // down. Putting it straight on the floor instead moved it 26px on one frame and read as a
+        // cut in the middle of the one beat the whole scene is built around.
+        if (e.pFall == null) { e.pFall = 0; e.pFromY = handY; e.pV = LAUNCH; e.pBX = handX + e.dir * 10; }
+        e.pFall = Math.min(FALL, e.pFall + dt);
+        var fu = e.pFall / FALL;
+        e.pBY = e.pFromY + (groundBY - e.pFromY) * fu * fu;         // squared, so it drops rather than drifts down
+      }
+
+      // ── draw ──
+      R.drawShadow(ctx, e.pX, feetY, 15, shadow);
+      if (was !== 'carry' && !e.propGone) R.drawShadow(ctx, e.pBX, feetY, 11, shadow);
+      // Published because he is NOT drawn in the entry's colour: a single-figure scene that
+      // publishes no bodies is redrawn in the entry tone by the abduction, which would turn him
+      // teal halfway through being lifted off the page.
+      e._bodies = [{ x: e.pX, floor: feetY, col: col }];
+      drawFig(ctx, e.pX, oy + yoff, S, flip, pose, { color: col, rot: rot });
+      if (!e.propGone) drawPlayButton(ctx, e.pBX, e.pBY, PLAY_R, e.pRot);
+
+      // Click hitboxes (screen coords). The button's is published only while it is ROLLING: in his
+      // hands it sits inside his own box, and a click there has to trip him rather than stop a
+      // disc that is not moving.
+      e._pSX = cr.left + e.pX; e._pFY = cr.top + feetY;
+      // ...and only while it is still far enough from the edge that he can catch it and lift it
+      // without doing so half off the canvas. Past that, the hitbox goes and the pass plays out.
+      var catchable = e.pV > 0 && (e.dir > 0 ? e.pBX < w - 70 : e.pBX > 70);
+      e._pBSX = catchable ? cr.left + e.pBX : null; e._pBSY = cr.top + e.pBY;
+    }
     // at each off-screen turn the crew picks its next pass: the light gag, a letter-carry, or another load
     // pick the crew's next pass. ALTERNATE carry <-> special every pass so the light gag and the
     // letter carriers show up regularly (turns are ~30-50s apart, so a random pick made specials feel
@@ -3785,7 +4017,7 @@
     }
 
     function beamPick(e, w) {
-      var lastWasSpecial = (e.lastAction === 'light' || e.lastAction === 'letters');
+      var lastWasSpecial = BEAM_SPECIALS.indexOf(e.lastAction) >= 0;
       // after a special always carry; after a carry usually go special, but ~30% of the time run ONE
       // more carry (the other load) — capped at 2 carries in a row so specials still come around often.
       var goCarry = lastWasSpecial || ((e.carryRun || 0) < 2 && chance(0.3));
@@ -3801,9 +4033,15 @@
         var m = loadMargin(e, a, w);   // NOT a bare 110: an oversized load needs room for its far end
         e.scene = 'carry'; e.load = a; e.dwell = 1.1; e.bx = e.dir > 0 ? -m : w + m;
       } else {
-        a = (e.lastSpecial === 'light') ? 'letters' : 'light';   // the other special
+        // Advance one step around BEAM_SPECIALS — the same deterministic rotation the loads get,
+        // and for the same two reasons: every special is guaranteed a turn, and none can repeat
+        // back to back. An unknown lastSpecial (indexOf -1) starts the cycle at the first one.
+        var si = BEAM_SPECIALS.indexOf(e.lastSpecial);
+        a = BEAM_SPECIALS[(si + 1) % BEAM_SPECIALS.length];
         e.lastSpecial = a; e.carryRun = 0;
-        if (a === 'light') startLight(e, w); else startLetters(e, w, e.dir);
+        if (a === 'light') startLight(e, w);
+        else if (a === 'letters') startLetters(e, w, e.dir);
+        else startPlay(e, w, e.dir);
       }
       e.lastAction = a;
     }
@@ -4177,10 +4415,11 @@
           // rather than carrying it. Outside, the hanging inner hand lands right on the edge.
           var halfGap = isBtn ? (card.w / 2 + 8) : 24;
           var endMargin = loadMargin(e, e.load, w);
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = pick(['light', 'letters']); e.carryRun = 1; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows soon
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = pick(BEAM_SPECIALS); e.carryRun = 1; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows soon
           // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
           if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
           if (e.scene === 'letters') { runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
+          if (e.scene === 'play') { runPlay(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
           var fx = e.bx + e.dir * halfGap;      // front (leading) carrier
           var bx2 = e.bx - e.dir * halfGap;     // back carrier
           // hover: a carrier drops his end (line only) and waves; partner holds, annoyed
@@ -4523,7 +4762,8 @@
       sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
       drops: function () { return DROPS; }, propOf: propOf, __gp: drawGroundProp,
       buttonCardSize: buttonCardSize, beamPick: beamPick, drawButtonCard: drawButtonCard,
-      beamLoads: BEAM_LOADS, heavyProp: HEAVY_PROP,
+      beamLoads: BEAM_LOADS, beamSpecials: BEAM_SPECIALS, heavyProp: HEAVY_PROP,
+      startPlay: startPlay, playR: PLAY_R,
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };
   });

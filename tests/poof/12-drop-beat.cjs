@@ -16,7 +16,7 @@ const RELOADS = 12;
 // Mirrors HEAVY_PROP in ev-figures.js. Kept as a literal so the expectation is readable here, but
 // checked against the real table below — three copies of this list have now existed at once, and a
 // silent divergence would show up as a baffling hurts=true/false mismatch rather than as itself.
-const HEAVY = ['ball', 'beamload', 'letter', 'card'];
+const HEAVY = ['ball', 'beamload', 'letter', 'card', 'playbtn'];
 
 async function run(browser, scrollTo) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
