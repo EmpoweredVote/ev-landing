@@ -33,6 +33,10 @@ const CASES = [
   ['iPad (gen 7)', webkit],
 ];
 
+// A table that genuinely does not fit misses by far more than a pixel; see the
+// comment at the assertion for why zero is the wrong threshold here.
+const TABLE_SLACK = 1;
+
 const loc = (r) => pathToFileURL(path.resolve(__dirname, '../..', r)).href;
 // Every edition, not just the newest two. An archived edition is frozen in what it CLAIMS, not
 // in how it renders, and each one carries its own copy of the stylesheet -- so a fix applied to
@@ -150,8 +154,17 @@ const PAGES = [
 
         const where = `${devName} ${pageName} ${landscape ? 'landscape' : 'portrait'} (${r.vw}px)`;
         if (r.pageOver > 0) failures.push(`${where}: page overflows by ${r.pageOver}px`);
+        // 1px of headroom, not 0. `table-layout:fixed` sizes a table to its container,
+        // so in the steady state scrollWidth EQUALS clientWidth and this check sits
+        // exactly on its own threshold across all six devices, every edition, both
+        // orientations. One transient sub-pixel reading then flips it, which is how it
+        // flaked on 2026-10-20 and then passed eight times in a row afterwards.
+        //
+        // The tolerance costs nothing real: the defect this check was written for needed
+        // 2.1 screens of sideways dragging at 390px. A table that genuinely does not fit
+        // misses by far more than a pixel.
         r.tableOver.forEach((o, i) => {
-          if (o > 0) failures.push(`${where}: table ${i} is ${o}px wider than its box`);
+          if (o > TABLE_SLACK) failures.push(`${where}: table ${i} is ${o}px wider than its box`);
         });
         if (r.stickOut.length) failures.push(`${where}: past the right edge -> ${r.stickOut.join(', ')}`);
         if (r.thLines.some((n) => n > 1)) {
