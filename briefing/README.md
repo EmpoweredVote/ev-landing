@@ -424,6 +424,30 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
 - The stance total can go **down** when a research audit retires unsupported
   rows.  That is working as intended — explain it in the narrative rather than
   hiding it.
+- 🔴 **A WITHDRAWAL IS NOT ALWAYS AN INSERT, SO `created_at` UNDERCOUNTS THE AUDIT.**  The note
+  above describes a withdrawal as a Season 2 row of `0` written over an older answer — an
+  INSERT.  That is only one of the two shapes.  On 2026-10-23 the audit had withdrawn **284**
+  positions of which only **44** were new rows; the other **240** were existing rows rewritten
+  in place, which changes `updated_at` and leaves `created_at` untouched.  A creation-date
+  reading of that cycle sees 44 rows of work and misses six sevenths of the campaign.  Measure
+  both, and say which you mean:
+  ```sql
+  SELECT count(*) FILTER (WHERE created_at >= :since)                        AS inserted,
+         count(*) FILTER (WHERE created_at <  :since AND updated_at >= :since) AS rewritten
+    FROM inform.politician_answers WHERE value = 0;
+  ```
+  Generalise it: **a query that watches for new rows cannot see a campaign that edits old ones.**
+- 🔴 **DO NOT COUNT WHILE A LOAD IS RUNNING — THE SNAPSHOT MEASURES THE LOAD, NOT THE WORK.**
+  The 2026-10-20 edition published two figures taken mid-write and drew a wrong conclusion from
+  both.  It read 72 stance positions across 15 Georgia officials at 06:01; the batch was still
+  being written, two more followed, and the day closed at 90 across 26.  On the strength of that
+  it called an eleven-day gap "not yet a restart", which was wrong.  In the *same hour* its
+  `pols_curated` query ran through a 2026-candidate load — 408 people landed in that one hour, 823
+  across the day — so it printed 12,435 where the settled figure was 13,184.  Neither number was
+  false; both were partial.  **Before publishing, check recency on the tables you are about to
+  quote** (`max(created_at)` on `politician_answers`, `politicians`, `treasury.budgets`) and if a
+  load is in flight, say so or wait for it.  The tell is cheap to look for and there is no way to
+  recover from it afterwards, because the edition is frozen.
 - **Per-state counts must read ALL THREE jurisdiction links.**  ADR 0002 moved
   officeholder occupancy onto dated `essentials.office_terms`; the older
   `politicians.office_id` column is not backfilled for anyone seeded after that
