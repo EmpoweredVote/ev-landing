@@ -109,6 +109,29 @@
     .ledger-line a:hover { color: var(--teal-press); }
     .reassure { margin-top: 16px; font-size: 0.85rem; color: var(--muted); max-width: 44ch; line-height: 1.55; }
 
+    /* Monthly-giving ladder (left column, above the form on phones). */
+    .hero:has(.ladder) { align-items: start; }
+    @media (min-width: 801px) { .hero:has(.ladder) .give-card { position: sticky; top: 24px; } }
+    .ladder { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); max-width: 52ch; }
+    .ladder-heading { font-size: 1.25rem; font-weight: 800; color: var(--heading); letter-spacing: -0.015em; line-height: 1.25; }
+    .ladder-opening { margin-top: 10px; font-size: 1rem; }
+    .ladder-progress { margin-top: 16px; font-size: 0.95rem; font-weight: 600; color: var(--heading); }
+    .ladder-progress strong { color: var(--teal); font-weight: 800; }
+    .rungs { list-style: none; margin-top: 14px; display: grid; gap: 10px; counter-reset: rung; }
+    .rung { counter-increment: rung; position: relative; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 12px 14px 12px 50px; }
+    .rung::before { content: counter(rung); position: absolute; left: 14px; top: 12px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.78rem; font-weight: 800; color: var(--muted); border: 1.5px solid var(--border); }
+    .rung.is-funded::before { content: "✓"; color: var(--bg); background: var(--teal); border-color: var(--teal); }
+    .rung.is-next { border-color: color-mix(in srgb, var(--teal) 55%, var(--border)); }
+    .rung-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .rung-name { font-weight: 700; color: var(--heading); line-height: 1.35; }
+    .rung-cost { font-size: 0.88rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+    .rung-line { margin-top: 3px; font-size: 0.9rem; line-height: 1.5; }
+    .rung-bar { margin-top: 10px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 18%, transparent); overflow: hidden; }
+    .rung-bar span { display: block; height: 100%; width: 0; background: var(--teal); border-radius: inherit; }
+    .ladder-fees { margin-top: 14px; font-size: 0.85rem; color: var(--muted); line-height: 1.55; }
+    /* Unfilled copy or numbers. Must be gone before merge: grep -n 'class="ph"' donate.html */
+    .ph { background: color-mix(in srgb, var(--yellow) 22%, transparent); outline: 1px dashed var(--yellow); border-radius: 4px; padding: 0 4px; color: var(--heading); }
+
     .give-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-card); padding: 22px; }
     .give-card h2 { font-size: 1.2rem; font-weight: 800; color: var(--heading); margin-bottom: 14px; }
     .gb-slot { min-height: 120px; }
@@ -168,6 +191,46 @@
           <h1>Support free civic transparency.</h1>
           <p class="tagline">Anti-partisan nonprofit · No ads · No subscriptions · No catch.</p>
           <p class="lede">We build Empowered Vote as a small all-volunteer team today; your donation will help us keep the lights on so we can keep building civic tools for a better democracy.</p>
+
+          <!-- Monthly-giving ladder. WEEKLY EDIT: set data-monthly-total below to the
+               current monthly total, whole dollars, no "$" or commas. Each rung's
+               data-cost is its board-set monthly cost; leave it "" until the board sets
+               it. The script at the bottom of the page draws the costs, the bars and the
+               progress line from these numbers, so nothing else needs editing. -->
+          <section id="ladder" class="ladder" data-monthly-total="110" aria-labelledby="ladder-heading">
+            <h2 id="ladder-heading" class="ladder-heading"><span class="ph">[LADDER HEADING]</span></h2>
+            <p class="ladder-opening"><span class="ph">[OPENING COPY: 80 to 120 words, block 3 of the GT ladder brief]</span></p>
+            <p class="ladder-progress" id="ladder-progress" role="status"><span class="ph">[MONTHLY TOTAL]</span></p>
+            <ol class="rungs">
+              <li class="rung" data-cost="">
+                <div class="rung-top"><span class="rung-name">Running costs</span><span class="rung-cost"></span></div>
+                <p class="rung-line"><span class="ph">[RUNG 1 LINE: hosting, data, tools]</span></p>
+                <div class="rung-bar" aria-hidden="true"><span></span></div>
+              </li>
+              <li class="rung" data-cost="">
+                <div class="rung-top"><span class="rung-name">A part-time graphic designer</span><span class="rung-cost"></span></div>
+                <p class="rung-line"><span class="ph">[RUNG 2 LINE]</span></p>
+                <div class="rung-bar" aria-hidden="true"><span></span></div>
+              </li>
+              <li class="rung" data-cost="">
+                <div class="rung-top"><span class="rung-name">First part-time pay for one team member</span><span class="rung-cost"></span></div>
+                <p class="rung-line"><span class="ph">[RUNG 3 LINE]</span></p>
+                <div class="rung-bar" aria-hidden="true"><span></span></div>
+              </li>
+              <li class="rung" data-cost="">
+                <div class="rung-top"><span class="rung-name">Health insurance for that person</span><span class="rung-cost"></span></div>
+                <p class="rung-line"><span class="ph">[RUNG 4 LINE]</span></p>
+                <div class="rung-bar" aria-hidden="true"><span></span></div>
+              </li>
+              <li class="rung" data-cost="">
+                <div class="rung-top"><span class="rung-name">A second part-time role</span><span class="rung-cost"></span></div>
+                <p class="rung-line"><span class="ph">[RUNG 5 LINE]</span></p>
+                <div class="rung-bar" aria-hidden="true"><span></span></div>
+              </li>
+            </ol>
+            <p class="ladder-fees">Card fees are covered; the optional tip at checkout goes to Givebutter, not to Empowered Vote, and you can set it to $0.</p>
+          </section>
+
           <p class="ledger-line"><a href="https://financials.empowered.vote">See every dollar we raise and spend →</a></p>
           <p class="reassure">Small monthly gifts help most. But you'll always have full access — no donation required, ever.</p>
         </div>
@@ -266,6 +329,52 @@
           })
           .catch(function () { setNote('Couldn’t reach us just now. Please try again in a moment.', true); btn.disabled = false; });
       });
+    })();
+  </script>
+
+  <script>
+    // Monthly-giving ladder: draws each rung's cost, its bar and the progress line
+    // from the data-monthly-total and data-cost numbers in the markup. Rungs stack:
+    // rung 2 is reached when the total covers rungs 1 and 2. A rung with no cost yet
+    // shows a placeholder, and every rung after it has no bar, since its place on the
+    // ladder is not known. Static numbers only: no network calls, no donor data.
+    (function () {
+      var box = document.getElementById('ladder');
+      if (!box) return;
+      var total = Number(box.dataset.monthlyTotal) || 0;
+      var progress = document.getElementById('ladder-progress');
+      var PH = '<span class="ph">[$___/month]</span>';
+      function money(n) { return '$' + n.toLocaleString('en-US'); }
+
+      var below = 0, known = true, next = null;
+      box.querySelectorAll('.rung').forEach(function (rung) {
+        var cost = Number(rung.dataset.cost) || 0;
+        var costEl = rung.querySelector('.rung-cost');
+        var bar = rung.querySelector('.rung-bar span');
+        if (!cost) {
+          costEl.innerHTML = PH;
+          if (known && !next) next = { rung: rung, cost: 0 };
+          known = false;
+          return;
+        }
+        costEl.textContent = money(cost) + ' a month';
+        if (!known) return;
+        var filled = Math.max(0, Math.min(1, (total - below) / cost));
+        below += cost;
+        bar.style.width = (filled * 100) + '%';
+        if (filled >= 1) rung.classList.add('is-funded');
+        else if (!next) next = { rung: rung, cost: below };
+      });
+
+      var line = 'Monthly giving today: <strong>' + money(total) + ' a month</strong>.';
+      if (next) {
+        next.rung.classList.add('is-next');
+        var name = next.rung.querySelector('.rung-name').textContent;
+        line += ' Next rung: ' + name + (next.cost ? ', reached at ' + money(next.cost) + ' a month.' : ' (' + PH + ').');
+      } else {
+        line += ' All five rungs are funded.';
+      }
+      progress.innerHTML = line;
     })();
   </script>
 
