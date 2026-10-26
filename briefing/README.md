@@ -93,6 +93,70 @@ unfrozen predecessor destroys that edition, and there is no copy anywhere else.
   the archive — each edition carries its own copy of the stylesheet, so nothing else would.  The
   summary line counts `PAGES.length`; do not hard-code it again.
 
+## How to write it
+
+Every rule here is a count taken off the 2026-10-23 edition, which read as
+corporate and was hard to follow.  Nothing in it was untrue.  The sentences were
+the problem, and until this section existed nothing anywhere told the writer —
+human or scheduled — how the page should sound.
+
+- **Write as "we", not as "this page".**  That edition said "this page" 28 times
+  and "we" four.  It had the page remembering, asking, describing and being
+  uncomfortable: *"this page has said"*, *"the one this page kept asking for"*,
+  *"this page has never said so"*.  Volunteers want to hear from the people doing
+  the work.  We got it wrong.  We measured it.  We have not read it yet.  Keep
+  "this page" for genuine navigation — "this page always lives at
+  empowered.vote/briefing" is fine.
+- **One idea per sentence.**  24 sentences in that edition ran 38 words or more;
+  the longest was 73.  The mean was 22.5.  Aim for a mean near 15 and let nothing
+  past 35 without a reason.
+- **Break the semicolon chains.**  31 semicolons, most of them stacking three or
+  four unrelated findings into one sentence: *"Puerto Rico still has 78 alcaldes
+  with 70 of them lacking a portrait; the trivia bank still reads 3,323 live
+  questions across 43 active collections, split A 25.0%, B 25.9%…"*.  That is a
+  list.  Write it as one.
+- **Two em dashes in a paragraph, not two in a sentence.**  There were 51 across
+  221 sentences.  An aside inside an aside is where a reader stops.
+- **Say who did it.**  54 passive constructions.  *"It was measured this week"*
+  hides whether that was a person, a cron job, or a query written for this
+  edition.  *"We timed it this week"* does not.
+- **One general lesson an edition, not one a paragraph.**  Closing every
+  paragraph on a maxim — *"a count taken while a load is running measures the
+  load, not the work"*, *"the lesson generalises past this page"* — is the single
+  habit that makes the writing sound generated.  The lessons are real and they
+  belong in this README, where the next writer reads them.  On the page, keep the
+  best one and cut the rest.
+- **Lead with the answer.**  Open each section with what happened, then the
+  numbers that prove it.  Not the history, then the reasoning, then the finding.
+- **A headline is a sentence, not a stack of clauses.**  The archive summary for
+  2026-10-23 read: *"A debt five editions old is paid and a promise three days old
+  is not; the audit takes back 230 positions; nine tenths of what a voter reads
+  comes from a season that is closed."*  Three compressed claims and nothing to
+  picture.  One clear claim beats them.
+- **About 4,000 words of narrative.**  That edition ran 4,979.  Length is not
+  thoroughness.  What is cut but worth keeping goes in this README.
+
+None of this loosens the rules above it.  Plain is not vague: every number still
+has to be checkable, every figure still has to be reproducible, and **"we do not
+know yet" is a sentence this page is allowed to print.**
+
+`briefing/voice-check.mjs` counts all of it, so nobody has to do it by eye:
+
+```bash
+node briefing/voice-check.mjs                            # the current edition
+node briefing/voice-check.mjs briefing/2026-10-23/index.html
+```
+
+Every threshold in it is set from the 2026-10-23 edition and all seven fire on
+it.  It is a **prose** check and it fails differently from a fact check: a wrong
+number must never be published, but a clumsy sentence must never stop an edition
+going out.  A stale current edition is worse than an awkward new one.  When it
+exits 1, rewrite and run it again — never publish nothing over it.
+
+Run it on the archive and the habit turns out to be older than this section.
+The 2026-09-11 edition fails five of the seven, with a 96-word sentence in it.
+What is new is the self-reference: four "this page" in September, 27 in October.
+
 ## What updates automatically vs by hand
 
 `refresh.mjs` pulls live counts from the platform database and rewrites only the

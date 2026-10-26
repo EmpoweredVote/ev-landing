@@ -37,6 +37,8 @@ Follow "Publishing a new edition" in the README exactly. In outline:
 7. Add the newly frozen edition to `PAGES` in `tests/layout/briefing-tables-mobile.cjs`.
 8. Run the tests. At minimum `node tests/layout/briefing-tables-mobile.cjs`; run the rest of
    `tests/` too, and do not publish on a failure you have not understood.
+   Run `node briefing/voice-check.mjs` as well — see "How it should read" below for what
+   to do when it fails, which is not the same as what to do when a test fails.
 9. Commit and push to `main`. Render deploys on the push.
 
 ## Gathering the numbers
@@ -75,6 +77,39 @@ So:
 - **Never name a funder, grant programme or foundation in page copy**, whatever the branch names
   and commit tags say. Report the work, not who paid for it.
 - **Nothing on this page is coloured red or blue.**
+
+## How it should read
+
+**Read "How to write it" in the README.** It is short, and every rule in it is a
+count taken off an edition that read badly. Nothing in this prompt used to say
+how the page should sound, and an edition written without that guidance reads
+corporate and generated. The headlines:
+
+- **"We", not "this page".** The 2026-10-23 edition said "this page" 28 times and
+  "we" four. We got it wrong. We measured it. We have not read it yet.
+- **One idea per sentence.** Nothing past 35 words without a reason.
+- **A list, not a semicolon chain.** Three findings in one sentence is a list.
+- **Say who did it.** Active voice; "it was measured" hides whether that was a
+  person or a cron job.
+- **One general lesson an edition, not one a paragraph.** Closing every paragraph
+  on a maxim is the single habit that makes this page sound generated. The
+  lessons belong in the README.
+- **Lead with the answer**, then the numbers that prove it.
+- **About 4,000 words of narrative.** Length is not thoroughness.
+
+Plain is not vague. Every number still has to be checkable, and **"we do not know
+yet" is a sentence this page is allowed to print.**
+
+Before you commit, run the counter rather than judging it by eye:
+
+```bash
+node briefing/voice-check.mjs
+```
+
+It exits 1 when the prose is over any threshold and prints the long sentences.
+Rewrite and run it again. **It is not a reason to publish nothing** — a stale
+current edition is worse than an awkward new one. If you genuinely cannot get it
+under the line, publish and say so in the log.
 
 ## If you cannot finish
 
