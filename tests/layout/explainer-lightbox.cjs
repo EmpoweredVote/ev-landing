@@ -1,4 +1,5 @@
-// The play triangle beside the Essentials and Compass tiles, and the lightbox it opens.
+// The play triangle beside the Essentials, Compass and Treasury Tracker tiles, and the
+// lightbox it opens.
 //
 // Three things here are easy to break without noticing.
 //
@@ -10,7 +11,7 @@
 //    number, because both move with the breakpoint.
 //
 // 2. All five tiles must keep one left edge. The gutter pads the whole column for
-//    that reason; padding only the two rows that have a film would stagger the set.
+//    that reason; padding only the rows that have a film would stagger the set.
 //
 // 3. Closing must actually release the film. `hidden` alone leaves the <video>
 //    holding its source and, on a slow line, still downloading. The close path
@@ -26,7 +27,7 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 
 const URL = 'file:///C:/ev-landing/ev-landing-main/index.html';
-const FILMS = ['essentials', 'compass'];
+const FILMS = ['essentials', 'compass', 'treasury'];
 
 (async function () {
   const browser = await chromium.launch();
@@ -47,7 +48,7 @@ const FILMS = ['essentials', 'compass'];
     await page.goto(URL);
 
     const n = await page.locator('.play-btn[data-film]').count();
-    want(n === 2, theme + ': expected 2 play buttons, found ' + n);
+    want(n === FILMS.length, theme + ': expected ' + FILMS.length + ' play buttons, found ' + n);
 
     for (const film of FILMS) {
       const g = await page.evaluate(function (f) {
