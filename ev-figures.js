@@ -4140,7 +4140,8 @@
       GAP:     [13, 24],  // between spawns
       TURN:    [8, 15],   // after a Bobit is gone, before he shambles back as one of them
       TONE:    3,         // green; runPlay picked the same slot for the same reason
-      LANE:    60         // floor lines further apart than this are different ledges, not one
+      LANE:    60,        // floor lines further apart than this are different ledges, not one
+      RETRY:   2          // after a spawn that found no lane on screen; see zombieTick
     };
     var zomT = 0;
     var zomNext = ZOM.FIRST[0] + Math.random() * (ZOM.FIRST[1] - ZOM.FIRST[0]);
@@ -4175,20 +4176,62 @@
     // farther from that inhabitant, so there is a walk to watch before anyone notices him.
     // Spawning at a random height instead mostly produced a zombie crossing an empty band of
     // background with nobody on it.
+    // The lines he is allowed to walk along, in document coords.
+    //
+    // He crosses the FULL viewport, so his floor has to be a surface that exists for the whole
+    // of that walk. The page's full-bleed 1px rules are the only ones that do, and
+    // sectionBreakLines() already finds them and dedupes the shared edges. Anchoring him to a
+    // host figure's own floor instead is what left him treading air: a seated reader's floor is
+    // the edge of a note card, 190px of surface under a 1432px walk, and measured on the live
+    // page he came out 522px below the nearest real rule, standing inside a card.
+    //
+    // Only the rules from the bottom of section 01 downward: between Why and How, between How
+    // and Watch, and the one under Watch. Chris asked for them to come in lower down, and the
+    // hero and banner rules are the wrong entrance anyway - a zombie shambling through the
+    // headline is a different joke from one wandering in past the notes.
+    function zombieLanes() {
+      var sy = window.scrollY || window.pageYOffset;
+      var why = document.querySelector('section.why');
+      var from = why ? (why.getBoundingClientRect().bottom + sy - 2) : 0;
+      return sectionBreakLines().filter(function (y) { return y >= from; });
+    }
+
+    // A figure's feet, in document coords. Every mode is placed with edge:'top', which puts the
+    // feet on the anchor's top edge and the canvas bottom 6px below them.
+    function feetDoc(e, sy) { return e.c.getBoundingClientRect().bottom - 6 + sy; }
+
     function zombieSpawn() {
       var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
       var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+
+      // A lane has to be on screen or the walk happens where nobody is looking.
+      var lanes = zombieLanes().filter(function (y) {
+        return y > sy + 60 && y < sy + vh - 30;
+      });
+      if (!lanes.length) return false;
+
       var pool = entries.filter(function (e) {
         if (e.gone || e.fl || e.ab || !e.w) return false;
         if (isChrome(e.spec) || e.spec.mode === 'zombie') return false;
         var r = e.c.getBoundingClientRect();
         return r.bottom > 40 && r.top < vh - 40;
       });
-      if (!pool.length) return false;                      // nobody on screen: nothing to shamble at
-      var host = pool[Math.floor(Math.random() * pool.length)];
-      var hr = host.c.getBoundingClientRect();
-      var floorDoc = hr.bottom - 6 + sy;
-      var hostX = hr.left + (host._figX != null ? host._figX : host.w / 2);
+
+      // Prefer a lane somebody is standing on, so he has someone to shamble at. Failing that
+      // any visible rule will do - he is still walking on something, and the page scrolls.
+      var peopled = lanes.filter(function (y) {
+        return pool.some(function (e) { return Math.abs(feetDoc(e, sy) - y) <= ZOM.LANE; });
+      });
+      var pickFrom = peopled.length ? peopled : lanes;
+      var floorDoc = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+
+      var onLane = pool.filter(function (e) { return Math.abs(feetDoc(e, sy) - floorDoc) <= ZOM.LANE; });
+      var hostX = onLane.length
+        ? (function () {
+            var hr = onLane[0].c.getBoundingClientRect();
+            return hr.left + (onLane[0]._figX != null ? onLane[0]._figX : onLane[0].w / 2);
+          })()
+        : vw / 2;
 
       // Viewport-wide and absolute in DOCUMENT space, through fitW/fitLeft like every other
       // canvas in this file. Skipping those is what gives a phone a horizontal scrollbar.
@@ -4206,7 +4249,7 @@
         phase: Math.random() * 6, w: 0, h: 0, ci: ZOM.TONE,
         lt: 0, greet: 0, linger: 0,
         zDir: dir, zX: dir > 0 ? -70 : w + 70,
-        zSeed: Math.random() * 6.3, zLeft: left
+        zSeed: Math.random() * 6.3, zLeft: left, zLaneDoc: floorDoc
       };
       sizeCanvas(e, w, h);
       entries.push(e);
@@ -4262,11 +4305,18 @@
       // themselves, so the cast only ever converts.
       while (zomQueue.length && zomQueue[0] <= zomT) {
         zomQueue.shift();
-        if (live < ZOM.MAX && zombieSpawn()) live++;
+        if (live >= ZOM.MAX) break;                        // full: the rest of the queue waits
+        // Put a failed return BACK on the queue. Losing it would quietly break the one rule
+        // this whole thing is built on — that everyone who runs comes back as one of them.
+        if (!zombieSpawn()) { zomQueue.unshift(zomT + ZOM.RETRY); break; }
+        live++;
       }
       if (zomT >= zomNext) {
-        if (live < ZOM.MAX && zombieSpawn()) live++;
-        zomNext = zomT + ZOM.GAP[0] + Math.random() * (ZOM.GAP[1] - ZOM.GAP[0]);
+        var spawned = (live < ZOM.MAX) && zombieSpawn();
+        if (spawned) live++;
+        zomNext = zomT + (spawned || live >= ZOM.MAX
+          ? ZOM.GAP[0] + Math.random() * (ZOM.GAP[1] - ZOM.GAP[0])
+          : ZOM.RETRY);
       }
 
       var vh = window.innerHeight;
@@ -4983,7 +5033,7 @@
       toolsFound: function () { return featureEverOn; },
       quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
       poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay,
-      sectionBreakLines: sectionBreakLines, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
+      sectionBreakLines: sectionBreakLines, zombieLanes: zombieLanes, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
       drops: function () { return DROPS; }, propOf: propOf, __gp: drawGroundProp,
       buttonCardSize: buttonCardSize, beamPick: beamPick, drawButtonCard: drawButtonCard,
       beamLoads: BEAM_LOADS, beamSpecials: BEAM_SPECIALS, heavyProp: HEAVY_PROP,

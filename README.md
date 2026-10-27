@@ -259,6 +259,28 @@ bolts for the nearest edge. The zombie turns and follows him off. Nobody who run
 as himself — a while later he shambles on as another zombie — so a page left open slowly
 turns, and the cast only ever converts.
 
+**He walks on a full-bleed rule, and only the lower three.** The page's 1px rules between
+sections are the only horizontal surfaces that exist for the whole width he crosses, and
+`sectionBreakLines()` already finds them. `zombieLanes()` keeps the ones from the bottom of
+section 01 downward — between Why and How, between How and Watch, and the one under Watch —
+so he comes in low rather than through the headline.
+
+Anchoring him to a host figure's own floor instead is what left him treading air: a seated
+reader's floor is the edge of a note card, 190px of surface under a 1432px walk, and measured
+on the live page he came out **522px below the nearest real rule**, standing inside a card.
+
+Two consequences fall out of tying him to section boundaries, and both are real:
+
+- **Sections are taller than the viewport, so there are dead zones.** On a desktop that is
+  roughly 500px of scroll in the middle of section 02 with no rule in view, and a spawn there
+  simply fails. It retries after `ZOM.RETRY` seconds rather than forfeiting the full gap, and
+  a *returning* zombie that cannot spawn goes back on the queue instead of being dropped —
+  losing one would quietly break the rule the whole thing rests on.
+- **On a phone the lanes are about 2000px apart** (4017, 6032, 7546 against a 780px viewport)
+  where on a desktop they are about 1000. A lane is in view for roughly 670px of scrolling, so
+  a phone visitor meets zombies in three bands with a long quiet stretch between them. That is
+  the cost of the boundaries being the thing he walks on.
+
 **The date is a dialogue tag, not a second calendar.** `ev-figures.js` asks `EVLines` whether
 `halloween` is in today's tag set, which is the same predicate that picks the "Happy
 Halloween" greeting. Three things follow from that and all three are the reason it is done
@@ -307,6 +329,12 @@ Three traps paid for while building it, all three in `tests/layout/halloween-zom
   arms forward means both take the **same sign**. Mirrored pairs look right everywhere else in
   the file only because they are used near 0 or near 180, where both signs arrive at the same
   place. The two arms are then deliberately unequal, or they overlap into one thick limb.
+- **`html { scroll-behavior: smooth }` makes every `scrollTo` in a test an ANIMATION.** A
+  harness that scrolls and then looks is reading the page in transit: parking on a lane 3588px
+  down landed at 2733, no rule was in view, the spawn refused — and because the phone case did
+  not assert that a zombie existed, it went green while checking an empty page for a scrollbar
+  it could not have had. Set `scrollBehavior = 'auto'` first, and assert the thing under test
+  is actually present.
 - **Five set pieces return from the draw loop before its last line.** `paddlepair`,
   `cartwheel`, `dogfetch`, `kite` and `yoyo` all `return` early, so a position published at
   the bottom of the loop never reaches them and the proximity scan fell back to the canvas

@@ -40,21 +40,47 @@ async function open(browser, query, viewport) {
   });
   await page.goto(URL + query);
   await page.waitForFunction(function () { return !!window.__evFigDebug; });
+  // index.html sets `html { scroll-behavior: smooth }`, so every scrollTo below is an
+  // ANIMATION. Without this the test looks at the page while it is still travelling: parking
+  // on a lane 3588px down landed at 2733 with no lane in view, the spawn refused, and the
+  // phone case went green while testing an empty page. cartwheel-clearance.cjs does the same
+  // thing for the same reason.
+  await page.evaluate(function () { document.documentElement.style.scrollBehavior = 'auto'; });
   return { page: page, errors: errors };
 }
 
-// Park the viewport on a band that actually has inhabitants in it, so the spawn has a host
-// to stand beside. zombieSpawn returns false when nobody is on screen, by design.
-async function parkOnCast(page) {
-  await page.evaluate(function () {
+// Park on one of the zombie's LANES — a full-bleed rule between sections — and report an
+// inhabitant standing on it.
+//
+// He walks the whole width of the viewport, so he is only given a surface that exists for the
+// whole of that walk, and he will not spawn without one in view. Parking beside an arbitrary
+// figure, which is what this used to do, lands in the dead zone between two rules: the
+// sections are taller than the viewport, so there is roughly 500px of scroll in the middle of
+// section 02 with no lane on screen at all, and the spawn there simply never happens.
+//
+// Returns { lane, victim } where victim is an index into entries, or null if no lane on this
+// page has anybody standing on it.
+async function parkOnPeopledLane(page) {
+  const found = await page.evaluate(function () {
     var D = window.__evFigDebug;
-    var live = D.entries.filter(function (e) {
-      return e.w && !e.gone && e.spec.mode !== 'why' && e.spec.mode !== 'zombie';
-    });
-    var target = live.filter(function (e) { return e.spec.mode === 'patrol'; })[0] || live[2] || live[0];
-    window.scrollTo(0, window.scrollY + target.c.getBoundingClientRect().top - 420);
+    var lanes = D.zombieLanes();
+    for (var i = 0; i < lanes.length; i++) {
+      var lane = lanes[i];
+      window.scrollTo(0, Math.max(0, lane - window.innerHeight * 0.55));
+      var sy = window.scrollY || window.pageYOffset;
+      var idx = -1;
+      D.entries.forEach(function (e, j) {
+        if (idx >= 0 || e.gone || e.fl || e.ab || !e.w) return;
+        if (e.spec.mode === 'why' || e.spec.mode === 'zombie') return;
+        var feet = e.c.getBoundingClientRect().bottom - 6 + sy;
+        if (Math.abs(feet - lane) <= D.zom.LANE) idx = j;
+      });
+      if (idx >= 0) return { lane: Math.round(lane), victim: idx };
+    }
+    return null;
   });
   await page.waitForTimeout(500);
+  return found;
 }
 
 (async function () {
@@ -66,7 +92,7 @@ async function parkOnCast(page) {
     const { page, errors } = await open(browser, '?evlines=morning#figdebug');
     want(await page.evaluate(function () { return window.__evFigDebug.halloween === false; }),
       'november: the takeover reports itself ON when the halloween tag is absent');
-    await parkOnCast(page);
+    await parkOnPeopledLane(page);
     await page.waitForTimeout(14000);          // comfortably past ZOM.FIRST, which is 4-9s
     const n = await page.evaluate(function () { return window.__evFigDebug.zombies().length; });
     want(n === 0, 'november: ' + n + ' zombie(s) spawned with the tag off');
@@ -80,7 +106,10 @@ async function parkOnCast(page) {
     const { page, errors } = await open(browser, '?evlines=halloween#figdebug');
     want(await page.evaluate(function () { return window.__evFigDebug.halloween === true; }),
       'halloween: the takeover reports itself OFF with the tag forced on');
-    await parkOnCast(page);
+    const parked = await parkOnPeopledLane(page);
+    want(parked, 'halloween: no lane on this page has anybody standing on it');
+    if (!parked) { await page.close(); await browser.close(); throw new Error('halloween-zombies: no peopled lane'); }
+    seen.push('halloween: lane at document y ' + parked.lane + ', victim is entry ' + parked.victim);
 
     const before = await page.evaluate(function () {
       return window.__evFigDebug.entries.filter(function (e) {
@@ -110,19 +139,18 @@ async function parkOnCast(page) {
     }
 
     // Drop a zombie straight onto someone and step time on: hands up, then gone.
-    const panic = await page.evaluate(async function () {
+    // The victim is the inhabitant parkOnPeopledLane found STANDING ON THE LANE, not simply
+    // the first one on screen. Those are different figures: a seated reader on a note card is
+    // on screen but his feet are 500px off the nearest rule, and a zombie placed level with
+    // him would be the floating bug this file now guards against.
+    const panic = await page.evaluate(async function (vi) {
       var D = window.__evFigDebug;
-      var victim = D.entries.filter(function (e) {
-        if (e.gone || e.fl || e.ab || !e.w) return false;
-        if (e.spec.mode === 'why' || e.spec.mode === 'zombie') return false;
-        var r = e.c.getBoundingClientRect();
-        return r.bottom > 40 && r.top < window.innerHeight - 40;
-      })[0];
-      if (!victim) return { err: 'no victim on screen' };
+      var victim = D.entries[vi];
+      if (!victim || victim.gone || !victim.w) return { err: 'the lane victim is no longer on the page' };
       var vr = victim.c.getBoundingClientRect();
       var vx = vr.left + (victim._figX != null ? victim._figX : victim.w / 2);
       // Put a zombie on his floor line, a few px away, and let the scan find him.
-      D.zombieSpawn();
+      if (!D.zombieSpawn()) return { err: 'no lane on screen to spawn onto' };
       var z = D.zombies().filter(function (e) { return !e.gone; }).pop();
       z.c.style.top = (vr.bottom - 6 + (window.scrollY || 0) - (z.h - 6)) + 'px';
       await new Promise(function (r) { setTimeout(r, 60); });
@@ -142,7 +170,7 @@ async function parkOnCast(page) {
       }
       return { mode: victim.spec.mode, raised: raised, firstState: state, gone: gone,
                secs: +((performance.now() - t0) / 1000).toFixed(1), still: victim.fl };
-    });
+    }, parked.victim);
     want(!panic.err, 'halloween: ' + panic.err);
     if (!panic.err) {
       want(panic.raised, 'halloween: a zombie stood next to a Bobit and nothing happened');
@@ -175,10 +203,25 @@ async function parkOnCast(page) {
   }
 
   // ──────────────────────────────────────────────── 3. phone: no h-scroll
+  //
+  // THE SPAWN IS ASSERTED, and that is the whole point of the case. A viewport-wide canvas
+  // placed in document space is what gives a phone a horizontal scrollbar, so with no zombie
+  // on the page the scrollbar check passes while proving nothing — which is exactly what it
+  // did for a while after the lanes landed, reporting "zombie canvas undefinedpx" in a line
+  // that still said PASS. Park on ANY lane here rather than a peopled one: this case is about
+  // canvas width, and whether anybody happens to be standing on that rule is irrelevant to it.
   {
     const { page, errors } = await open(browser, '?evlines=halloween#figdebug', { width: 390, height: 780 });
-    await parkOnCast(page);
-    await page.evaluate(function () { window.__evFigDebug.zombieSpawn(); });
+    const laneY = await page.evaluate(function () {
+      var lanes = window.__evFigDebug.zombieLanes();
+      if (!lanes.length) return null;
+      window.scrollTo(0, Math.max(0, lanes[0] - window.innerHeight * 0.55));
+      return Math.round(lanes[0]);
+    });
+    await page.waitForTimeout(500);
+    want(laneY != null, 'phone: the page offers no lane at all at 390px');
+    const spawned = await page.evaluate(function () { return !!window.__evFigDebug.zombieSpawn(); });
+    want(spawned, 'phone: no zombie spawned, so the horizontal-scrollbar check proves nothing');
     await page.waitForTimeout(1200);
     const over = await page.evaluate(function () {
       return {
@@ -187,10 +230,12 @@ async function parkOnCast(page) {
         zw: (window.__evFigDebug.zombies()[0] || {}).w
       };
     });
+    want(over.zw > 0, 'phone: the zombie has no canvas width to test');
     want(over.scroll <= over.client,
       'phone: a zombie canvas gave the page a horizontal scrollbar (' + over.scroll + ' > ' + over.client + ')');
     want(errors.length === 0, 'phone: page errors — ' + errors.join(' | '));
-    seen.push('phone 390px: zombie canvas ' + over.zw + 'px, document ' + over.scroll + ' <= viewport ' + over.client);
+    seen.push('phone 390px: lane ' + laneY + ', zombie canvas ' + over.zw + 'px, document ' +
+              over.scroll + ' <= viewport ' + over.client);
     await page.close();
   }
 
