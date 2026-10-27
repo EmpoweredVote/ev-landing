@@ -147,10 +147,6 @@ export default {
     { id: 'crowd-build', type: 'art', vo: 'L016', art: 'drawCrowd', stage: 'build',
       continues: true, arriveAt: 0, moreAt: [0, 0, 0, 0, 0], buildAt: 4.48 },
 
-    // A question is dealt that the field has no figure for: 2.56.
-    { id: 'crowd-unseen', type: 'art', vo: 'L017', art: 'drawCrowd', stage: 'unseen',
-      continues: true, arriveAt: 0, moreAt: [0, 0, 0, 0, 0], buildAt: 0, dealAt: 2.56 },
-
     // And one walks off, on "then that one leaves" at 4.23.
     { id: 'crowd-leave', type: 'art', vo: 'L018', art: 'drawCrowd', stage: 'leave',
       continues: true, arriveAt: 0, moreAt: [0, 0, 0, 0, 0], buildAt: 0, leaveAt: 4.23 },
@@ -177,21 +173,16 @@ export default {
     { id: 'why-idea', type: 'art', vo: 'L021', art: 'drawWhy', stage: 'idea',
       lineAt: 2.31, condAt: 13.46 },
 
-    // Separate people, and then the same card in every pair of hands. The
-    // split at 1.92, the shared card at 11.92.
-    { id: 'why-shared', type: 'art', vo: 'L022', art: 'drawWhy', stage: 'shared',
-      splitAt: 1.92, sameAt: 11.92 },
-
-    // A shelf of general quizzes at 2.31, and the gap where a local one would
-    // be at 5.77.
-    { id: 'why-gap', type: 'art', vo: 'L023', art: 'drawWhy', stage: 'gap',
-      shelfAt: 2.31, gapAt: 5.77 },
-
     // The expiry. The card with a date on it at 2.31, the mayor question on
-    // it at 3.08, the retirement at 8.46, the replacement at 10.77, and the
-    // nightly news line at 14.23.
+    // it at 3.08, the retirement at 8.46 and the replacement at 10.77.
+    //
+    // NO newsAt. That cue draws the caption "and the news collections are written
+    // nightly", and the line stopped saying it on 2026-10-26. A caption that makes a
+    // claim the voice does not make is exactly what the chapter note forbids, and it
+    // would be the only unsaid claim in the film. drawWhy still honours newsAt, so this
+    // is one field away if the sentence ever comes back.
     { id: 'why-expire', type: 'art', vo: 'L024', art: 'drawWhy', stage: 'expire',
-      cardAt: 2.31, qAt: 3.08, expireAt: 8.46, newAt: 10.77, newsAt: 14.23 },
+      cardAt: 2.31, qAt: 3.08, expireAt: 8.46, newAt: 10.77 },
 
     // ── 8. Close ────────────────────────────────────────────────────────
     // The real page, panned rather than held, the same shape as the closes of

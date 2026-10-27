@@ -28,6 +28,10 @@ hourly; it calls `cron/replacementGenerator.ts` for the replacement, in that
 order, archive first. Races within sixty days of an election are found daily
 by `cron/electionDetection.ts`. `cron/pipelineCron.ts` runs nightly and writes
 into the news collections — world news, US news, climate, and the war in Iran.
+**The film no longer mentions that last one.** L024 stopped saying "the news
+collections are written the night before" on 2026-10-26, and the caption that
+drew it came out of the episode with it. The cron is still described here
+because it still runs, not because anything on screen claims it.
 
 All three schedulers are started from `cron/startCron.ts`. The engine
 registers them in `trivia/app.ts` behind `TRIVIA_CRONS_ENABLED`, which is off,
@@ -35,35 +39,33 @@ because the standalone civic-trivia-backend still owns them during the
 parallel run and starts all three with no gate. They run. The film is right
 about the behaviour, and it names no service.
 
-The chapter says "the news collections", not "the collections". A city or
-state collection is not written from a news feed, and the wider claim would
-not be true.
+That wording mattered while the line existed: it said "the news collections",
+never "the collections", because a city or state collection is not written
+from a news feed and the wider claim would have been false. Kept here in case
+the sentence is ever restored.
 
 Empowered Badges is NOT named anywhere in this film. It is a strong reason the
 game exists and it is not built; our own briefing files it under designed but
 not built.
 
-## The flag line, and the gem grant behind it
+## The flag line, and the reward that is no longer promised
 
-L010 says "we give special rewards for people who spot those". That line is
-Chris’s and it stays in. He decided on 2026-10-15, after being told what the
-code holds today.
+**L010 no longer says "we give special rewards for people who spot those."**
+Chris took it out on 2026-10-26, and the line now stops at the queue a person
+works through. That closes the one place in the series where the film named
+something unfinished, so the episode no longer has a release condition.
 
-What is built: the gem ledger is live — `lib/gemService.ts` credits, debits
-and awards, and balances sit on connected profiles. Gems are paid today by
-trivia progression and by Voter Quest submissions. The flag queue is live as
-well — `trivia/routes/admin.ts` lists flags, opens one, dismisses, archives
-and restores.
+The reason it was ever in doubt is worth keeping, because the halves exist and
+somebody will be tempted to put the sentence back. The gem ledger is live —
+`lib/gemService.ts` credits, debits and awards, and balances sit on connected
+profiles; gems are paid today by trivia progression and by Voter Quest
+submissions. The flag queue is live too — `trivia/routes/admin.ts` lists
+flags, opens one, dismisses, archives and restores. What does not exist is the
+JOIN: a grant path from the flag queue to `awardGems`, so an admin can thank
+the account that reported the error.
 
-What is in flight: the join between the two. An admin will be able to grant
-gems in thanks to the Connected or Empowered account that reported the error.
-Chris is building that now. When it lands there will be a grant path from the
-flag queue to `awardGems`, which is the thing to look for.
-
-This is the one place in the series where the film names something that was
-not finished on the day it was written. Check the grant path exists before
-the episode is published. If it is not there by then, the sentence comes out;
-the two sentences around it stand on their own without it.
+**Do not restore the sentence until that path is in the code.** What is left
+says only what the product does today.
 
 ## What the trims took out
 
@@ -72,6 +74,26 @@ wrong answer you picked, and the closing line of chapter 6 were cut on
 2026-10-14. All five describe real behaviour. The film is shorter and nothing
 in it is untrue; what it no longer says is written down here so that the next
 person does not read the silence as a limit of the product.
+
+Three more went on 2026-10-26, and all three are real behaviour too:
+
+- **L017 — the game puts questions you have never got right to the front.**
+  That is the spaced-repetition half of the crowd, and it is the strongest
+  reason to come back. It is now unsaid.
+- **L022 — an argument between two people holding different facts cannot be
+  settled, only continued.** The shared-facts argument for why this exists.
+- **L023 — there is no shortage of quizzes about the three branches, and no
+  quiz about who runs your city.** The local-gap argument.
+
+L022 and L023 were two of the three legs chapter 6 stood on; it now rests on
+Jefferson and on the expiry. The scenes that drew all three are gone from
+`episode.mjs`, but their `drawCrowd` and `drawWhy` stages are still in
+`art.js` — unreachable, and left there deliberately so restoring a line is
+putting a scene back rather than drawing it again.
+
+**Line numbers are not renumbered.** L017, L022 and L023 are simply missing,
+the way Treasury is missing L015 and L022. Every cut, pin and scene keys off
+the numbers.
 
 Chapter 1 — the test you were made to fear
 
@@ -116,18 +138,18 @@ Every question ends the same way, whether you got it or not. The right answer, a
 Under that is where it came from. A named source, with a link you can open, so you never have to take our word for it.
 
 ## L010
-> Direction: a Bobit beside the card, `offer`. A small flag on the question.
-And if you think a question is wrong, then flag it for us; we give special rewards for people who spot those. Press the flag, and it goes into a queue that a person works through.
+> Direction: a Bobit beside the card. A small flag on the question.
+And if you think a question is wrong, then flag it for us; it goes into a queue that a person works through.
 
 Chapter 4 — the collections
 
 ## L011
 > Direction: `art` — a shelf of collection cards, each one a different colour.
-The questions are not one pile. They come in collections, usually by location or topic.
+The questions are not one big pile. They come in collections, usually by location or topic.
 
 ## L012
 > Direction: `art` — the shelf sorts into three bands: federal, state, city.
-There are federal ones, state ones and city ones. The federal collection is where everybody starts, because it applies to each of us.
+There are federal ones, state ones and city ones. The federal collection is a good place to start, because it applies to each of us.
 
 ## L013
 > Direction: `art` — one city card opens, and its questions are about that city.
@@ -141,23 +163,19 @@ When you get a question right, these little folks start showing up to cheer you 
 
 ## L015
 > Direction: `art` — more figures arrive, one for each right answer, and stay.
-One Bobit, for a correct answer. They stay. Come back for another round and they are still standing there, and the next right answer brings another one.
+When you get a correct answer, they stay and hang out. Come back for another round and they are still standing there, and the next right answer brings another one.
 
 ## L016
 > Direction: `art` — the crowd is big enough that some of them start building.
 Once there are enough of them, they stop milling about and start building something.
 
-## L017
-> Direction: `art` — the next question dealt is one the field has no figure for.
-The game helps you fill it. It puts the questions you have never got right to the front, instead of handing you back the five you already know.
-
 ## L018
 > Direction: `art` — one figure walks off the field.
-And if you get one wrong that you had right before, then that one leaves. Your crowd is what you know today, not what you knew once.
+And if you get one wrong that you had right before, then that one leaves. Your crowd is what you know today, not what you knew once.  
 
 ## L019
 > Direction: a Bobit `present` beside the field.
-You can play Civic Trivia Championship without an account. Signed out, your crowd lives in your browser. Sign in, and it remembers your progress, with your level and your place on the week's leaderboard.
+You can play Civic Trivia Championship without an account. Signed out, your crowd lives in your browser.  But when you sign in, it remembers your progress, with your level and your place on the week's leaderboard.
 
 Chapter 6 — why a trivia game
 
@@ -167,19 +185,11 @@ It is fair to ask why a trivia game sits inside a voting platform.
 
 ## L021
 > Direction: `art` — one line of type, printed and held.
-Jefferson's argument was that a nation cannot be both ignorant and free. Nothing in the two centuries since has disproved him. An informed citizen is not a nice addition to a democracy. It is the condition of one.
-
-## L022
-> Direction: `art` — several separate people, the same card in every pair of hands.
-And an argument between two people holding different facts cannot be settled, only continued. A trivia game is a small thing. It is also one of the few things that hands a lot of people the same set of facts.
-
-## L023
-> Direction: `art` — a shelf of general quizzes, and the gap where a local one would be.
-There is no shortage of quizzes about the three branches of government. There is no quiz about who runs your city, or what your council decided last year.
+Jefferson's argument was that a nation cannot be both ignorant and free. Nothing in the two centuries since has made that less true.  An informed citizen is not a nice addition to a democracy.  It is the condition of one.
 
 ## L024
 > Direction: `art` — a card with a date on it retires, and a new one takes its place.
-And the answers here have end dates. Who is your mayor is only true until it is not, so that question expires on its own, and a replacement with the right answer takes its place. The news collections are written the night before.
+And the collections are evolving.  Some answers have end dates.  'Who is your mayor?' is only true until it is not, so that question expires at the end of their term, and a replacement with the right answer takes its place.
 
 Chapter 7 — close
 
