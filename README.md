@@ -251,6 +251,76 @@ have found them is the same staleness the data file already avoids. The re-openi
 done in the draw loop rather than the click handler, as only the draw loop knows where his
 head is this frame, and that is where a bubble is anchored.
 
+## Seasonal takeovers
+
+Between **October 25 and the 31st** the page is overrun. A zombie Bobit shambles on from one
+side with his arms out; any inhabitant he gets within a few steps of throws his hands up and
+bolts for the nearest edge. The zombie turns and follows him off. Nobody who runs comes back
+as himself — a while later he shambles on as another zombie — so a page left open slowly
+turns, and the cast only ever converts.
+
+**The date is a dialogue tag, not a second calendar.** `ev-figures.js` asks `EVLines` whether
+`halloween` is in today's tag set, which is the same predicate that picks the "Happy
+Halloween" greeting. Three things follow from that and all three are the reason it is done
+this way:
+
+- **It switches itself off.** The window is `getMonth() === 9 && getDate() >= 25` in LOCAL
+  time, so on November 1 the tag stops matching and the whole takeover disappears. There is
+  nothing to remember to remove, and nothing to deploy on the day.
+- **`?evlines=halloween` previews it in June**, figures and all — the same lever that already
+  pinned a greeting line now pins the whole page's behaviour.
+- **`?evlines=morning` is November**, reachable in October, because forcing tags replaces the
+  derived set rather than adding to it. That is how the off path is tested on a day when the
+  real clock says otherwise.
+
+**The panic is not new code.** `poofArmFlee` and `drawFlee` are the click-a-Bobit exodus's own
+machinery and already know how to widen a canvas to the viewport, split a carrying pair into
+separate runners, bring the dog along with his owner, and mark a figure gone at the screen
+edge. The takeover adds a walker who triggers that by **proximity** instead of by a click,
+and one argument to `poofArmFlee` — the direction to run — because "nearest edge" is
+sometimes straight through the thing frightening you.
+
+**The season is off under an automated browser** unless the harness names the tag with
+`?evlines=`. That rule is not tidiness. Thirty-five files in `tests/` load this page with no
+tags pinned and then assert on who is standing where, and a zombie walking through one makes
+it date-dependent — green for fifty-one weeks and failing in the week that matters.
+`tests/layout/cartwheel-clearance.cjs` failed exactly that way, three runs out of three: a
+zombie frightened the cartwheel pair mid-routine, `poofArmFlee` took the entry over, and the
+staged rescue stopped running, so the helper never left his corner. The **behaviour** was
+right — a cartwheeler should bolt like anyone else — so the test was what needed isolating,
+not the feature. The alternative was pinning tags in all thirty-five, which changes what the
+greeter says in the several that read the derived set.
+
+Because that guard could just as easily hide the takeover from every real visitor while the
+suite stayed green, the test spoofs `navigator.webdriver` back to `false` and checks the page
+agrees with the wall calendar. A guard meant for the harness must never decide what a visitor
+sees.
+
+Three traps paid for while building it, all three in `tests/layout/halloween-zombies.cjs`:
+
+- **`POOF.phase` rests on the string `'idle'`, which is truthy.** A guard written as
+  `if (POOF.phase) return` returns on every frame forever. No error, no warning, and the gate
+  still reports itself correctly on — the zombies simply never arrive. Compare against
+  `'idle'`, not against truthiness.
+- **In this rig the sign of an arm angle is which SIDE it swings to, not which arm it is.**
+  A mirrored pair at ±92 splays to opposite sides and the figure reads as a scarecrow. Both
+  arms forward means both take the **same sign**. Mirrored pairs look right everywhere else in
+  the file only because they are used near 0 or near 180, where both signs arrive at the same
+  place. The two arms are then deliberately unequal, or they overlap into one thick limb.
+- **Five set pieces return from the draw loop before its last line.** `paddlepair`,
+  `cartwheel`, `dogfetch`, `kite` and `yoyo` all `return` early, so a position published at
+  the bottom of the loop never reaches them and the proximity scan fell back to the canvas
+  CENTRE — which on a footer-wide canvas is nowhere near the figure. A zombie frightened the
+  cartwheel pair from half a screen away. Every mode now publishes before the first return,
+  and the ones that know better (`e.cwX`, `e.thrX`) overwrite it after their draw.
+
+Zombies arrive for as long as the tab is open, unlike the cast, which is fixed at about
+fourteen. So a retired one is spliced out of `entries` and has its canvas zeroed — these are
+viewport-wide, and `removeChild` alone leaves the backing store alive at roughly 1.9 MB each.
+
+The knobs are the `ZOM` object at the top of the block: `SPEED`, `SCARE` (how close is "a
+handful of steps"), `MAX` on screen at once, and the three delays.
+
 ## Deploy
 
 Configured for Render as a static site via `render.yaml`. Connect the repo on Render and it will publish `./` (root) on every push to `main`.

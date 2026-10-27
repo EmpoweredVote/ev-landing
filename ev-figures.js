@@ -264,7 +264,7 @@
     function bobitAt(px, py) {
       for (var i = entries.length - 1; i >= 0; i--) {          // topmost first
         var e = entries[i];
-        if (!e.w || e.gone || isChrome(e.spec)) continue;
+        if (!e.w || e.gone || isChrome(e.spec) || e.spec.mode === 'zombie') continue;
         var r = e.c.getBoundingClientRect();
         if (px < r.left || px > r.right || py < r.top || py > r.bottom) continue;
         var kx = e.c.width / r.width, ky = e.c.height / r.height;
@@ -620,7 +620,10 @@
     // his own ~190px canvas he would vanish at an invisible box edge mid-screen. Transparent
     // and pointer-events:none, so the extra area costs nothing and captures nothing. Width
     // goes through fitW/fitLeft or a widened canvas reintroduces the phone h-scroll bug.
-    function poofArmFlee(e) {
+    // forceDir (-1 left, +1 right) overrides the nearest-edge rule. The exodus leaves it
+    // unset — everybody runs for the edge they are closest to. The Halloween zombie passes it,
+    // because "nearest edge" is sometimes straight THROUGH the thing frightening him.
+    function poofArmFlee(e, forceDir) {
       var cr = e.c.getBoundingClientRect();
       // already scrolled out of sight: the draw loop culls it, so it would never tick and the
       // page would never finish clearing. Nobody is watching — just take it away.
@@ -702,7 +705,7 @@
 
       e.fl = 'raise'; e.flT = 0;                         // hands up first, then 'run' (or the drop)
       e.flX = (figScreenX + sx) - newLeft;               // canvas-local x
-      e.flDir = (figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1;
+      e.flDir = forceDir || ((figScreenX < document.documentElement.clientWidth / 2) ? -1 : 1);
       e.flFloor = oldFloor;                              // canvas-local floor line
       e.flLedgeL = (ar.left + sx) - newLeft;             // perch ends, canvas-local
       e.flLedgeR = (ar.right + sx) - newLeft;
@@ -2052,6 +2055,7 @@
       var sx = window.scrollX || window.pageXOffset;
       entries.forEach(function (e) {
         if (e.gone) return;
+        if (e.spec.mode === 'zombie') { refitZombie(e, sx); return; }
         if (e.fl) { refitFlee(e, sx); return; }
         // Mid-abduction his canvas is deliberately taller and higher than his mode wants; abductEnd
         // calls reposition() itself once he is back on his feet.
@@ -4091,10 +4095,210 @@
     var t = 0, last = performance.now();
     var inkCache = '#1C1C1C', inkTick = 1;
 
+    // ── SEASONAL TAKEOVER: HALLOWEEN ──────────────────────────────────────────────────
+    // October 25-31 the page is overrun. A zombie Bobit shambles on from one side with his
+    // arms out; anyone he gets within a few steps of throws his hands up and bolts for the
+    // nearest edge. Nobody who runs comes back as himself — a while later he shambles on as
+    // another zombie, so a page left open slowly turns.
+    //
+    // The date is ev-lines.js's, not a second calendar here. That gives ONE definition of
+    // "it is Halloween" on the page, lets ?evlines=halloween force it in June, and because
+    // the window is Oct 25..31 in LOCAL time the takeover switches itself off on November 1
+    // with nothing to remember to remove.
+    //
+    // Almost none of the panic is new. poofArmFlee and drawFlee are the exodus's own
+    // machinery and already know how to widen a canvas to the viewport, split a pair into
+    // separate runners, carry a dog along with its owner, and mark a figure gone once it
+    // reaches a screen edge. What is new is a walker who triggers that by PROXIMITY rather
+    // than by a click, and the rule about who comes back.
+    // ONE condition beyond the date, and it is not a nicety. Thirty-five files in tests/
+    // load this page with no tags pinned and then assert on who is standing where. A zombie
+    // walking through one makes it date-dependent — green for fifty-one weeks and failing in
+    // the week that matters, which is the worst shape a test can take. It is not theoretical:
+    // tests/layout/cartwheel-clearance.cjs failed exactly this way, 3 runs out of 3, because
+    // a zombie frightened the cartwheel pair mid-routine and the staged rescue stopped
+    // running. The behaviour was RIGHT — a cartwheeler should bolt like anyone else — so the
+    // test is the thing that needs isolating, not the feature.
+    //
+    // So: under an automated browser the season is OFF unless the harness asked for it by
+    // name with ?evlines=. The alternative was pinning tags in all thirty-five, which changes
+    // what the greeter says in the several that depend on the derived set — a much larger
+    // blast radius for the same determinism. This one generalises to the next takeover free.
+    var HALLOWEEN = (function () {
+      try {
+        if ((window.EVLines ? window.EVLines.context({}).tags : []).indexOf('halloween') < 0) return false;
+        if (navigator.webdriver && !/[?&]evlines=/.test(location.search)) return false;
+        return true;
+      } catch (err) { return false; }
+    })();
+
+    var ZOM = {
+      SPEED:   17,        // px/s. Slower than every gait in GSPEED bar trudge — he never catches anyone
+      SCARE:   118,       // "within a handful of steps"; a stride at this scale is a little over 20px
+      MAX:     3,         // at once, so the page THINS OUT over a visit rather than filling up
+      FIRST:   [4, 9],    // seconds after load before the first one wanders on
+      GAP:     [13, 24],  // between spawns
+      TURN:    [8, 15],   // after a Bobit is gone, before he shambles back as one of them
+      TONE:    3,         // green; runPlay picked the same slot for the same reason
+      LANE:    60         // floor lines further apart than this are different ledges, not one
+    };
+    var zomT = 0;
+    var zomNext = ZOM.FIRST[0] + Math.random() * (ZOM.FIRST[1] - ZOM.FIRST[0]);
+    var zomQueue = [];    // times at which fled Bobits are due back, as zombies
+
+    // Arms out front, which is the whole silhouette. BOTH ARMS TAKE THE SAME SIGN, and that
+    // is the thing to know: in this rig the sign is which SIDE a limb swings to and the
+    // magnitude is how far up it is, so a mirrored pair (+92 / -92) splays to opposite sides
+    // and the figure reads as a scarecrow, not a zombie. Mirrored pairs look right everywhere
+    // else in this file only because they are used near 0 or near 180, where both signs arrive
+    // at the same place — raisePose's +142 / -148 are both simply "up".
+    //
+    // The two arms are then deliberately NOT equal (96/86 against 78/62). Set level and equal
+    // they overlap into a single thick limb and he has one arm; the offset is what separates
+    // them, and the lower one's extra forearm droop is what makes the arm read as dead weight
+    // rather than a plank.
+    //
+    // trudge is the base because it is the slowest gait in the file and already hunches and
+    // drops the head, so most of the lurch is there before anything is overridden.
+    function zombiePose(t, seed) {
+      var p = A.trudge.frame(t * 0.72);
+      var sway = Math.sin(t * 1.6 + seed), drift = Math.sin(t * 0.9 + seed * 2.3);
+      p.armRU = 96 + sway * 4;  p.armRF = 86 + drift * 6;
+      p.armLU = 78 + drift * 4; p.armLF = 62 + sway * 6;
+      p.hunch = -20 + sway * 3;
+      p.headTilt = -16 + drift * 9;   // lolling, deliberately off the beat of the step
+      p.lean = 4 + drift * 2;         // tipped forward, following the arms
+      return p;
+    }
+
+    // Put him on an inhabitant's OWN floor line, entering from whichever screen edge is
+    // farther from that inhabitant, so there is a walk to watch before anyone notices him.
+    // Spawning at a random height instead mostly produced a zombie crossing an empty band of
+    // background with nobody on it.
+    function zombieSpawn() {
+      var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
+      var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      var pool = entries.filter(function (e) {
+        if (e.gone || e.fl || e.ab || !e.w) return false;
+        if (isChrome(e.spec) || e.spec.mode === 'zombie') return false;
+        var r = e.c.getBoundingClientRect();
+        return r.bottom > 40 && r.top < vh - 40;
+      });
+      if (!pool.length) return false;                      // nobody on screen: nothing to shamble at
+      var host = pool[Math.floor(Math.random() * pool.length)];
+      var hr = host.c.getBoundingClientRect();
+      var floorDoc = hr.bottom - 6 + sy;
+      var hostX = hr.left + (host._figX != null ? host._figX : host.w / 2);
+
+      // Viewport-wide and absolute in DOCUMENT space, through fitW/fitLeft like every other
+      // canvas in this file. Skipping those is what gives a phone a horizontal scrollbar.
+      var h = 150, w = fitW(vw), left = fitLeft(0, w, sx);
+      var c = document.createElement('canvas');
+      c.style.cssText = 'position:absolute;pointer-events:none;z-index:61;';
+      c.style.left = left + 'px';
+      c.style.top = (floorDoc - (h - 6)) + 'px';
+      document.body.appendChild(c);
+
+      var dir = (hostX < vw / 2) ? 1 : -1;                 // enter from the far side and walk at him
+      var e = {
+        spec: { mode: 'zombie', anchor: null, tone: ZOM.TONE },
+        el: null, c: c, ctx: c.getContext('2d'),
+        phase: Math.random() * 6, w: 0, h: 0, ci: ZOM.TONE,
+        lt: 0, greet: 0, linger: 0,
+        zDir: dir, zX: dir > 0 ? -70 : w + 70,
+        zSeed: Math.random() * 6.3, zLeft: left
+      };
+      sizeCanvas(e, w, h);
+      entries.push(e);
+      return true;
+    }
+
+    // Same contract as refitFlee, and for the same reason: a viewport-wide canvas left at its
+    // old width after a rotation to portrait hands the whole document a horizontal scrollbar.
+    function refitZombie(e, sx) {
+      var newW = fitW(document.documentElement.clientWidth);
+      var newLeft = fitLeft(0, newW, sx);
+      if (newW === e.w && newLeft === e.zLeft) return;
+      e.zX += (e.zLeft - newLeft);                         // keeps his document x fixed
+      e.zLeft = newLeft;
+      e.c.style.left = newLeft + 'px';
+      sizeCanvas(e, newW, e.h);
+    }
+
+    function drawZombie(e, ctx, w, h, dt, shadow) {
+      var feetY = h - 6;
+      e.zX += ZOM.SPEED * e.zDir * dt;
+      R.drawShadow(ctx, e.zX, feetY, 16, shadow);
+      drawFig(ctx, e.zX, feetY - 112 * S, S, e.zDir < 0,
+              zombiePose(e.lt + e.phase, e.zSeed), { color: figColor(ZOM.TONE) });
+      // Off the far side. The husk stays in `entries` marked gone, exactly as a figure who
+      // fled does, so nothing else in the file has to learn that the array can shrink.
+      if (e.zX < -90 || e.zX > w + 90) {
+        e.gone = true;
+        e.c.width = e.c.height = 0;                        // frees the backing store, which removeChild does not
+        if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
+      }
+    }
+
+    // One pass a frame: move the clock, spawn what is due, and let each zombie frighten
+    // whoever is beside him. Proximity is measured in VIEWPORT coordinates because that is
+    // the only space two figures share — each lives in its own canvas positioned in document
+    // space, which is why the footer meet-and-greet compares rects rather than canvas-local x.
+    function zombieTick(dt) {
+      if (!HALLOWEEN) return;
+      zomT += dt;
+      // NOT `if (POOF.phase)`. The resting value is the STRING 'idle', which is truthy, so
+      // that test returned on every frame and no zombie ever arrived. The poof machine has
+      // seven phases and only one of them means "nothing is happening".
+      if (POOF.phase !== 'idle') return;  // mid-gag: the room is already bolting, nobody left to scare
+
+      var live = 0;
+      for (var zi = entries.length - 1; zi >= 0; zi--) {
+        if (entries[zi].spec.mode !== 'zombie') continue;
+        if (entries[zi].gone) entries.splice(zi, 1); else live++;
+      }
+
+      // Anyone who ran is due back as one of them. This is the rule: they do not come back as
+      // themselves, so the cast only ever converts.
+      while (zomQueue.length && zomQueue[0] <= zomT) {
+        zomQueue.shift();
+        if (live < ZOM.MAX && zombieSpawn()) live++;
+      }
+      if (zomT >= zomNext) {
+        if (live < ZOM.MAX && zombieSpawn()) live++;
+        zomNext = zomT + ZOM.GAP[0] + Math.random() * (ZOM.GAP[1] - ZOM.GAP[0]);
+      }
+
+      var vh = window.innerHeight;
+      entries.forEach(function (z) {
+        if (z.spec.mode !== 'zombie' || z.gone || !z.w) return;
+        var zr = z.c.getBoundingClientRect();
+        var zScreenX = zr.left + z.zX, zFloor = zr.bottom - 6;
+        entries.forEach(function (e) {
+          if (e === z || e.gone || e.fl || e.ab || !e.w) return;
+          if (isChrome(e.spec) || e.spec.mode === 'zombie') return;
+          var r = e.c.getBoundingClientRect();
+          if (r.bottom < -40 || r.top > vh + 40) return;
+          if (Math.abs((r.bottom - 6) - zFloor) > ZOM.LANE) return;   // a different ledge entirely
+          var ex = r.left + (e._figX != null ? e._figX : e.w / 2);
+          if (Math.abs(ex - zScreenX) > ZOM.SCARE) return;
+          var away = (ex < zScreenX) ? -1 : 1;
+          poofArmFlee(e, away);
+          // poofArmFlee marks a figure already scrolled out of sight gone instead of arming
+          // him, so this is a real check rather than a formality.
+          if (e.fl) {
+            z.zDir = away;                                            // shamble after him
+            zomQueue.push(zomT + ZOM.TURN[0] + Math.random() * (ZOM.TURN[1] - ZOM.TURN[0]));
+          }
+        });
+      });
+    }
+
     function tick() {
       var now = performance.now();
       var dtFrame = Math.min(0.1, (now - last) / 1000); last = now;
       poofTick(dtFrame);
+      zombieTick(dtFrame);
       t += dtFrame;
       if ((inkTick += dtFrame) > 0.5) { inkTick = 0; inkCache = cssVar('--heading', '#1C1C1C'); }
       var ink = inkCache;
@@ -4168,16 +4372,28 @@
         var tt = e.lt + e.phase;
         // current figure x within the canvas
         var figX = w / 2;
+        // Published for the Halloween proximity scan, which runs a frame behind and cannot
+        // work this out itself — figX is derived differently by every mode. It is published
+        // HERE, before anything returns, because the five set pieces below (paddlepair,
+        // cartwheel, dogfetch, kite, yoyo) all return without reaching the end of this
+        // function. They used to publish nothing at all, so the scan fell back to the canvas
+        // CENTRE for them, and a footer-wide canvas's centre is nowhere near the figure: a
+        // zombie frightened the cartwheel pair the moment he crossed the middle of their box,
+        // from half a screen away. Modes that know better overwrite it below.
+        e._figX = figX;
+        if (spec.mode === 'zombie') { drawZombie(e, ctx, w, h, dt, shadow); return; }
         if (spec.mode === 'paddlepair') {
           drawPaddlePair(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt, cr);
           return;
         }
         if (spec.mode === 'cartwheel') {
           drawCartwheel(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt, cr);
+          if (e.cwX != null) e._figX = e.cwX;    // after the draw, so it is this frame's x
           return;
         }
         if (spec.mode === 'dogfetch') {
           drawDogFetch(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : 5), shadow, dt, cr);
+          if (e.thrX != null) e._figX = e.thrX;  // the thrower; the dog runs his own errands
           return;
         }
         if (spec.mode === 'kite') {
@@ -4195,6 +4411,10 @@
           e._dirR = u < 1;
           figX = pad + e._tri * span;
         }
+        // Re-published, because patrol has just moved figX along its span. The modes that
+        // reach this line are the ones whose figure really is at figX; the set pieces that
+        // returned above have already published their own.
+        e._figX = figX;
         // hover: stop, look at you curiously, wave — then go about the day
         if (hoverable) {
           if (Math.abs(mx - (cr.left + figX)) < 36 && my > cr.top + h - 92 && my < cr.top + h + 6) {
@@ -4417,7 +4637,11 @@
           var endMargin = loadMargin(e, e.load, w);
           if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = pick(BEAM_SPECIALS); e.carryRun = 1; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows soon
           // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
-          if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
+          e._figX = (e.scene === 'light' && e.lgX != null) ? e.lgX
+                : (e.scene === 'play' && e.pX != null) ? e.pX
+                : (e.scene === 'letters' && e.eX != null) ? e.eX
+                : (e.bx != null ? e.bx : w / 2);
+        if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
           if (e.scene === 'letters') { runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
           if (e.scene === 'play') { runPlay(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
           var fx = e.bx + e.dir * halfGap;      // front (leading) carrier
@@ -4764,6 +4988,8 @@
       buttonCardSize: buttonCardSize, beamPick: beamPick, drawButtonCard: drawButtonCard,
       beamLoads: BEAM_LOADS, beamSpecials: BEAM_SPECIALS, heavyProp: HEAVY_PROP,
       startPlay: startPlay, playR: PLAY_R,
+      halloween: HALLOWEEN, zom: ZOM, zombieSpawn: zombieSpawn, zombiePose: zombiePose,
+      zombies: function () { return entries.filter(function (e) { return e.spec.mode === 'zombie'; }); },
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };
   });
