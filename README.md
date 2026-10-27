@@ -452,6 +452,60 @@ move together), `GAP` (which moves with `SPEED`), `SCARE` (how close is "a handf
 steps"), `MAX` through `MAX_END` over `GROW`, `PER_LANE`, `LITTER`, `CARRY_W`, `SAY`,
 `EGG`, and the other delays.
 
+## The ghost
+
+A sheet over a Bobit, drifting across Notes 02 and 03. He is **drawn, not posed**: the rig
+builds a skeleton and this has no limbs, so nothing in `leremy-rig.js` helps. Proportioned off
+a real figure all the same — one is 71px tall and 15px wide at S=0.32, so the sheet is 72 by 44,
+which is what a sheet over somebody that size would be.
+
+**White fill, black outline, in both themes on purpose.** Every other figure takes its colour
+from the palette and flips with the theme; a ghost that did that would be a grey blob on one of
+them. The fill carries the shape on the dark page and the outline carries it on the light one,
+so the same two colours work on both and there is nothing theme-dependent to keep in step.
+
+**He has no floor**, and two things follow. He casts no shadow, and he frightens people by
+RADIUS rather than by the nearest-rule test the zombies use — that test is about which shelf
+two figures share, and he is in the air over a note card. `ghostBand()` unions Notes 02 and 03
+when they sit on one row and picks one when they are stacked, which is what a phone does.
+
+**Click him and he turns, like a power pellet.** He reverses, goes Pac-Man blue with white eyes
+and a wavy mouth for `GHOST.BLUE`, then flashes blue against white-with-red features for
+`GHOST.BLINKS` cycles, then goes white again and carries on the NEW way. Measured transitions:
+5.04s and 9.06s against the 5 and 9 he is set to.
+
+**A frightened ghost is harmless.** That is the arcade's rule and the point of the egg: click
+him and the people around him stop running. It is also the one piece of his behaviour that
+looks exactly like a bug, so `tests/layout/halloween-ghost.cjs` asserts both halves — nobody
+runs while he is blue, and somebody does the moment he is white again.
+
+Unlike the zombies he converts nobody. A Bobit who runs from a ghost is gone, not replaced,
+which is the difference between a haunting and a takeover.
+
+## Three things Chris caught on the live page
+
+**A dropped prop kept the wrong colour.** `drawDrops` painted every dropped thing in its
+OWNER's tone, but every ball and load on this page has a colour of its own — the crew's circle
+is the logo's coral, the line and both balls are the gold at `figColor(2)` — so the red ball
+the crew were carrying hit the floor as a blue circle. `propOf` now reports `col` and the drop
+carries it. The KIND deliberately stays `beamload` for both the circle and the line, because
+`tests/poof/14-card-prop.cjs` asserts exactly that; one kind cannot carry two colours, which
+is why the colour travels separately rather than by splitting the kind.
+
+**The host must never run.** He is the one figure talking TO you, and `EVQuotes` places his
+bubble over his head once and leaves it, so when he bolted his words hung in the air with
+nobody under them. This was not a scare bug — it was the nearest-rule change doing its job. He
+stands on the meta-row 141px above the carry lane, so the moment a figure belonged to its
+nearest rule he belonged to the one the beam crew walk, and every zombie went for him. He is
+**purple**, which is why two seconds of him in a heap read as "purple smoke", and because
+everyone who runs comes back as a zombie the page then had one more than it started with. One
+root cause, three symptoms.
+
+**A two-word line in a 300px bubble is mostly bubble.** `.ev-quote` is a fixed 300px, which is
+right for the greeter's sentences and wrong for a zombie saying one word. `ev-tight`
+shrink-wraps instead — 88px around 56px of text — still clamped so a long line cannot run off
+a phone.
+
 ## The rope Bobit hangs off the END of the video row
 
 He sits on a bar level with the "03 / Talks" section rule, and clicking him breaks it so he

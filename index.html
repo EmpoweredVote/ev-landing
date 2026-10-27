@@ -1525,6 +1525,14 @@
             line-height: 1.5;
         }
         .ev-quote.ev-say { cursor: pointer; }
+        /* A fixed 300px box is right for the greeter, who talks in sentences, and mostly empty
+           air for a zombie, who says one word. ev-tight shrink-wraps the words instead, still
+           clamped so a long line cannot run off a phone. */
+        .ev-quote.ev-tight {
+            width: max-content;
+            max-width: min(300px, calc(100vw - 16px));
+            padding: 11px 14px;
+        }
         .ev-quote .attrib { margin-top: 11px; font-size: 0.8rem; }
         .ev-quote .attrib a {
             color: var(--tone, var(--teal));

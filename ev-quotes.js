@@ -245,6 +245,8 @@
   function open(anchor) {
     var el = document.createElement("div");
     el.className = anchor.quote.who ? "ev-quote" : "ev-quote ev-say";
+    // A short line in a 300px box is mostly box. Callers with one or two words ask for this.
+    if (anchor.tight) el.className += " ev-tight";
     el.setAttribute("role", "note");
     el.style.setProperty("--tone", anchor.tone);
 

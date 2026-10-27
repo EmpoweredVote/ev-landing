@@ -112,6 +112,16 @@
         if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
           if (Math.abs(ev.clientX - e._toddSX) < 42 && Math.abs(ev.clientY - e._toddSY) < 72) { e._fall = 4.5; return; }
         }
+        // ghost: click him and he turns round and goes blue, like a power pellet. The hit box
+        // is the sheet itself rather than a figure-shaped column, because he is wider than he
+        // is person-shaped and there is nothing underneath him to aim at.
+        if (e.spec.mode === 'ghost' && !e.gone && e._ghSX != null) {
+          if (Math.abs(ev.clientX - e._ghSX) < 30 && Math.abs(ev.clientY - e._ghSY) < 44) {
+            hitBubble = true;
+            ghostScare(e);
+            return;
+          }
+        }
         // zombie: click him and he says the one thing he has to say. A switch, like the
         // greeter — click him again and it goes away — except that it also times out on its
         // own after ZOM.SAY, because he is walking away from the bubble the whole time.
@@ -276,7 +286,7 @@
     function bobitAt(px, py) {
       for (var i = entries.length - 1; i >= 0; i--) {          // topmost first
         var e = entries[i];
-        if (!e.w || e.gone || isChrome(e.spec) || e.spec.mode === 'zombie') continue;
+        if (!e.w || e.gone || isChrome(e.spec) || e.spec.mode === 'zombie' || e.spec.mode === 'ghost') continue;
         var r = e.c.getBoundingClientRect();
         if (px < r.left || px > r.right || py < r.top || py > r.bottom) continue;
         var kx = e.c.width / r.width, ky = e.c.height / r.height;
@@ -1044,10 +1054,19 @@
     // pose-derived, and for those the exact origin barely matters since the thing falls to his feet
     // within 0.3s. HAND_Y is the fallback: roughly where a figure's hands are above his own floor.
     var HAND_Y = 46;
+    // `col` is the colour the thing is ALREADY DRAWN IN while it is being carried, and it is
+    // reported here because it is nobody's tone. Every ball and load on this page has a colour
+    // of its own — the crew's circle is the logo's coral, the line and both balls are the gold
+    // at figColor(2) — and a dropped prop used to be repainted in its OWNER's tone, so the red
+    // ball the crew were carrying hit the floor as a blue circle. Chris found that live.
+    //
+    // The KIND deliberately stays `beamload` for both the circle and the line; see
+    // tests/poof/14-card-prop.cjs, which asserts exactly that. One kind cannot carry two
+    // colours, which is why the colour travels separately rather than by splitting the kind.
     function propOf(e) {
       var s = e.spec, m = s.mode;
-      if (m === 'dogfetch') return (e.bHeld === 'thrower') ? { kind: 'ball', x: e.bX, y: e.bY } : null;
-      if (m === 'paddlepair') return { kind: 'ball', x: e._ballX, y: e._ballY, vx: e._ballVX };
+      if (m === 'dogfetch') return (e.bHeld === 'thrower') ? { kind: 'ball', x: e.bX, y: e.bY, col: figColor(2) } : null;
+      if (m === 'paddlepair') return { kind: 'ball', x: e._ballX, y: e._ballY, vx: e._ballVX, col: figColor(2) };
       if (m === 'kite') return { kind: 'kite', x: e.kx, y: e.ky };
       if (m === 'yoyo') return { kind: 'yoyo', x: null, y: null };
       if (m === 'beam') {
@@ -1056,7 +1075,8 @@
         if (e.scene === 'play') return { kind: 'playbtn', x: e.pBX, y: e.pBY };
         // the button is a 340x102 slab, not a ball — it gets its own dropped form and its own weight
         if (e.load === 'button') return { kind: 'card', x: null, y: null };
-        return { kind: 'beamload', x: null, y: null };
+        return { kind: 'beamload', x: null, y: null,
+                 col: (e.load === 'circle') ? cssVar('--coral', '#FF5740') : figColor(2) };
       }
       if (m === 'seat') return s.phone ? { kind: 'phone', x: null, y: null }
                                        : { kind: 'book', x: null, y: null };
@@ -1439,7 +1459,7 @@
       var ly = (p.y != null) ? p.y : ink.floor - HAND_Y;
       e.propGone = true;                              // his mode stops drawing it from this frame on
       DROPS.push({
-        kind: p.kind, owner: e, keep: !!keep,
+        kind: p.kind, owner: e, keep: !!keep, col: p.col || null,
         x: cr.left + sx + lx, x0: cr.left + sx + lx,
         y: cr.top + sy + ly, y0: cr.top + sy + ly,
         floor: surfaceFloorDoc(e, ink, cr, sy),
@@ -1461,7 +1481,7 @@
     function stunDropAll() {
       var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
       entries.forEach(function (e) {
-        if (e.gone || isChrome(e.spec) || e.propGone) return;
+        if (e.gone || isChrome(e.spec) || e.propGone || e.spec.mode === 'ghost') return;
         var p = propOf(e);
         if (!p) return;
         var ink = scanInk(e);
@@ -1470,7 +1490,7 @@
         var ly = (p.y != null) ? p.y : ink.floor - HAND_Y;
         e.propGone = true;                            // his mode stops drawing it from this frame on
         DROPS.push({
-          kind: p.kind, owner: e,
+          kind: p.kind, owner: e, col: p.col || null,
           x: cr.left + sx + lx, x0: cr.left + sx + lx,
           y: cr.top + sy + ly, y0: cr.top + sy + ly,
           floor: surfaceFloorDoc(e, ink, cr, sy),
@@ -1520,7 +1540,8 @@
           }
         }
         drawGroundProp(g, d.kind, d.x - sx, d.y - sy,
-          figColor(d.owner ? (d.owner.spec.tone != null ? d.owner.spec.tone : d.owner.ci) : 0), alpha);
+          d.col || figColor(d.owner ? (d.owner.spec.tone != null ? d.owner.spec.tone : d.owner.ci) : 0),
+          alpha);
       }
     }
     // ══ end ABDUCTION ═══════════════════════════════════════════════════════════════════
@@ -2126,6 +2147,7 @@
       entries.forEach(function (e) {
         if (e.gone) return;
         if (e.spec.mode === 'zombie') { refitZombie(e, sx); return; }
+        if (e.spec.mode === 'ghost') { refitGhost(e, sx); return; }
         if (e.fl) { refitFlee(e, sx); return; }
         // Mid-abduction his canvas is deliberately taller and higher than his mode wants; abductEnd
         // calls reposition() itself once he is back on his feet.
@@ -4534,10 +4556,241 @@
       e.zh = window.EVQuotes.open({
         headX: at.x, headY: at.y,
         tone: figColor(ZOM.TONE),
+        tight: true,                      // two words; the greeter's 300px box would be mostly air
         quote: { text: e.zSay }           // no `who`: he is speaking for himself, such as it is
       });
       e.zSayT = 0;
       return true;
+    }
+
+    // ── THE GHOST ───────────────────────────────────────────────────────────────────────
+    // A sheet over a Bobit, drifting across the two notes in section 02. He is drawn rather
+    // than posed: the rig builds a skeleton and this has no limbs, so nothing in leremy-rig
+    // is any help. Proportioned off a real figure all the same — one is 71px tall and 15px
+    // wide at S=0.32, so the sheet is 72 tall and 44 wide, which is what a sheet over someone
+    // that size would be.
+    //
+    // WHITE WITH A BLACK OUTLINE, in both themes, on purpose. Every other figure on this page
+    // takes its colour from the palette and flips with the theme; a ghost that did that would
+    // be a grey blob on one of them. White fill carries the shape on the dark page and the
+    // outline carries it on the light one, so the same two colours work on both and there is
+    // nothing theme-dependent to keep in step.
+    var GHOST = {
+      SPEED:   26,        // px/s. Slower than the zombie: he drifts, he does not walk
+      BOB:     9,         // px of rise and fall
+      BOB_HZ:  0.42,      // ...per second, slow enough to read as floating rather than bouncing
+      SCARE:   150,       // radius, not a box: he has no floor, so there is no lane to share
+      W:       44,
+      H:       72,
+      FIRST:   [8, 16],   // seconds after load before the first one drifts in
+      GAP:     [26, 48],  // between ghosts
+      MAX:     1,         // one at a time. Two is a crowd; this is meant to be a sighting
+      BLUE:    5.0,       // seconds frightened before the flashing starts
+      BLINK:   0.5,       // seconds per half-blink
+      BLINKS:  4          // full cycles of blue/white -> white/red before he recovers
+    };
+    var ghT = 0, ghNext = GHOST.FIRST[0] + Math.random() * (GHOST.FIRST[1] - GHOST.FIRST[0]);
+
+    // The band he drifts along: Note 02 and Note 03 together. Side by side on a desktop
+    // (104..1336, y 2732..3033) and STACKED on a phone, which is why this unions them only
+    // when they share a row and otherwise picks one. Returns null when neither is on screen.
+    function ghostBand() {
+      var sy = window.scrollY || window.pageYOffset, vh = window.innerHeight;
+      var els = [document.querySelector('.note.n-team'), document.querySelector('.note.n-ai')];
+      var boxes = [];
+      for (var i = 0; i < els.length; i++) {
+        if (!els[i]) continue;
+        var r = els[i].getBoundingClientRect();
+        boxes.push({ top: r.top + sy, bot: r.bottom + sy });
+      }
+      if (!boxes.length) return null;
+      var band;
+      if (boxes.length === 2 && Math.abs(boxes[0].top - boxes[1].top) < 40) {
+        band = { top: Math.min(boxes[0].top, boxes[1].top), bot: Math.max(boxes[0].bot, boxes[1].bot) };
+      } else {
+        band = boxes[Math.floor(Math.random() * boxes.length)];
+      }
+      // He has to be visible for the drift to be worth drawing.
+      var mid = band.top + (band.bot - band.top) * 0.38;
+      if (mid < sy + 80 || mid > sy + vh - 80) return null;
+      return { y: mid, top: band.top, bot: band.bot };
+    }
+
+    function ghostSpawn() {
+      var band = ghostBand();
+      if (!band) return false;
+      var sx = window.scrollX || window.pageXOffset;
+      var vw = document.documentElement.clientWidth;
+      var h = GHOST.H + GHOST.BOB * 2 + 24;
+      var w = fitW(vw), left = fitLeft(0, w, sx);
+      var c = document.createElement('canvas');
+      c.style.cssText = 'position:absolute;pointer-events:none;z-index:62;';
+      c.style.left = left + 'px';
+      c.style.top = (band.y - h / 2) + 'px';
+      document.body.appendChild(c);
+
+      var dir = Math.random() < 0.5 ? 1 : -1;
+      var e = {
+        spec: { mode: 'ghost', anchor: null, tone: 0 },
+        el: null, c: c, ctx: c.getContext('2d'),
+        phase: Math.random() * 6, w: 0, h: 0, ci: 0,
+        lt: 0, greet: 0, linger: 0,
+        gDir: dir, gX: dir > 0 ? -60 : w + 60,
+        gSeed: Math.random() * 6.3, gLeft: left, gMidDoc: band.y,
+        gPhase: 'roam', gT: 0
+      };
+      sizeCanvas(e, w, h);
+      entries.push(e);
+      return true;
+    }
+
+    // Same contract as refitZombie, and for the same reason.
+    function refitGhost(e, sx) {
+      var newW = fitW(document.documentElement.clientWidth);
+      var newLeft = fitLeft(0, newW, sx);
+      if (newW === e.w && newLeft === e.gLeft) return;
+      e.gX += (e.gLeft - newLeft);
+      e.gLeft = newLeft;
+      e.c.style.left = newLeft + 'px';
+      sizeCanvas(e, newW, e.h);
+    }
+
+    // Is he frightened right now, and if he is flashing, which half of the blink?
+    // 'roam' -> white body, black eyes. 'blue' -> blue body, white eyes and a wavy mouth.
+    // Flashing alternates that blue against a white body with RED features, which is the
+    // arcade's own tell that the power pellet is nearly done.
+    function ghostLook(e) {
+      if (e.gPhase === 'roam') return { body: '#FFFFFF', ink: '#111417', mouth: false };
+      if (e.gPhase === 'blue') return { body: '#2121DE', ink: '#FFFFFF', mouth: true };
+      var half = Math.floor(e.gT / GHOST.BLINK) % 2;
+      return half === 0
+        ? { body: '#2121DE', ink: '#FFFFFF', mouth: true }
+        : { body: '#FFFFFF', ink: '#E02A2A', mouth: true };
+    }
+
+    // The sheet: a dome over straight sides, closed along the bottom by four scallops that
+    // travel sideways so the hem looks tattered rather than stamped on.
+    function ghostPath(ctx, cx, topY, t) {
+      var w = GHOST.W, h = GHOST.H, r = w / 2, botY = topY + h;
+      ctx.beginPath();
+      ctx.moveTo(cx - r, botY);
+      ctx.lineTo(cx - r, topY + r);
+      ctx.arc(cx, topY + r, r, Math.PI, 0);          // the dome
+      ctx.lineTo(cx + r, botY);
+      var n = 4, seg = w / n, amp = 7;
+      for (var i = 0; i < n; i++) {                   // hem, right to left
+        var x0 = cx + r - i * seg, x1 = x0 - seg;
+        var up = (i % 2 === 0) ? 1 : -1;
+        var wob = Math.sin(t * 2.4 + i * 1.5) * 2.5;  // the tatter drifts along the hem
+        ctx.quadraticCurveTo((x0 + x1) / 2, botY - up * (amp + wob), x1, botY);
+      }
+      ctx.closePath();
+    }
+
+    function drawGhost(e, ctx, w, h, dt) {
+      e.gT += dt;
+      if (e.gPhase === 'blue' && e.gT >= GHOST.BLUE) { e.gPhase = 'flash'; e.gT = 0; }
+      if (e.gPhase === 'flash' && e.gT >= GHOST.BLINK * 2 * GHOST.BLINKS) { e.gPhase = 'roam'; e.gT = 0; }
+
+      e.gX += GHOST.SPEED * e.gDir * dt;
+      var t = e.lt + e.phase;
+      var bob = Math.sin(t * GHOST.BOB_HZ * Math.PI * 2 + e.gSeed) * GHOST.BOB;
+      var cx = e.gX, topY = h / 2 - GHOST.H / 2 + bob;
+      var look = ghostLook(e);
+
+      ctx.save();
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ghostPath(ctx, cx, topY, t);
+      ctx.fillStyle = look.body; ctx.fill();
+      ctx.strokeStyle = '#111417'; ctx.lineWidth = 2.5; ctx.stroke();
+
+      var eyeY = topY + GHOST.H * 0.34, dx = GHOST.W * 0.21;
+      if (look.mouth) {
+        // Frightened: two plain dots and a zigzag, which is the arcade's whole face.
+        ctx.fillStyle = look.ink;
+        ctx.beginPath(); ctx.arc(cx - dx, eyeY, 3.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + dx, eyeY, 3.6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = look.ink; ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        var my = topY + GHOST.H * 0.60, mw = GHOST.W * 0.62, steps = 6;
+        for (var i = 0; i <= steps; i++) {
+          var mx = cx - mw / 2 + (mw / steps) * i;
+          var yy = my + ((i % 2 === 0) ? -3 : 3);
+          if (i === 0) ctx.moveTo(mx, yy); else ctx.lineTo(mx, yy);
+        }
+        ctx.stroke();
+      } else {
+        // Roaming: black eyes that look the way he is going.
+        ctx.fillStyle = look.ink;
+        var gaze = e.gDir * 1.6;
+        ctx.beginPath(); ctx.ellipse(cx - dx + gaze, eyeY, 4.2, 5.4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx + dx + gaze, eyeY, 4.2, 5.4, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+
+      // Where he is on screen, for the click.
+      var cr = e.c.getBoundingClientRect();
+      e._ghSX = cr.left + cx;
+      e._ghSY = cr.top + topY + GHOST.H / 2;
+
+      if (e.gX < -80 || e.gX > w + 80) {
+        e.gone = true;
+        e.c.width = e.c.height = 0;
+        if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
+      }
+    }
+
+    // Click him and he turns, exactly like a power pellet. Re-clicking while he is already
+    // frightened turns him again and restarts the clock, which is also what the arcade does.
+    function ghostScare(e) {
+      e.gDir = -e.gDir;
+      e.gPhase = 'blue';
+      e.gT = 0;
+    }
+
+    // One pass a frame. Ghosts keep no queue and do not convert anybody — a Bobit who runs
+    // from a ghost is gone, not replaced, which is the difference between a haunting and the
+    // zombies' slow takeover.
+    function ghostTick(dt) {
+      if (!HALLOWEEN) return;
+      ghT += dt;
+      if (POOF.phase !== 'idle') return;
+
+      var live = 0;
+      for (var i = entries.length - 1; i >= 0; i--) {
+        if (entries[i].spec.mode !== 'ghost') continue;
+        if (entries[i].gone) entries.splice(i, 1); else live++;
+      }
+      if (ghT >= ghNext) {
+        var made = (live < GHOST.MAX) && ghostSpawn();
+        if (made) live++;
+        ghNext = ghT + (made || live >= GHOST.MAX
+          ? GHOST.GAP[0] + Math.random() * (GHOST.GAP[1] - GHOST.GAP[0])
+          : 3);
+      }
+
+      var vh = window.innerHeight;
+      var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
+      entries.forEach(function (g) {
+        if (g.spec.mode !== 'ghost' || g.gone || !g.w || g._ghSX == null) return;
+        // A FRIGHTENED GHOST IS HARMLESS. That is the rule the arcade runs on, and the easter
+        // egg is poorer without it: click him and the people around him stop running.
+        if (g.gPhase !== 'roam') return;
+        entries.forEach(function (e) {
+          if (e === g || e.gone || e.fl || e.ab || !e.w) return;
+          if (isChrome(e.spec) || e.spec.mode === 'zombie' || e.spec.mode === 'ghost') return;
+          var r = e.c.getBoundingClientRect();
+          if (r.bottom < -40 || r.top > vh + 40) return;
+          var ex = r.left + (e._figX != null ? e._figX : e.w / 2);
+          var ey = r.bottom - 6 - 36;                      // about his middle: feet, less a pelvis
+          // A RADIUS, not a lane. He has no floor — he is in the air over a note card — so the
+          // nearest-rule test the zombies use has nothing to say about him.
+          var dx2 = ex - g._ghSX, dy2 = ey - g._ghSY;
+          if (dx2 * dx2 + dy2 * dy2 > GHOST.SCARE * GHOST.SCARE) return;
+          dropProp(e, sx, sy, true);
+          poofArmFlee(e, (ex < g._ghSX) ? -1 : 1);
+        });
+      });
     }
 
     // One pass a frame: move the clock, spawn what is due, and let each zombie frighten
@@ -4586,7 +4839,12 @@
         var zLane = Math.round(z.zLaneDoc);
         entries.forEach(function (e) {
           if (e === z || e.gone || e.fl || e.ab || !e.w) return;
-          if (isChrome(e.spec) || e.spec.mode === 'zombie') return;
+          if (isChrome(e.spec) || e.spec.mode === 'zombie' || e.spec.mode === 'ghost') return;
+          // THE HOST STAYS. He is the one figure on the page who is talking TO you, and his
+          // bubble is placed once over his head and left there — so when he bolted, the words
+          // hung in the air with nobody under them. He is also the only figure whose absence
+          // breaks something other than the scenery.
+          if (e.spec.presenter) return;
           var r = e.c.getBoundingClientRect();
           if (r.bottom < -40 || r.top > vh + 40) return;            // not both on screen: not his problem
           // His shelf has to be the one I am walking. See laneOf — comparing his floor to mine
@@ -4615,6 +4873,7 @@
       var dtFrame = Math.min(0.1, (now - last) / 1000); last = now;
       poofTick(dtFrame);
       zombieTick(dtFrame);
+      ghostTick(dtFrame);
       t += dtFrame;
       if ((inkTick += dtFrame) > 0.5) { inkTick = 0; inkCache = cssVar('--heading', '#1C1C1C'); }
       var ink = inkCache;
@@ -4698,6 +4957,8 @@
         // from half a screen away. Modes that know better overwrite it below.
         e._figX = figX;
         if (spec.mode === 'zombie') { drawZombie(e, ctx, w, h, dt, shadow); return; }
+        // No shadow argument: he is in the air over a note card, with nothing to cast one on.
+        if (spec.mode === 'ghost') { drawGhost(e, ctx, w, h, dt); return; }
         if (spec.mode === 'paddlepair') {
           drawPaddlePair(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt, cr);
           return;
@@ -5303,6 +5564,7 @@
       },
       toolsFound: function () { return featureEverOn; },
       quoteGlance: quoteGlance, quoteHold: quoteHold, quoteShrugSeat: quoteShrugSeat,
+      zomQueue: function () { return zomQueue; },
       poof: POOF, bobitAt: bobitAt, poofOverlay: poofOverlay,
       sectionBreakLines: sectionBreakLines, zombieLanes: zombieLanes, fleeAirborne: fleeAirborne, dropSecs: dropSecs,
       drops: function () { return DROPS; }, propOf: propOf, __gp: drawGroundProp,
@@ -5311,6 +5573,8 @@
       startPlay: startPlay, playR: PLAY_R,
       halloween: HALLOWEEN, zom: ZOM, zomCap: zomCap, dropProp: dropProp, zombieSpawn: zombieSpawn, zombiePose: zombiePose,
       carrierHeading: carrierHeading, zombieSay: zombieSay, laneOf: laneOf,
+      ghost: GHOST, ghostSpawn: ghostSpawn, ghostBand: ghostBand, ghostScare: ghostScare,
+      ghosts: function () { return entries.filter(function (e) { return e.spec.mode === 'ghost'; }); },
       zombies: function () { return entries.filter(function (e) { return e.spec.mode === 'zombie'; }); },
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };

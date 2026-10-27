@@ -551,11 +551,70 @@ async function parkOnPeopledLane(page) {
     await page.close();
   }
 
+  // ───────────────────────────────────── 7. the host never runs
+  // He is the one figure on the page who is talking TO you, and EVQuotes places his bubble
+  // over his head ONCE and leaves it there — so when he bolted, his words hung in mid-air
+  // with nobody under them. Chris saw it live.
+  //
+  // It was not a scare bug; it was the nearest-lane rule doing its job. He stands on the
+  // meta-row, 141px above the carry lane, so the moment a figure belonged to its NEAREST
+  // rule rather than to one within a lane's width, he belonged to the lane the beam crew
+  // walk and every zombie that came along went for him. He is purple, so the two seconds of
+  // him in a heap on the floor read as "purple smoke" — and because everyone who runs comes
+  // back as a zombie, the page then had one more than it started with.
+  {
+    const { page, errors } = await open(browser, '?evlines=halloween#figdebug');
+    await page.evaluate(function () {
+      var lane = window.__evFigDebug.zombieLanes()[0];
+      window.scrollTo(0, Math.max(0, lane - window.innerHeight * 0.62));
+    });
+    await page.waitForTimeout(500);
+
+    const held = await page.evaluate(async function () {
+      var D = window.__evFigDebug;
+      var h = D.entries.filter(function (e) { return e.spec.presenter; })[0];
+      if (!h) return { err: 'the presenter is not cast' };
+      var sy = window.scrollY || window.pageYOffset;
+      var feet = h.c.getBoundingClientRect().bottom - 6 + sy;
+      var lanes = D.zombieLanes();
+      var lane = D.laneOf(feet, lanes);
+      D.zom.MAX = 1; D.zom.MAX_END = 1;
+      D.zombies().forEach(function (e) { if (!e.gone) e.zX = -400; });
+      await new Promise(function (r) { setTimeout(r, 150); });
+      if (!D.zombieSpawn()) return { err: 'no lane on screen to spawn onto' };
+      var z = D.zombies().filter(function (e) { return !e.gone; }).pop();
+      // Onto the host's own rule, then parked on top of him for five seconds.
+      z.zLaneDoc = lane;
+      z.c.style.top = (lane - (z.h - 6)) + 'px';
+      await new Promise(function (r) { setTimeout(r, 60); });
+      var t0 = performance.now();
+      while (performance.now() - t0 < 5000) {
+        await new Promise(function (r) { setTimeout(r, 120); });
+        var r2 = h.c.getBoundingClientRect();
+        z.zX = (r2.left + (h._figX != null ? h._figX : h.w / 2)) - z.c.getBoundingClientRect().left;
+        if (h.fl) break;
+      }
+      return { fl: h.fl || null, gone: !!h.gone, tone: h.spec.tone,
+               above: Math.round(lane - feet) };
+    });
+    want(!held.err, 'host: ' + held.err);
+    if (!held.err) {
+      want(held.fl === null,
+        'host: he bolted ("' + held.fl + '") with a zombie on his rule — his bubble is placed ' +
+        'once and would be left hanging in the air with nobody under it');
+      want(!held.gone, 'host: he left the page entirely');
+      seen.push('host: tone ' + held.tone + ', ' + held.above +
+                'px above his nearest rule, stayed put through 5s of a zombie on top of him');
+    }
+    want(errors.length === 0, 'host: page errors — ' + errors.join(' | '));
+    await page.close();
+  }
+
   await browser.close();
   seen.forEach(function (s) { console.log('  ' + s); });
   if (failures.length) {
     failures.forEach(function (f) { console.error('FAIL ' + f); });
     throw new Error('halloween-zombies: ' + failures.length + ' failure(s)');
   }
-  console.log('halloween-zombies: PASS (november gate, spawn, panic, cast thins, phone width, chase from behind, ambush, the line)');
+  console.log('halloween-zombies: PASS (november gate, spawn, panic, cast thins, phone width, chase from behind, ambush, the line, host holds)');
 })();
