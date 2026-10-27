@@ -452,6 +452,30 @@ move together), `GAP` (which moves with `SPEED`), `SCARE` (how close is "a handf
 steps"), `MAX` through `MAX_END` over `GROW`, `PER_LANE`, `LITTER`, `CARRY_W`, `SAY`,
 `EGG`, and the other delays.
 
+## The rope Bobit hangs off the END of the video row
+
+He sits on a bar level with the "03 / Talks" section rule, and clicking him breaks it so he
+dangles. The bar is anchored to **`.watch-grid`**, not to a card. A card index put him over
+the middle of the row, and `:last-of-type` would have moved him to the second row the moment
+the grid wraps, which it does below about 1150px; the grid's own right edge is the end of the
+row at every width and through every wrap.
+
+Two numbers make this tighter than it looks. There is **104px to the right of the grid at
+1440 and 24px at 1280**, against a **145px** bar — so the whole structure cannot clear the
+videos at any real width. What it does instead: the pivot sits 30px past the end of the row
+and the bar is cantilevered back over the last card, which reads as a plank sticking out past
+the end. He sits on the inner end and dangles off the tip, in the margin beside Talk 04
+rather than over it.
+
+**The pivot is at `w - 24`, not at a fixed 250.** It used to be 250 in a 350-wide canvas,
+leaving 100px of empty canvas to the right of him — and because `fitLeft` keeps the whole
+canvas inside the document, that empty strip shoved the pivot back inside the row every time.
+Asked for 1366 at 1440, got 1336. Whenever a figure has to sit at the edge of the page, the
+dead space in his canvas is part of the geometry.
+
+Below 1280 the viewport clamp takes over and he lands at the row's end rather than past it,
+because there is physically nowhere further to go.
+
 ## Deploy
 
 Configured for Render as a static site via `render.yaml`. Connect the repo on Render and it will publish `./` (root) on every push to `main`.

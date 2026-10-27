@@ -1792,7 +1792,11 @@
       if (pr < 0.6) { pk.peeker = true; pk.anim = 'standstill'; }  // stands straight; looks over the edge only when something passes/collapses below
       else { pk.anim = pick(IDLES); }                             // idle (hover: wave). Only the footer stander jumps.
       add(pk);
-      if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid .watch-card:nth-of-type(3) .watch-thumb', tone: takeTone() });
+      // THE GRID, not a card. Anchored to the third card his bar hung over the middle of the
+      // video row; anchored to the LAST card it would move to the second row the moment the
+      // grid wraps, which it does below about 1150px. The grid's own right edge is the end of
+      // the row at every width and through every wrap.
+      if (chance(0.85)) add({ mode: 'rope', anchor: '.watch-grid', tone: takeTone() });
       // footer — usually the meet-and-greet pair; occasionally a cartwheel practicer + a
       // corner Bobit medic, or a Bobit playing fetch with his dog (each a wide combined canvas)
       var fr = Math.random();
@@ -2157,8 +2161,17 @@
         }
         if (spec.mode === 'rope') {
           sizeCanvas(e, fitW(350), 300);                                      // room for the frame bar + long swing
-          var leftR = r.right + sx - 220;                                     // pivot (x=250) ~30px right of the video edge (over the chasm)
-          e.c.style.left = fitLeft(leftR, e.w, sx) + 'px';
+          // The pivot (canvas x = 250) sits just past the RIGHT END of the video row, so the bar
+          // is cantilevered back over the last card and he dangles off the end of it rather than
+          // over the middle of the row.
+          //
+          // CLAMPED, because there is not much room out there: 104px to the right of the grid at
+          // 1440 and 24px at 1280, against a 145px bar. The bar reaching back over the last card
+          // is the compromise — a plank sticking out past the end of the row reads correctly, and
+          // putting the whole thing clear of the videos would need the pivot at 1481, off-screen.
+          var vwR = document.documentElement.clientWidth;
+          var pivotDoc = Math.min(r.right + sx + 30, sx + vwR - 26);
+          e.c.style.left = fitLeft(pivotDoc - (e.w - 24), e.w, sx) + 'px';   // see pivotX in the draw
           // the frame bar (canvas y=46) should hang level with the short "03 / Talks" section bar, not on the video
           if (!e._barEl) e._barEl = document.querySelector('.watch .section-num .bar');
           var barTopY = e._barEl ? (e._barEl.getBoundingClientRect().top + sy) : (r.top + sy - 44);
@@ -5194,7 +5207,12 @@
         if (spec.mode === 'rope') {
           // Two-step: he sits on a horizontal frame bar; click BREAKS it and he grabs
           // the rope and dangles; then clicking/pushing him swings him (pendulum).
-          var pivotX = 250, barY = 46, barLen = 145;   // pivot far right (over the chasm); frame extends LEFT
+          // The pivot sits near the canvas's own RIGHT EDGE, not in the middle of it. It used to
+          // be a flat 250 in a 350-wide canvas, which left 100px of empty canvas to the right of
+          // him — and because fitLeft keeps the whole canvas inside the document, that empty strip
+          // pushed the pivot back off the end of the video row every time. Measured at 1440: asked
+          // for 1366, got 1336. Keeping him 24px off the canvas edge is enough for his own width.
+          var pivotX = w - 24, barY = 46, barLen = 145;   // frame extends LEFT from the pivot
           var grey = cssVar('--fig-prop', '#535964');
           ctx.strokeStyle = grey; ctx.lineCap = 'round';
           e.rphase = e.rphase || 'sit';
