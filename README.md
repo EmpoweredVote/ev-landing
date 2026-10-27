@@ -340,12 +340,26 @@ needs, and it keeps working when the page's shelves move. The same rule decides 
 count as "peopled" at spawn time; using one rule in one place and another in the other is
 what made three of the four lanes look empty.
 
-**Three at most on any one rule** (`ZOM.PER_LANE`). The spawn only picks lanes that are ON
-SCREEN, so parked at the top of the page every zombie for minutes on end is dealt the same
-rule — they arrived in single file along the hero's bottom edge, five of them, which reads as
-a train rather than a crowd. With the cap and `CARRY_W` down from 0.6 to 0.35, a measured
-two minutes parked on the hero gives 9 arrivals on that lane, never more than 3 at once; two
-minutes parked at the bottom gives 13 spread over the two rules down there.
+**Two on a rule, then a work crew instead of a third zombie.** The spawn only picks lanes that
+are ON SCREEN, so parked at the top of the page every zombie for minutes on end is dealt the
+same rule — they arrived in single file along the hero's bottom edge, five of them, which reads
+as a train rather than a crowd. `ZOM.PER_LANE` 3 is the hard ceiling; `ZOM.CREW_AT` 2 is the
+one that normally bites, because the next arrival on a rule that already has two is cast as a
+**beam crew** rather than another shambler. "It's more fun to see them encounter other bobits
+than just walk around" — and a crew is the one scene that leaves something on the floor when it
+drops. With this and `CARRY_W` down from 0.6 to 0.35, a measured two minutes parked on the hero
+gives 9 arrivals on that lane; two minutes parked at the bottom gives 13 spread over the two
+rules down there.
+
+A crew cast at runtime is an **ordinary entry with an ordinary anchor**, which is what makes it
+cheap: the lanes ARE section boundaries — `sectionBreakLines()` reads the borders off
+`header.hero`, `section.why/.how/.watch` and `footer` — so `laneAnchor()` turns a lane back
+into the element whose edge it is, within 6px, and everything else on the page (the scare, the
+drop, the ambush, `reposition`) handles the new crew without knowing it arrived late. They are
+pinned to plain two-carries (`spec.plain`): the light gag measures the hero's 501(c)(3) swatch
+against its OWN canvas top, so a crew walking the watch divider would loft a yellow box half a
+page away, and the letters and the play button are hero set pieces for the same reason.
+`ZOM.CREWS` 3 is the budget, because a crew never leaves.
 
 **They come in from both ends and pass each other.** If somebody is already walking a rule,
 the next one in comes from the other end. Without that the side is decided by where a host
@@ -449,15 +463,21 @@ afterwards the scan finds no ink and the prop lands at the fallback instead of i
 
 The knobs are the `ZOM` object at the top of the block: `SPEED`/`STRIDE`/`CADENCE` (which
 move together), `GAP` (which moves with `SPEED`), `SCARE` (how close is "a handful of
-steps"), `MAX` through `MAX_END` over `GROW`, `PER_LANE`, `LITTER`, `CARRY_W`, `SAY`,
-`EGG`, and the other delays.
+steps"), `MAX` through `MAX_END` over `GROW`, `PER_LANE` and `CREW_AT`/`CREWS`, `LITTER`,
+`CARRY_W`, `SAY`, `EGG`, `CONV`/`CONV_UP`/`CONV_X`/`CONV_Y`, `DOWN`, and the other delays.
 
 ## The ghost
 
 A sheet over a Bobit, drifting across Notes 02 and 03. He is **drawn, not posed**: the rig
-builds a skeleton and this has no limbs, so nothing in `leremy-rig.js` helps. Proportioned off
-a real figure all the same — one is 71px tall and 15px wide at S=0.32, so the sheet is 72 by 44,
-which is what a sheet over somebody that size would be.
+builds a skeleton and this has no limbs, so nothing in `leremy-rig.js` helps. He was first
+proportioned off a real figure — one is 71px tall and 15px wide at S=0.32, so the sheet started
+at 72 by 44 — and then cut to **half that height and two thirds that width** (29 by 36), because
+at full size he loomed over the note cards he is meant to be drifting past.
+
+Every ink dimension in `ghostPath` and `drawGhost` is a RATIO of those two numbers (`kw`/`kh`),
+so resizing him again is those two numbers and nothing else. The outline alone has a floor under
+it — it is what carries a white body on the light page, and scaled all the way down with him it
+went to a hairline.
 
 **White fill, black outline, in both themes on purpose.** Every other figure takes its colour
 from the palette and flips with the theme; a ghost that did that would be a grey blob on one of
@@ -505,6 +525,94 @@ root cause, three symptoms.
 right for the greeter's sentences and wrong for a zombie saying one word. `ev-tight`
 shrink-wraps instead — 88px around 56px of text — still clamped so a long line cannot run off
 a phone.
+
+## Caught on the run, and the dog that stands his ground
+
+**A fleeing Bobit who meets a second zombie is converted on the spot.** The scare loop skipped
+anyone already fleeing, so a runner could sprint the length of the page straight THROUGH a
+zombie and out the other side — which is the most common way the two ever meet, because a
+runner crosses the whole viewport and a zombie is standing in the middle of it. The thing you
+saw most often was the thing that did nothing. Purple smoke takes him where he stands and one
+of them walks out of it `ZOM.CONV_UP` into the `ZOM.CONV` the smoke lasts, still going the way
+he was running. Purple is slot 4 of the page's own palette and reads as "something happened to
+him"; the abduction's smoke is grey and means "something is dusty".
+
+**The census is the half worth guarding.** Everyone who flees is already booked to come back as
+a zombie (`zomQueue`), so being caught SPENDS that booking rather than adding to it — one Bobit
+still becomes exactly one zombie, he just does it in front of you. Get that wrong and the page
+silently doubles its population every time somebody is caught, which nothing else here would
+notice. `tests/layout/halloween-caught.cjs` asserts the count, not just the smoke.
+
+Two tolerances, and they are deliberately not the scare's. `ZOM.CONV_X` 34 against `SCARE`'s
+118: being frightened is noticing him, being caught is touching him. And `ZOM.CONV_Y` 90, which
+the scare has no equivalent of at all — `laneOf()` answers "nearest rule" with no distance,
+which is right for being frightened across a page, but the zombie that rises out of the smoke
+stands ON the rule, so a plume 300px above it would not line up with him. A runner mid-`raise`
+or mid-`drop` is exempt: the first is the beat where his hands go up with the zombie who
+frightened him still beside him, and the second is mid-air. So is anyone whose entry still has
+mates or a dog on it, because a caught runner's canvas goes away with him.
+
+**The dog does not run and does not convert.** He is lifted onto his own entry
+(`mode: 'dogguard'`) the moment his owner is frightened, before `poofArmFlee`, because the
+owner's canvas is about to belong to `drawFlee` — which draws one panicking figure and whatever
+is tied to him, the dog included. A standalone entry on the zombies' own lane inherits
+everything instead: sized and placed like a zombie, re-fitted like one on a rotate, drawn by the
+one loop. He converts nobody because nothing ever queues him.
+
+He faces whoever is nearest and walks **backwards**, barking, a shade quicker than a zombie
+walks so he keeps his distance; as the zombie keeps coming, he keeps going. Only when one is
+inside `DOG.BOXED` on BOTH sides does he leap — a flat arc onto the nearer one's head, which
+puts that zombie flat on his back for `ZOM.DOWN`, and then the dog is past him and away. A
+downed zombie does not walk, does not frighten anybody and does not count as a wall.
+
+The bug worth remembering is in the scan that picks the nearest on each side: `.d` is stored as
+a **distance** so the two sides can be compared with each other, and the left-hand branch
+compared the **signed** gap against it. With two zombies on the line it worked; with three the
+dog backed away from one and let another walk into him.
+
+## The exodus must not arm the takeover's own figures
+
+**Hold any Bobit for three seconds with a zombie on screen and the whole figure layer stopped.**
+The click-exodus arms every entry with `poofArmFlee`, which reads `e.el` for the perch the
+runner leaps off — and a zombie, a ghost and the guard dog have **no anchor element**. They are
+placed on a rule in document space, not against a card. So the arming threw, and because it runs
+inside `tick()` the throw killed the animation loop for the rest of the session: every Bobit on
+the page froze mid-step and nothing came back without a reload.
+
+Nothing could see it. The takeover is gated OFF under an automated browser unless `?evlines=`
+names it, exactly so that thirty-five layout tests do not become date-dependent — which means
+the poof tests have never had a zombie on the page. It is covered now by case 5 of
+`tests/layout/halloween-caught.cjs`, which asserts both halves: nothing anchorless is armed, and
+a zombie is still walking afterwards. The second half is the real check — a throw inside
+`tick()` leaves no error on the page and nothing else looks wrong until you notice nobody moves.
+
+They should not run anyway. A zombie keeps shambling through a panic he started.
+
+## Three more things from the live page
+
+**The Fallacy Finders button lands as the button.** Every other dropped prop is a few strokes,
+because at S=0.32 the read that matters is "he was holding something and now it is on the
+ground" — but this one is not a few strokes in his hands either. The crew carry the whole
+340x102 showcase button at full size and they carry it **upside down**, which is the joke, and a
+26px grey slab on the floor threw the joke away at the moment it pays off: you saw a Fallacy
+Finders sign go by, then a tile. `propOf` now reports the measured `cw`/`ch` alongside the
+kind and `drawGroundProp` hands them to `drawButtonCard`, which rotates 180 itself — so the way
+up is not a decision made at drop time. The dropped card is the carried card, parked. Without a
+size (the abduction's prop, and the unit test, neither of which measures) the
+old slab is still the fallback.
+
+**A scared Bobit changed colour as he ran off.** `_bodies` is the list a mode publishes of the
+figures it drew, so the takeovers can act on the ONE that was grabbed and leave the rest
+standing. An entry whose SCENE changes stops publishing without clearing, and the stale list
+then describes people who are no longer there. The beam crew are the one entry that does this:
+`carry` and `letters` publish two bodies, the light gag is one Bobit and published none. So the
+light-gag Bobit fled as the LETTER CARRIER — drawn in his gold instead of the crew's teal, with
+a phantom orange mate running off beside him.
+
+The fix is one line at the top of the draw loop: **`_bodies` is this frame's, or it is
+nothing.** That closes the class — a mode that forgets to publish now draws itself alone, which
+is the honest answer, instead of inheriting whoever stood there last. The light gag and the ball
+gag publish their own figures as well, which is the right answer rather than no answer.
 
 ## The rope Bobit hangs off the END of the video row
 

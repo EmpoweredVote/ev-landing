@@ -114,9 +114,10 @@
         }
         // ghost: click him and he turns round and goes blue, like a power pellet. The hit box
         // is the sheet itself rather than a figure-shaped column, because he is wider than he
-        // is person-shaped and there is nothing underneath him to aim at.
+        // is person-shaped and there is nothing underneath him to aim at. Deliberately a little
+        // larger than he is — he is 29x36 and moving, and the egg is worth finding.
         if (e.spec.mode === 'ghost' && !e.gone && e._ghSX != null) {
-          if (Math.abs(ev.clientX - e._ghSX) < 30 && Math.abs(ev.clientY - e._ghSY) < 44) {
+          if (Math.abs(ev.clientX - e._ghSX) < 24 && Math.abs(ev.clientY - e._ghSY) < 30) {
             hitBubble = true;
             ghostScare(e);
             return;
@@ -446,7 +447,8 @@
       var ph = POOF.phase;
       var wantSmoke = (ph === 'holding' || ph === 'poof' || ph === 'fizzle');
       var wantDrops = DROPS.length > 0;
-      if (!wantSmoke && !wantDrops) {
+      var wantConv = CONV.length > 0;
+      if (!wantSmoke && !wantDrops && !wantConv) {
         // Nothing will ever paint here again this phase: drop the overlay rather than leave a
         // fixed full-viewport canvas in the DOM being clearRect-ed ~50x a second forever. A
         // later hold recreates it. ("~6s cleared: nothing left painting.")
@@ -460,6 +462,7 @@
       g.setTransform(DPR, 0, 0, DPR, 0, 0);
       g.clearRect(0, 0, c.__w, c.__h);
       if (wantDrops) drawDrops(g, dtFrame);
+      if (wantConv) drawConversions(g);
       if (!wantSmoke) return;
 
       // Follow the victim while he is still there, then hold his last spot. The anchor is the
@@ -646,6 +649,10 @@
     // unset — everybody runs for the edge they are closest to. The Halloween zombie passes it,
     // because "nearest edge" is sometimes straight THROUGH the thing frightening him.
     function poofArmFlee(e, forceDir) {
+      // Anchorless by design: zombie, ghost, dogguard. Everything below reads `e.el` for the
+      // perch, so there is nothing here for them. Guarded at both ends — the exodus skips them
+      // too — because this is the function every future trigger will reach for.
+      if (!e.el) return;
       var cr = e.c.getBoundingClientRect();
       // already scrolled out of sight: the draw loop culls it, so it would never tick and the
       // page would never finish clearing. Nobody is watching — just take it away.
@@ -769,7 +776,9 @@
       // pose. Same direction as his owner, a shade faster, which is both true to a dog and
       // funnier. dogX is canvas-local, so it is re-based onto the new (wider) canvas the same way
       // the runner's own flX is.
-      if (e.spec.mode === 'dogfetch' && e.dogX != null) {
+      // flNoDog: the Halloween panic already lifted him onto his own entry, where he stands his
+      // ground and barks instead. See dogGuardSpawn.
+      if (e.spec.mode === 'dogfetch' && e.dogX != null && !e.flNoDog) {
         e.flDog = { x: e.dogX + (cr.left + sx - newLeft), dir: e.flDir };
       }
     }
@@ -1073,8 +1082,13 @@
         if (e.scene === 'letters') return { kind: 'letter', x: e.eLX, y: e.eLY };
         if (e.scene === 'light') return { kind: 'light', x: e.lgX, y: null };
         if (e.scene === 'play') return { kind: 'playbtn', x: e.pBX, y: e.pBY };
-        // the button is a 340x102 slab, not a ball — it gets its own dropped form and its own weight
-        if (e.load === 'button') return { kind: 'card', x: null, y: null };
+        // the button is a 340x102 slab, not a ball — it gets its own dropped form and its own weight.
+        // Its measured SIZE travels with it, because the thing it lands as is the thing itself: see
+        // the 'card' branch of drawGroundProp.
+        if (e.load === 'button') {
+          var bsz = buttonCardSize(e, e.w);
+          return { kind: 'card', x: null, y: null, cw: bsz.w, ch: bsz.h };
+        }
         return { kind: 'beamload', x: null, y: null,
                  col: (e.load === 'circle') ? cssVar('--coral', '#FF5740') : figColor(2) };
       }
@@ -1087,7 +1101,7 @@
     // Draw a dropped prop lying on the floor. Deliberately simple shapes: at S=0.32 these are 8-16px
     // across, and the read that matters is "he was holding something and now it is on the ground",
     // not the fidelity of the object.
-    function drawGroundProp(ctx, kind, x, y, col, alpha) {
+    function drawGroundProp(ctx, kind, x, y, col, alpha, opt) {
       ctx.save();
       if (alpha != null) ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -1105,13 +1119,25 @@
         ctx.beginPath(); ctx.ellipse(x - 3, y - 4, 6, 4, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x + 3, y - 3); ctx.lineTo(x + 11, y - 1); ctx.stroke();
       } else if (kind === 'card') {
-        // the showcase button, face down on the floor: the widest thing anyone drops, and shallow,
-        // so it reads as a slab rather than another ball. Still in the deliberately-simple idiom —
-        // at this size the read that matters is "that big flat thing he was carrying is down now".
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(x - 13, y - 7, 26, 7, 2);
-        else ctx.rect(x - 13, y - 7, 26, 7);
-        ctx.stroke();
+        // THE BUTTON LANDS AS THE BUTTON, still upside down. Every other prop here is a few strokes
+        // because at S=0.32 the read that matters is "he was holding something and now it is on the
+        // ground" — but this one is not a few strokes in his hands either. The crew carry the whole
+        // 340x102 showcase button at full size and they carry it upside down, which is the joke, and
+        // a 26px slab on the floor threw the joke away at the moment it pays off: you saw a Fallacy
+        // Finders sign go by, then a grey tile.
+        //
+        // drawButtonCard rotates 180 itself, so the way up is not a choice made here — the dropped
+        // card is the carried card, parked. opt.cw/ch is the size propOf measured off the real
+        // button in the tool list; without it (the abduction's prop, and the unit test, neither of
+        // which measures) the old slab is still the fallback.
+        if (opt && opt.cw && opt.ch) {
+          drawButtonCard(ctx, x, y - opt.ch / 2, opt.cw, opt.ch);
+        } else {
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(x - 13, y - 7, 26, 7, 2);
+          else ctx.rect(x - 13, y - 7, 26, 7);
+          ctx.stroke();
+        }
       } else if (kind === 'beamload' || kind === 'light') {
         ctx.beginPath(); ctx.arc(x, y - 7, 7, 0, Math.PI * 2); ctx.stroke();
       } else if (kind === 'playbtn') {
@@ -1379,7 +1405,7 @@
           if (p.hold > DROP_HOLD) pAlpha = 1 - (p.hold - DROP_HOLD) / DROP_FADE;
         }
         if (pAlpha <= 0) e.abProp = null;
-        else drawGroundProp(ctx, p.kind, p.x, p.y, col, pAlpha);
+        else drawGroundProp(ctx, p.kind, p.x, p.y, col, pAlpha, p);
       }
 
       drawAbductMates(e, ctx, col);
@@ -1404,6 +1430,12 @@
     // Coordinates are DOCUMENT, converted at draw time, so they stay put while the page scrolls — the
     // overlay itself is position:fixed.
     var DROPS = [];
+
+    // Conversions in progress: a runner who was caught, the purple smoke over him, and the zombie
+    // that walks out of it. Document coords, like DROPS, and painted on the same overlay for the
+    // same reason — the figure whose canvas it happened on has just been taken off the page. The
+    // machine that fills this lives with the rest of the takeover; see zombieCatch.
+    var CONV = [];
 
     // What lands hard enough to hurt. Ball, the beam crew's load, the Fallacy Finders button (the
     // heaviest thing anybody here is carrying — it is the whole showcase button at full size), the
@@ -1460,6 +1492,7 @@
       e.propGone = true;                              // his mode stops drawing it from this frame on
       DROPS.push({
         kind: p.kind, owner: e, keep: !!keep, col: p.col || null,
+        cw: p.cw || null, ch: p.ch || null,
         x: cr.left + sx + lx, x0: cr.left + sx + lx,
         y: cr.top + sy + ly, y0: cr.top + sy + ly,
         floor: surfaceFloorDoc(e, ink, cr, sy),
@@ -1491,6 +1524,7 @@
         e.propGone = true;                            // his mode stops drawing it from this frame on
         DROPS.push({
           kind: p.kind, owner: e, col: p.col || null,
+          cw: p.cw || null, ch: p.ch || null,
           x: cr.left + sx + lx, x0: cr.left + sx + lx,
           y: cr.top + sy + ly, y0: cr.top + sy + ly,
           floor: surfaceFloorDoc(e, ink, cr, sy),
@@ -1541,7 +1575,7 @@
         }
         drawGroundProp(g, d.kind, d.x - sx, d.y - sy,
           d.col || figColor(d.owner ? (d.owner.spec.tone != null ? d.owner.spec.tone : d.owner.ci) : 0),
-          alpha);
+          alpha, d);
       }
     }
     // ══ end ABDUCTION ═══════════════════════════════════════════════════════════════════
@@ -1626,6 +1660,15 @@
           POOF.breakLines = sectionBreakLines();
           entries.forEach(function (e) {
             if (e.gone || isChrome(e.spec)) return;
+            // THE TAKEOVER'S OWN FIGURES ARE NOT PART OF THE CAST. A zombie, a ghost and the
+            // guard dog have no anchor element — they are placed on a rule in document space,
+            // not against a card — and the exodus is built on the anchor: poofArmFlee reads
+            // `e.el` for the perch the runner leaps off. Arming one threw, and because this
+            // runs inside tick() the throw took the WHOLE FIGURE LAYER down for the rest of
+            // the session: hold any Bobit for three seconds with a zombie on screen and
+            // everybody stopped moving. They also should not run — a zombie keeps shambling
+            // through a panic he started.
+            if (!e.el) return;
             poofArmFlee(e);
           });
         }
@@ -2148,6 +2191,7 @@
         if (e.gone) return;
         if (e.spec.mode === 'zombie') { refitZombie(e, sx); return; }
         if (e.spec.mode === 'ghost') { refitGhost(e, sx); return; }
+        if (e.spec.mode === 'dogguard') { refitDogGuard(e, sx); return; }
         if (e.fl) { refitFlee(e, sx); return; }
         // Mid-abduction his canvas is deliberately taller and higher than his mode wants; abductEnd
         // calls reposition() itself once he is back on his feet.
@@ -2366,6 +2410,12 @@
 
       if (pose) {
         R.drawShadow(ctx, e.lgX, feetY, 15, shadow);
+        // ONE Bobit, in the crew's colour. This scene drew a single figure and published nothing,
+        // so when the room bolted he inherited whoever the previous pass had left in _bodies — the
+        // letter carriers, gold and orange — and ran off in the wrong colour with a phantom beside
+        // him. The draw loop now clears the list every frame, which closes the class; publishing
+        // here is what gives this scene the right answer rather than no answer.
+        e._bodies = [{ x: e.lgX, floor: feetY, col: col }];
         drawFig(ctx, e.lgX, feetY - 112 * S, S, flip, pose, { color: col });
         if (carryBox && !e.propGone) {
           var bx0 = e.lgX + e.lgFace * 12, by0 = feetY - 44;                      // box in his hands, then lofted to the swatch
@@ -2700,6 +2750,9 @@
       opts = opts || {};
       ctx.save();
       ctx.translate(x, groundY);
+      // Whole-dog tilt, for the leap. Applied before the flip so a positive angle is always
+      // nose-up whichever way he is facing.
+      if (opts.rot) ctx.rotate(opts.rot * (face < 0 ? -1 : 1));
       ctx.scale((face < 0 ? -1 : 1) * DOG_SCALE, DOG_SCALE);
       ctx.strokeStyle = color; ctx.fillStyle = color;
       ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -2769,6 +2822,19 @@
         mouth = upright({ tilt: -0.03, speed: 2.6, swing: 7, legLift: 5, lift: Math.abs(Math.sin(tt * 2.6 * Math.PI)) * 2.4, hdx: 13, hdy: -13, tailAmp: 6, tailSpd: 8 });
       } else if (st === 'pickup') {
         mouth = upright({ tilt: 0.04, speed: 0, hdx: 12, hdy: 8, tailAmp: 8, tailSpd: 6 });   // nose dips down to the ball
+      } else if (st === 'bark') {
+        // Front end down, haunches up, head jabbing forward on the bark itself. opts.jab is the
+        // bark envelope (0 between barks, 1 at the snap) — the same number the bark marks are
+        // drawn with, so the sound and the motion cannot drift apart.
+        var jb = opts.jab || 0;
+        mouth = upright({ tilt: 0.16 - jb * 0.1, speed: 0, hdx: 13 + jb * 6, hdy: -8 - jb * 2,
+                          tailAmp: 3, tailSpd: 10, lift: jb * 1.2, tongue: jb > 0.45 });
+      } else if (st === 'leap') {
+        // Stretched out, front paws reaching and back legs trailing. `ph` rather than `speed`: the
+        // leg swing is driven by sin(phase), so at speed 0 a swing on its own puts both feet
+        // straight down and he leaps like a plank. A quarter turn of phase is the extended frame.
+        mouth = upright({ tilt: -0.22, speed: 0, ph: Math.PI / 2, swing: 13, legLift: 0,
+                          hdx: 16, hdy: -14, tailAmp: 1, tailSpd: 3, tongue: true });
       } else if (st === 'drag') {
         // faces the ball and hauls it BACKWARD: braced back, nose reaching toward the ball
         mouth = upright({ tilt: -0.10, speed: 1.3, swing: -3, legLift: 1, hdx: 16, hdy: -4, tongue: true, tailAmp: 2, tailSpd: 3 });
@@ -4125,7 +4191,10 @@
       var lastWasSpecial = BEAM_SPECIALS.indexOf(e.lastAction) >= 0;
       // after a special always carry; after a carry usually go special, but ~30% of the time run ONE
       // more carry (the other load) — capped at 2 carries in a row so specials still come around often.
-      var goCarry = lastWasSpecial || ((e.carryRun || 0) < 2 && chance(0.3));
+      // A crew cast by the takeover carries and nothing else; see workerSpawn. Reached through
+      // e.spec defensively because beam-load-cycle.cjs drives this function with a bare stub.
+      var plain = !!(e.spec && e.spec.plain);
+      var goCarry = plain || lastWasSpecial || ((e.carryRun || 0) < 2 && chance(0.3));
       var a;
       if (goCarry) {
         // Advance one step around BEAM_LOADS, so a third load gets a turn. Deterministic rotation
@@ -4243,9 +4312,23 @@
       GROW:    40,        // seconds of being open per extra zombie allowed on screen
       LITTER:  24,        // pieces of abandoned cargo kept on the floor at once
       CARRY_W: 0.35,      // how often to pick the carry lane when it is on screen, if there is a choice
-      PER_LANE: 3,        // most on any ONE rule at a time. Without this they queue up single file
-                          // on whichever rule you happen to be looking at: parked on the hero the
-                          // whole cap ends up on the carry lane, which reads as a train, not a crowd
+      PER_LANE: 3,        // hard ceiling on any ONE rule. CREW_AT below means it is almost never
+                          // reached — it is the backstop for the lanes a crew cannot be put on.
+                          // Without a per-lane rule at all they queue up single file on whichever
+                          // rule you happen to be looking at: parked on the hero the whole cap ends
+                          // up on the carry lane, which reads as a train, not a crowd
+      CREW_AT:  2,        // zombies already on a rule, after which the NEXT arrival on it is a work
+                          // crew instead of a third zombie. "It's more fun to see them encounter
+                          // other bobits than just walk around" — and two is where a rule stops
+                          // needing another shambler and starts needing somebody to shamble at
+      CREWS:    3,        // most crews the takeover may add. They never leave, so this is a budget
+      DOWN:     1.6,      // seconds a zombie spends flat on his back after the dog gets him
+      CONV:     1.25,     // seconds of purple smoke when a runner is caught
+      CONV_UP:  0.55,     // ...and how far into it the new one walks out
+      CONV_X:   34,       // how close a RUNNER has to pass to be caught. Much tighter than SCARE:
+                          // being frightened is noticing him, being caught is touching him
+      CONV_Y:   90,       // ...and how near his own rule he has to be, so the smoke and the zombie
+                          // that rises out of it stand on the same line
       FIRST:   [4, 9],    // seconds after load before the first one wanders on
       GAP:     [5, 10],   // between spawns. TIED TO SPEED: a zombie is on screen for the
                           // time it takes to cross the viewport, so how many are there at once is
@@ -4417,6 +4500,14 @@
         ? carry
         : pickFrom[Math.floor(Math.random() * pickFrom.length)];
 
+      // TWO ON A RULE IS ENOUGH. A third zombie on a line that already has two is more of the
+      // same; what that line is short of is somebody for the two of them to walk into. So the
+      // third arrival on it is a WORK CREW instead — and the crew is the one scene that leaves
+      // something on the floor when it drops, which is the gag the whole takeover is built on.
+      //
+      // Counted as a spawn either way, so a diverted arrival does not immediately retry.
+      if ((onIt[Math.round(floorDoc)] || 0) >= ZOM.CREW_AT && workerSpawn(floorDoc)) return true;
+
       var onLane = pool.filter(function (e) { return laneOf(feetDoc(e, sy), allLanes) === floorDoc; });
       var hostX = onLane.length
         ? (function () {
@@ -4424,15 +4515,6 @@
             return hr.left + (onLane[0]._figX != null ? onLane[0]._figX : onLane[0].w / 2);
           })()
         : vw / 2;
-
-      // Viewport-wide and absolute in DOCUMENT space, through fitW/fitLeft like every other
-      // canvas in this file. Skipping those is what gives a phone a horizontal scrollbar.
-      var h = 150, w = fitW(vw), left = fitLeft(0, w, sx);
-      var c = document.createElement('canvas');
-      c.style.cssText = 'position:absolute;pointer-events:none;z-index:61;';
-      c.style.left = left + 'px';
-      c.style.top = (floorDoc - (h - 6)) + 'px';
-      document.body.appendChild(c);
 
       // Which edge he comes in at, in order of preference.
       //
@@ -4463,18 +4545,92 @@
       var dir = last ? -last.zDir
               : carrier ? -carrier
               : ((hostX < vw / 2) ? -1 : 1);
+      makeZombie(floorDoc, dir, null);
+      return true;
+    }
+
+    // One zombie, on one rule, walking one way. Split out of zombieSpawn so the conversion can put
+    // one down WHERE A RUNNER WAS CAUGHT instead of at a screen edge. `startX` is canvas-local;
+    // null means "walk in from the far edge", which is the only thing zombieSpawn ever wants.
+    //
+    // The canvas is viewport-wide and absolute in DOCUMENT space, through fitW/fitLeft like every
+    // other canvas in this file. Skipping those is what gives a phone a horizontal scrollbar.
+    function makeZombie(floorDoc, dir, startX) {
+      var sx = window.scrollX || window.pageXOffset;
+      var h = 150, w = fitW(document.documentElement.clientWidth), left = fitLeft(0, w, sx);
+      var c = document.createElement('canvas');
+      c.style.cssText = 'position:absolute;pointer-events:none;z-index:61;';
+      c.style.left = left + 'px';
+      c.style.top = (floorDoc - (h - 6)) + 'px';
+      document.body.appendChild(c);
       var e = {
         spec: { mode: 'zombie', anchor: null, tone: ZOM.TONE },
         el: null, c: c, ctx: c.getContext('2d'),
         phase: Math.random() * 6, w: 0, h: 0, ci: ZOM.TONE,
         lt: 0, greet: 0, linger: 0,
-        zDir: dir, zX: dir > 0 ? -70 : w + 70,
+        zDir: dir, zX: (startX != null) ? startX : (dir > 0 ? -70 : w + 70),
         zSeed: Math.random() * 6.3, zLeft: left, zLaneDoc: floorDoc,
+        zDown: 0,
         zSay: (Math.random() < ZOM.EGG) ? '\u2026Happy Halloween!' : '\u2026brains!',
         zh: null, zSayT: 0
       };
       sizeCanvas(e, w, h);
       entries.push(e);
+      return e;
+    }
+
+    // ── A WORK CREW INSTEAD OF A THIRD ZOMBIE ───────────────────────────────────────────
+    // The lanes ARE section boundaries — sectionBreakLines reads the borders off header.hero,
+    // section.why/.how/.watch and footer — so a lane can be turned back into an ELEMENT and
+    // somebody stood on it. That is the whole trick: a crew cast at runtime is an ordinary entry
+    // with an ordinary anchor, and every other machine on the page (the scare, the drop, the
+    // exodus, reposition) handles it without knowing it arrived late.
+    //
+    // Nearest edge wins, and only within a few pixels — the same nearest-match laneOf uses — so a
+    // reflow between the lane being chosen and the crew being cast cannot land them on different
+    // lines from each other.
+    var LANE_ANCHORS = [
+      { sel: 'section.why',   edge: 'top' },
+      { sel: 'section.how',   edge: 'top' },
+      { sel: 'section.watch', edge: 'top' },
+      { sel: 'footer',        edge: 'top' }
+    ];
+    function laneAnchor(laneDoc) {
+      var sy = window.scrollY || window.pageYOffset;
+      var best = null, bd = Infinity;
+      for (var i = 0; i < LANE_ANCHORS.length; i++) {
+        var el = document.querySelector(LANE_ANCHORS[i].sel);
+        if (!el) continue;
+        var r = el.getBoundingClientRect();
+        var y = (LANE_ANCHORS[i].edge === 'bottom' ? r.bottom : r.top) + sy;
+        var d = Math.abs(y - laneDoc);
+        if (d < bd) { bd = d; best = LANE_ANCHORS[i]; }
+      }
+      return (bd <= 6) ? best : null;
+    }
+    var zomCrews = 0;
+    function workerSpawn(laneDoc) {
+      if (zomCrews >= ZOM.CREWS) return false;
+      var a = laneAnchor(laneDoc);
+      if (!a) return false;
+      var el = document.querySelector(a.sel);
+      if (!el) return false;
+      var c = document.createElement('canvas');
+      c.style.cssText = 'position:absolute;pointer-events:none;z-index:60;';
+      document.body.appendChild(c);
+      entries.push({
+        // plain: carries only, never a special. The light gag reaches up to the 501(c)(3) swatch in
+        // the hero's meta row and measures it against ITS OWN canvas top, so a crew walking the
+        // watch divider would loft a yellow box half a page away; the letters and the play button
+        // are hero set pieces for the same reason. A two-carry works anywhere — and a two-carry is
+        // what this is for: something to be ambushed with, and something to drop.
+        spec: { mode: 'beam', anchor: a.sel, edge: a.edge, tone: takeTone(), plain: true },
+        el: el, c: c, ctx: c.getContext('2d'),
+        phase: Math.random() * 6, w: 0, h: 0, ci: 0, lt: 0, greet: 0, linger: 0,
+        _wave: { hand: 'R', hz: 1.4 }
+      });
+      zomCrews++;
+      reposition();                       // sized and placed now; it is drawn this same frame
       return true;
     }
 
@@ -4492,6 +4648,23 @@
 
     function drawZombie(e, ctx, w, h, dt, shadow) {
       var feetY = h - 6;
+      // KNOCKED DOWN. The dog put him here; he does not walk, does not scare anybody (zombieTick
+      // skips him) and does not speak until he is back on his feet. Same heap-and-getup shape the
+      // exodus uses for a faller, so a toppled zombie reads like every other body on this page —
+      // and the last 0.45s eases him upright rather than snapping him back to a walk.
+      if (e.zDown > 0) {
+        e.zDown -= dt;
+        var dk = Math.min(1, e.zDown / 0.45);
+        R.drawShadow(ctx, e.zX, feetY, 16, shadow);
+        drawFig(ctx, e.zX, feetY - 112 * S + HEAP_YOFF * dk, S, e.zDir < 0,
+                lerpPose(A.standstill.frame(0), cwHeap(e.lt), dk),
+                { color: figColor(ZOM.TONE), rot: e.zDir * 1.45 * dk });
+        // Not clickable and not talking while he is down: the click handler keys off _zSX, and a
+        // bubble opened over a man lying on his back would be closed again on the next frame.
+        e._zSX = null;
+        if (e.zh) { window.EVQuotes.close(e.zh); e.zh = null; }
+        return;
+      }
       e.zX += ZOM.SPEED * e.zDir * dt;
       R.drawShadow(ctx, e.zX, feetY, 16, shadow);
       drawFig(ctx, e.zX, feetY - 112 * S, S, e.zDir < 0,
@@ -4563,12 +4736,250 @@
       return true;
     }
 
+    // ── CAUGHT ON THE RUN ───────────────────────────────────────────────────────────────
+    // The scare loop used to skip anyone already fleeing, so a Bobit could sprint the length of
+    // the page straight THROUGH a second zombie and out the other side untouched — which is the
+    // most common way the two ever meet, because a runner crosses the whole viewport and a zombie
+    // is standing in the middle of it. Chris: "bobits are running by zombies and not triggering a
+    // purple smoke-to-zombie convergence."
+    //
+    // So a runner who actually touches one does not get away. Purple smoke takes him where he
+    // stands, and what walks out of it a beat later is one of them, still going the way he was
+    // running. Purple because it is slot 4 of the page's own palette and reads as "something
+    // happened to him"; the abduction's smoke is grey and means "something is dusty".
+    //
+    // THE CENSUS IS NOT TOUCHED. Everyone who flees is already booked to shamble back on as a
+    // zombie some seconds later (zomQueue), so being caught SPENDS that booking rather than adding
+    // to it: one Bobit still becomes exactly one zombie. He just does it in front of you.
+    function zombieCatch(e, docX, docY, laneDoc) {
+      if (zomQueue.length) zomQueue.pop();
+      CONV.push({ x: docX, y: docY, lane: laneDoc, dir: e.flDir, t: 0, made: false });
+      e.gone = true;
+      e.c.width = e.c.height = 0;                    // frees the backing store, which removeChild does not
+      if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
+    }
+
+    // Is this runner close enough to this zombie to be caught? Everything in DOCUMENT coords read
+    // straight off the flee state rather than off the canvas rect, because a flee canvas is
+    // viewport-wide and its rect says nothing about where the figure inside it is.
+    function zombieCatchTest(e, zScreenX, zLane, lanes, sx, sy, vh) {
+      // ONE BODY ONLY. A caught runner's canvas goes away with him, and a beam pair or a patrol
+      // and toddler are both drawn on it — converting the one would silently delete the other, and
+      // converting both would hand the page a zombie nobody paid for. flMates clears itself once
+      // they run off the sides, so a pair becomes catchable again a second later.
+      if (e.flMates || e.flDog) return;
+      // 'raise' is the beat where his hands go up, with the zombie who frightened him still beside
+      // him — catching him there would eat the flee before it started. 'drop' is mid-air.
+      if (e.fl === 'raise' || e.fl === 'drop') return;
+      var fDocX = e.flLeft + e.flX;
+      var fDocY = e.flTopDoc + e.flFloor + (e.flYOff || 0);
+      if (fDocY - sy < -40 || fDocY - sy > vh + 40) return;
+      var fLane = laneOf(fDocY, lanes);
+      if (fLane == null || Math.round(fLane) !== zLane) return;
+      // Near his own rule as well as on it. laneOf answers "nearest" with no distance at all, which
+      // is right for being FRIGHTENED across a page — but the zombie that rises out of the smoke
+      // stands on the rule, so if the smoke is 300px above it the two do not line up.
+      if (Math.abs(fDocY - fLane) > ZOM.CONV_Y) return;
+      if (Math.abs((fDocX - sx) - zScreenX) > ZOM.CONV_X) return;
+      zombieCatch(e, fDocX, fDocY, fLane);
+    }
+
+    // Move the conversions along. Its own pass rather than a branch of zombieTick, because
+    // zombieTick stands down for the whole of a poof and a conversion already under way must still
+    // finish — otherwise the runner is gone, the smoke is frozen and no zombie ever arrives.
+    function convTick(dt) {
+      for (var i = CONV.length - 1; i >= 0; i--) {
+        var c = CONV[i];
+        c.t += dt;
+        if (!c.made && c.t >= ZOM.CONV_UP) {
+          c.made = true;
+          var sx = window.scrollX || window.pageXOffset;
+          var w = fitW(document.documentElement.clientWidth);
+          makeZombie(c.lane, c.dir, c.x - fitLeft(0, w, sx));
+        }
+        if (c.t >= ZOM.CONV) CONV.splice(i, 1);
+      }
+    }
+
+    // The puff itself. R.drawSmoke is the abduction's and takes no colour; this one is a different
+    // event and says so. Nine blobs on a fixed deterministic spray, swelling and lifting as they
+    // thin out — the same shape as the rig's, in the page's purple.
+    function drawConversions(g) {
+      var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
+      for (var i = 0; i < CONV.length; i++) {
+        var c = CONV[i], k = Math.min(1, c.t / ZOM.CONV);
+        var spread = 16 + k * 46;
+        var alpha = (k < 0.18) ? (k / 0.18) : Math.max(0, 1 - (k - 0.18) / 0.82);
+        var x = c.x - sx, y = c.y - sy;
+        g.save();
+        g.fillStyle = figColor(4);
+        for (var j = 0; j < 9; j++) {
+          var ang = ((j * 61) % 360) * Math.PI / 180;
+          var rad = 0.35 + (((j * 29) % 100) / 100) * 0.65;
+          var px = x + Math.cos(ang) * spread * rad;
+          var py = y - Math.abs(Math.sin(ang)) * spread * rad * 0.85 - spread * 0.2 - k * 14;
+          g.globalAlpha = alpha * (0.4 + rad * 0.45);
+          g.beginPath(); g.arc(px, py, spread * (0.26 + rad * 0.3), 0, Math.PI * 2); g.fill();
+        }
+        g.restore();
+      }
+    }
+
+    // ── THE DOG ─────────────────────────────────────────────────────────────────────────
+    // "When the dog sees a zombie, they should back up and bark at it angrily... If they get
+    // surrounded, the dog leaps at the head of one of the zombies and knocks it down briefly,
+    // then runs off. Dogs don't convert."
+    //
+    // He gets his OWN entry rather than staying on his owner's, and that is the whole design.
+    // The owner is about to become a runner, and poofArmFlee hands a fleeing canvas to drawFlee,
+    // which draws one panicking figure and whatever is tied to him — the dog included. Leaving the
+    // dog there would have meant teaching the exodus about a second behaviour it has no business
+    // knowing. A standalone entry on the zombies' own lane inherits everything instead: it is
+    // sized and placed like a zombie, re-fitted like a zombie on a rotate, and drawn by the one
+    // loop. It converts nobody because nothing ever queues him.
+    var DOG = {
+      SEE:   200,   // he notices one this far off and the game stops
+      BACK:  132,   // ...and will not let one closer than this
+      SPEED: 56,    // backing off — a shade quicker than a zombie walks, so he keeps his distance
+      BARK:  0.42,  // seconds per bark
+      BOXED: 168,   // one this close on BOTH sides and he is out of room
+      LEAP:  0.5,   // seconds in the air
+      CALM:  2.2,   // seconds with nobody near before he gives up and trots off
+      OFF:   128    // the speed he leaves at
+    };
+
+    function dogGuardSpawn(src, laneDoc) {
+      var sx = window.scrollX || window.pageXOffset;
+      var cr = src.c.getBoundingClientRect();
+      var h = 120, w = fitW(document.documentElement.clientWidth), left = fitLeft(0, w, sx);
+      var c = document.createElement('canvas');
+      c.style.cssText = 'position:absolute;pointer-events:none;z-index:61;';
+      c.style.left = left + 'px';
+      c.style.top = (laneDoc - (h - 6)) + 'px';
+      document.body.appendChild(c);
+      var e = {
+        spec: { mode: 'dogguard', anchor: null, tone: (src.spec.tone2 != null ? src.spec.tone2 : 5) },
+        el: null, c: c, ctx: c.getContext('2d'),
+        phase: Math.random() * 6, w: 0, h: 0, ci: 0, lt: 0, greet: 0, linger: 0,
+        dgX: (cr.left + sx + src.dogX) - left, dgFace: -1,
+        dgLeft: left, dgLaneDoc: laneDoc,
+        dgPhase: 'bark', dgT: 0, dgCalm: 0, dgLeapAt: null
+      };
+      sizeCanvas(e, w, h);
+      entries.push(e);
+      return e;
+    }
+
+    // Same contract as refitZombie, and for the same reason.
+    function refitDogGuard(e, sx) {
+      var newW = fitW(document.documentElement.clientWidth);
+      var newLeft = fitLeft(0, newW, sx);
+      if (newW === e.w && newLeft === e.dgLeft) return;
+      e.dgX += (e.dgLeft - newLeft);
+      e.dgLeft = newLeft;
+      e.c.style.left = newLeft + 'px';
+      sizeCanvas(e, newW, e.h);
+    }
+
+    function drawDogGuard(e, ctx, w, h, dt, shadow) {
+      var feetY = h - 6, col = figColor(e.spec.tone);
+      var lane = Math.round(e.dgLaneDoc);
+      var myS = e.c.getBoundingClientRect().left + e.dgX;
+      e.dgT += dt;
+
+      // Who is on his line, and on which side of him. A zombie already flat on his back is not a
+      // threat and not a wall, so he does not count toward being boxed in either.
+      var nearL = null, nearR = null;
+      entries.forEach(function (z) {
+        if (z.spec.mode !== 'zombie' || z.gone || !z.w || z.zDown > 0) return;
+        if (Math.round(z.zLaneDoc) !== lane) return;
+        var zx = z.c.getBoundingClientRect().left + z.zX;
+        // .d is stored as a DISTANCE (always positive) so the two sides can be compared with each
+        // other; the sign only decides which side he is on. Testing the signed gap against the
+        // stored distance kept whichever left-hand zombie was found FIRST rather than the nearest,
+        // so with three on the line the dog backed away from one and let another walk into him.
+        var d = zx - myS;
+        if (d <= 0) { if (!nearL || -d < nearL.d) nearL = { z: z, d: -d, x: zx }; }
+        else { if (!nearR || d < nearR.d) nearR = { z: z, d: d, x: zx }; }
+      });
+      var near = (!nearL) ? nearR : (!nearR ? nearL : (nearL.d < nearR.d ? nearL : nearR));
+
+      var st = 'stand', jab = 0, rot = 0, lift = 0;
+      if (e.dgPhase === 'leap') {
+        // A flat arc onto the head of the one he picked, then he is past him and away. The zombie
+        // goes down ON CONTACT rather than at the end of the arc, so the knock and the landing are
+        // the same beat.
+        var la = e.dgLeapAt;
+        var k = Math.min(1, e.dgT / DOG.LEAP);
+        e.dgX = la.x0 + (la.x1 - la.x0) * k;
+        lift = Math.sin(k * Math.PI) * 50;
+        rot = -0.35 + k * 0.7;             // nose up on the way, nose down onto him
+        st = 'leap';
+        if (!la.hit && k >= 0.5) { la.hit = true; if (!la.z.gone) la.z.zDown = ZOM.DOWN; }
+        if (k >= 1) { e.dgPhase = 'off'; e.dgT = 0; }
+      } else if (e.dgPhase === 'off') {
+        e.dgX += DOG.OFF * e.dgFace * dt;
+        st = 'run';
+      } else {
+        // BARKING, AND GIVING GROUND. He faces whoever is nearest and walks backwards away from
+        // him; as the zombie keeps coming, he keeps going. He never turns his back until he is out.
+        if (nearL && nearR && nearL.d < DOG.BOXED && nearR.d < DOG.BOXED) {
+          var pick = (nearL.d < nearR.d) ? nearL : nearR;
+          e.dgPhase = 'leap'; e.dgT = 0;
+          e.dgFace = (pick.x < myS) ? -1 : 1;
+          // past him, not onto him: he lands clear and keeps running that way
+          e.dgLeapAt = { z: pick.z, x0: e.dgX, x1: e.dgX + (pick.x - myS) + e.dgFace * 46, hit: false };
+          st = 'leap';
+        } else if (near && near.d < DOG.BACK) {
+          e.dgCalm = 0;
+          e.dgFace = (near.x < myS) ? -1 : 1;
+          e.dgX -= DOG.SPEED * e.dgFace * dt;              // backwards, still facing him
+          st = 'bark';
+          jab = Math.max(0, 1 - ((e.dgT % DOG.BARK) / (DOG.BARK * 0.45)));
+        } else if (near && near.d < DOG.SEE) {
+          e.dgCalm = 0;
+          e.dgFace = (near.x < myS) ? -1 : 1;
+          st = 'bark';
+          jab = Math.max(0, 1 - ((e.dgT % DOG.BARK) / (DOG.BARK * 0.45)));
+        } else {
+          e.dgCalm += dt;
+          if (e.dgCalm > DOG.CALM) { e.dgPhase = 'off'; e.dgT = 0; e.dgFace = -e.dgFace; }
+        }
+      }
+
+      var groundY = feetY - lift;
+      R.drawShadow(ctx, e.dgX, feetY, 13 * (1 - lift / 90), shadow);
+      drawDog(ctx, e.dgX, groundY, e.dgFace, col, st, e.lt + e.phase, { jab: jab, rot: rot });
+      // The bark itself: two short strokes off his muzzle, snapping out on the jab and gone
+      // between. Drawn here rather than inside drawDog because it is not part of the dog.
+      if (jab > 0.15 && st === 'bark') {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, jab);
+        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        var bx = e.dgX + e.dgFace * 24, by = groundY - 22;
+        for (var bi = -1; bi <= 1; bi++) {
+          ctx.beginPath();
+          ctx.moveTo(bx, by + bi * 5);
+          ctx.lineTo(bx + e.dgFace * (6 + jab * 5), by + bi * 9);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      if (e.dgX < -90 || e.dgX > w + 90) {
+        e.gone = true;
+        e.c.width = e.c.height = 0;
+        if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
+      }
+    }
+
     // ── THE GHOST ───────────────────────────────────────────────────────────────────────
     // A sheet over a Bobit, drifting across the two notes in section 02. He is drawn rather
     // than posed: the rig builds a skeleton and this has no limbs, so nothing in leremy-rig
-    // is any help. Proportioned off a real figure all the same — one is 71px tall and 15px
-    // wide at S=0.32, so the sheet is 72 tall and 44 wide, which is what a sheet over someone
-    // that size would be.
+    // is any help. He was first proportioned off a real figure — one is 71px tall and 15px wide
+    // at S=0.32, so the sheet started at 72 tall and 44 wide — and then cut to HALF that height
+    // and TWO THIRDS that width, because at full size he loomed over the note cards he is meant
+    // to be drifting past.
     //
     // WHITE WITH A BLACK OUTLINE, in both themes, on purpose. Every other figure on this page
     // takes its colour from the palette and flips with the theme; a ghost that did that would
@@ -4580,8 +4991,9 @@
       BOB:     9,         // px of rise and fall
       BOB_HZ:  0.42,      // ...per second, slow enough to read as floating rather than bouncing
       SCARE:   150,       // radius, not a box: he has no floor, so there is no lane to share
-      W:       44,
-      H:       72,
+      W:       29,        // Every ink dimension in ghostPath and drawGhost is a RATIO of these
+      H:       36,        // two (see kw/kh), so resizing him is these two numbers and nothing
+                          // else. They were 44 x 72 until 2026-10-27.
       FIRST:   [8, 16],   // seconds after load before the first one drifts in
       GAP:     [26, 48],  // between ghosts
       MAX:     1,         // one at a time. Two is a crowd; this is meant to be a sighting
@@ -4672,16 +5084,17 @@
     // travel sideways so the hem looks tattered rather than stamped on.
     function ghostPath(ctx, cx, topY, t) {
       var w = GHOST.W, h = GHOST.H, r = w / 2, botY = topY + h;
+      var kh = h / 72;                                // the hem is a share of his height, not 7px
       ctx.beginPath();
       ctx.moveTo(cx - r, botY);
       ctx.lineTo(cx - r, topY + r);
       ctx.arc(cx, topY + r, r, Math.PI, 0);          // the dome
       ctx.lineTo(cx + r, botY);
-      var n = 4, seg = w / n, amp = 7;
+      var n = 4, seg = w / n, amp = 7 * kh;
       for (var i = 0; i < n; i++) {                   // hem, right to left
         var x0 = cx + r - i * seg, x1 = x0 - seg;
         var up = (i % 2 === 0) ? 1 : -1;
-        var wob = Math.sin(t * 2.4 + i * 1.5) * 2.5;  // the tatter drifts along the hem
+        var wob = Math.sin(t * 2.4 + i * 1.5) * 2.5 * kh;  // the tatter drifts along the hem
         ctx.quadraticCurveTo((x0 + x1) / 2, botY - up * (amp + wob), x1, botY);
       }
       ctx.closePath();
@@ -4697,34 +5110,39 @@
       var bob = Math.sin(t * GHOST.BOB_HZ * Math.PI * 2 + e.gSeed) * GHOST.BOB;
       var cx = e.gX, topY = h / 2 - GHOST.H / 2 + bob;
       var look = ghostLook(e);
+      // His face and his outline are proportions of the sheet, so changing GHOST.W/H changes the
+      // whole drawing rather than leaving a small ghost with a full-sized stare. The OUTLINE has a
+      // floor under it: it is the thing that carries a white body on the light page, and scaled
+      // all the way down with him it went to a hairline.
+      var kw = GHOST.W / 44, kh = GHOST.H / 72;
 
       ctx.save();
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ghostPath(ctx, cx, topY, t);
       ctx.fillStyle = look.body; ctx.fill();
-      ctx.strokeStyle = '#111417'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.strokeStyle = '#111417'; ctx.lineWidth = Math.max(1.8, 2.5 * kw); ctx.stroke();
 
       var eyeY = topY + GHOST.H * 0.34, dx = GHOST.W * 0.21;
       if (look.mouth) {
         // Frightened: two plain dots and a zigzag, which is the arcade's whole face.
         ctx.fillStyle = look.ink;
-        ctx.beginPath(); ctx.arc(cx - dx, eyeY, 3.6, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx + dx, eyeY, 3.6, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = look.ink; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(cx - dx, eyeY, 3.6 * kw, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + dx, eyeY, 3.6 * kw, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = look.ink; ctx.lineWidth = Math.max(1.5, 2.4 * kw);
         ctx.beginPath();
         var my = topY + GHOST.H * 0.60, mw = GHOST.W * 0.62, steps = 6;
         for (var i = 0; i <= steps; i++) {
           var mx = cx - mw / 2 + (mw / steps) * i;
-          var yy = my + ((i % 2 === 0) ? -3 : 3);
+          var yy = my + ((i % 2 === 0) ? -3 : 3) * kh;
           if (i === 0) ctx.moveTo(mx, yy); else ctx.lineTo(mx, yy);
         }
         ctx.stroke();
       } else {
         // Roaming: black eyes that look the way he is going.
         ctx.fillStyle = look.ink;
-        var gaze = e.gDir * 1.6;
-        ctx.beginPath(); ctx.ellipse(cx - dx + gaze, eyeY, 4.2, 5.4, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(cx + dx + gaze, eyeY, 4.2, 5.4, 0, 0, Math.PI * 2); ctx.fill();
+        var gaze = e.gDir * 1.6 * kw;
+        ctx.beginPath(); ctx.ellipse(cx - dx + gaze, eyeY, 4.2 * kw, 5.4 * kh, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx + dx + gaze, eyeY, 4.2 * kw, 5.4 * kh, 0, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
 
@@ -4779,6 +5197,7 @@
         entries.forEach(function (e) {
           if (e === g || e.gone || e.fl || e.ab || !e.w) return;
           if (isChrome(e.spec) || e.spec.mode === 'zombie' || e.spec.mode === 'ghost') return;
+          if (e.spec.mode === 'dogguard') return;        // he is busy, and he does not frighten
           var r = e.c.getBoundingClientRect();
           if (r.bottom < -40 || r.top > vh + 40) return;
           var ex = r.left + (e._figX != null ? e._figX : e.w / 2);
@@ -4834,12 +5253,17 @@
       var lanesNow = zombieLanes();
       entries.forEach(function (z) {
         if (z.spec.mode !== 'zombie' || z.gone || !z.w) return;
+        if (z.zDown > 0) return;                                    // the dog has him; he is no threat
         var zr = z.c.getBoundingClientRect();
         var zScreenX = zr.left + z.zX;
         var zLane = Math.round(z.zLaneDoc);
         entries.forEach(function (e) {
-          if (e === z || e.gone || e.fl || e.ab || !e.w) return;
+          if (e === z || e.gone || e.ab || !e.w) return;
           if (isChrome(e.spec) || e.spec.mode === 'zombie' || e.spec.mode === 'ghost') return;
+          if (e.spec.mode === 'dogguard') return;                   // dogs do not convert
+          // Already running: the question is no longer whether he notices one, it is whether he
+          // runs into one. See zombieCatchTest.
+          if (e.fl) { zombieCatchTest(e, zScreenX, zLane, lanesNow, sx, sy, vh); return; }
           // THE HOST STAYS. He is the one figure on the page who is talking TO you, and his
           // bubble is placed once over his head and left there — so when he bolted, the words
           // hung in the air with nobody under them. He is also the only figure whose absence
@@ -4857,6 +5281,14 @@
           // Whatever he was carrying hits the floor and STAYS there. Before poofArmFlee, not
           // after: the drop reads his position off the canvas, and poofArmFlee clears it.
           dropProp(e, sx, sy, true);
+          // THE DOG DOES NOT RUN. His owner is about to be handed to drawFlee, which would take
+          // the dog with him — so he is lifted onto his own entry first and left to it. Before
+          // poofArmFlee for the same reason the drop is: it reads dogX off a canvas poofArmFlee
+          // is about to resize and clear. Only for the zombies; a ghost still scatters the pair.
+          if (e.spec.mode === 'dogfetch' && e.dogX != null) {
+            dogGuardSpawn(e, zLane);
+            e.flNoDog = true;
+          }
           poofArmFlee(e, away);
           // poofArmFlee marks a figure already scrolled out of sight gone instead of arming
           // him, so this is a real check rather than a formality.
@@ -4873,6 +5305,7 @@
       var dtFrame = Math.min(0.1, (now - last) / 1000); last = now;
       poofTick(dtFrame);
       zombieTick(dtFrame);
+      convTick(dtFrame);
       ghostTick(dtFrame);
       t += dtFrame;
       if ((inkTick += dtFrame) > 0.5) { inkTick = 0; inkCache = cssVar('--heading', '#1C1C1C'); }
@@ -4907,6 +5340,18 @@
       entries.forEach(function (e) {
         var spec = e.spec, ctx = e.ctx, w = e.w, h = e.h;
         if (e.gone) return;
+        // _bodies IS THIS FRAME'S, OR IT IS NOTHING. A mode publishes the figures it drew so the
+        // takeovers can act on the one that was grabbed (see splitBodies) — but an entry whose
+        // SCENE changes stops publishing without clearing, and the stale set then describes people
+        // who are no longer there. The beam crew are the one entry that does this: 'carry' and
+        // 'letters' publish two bodies, 'light' is one Bobit and publishes none. So the light-gag
+        // Bobit fled as the LETTER CARRIER — drawn in his gold instead of the crew's teal, with a
+        // phantom orange mate running off beside him. Chris saw the colour change.
+        //
+        // Clearing it here rather than in the light gag fixes the class: a mode that forgets to
+        // publish now draws itself alone, which is the honest answer, instead of inheriting
+        // whoever stood there last.
+        e._bodies = null;
         // Stunned: this figure's dt is zero. One local, and both layers freeze — the gait clock
         // (via e.lt) and every scene machine, which all advance straight off dt: e.dfT, e.cwT,
         // e.ktT, e.qsT. Extending the existing `e.lt += dt * (...)` gate would freeze only the
@@ -4959,6 +5404,7 @@
         if (spec.mode === 'zombie') { drawZombie(e, ctx, w, h, dt, shadow); return; }
         // No shadow argument: he is in the air over a note card, with nothing to cast one on.
         if (spec.mode === 'ghost') { drawGhost(e, ctx, w, h, dt); return; }
+        if (spec.mode === 'dogguard') { drawDogGuard(e, ctx, w, h, dt, shadow); return; }
         if (spec.mode === 'paddlepair') {
           drawPaddlePair(e, ctx, w, h, feetY, tt, figColor(spec.tone), figColor(spec.tone2 != null ? spec.tone2 : spec.tone), shadow, dt, cr);
           return;
@@ -5278,6 +5724,10 @@
             ctx.fillStyle = cssVar('--coral', '#FF5740');
             ctx.beginPath(); ctx.arc(ballX, ballY, ballR, 0, Math.PI * 2); ctx.fill();
             R.drawShadow(ctx, frontX, feetY, 15, shadow); R.drawShadow(ctx, backX, feetY, 15, shadow);
+            // Where the two of them actually are DURING the gag — they chase the ball right off the
+            // edge, so the carry positions this branch replaced are wrong within a second of it
+            // starting. See the _bodies note at the top of the draw loop.
+            e._bodies = [{ x: frontX, floor: feetY, col: col }, { x: backX, floor: feetY, col: col }];
             drawFig(ctx, frontX, feetY - 112 * S, S, frontFlip, frontPose, { color: col });
             drawFig(ctx, backX, feetY - 112 * S, S, backFlip, backPose, { color: col });
             // respawn only once BOTH carriers have run the whole way off the trailing edge (not when the ball leaves)
@@ -5573,6 +6023,11 @@
       startPlay: startPlay, playR: PLAY_R,
       halloween: HALLOWEEN, zom: ZOM, zomCap: zomCap, dropProp: dropProp, zombieSpawn: zombieSpawn, zombiePose: zombiePose,
       carrierHeading: carrierHeading, zombieSay: zombieSay, laneOf: laneOf,
+      makeZombie: makeZombie, workerSpawn: workerSpawn, laneAnchor: laneAnchor,
+      convs: function () { return CONV; }, zombieCatch: zombieCatch, convTick: convTick,
+      dog: DOG, dogGuardSpawn: dogGuardSpawn,
+      dogGuards: function () { return entries.filter(function (e) { return e.spec.mode === 'dogguard' && !e.gone; }); },
+      crews: function () { return entries.filter(function (e) { return e.spec.mode === 'beam' && e.spec.plain && !e.gone; }); },
       ghost: GHOST, ghostSpawn: ghostSpawn, ghostBand: ghostBand, ghostScare: ghostScare,
       ghosts: function () { return entries.filter(function (e) { return e.spec.mode === 'ghost'; }); },
       zombies: function () { return entries.filter(function (e) { return e.spec.mode === 'zombie'; }); },

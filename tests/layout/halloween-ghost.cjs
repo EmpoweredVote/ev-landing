@@ -212,9 +212,17 @@ async function parkOnTheNotes(page) {
   {
     const { page, errors } = await open(browser, '?evlines=halloween#figdebug', { width: 390, height: 780 });
     await parkOnTheNotes(page);
-    const over = await page.evaluate(function () {
+    const over = await page.evaluate(async function () {
       var D = window.__evFigDebug;
-      if (!D.ghostSpawn()) return { err: 'no band on screen at 390px' };
+      // ghostBand() picks ONE of the two notes at random when they are stacked, which is what a
+      // phone does to them — so parked on Note 02 the n-ai pick is legitimately off screen and
+      // the spawn legitimately refuses. ghostTick retries three seconds later; so does this.
+      var made = false;
+      for (var i = 0; i < 12 && !made; i++) {
+        made = D.ghostSpawn();
+        if (!made) await new Promise(function (r) { setTimeout(r, 60); });
+      }
+      if (!made) return { err: 'no band on screen at 390px in 12 tries' };
       var g = D.ghosts().filter(function (e) { return !e.gone; }).pop();
       return { gw: g.w,
                scroll: document.documentElement.scrollWidth,
