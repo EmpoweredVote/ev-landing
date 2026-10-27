@@ -1,6 +1,6 @@
 // The Halloween takeover: a zombie Bobit shambles on, and anyone he reaches bolts.
 //
-// Four things here are easy to break without noticing, and three of them already bit once.
+// Five things here are easy to break without noticing, and three of them already bit once.
 //
 // 1. THE GATE IS A TAG, NOT A CALENDAR. "It is Halloween" is defined once, in ev-lines.js,
 //    and the figures read it from there. The test that matters most is the OFF one: on
@@ -22,6 +22,15 @@
 // 4. ZOMBIES ARRIVE FOR AS LONG AS THE TAB IS OPEN. Unlike the cast, which is fixed, these
 //    accumulate — so a retired one has to leave `entries` AND drop its backing store. At
 //    1432x150 and DPR 1.5 each husk is about 1.9 MB.
+//
+// 6. THE AMBUSH AND THE LINE ARE BOTH SILENT WHEN THEY BREAK. A zombie who comes in behind
+//    a carrier still catches him, just at the screen edge where the drop is wasted; a
+//    bubble wired to the wrong handle just never appears. Neither throws. Case 6.
+//
+// 5. HALF THE GAG IS A SPEED. A zombie slower than the people he is chasing can only ever
+//    meet them head-on, and a head-on meeting works at any speed at all — so every other
+//    case in this file passes just as happily with the chase quietly gone. Case 5 is the
+//    only thing standing between ZOM.SPEED and that.
 //
 // Needs Playwright and its browsers — see "Tests" in README.md:
 //   node tests/layout/halloween-zombies.cjs
@@ -73,7 +82,10 @@ async function parkOnPeopledLane(page) {
         if (idx >= 0 || e.gone || e.fl || e.ab || !e.w) return;
         if (e.spec.mode === 'why' || e.spec.mode === 'zombie') return;
         var feet = e.c.getBoundingClientRect().bottom - 6 + sy;
-        if (Math.abs(feet - lane) <= D.zom.LANE) idx = j;
+        // The SAME rule the scare uses: a figure belongs to his nearest rule, not to
+        // whichever one happens to be within a fixed distance. Almost nobody on this page
+        // stands on a rule at all — they stand on the top edges of cards.
+        if (D.laneOf(feet, lanes) === lane) idx = j;
       });
       if (idx >= 0) return { lane: Math.round(lane), victim: idx };
     }
@@ -193,11 +205,15 @@ async function parkOnPeopledLane(page) {
       var D = window.__evFigDebug;
       return {
         inEntries: D.entries.filter(function (e) { return e.spec.mode === 'zombie' && e.gone; }).length,
-        live: D.zombies().length
+        live: D.zombies().length,
+        cap: D.zomCap()
       };
     });
     want(husks.inEntries === 0, 'halloween: ' + husks.inEntries + ' retired zombie(s) left in entries');
-    want(husks.live <= 3, 'halloween: ' + husks.live + ' zombies at once, cap is ZOM.MAX 3');
+    // Against the CAP AS IT STANDS, not against ZOM.MAX. The ceiling climbs with how long the
+    // tab has been open — one more every ZOM.GROW seconds — and this case can run past the
+    // first step of that climb on a slow machine, which would have failed a correct page.
+    want(husks.live <= husks.cap, 'halloween: ' + husks.live + ' zombies at once, cap is ' + husks.cap);
     want(errors.length === 0, 'halloween: page errors — ' + errors.join(' | '));
     await page.close();
   }
@@ -267,11 +283,279 @@ async function parkOnPeopledLane(page) {
     await page.close();
   }
 
+  // ───────────────────────────── 5. he runs a carrier down from behind
+  // Why ZOM.SPEED is 44 and not the 17 it shipped at. Every WALK on the page is slower than
+  // he is — the beam carry 30, stroll 32, march 34, strut 40 — and every hurry is faster —
+  // the button carry 51, scurry 62. So he overhauls anybody strolling and never catches
+  // anybody running, which is the rule the number encodes.
+  //
+  // The gap is measured the whole way down rather than just asserted at the end, because
+  // "he caught somebody" is also what it looks like when a DIFFERENT zombie wanders into the
+  // same crew. Two things stop that counting: the cap is pinned to 1 for the duration, so the
+  // scheduler cannot add one, and the panic is only accepted if OUR zombie was within
+  // scaring distance when it fired.
+  {
+    const { page, errors } = await open(browser, '?evlines=halloween#figdebug');
+    await page.evaluate(function () {
+      var lane = window.__evFigDebug.zombieLanes()[0];      // the hero's bottom edge: the carry lane
+      window.scrollTo(0, Math.max(0, lane - window.innerHeight * 0.60));
+    });
+    await page.waitForTimeout(500);
+
+    const chase = await page.evaluate(async function () {
+      var D = window.__evFigDebug;
+      var beam = D.entries.filter(function (e) { return e.spec.mode === 'beam'; })[0];
+      if (!beam) return { err: 'the beam crew are not cast' };
+      var at = function () {
+        return beam.c.getBoundingClientRect().left + (beam._figX != null ? beam._figX : beam.w / 2);
+      };
+
+      // CLEAR THE LANE FIRST, before the wait below and not after it. Working out which way
+      // the crew are walking takes up to twenty-four seconds, and the scheduler puts a zombie
+      // on the carry lane every thirteen to twenty-four — so on the slow path a wild one
+      // reaches them while this is still deciding, and everything after that is measuring an
+      // empty chase. Pinning the cap to nought stops any more arriving; -400 walks the ones
+      // already here off the left edge, where drawZombie retires them.
+      D.zom.MAX = 0; D.zom.MAX_END = 0;
+      D.zombies().forEach(function (e) { if (!e.gone) e.zX = -400; });
+      await new Promise(function (r) { setTimeout(r, 200); });
+      if (beam.fl) return { err: 'the crew were already running before the chase began ("' + beam.fl + '")' };
+
+      // Wait for them to be WALKING and read which way off their own movement. Setting
+      // beam.scene = 'carry' instead restarts the pass at the left edge, which drops them on
+      // top of wherever the zombie was just put and reports a catch in half a second — that
+      // is a staging artefact, and it is what the first version of this measured.
+      //
+      // The upper bound matters as much as the lower one: the light gag walks at 104px/s and
+      // he is not supposed to catch that. Only a carry pass is slower than he is.
+      var dir = 0, crewSpeed = 0;
+      for (var i = 0; i < 60 && !dir; i++) {
+        var a = at();
+        await new Promise(function (r) { setTimeout(r, 400); });
+        var moved = at() - a, v = Math.abs(moved) / 0.4;
+        if (v > 6 && v < D.zom.SPEED) { dir = moved > 0 ? 1 : -1; crewSpeed = v; }
+      }
+      if (!dir) return { err: 'the beam crew never took a pass slower than the zombie' };
+
+      // Room for exactly one: ours.
+      D.zom.MAX = 1; D.zom.MAX_END = 1;
+      if (!D.zombieSpawn()) return { err: 'no lane on screen to spawn onto' };
+      var z = D.zombies().filter(function (e) { return !e.gone; }).pop();
+      // ON THE CREW'S OWN RULE. The spawn picks among the lanes in view and only WEIGHTS the
+      // carry lane, so a chase staged without saying which rule it happens on is really a
+      // measurement of the dice: a zombie one rule down is correctly ignored by the scare and
+      // walks the whole way past them.
+      var sy5 = window.scrollY || window.pageYOffset;
+      z.zLaneDoc = D.laneOf(beam.c.getBoundingClientRect().bottom - 6 + sy5, D.zombieLanes());
+      z.c.style.top = (z.zLaneDoc - (z.h - 6)) + 'px';
+      await new Promise(function (r) { setTimeout(r, 60); });
+      // 240px BEHIND them has to be a place that exists. The crew walk the full width and turn
+      // round at each end, so for part of every pass the ground behind them is off the canvas —
+      // put him there and drawZombie retires him on the next frame, before he has taken a step.
+      // That failed as "the gap was still 244px", which is a true statement about a zombie who
+      // was never on the page. Wait for a pass with room behind it instead.
+      var gap0 = 240, zl = z.c.getBoundingClientRect().left, startX = 0;
+      var fits = false;
+      for (var w5 = 0; w5 < 25 && !fits; w5++) {
+        startX = (at() - dir * gap0) - zl;
+        if (startX > 20 && startX < z.w - 20) { fits = true; break; }
+        await new Promise(function (r) { setTimeout(r, 600); });
+        zl = z.c.getBoundingClientRect().left;
+      }
+      if (!fits) return { err: 'the crew never walked far enough from an edge to stand 240px behind them' };
+      z.zX = startX;
+      z.zDir = dir;
+
+      var gapNow = function () {
+        return (at() - (z.c.getBoundingClientRect().left + z.zX)) * dir;
+      };
+      var t0 = performance.now(), caught = false, gap = gap0, why = 'timeout';
+      while (performance.now() - t0 < 30000) {
+        await new Promise(function (r) { setTimeout(r, 250); });
+        gap = gapNow();
+        if (beam.fl) { caught = true; why = 'fl'; break; }
+        if (z.gone) { why = 'zombie gone at zX=' + Math.round(z.zX) + '/' + z.w + ' lane ' + Math.round(z.zLaneDoc); break; }
+        if (beam.gone) { why = 'beam gone'; break; }
+      }
+      return { crewSpeed: Math.round(crewSpeed), zomSpeed: D.zom.SPEED, scare: D.zom.SCARE,
+               gap0: gap0, gap: Math.round(gap), caught: caught, state: beam.fl || null,
+               secs: +((performance.now() - t0) / 1000).toFixed(1), why: why, dir: dir };
+    });
+
+    want(!chase.err, 'behind: ' + chase.err);
+    if (!chase.err) {
+      want(chase.zomSpeed > chase.crewSpeed,
+        'behind: the zombie walks ' + chase.zomSpeed + 'px/s against a crew at ' + chase.crewSpeed +
+        'px/s, so he can never run anybody down — only meet them head-on');
+      want(chase.caught,
+        'behind: [' + chase.why + ' dir' + chase.dir + '] he started ' + chase.gap0 + 'px back and after ' + chase.secs +
+        's the gap was still ' + chase.gap + 'px');
+      want(chase.state === 'raise',
+        'behind: the catch skipped the hands-up beat (started in "' + chase.state + '")');
+      want(chase.gap <= chase.scare + 40,
+        'behind: they bolted with our zombie ' + chase.gap + 'px off, well outside ZOM.SCARE ' +
+        chase.scare + ' — something else frightened them and the chase proved nothing');
+      seen.push('behind: ' + chase.zomSpeed + 'px/s ran down a crew at ' + chase.crewSpeed +
+                'px/s — ' + chase.gap0 + 'px closed to ' + chase.gap + 'px in ' + chase.secs + 's');
+    }
+    want(errors.length === 0, 'behind: page errors — ' + errors.join(' | '));
+    await page.close();
+  }
+
+  // ──────────────── 6. the ambush, and the one thing he has to say
+  // Two behaviours that fail quietly. The AMBUSH is a spawn side: get it wrong and he still
+  // catches the carrier, just from behind and at the edge of the screen, where the dropped
+  // beam lands outside the viewport and nobody sees the point of any of it. The LINE is a
+  // bubble handle: wire it wrong and clicking him does nothing at all. Neither throws, and
+  // every other case in this file passes either way.
+  {
+    const { page, errors } = await open(browser, '?evlines=halloween#figdebug');
+    await page.evaluate(function () {
+      var lane = window.__evFigDebug.zombieLanes()[0];
+      window.scrollTo(0, Math.max(0, lane - window.innerHeight * 0.60));
+    });
+    await page.waitForTimeout(500);
+
+    // Both directions. One of them passes by accident whichever way round the sign is.
+    for (const heading of [1, -1]) {
+      const r = await page.evaluate(async function (d) {
+        var D = window.__evFigDebug;
+        D.zom.MAX = 1; D.zom.MAX_END = 1;              // nobody else wanders in mid-measurement
+        D.zombies().forEach(function (e) { if (!e.gone) e.zX = -400; });
+        await new Promise(function (r) { setTimeout(r, 150); });
+        var beam = D.entries.filter(function (e) { return e.spec.mode === 'beam'; })[0];
+        if (!beam) return { err: 'the beam crew are not cast' };
+        beam.scene = 'carry'; beam.dir = d; beam.dwell = 0; beam.greet = 0;
+        var head = D.carrierHeading(beam);
+        if (!D.zombieSpawn()) return { err: 'no lane on screen to spawn onto' };
+        var z = D.zombies().filter(function (e) { return !e.gone; }).pop();
+        return { head: head, zDir: z.zDir, at: Math.round(z.zX), w: z.w };
+      }, heading);
+      want(!r.err, 'ambush: ' + r.err);
+      if (r.err) break;
+      want(r.head === heading,
+        'ambush: carrierHeading read ' + r.head + ' for a crew walking ' + heading);
+      want(r.zDir === -heading,
+        'ambush: the crew walk ' + heading + ' and the zombie walks ' + r.zDir +
+        ' — he is following them rather than meeting them');
+      want((r.at > r.w / 2) === (heading > 0),
+        'ambush: crew walking ' + heading + ', zombie entered at x=' + r.at + ' of ' + r.w +
+        ' — the wrong edge, so the drop happens behind them');
+      seen.push('ambush: crew heading ' + (heading > 0 ? 'right' : 'left') +
+                ' -> zombie in at x=' + r.at + '/' + r.w + ' walking ' + r.zDir);
+    }
+
+    // And the whole point of meeting him head-on: the load goes down HERE, and the carrier
+    // turns round and goes back the way he came rather than carrying on into him.
+    const meet = await page.evaluate(async function () {
+      var D = window.__evFigDebug;
+      var beam = D.entries.filter(function (e) { return e.spec.mode === 'beam'; })[0];
+      if (!beam) return { err: 'the beam crew are not cast' };
+      var at = function () {
+        return beam.c.getBoundingClientRect().left + (beam._figX != null ? beam._figX : beam.w / 2);
+      };
+
+      // DO NOT force beam.scene = 'carry'. Setting it restarts the pass from the off-screen
+      // edge, which teleports the crew a screen away from wherever the zombie was just put;
+      // they then need thirty-odd seconds to walk back into him and the case times out having
+      // measured nothing. Case 5 says the same thing and this is where it was relearned.
+      // Watch them instead, and only act once they are actually walking.
+      D.zom.MAX = 0; D.zom.MAX_END = 0;
+      D.zombies().forEach(function (e) { if (!e.gone) e.zX = -400; });
+      await new Promise(function (r) { setTimeout(r, 200); });
+      var cdir = 0;
+      for (var ci = 0; ci < 60 && !cdir; ci++) {
+        var ca = at();
+        await new Promise(function (r) { setTimeout(r, 400); });
+        var cm = at() - ca, cv = Math.abs(cm) / 0.4;
+        if (cv > 6 && cv < D.zom.SPEED) cdir = cm > 0 ? 1 : -1;
+      }
+      if (!cdir) return { err: 'the beam crew never took a pass slower than the zombie' };
+
+      D.zom.MAX = 1; D.zom.MAX_END = 1;
+      if (!D.zombieSpawn()) return { err: 'no lane on screen to spawn onto' };
+      var z = D.zombies().filter(function (e) { return !e.gone; }).pop();
+      // PUT HIM ON THE CREW'S OWN RULE. The spawn picks among the lanes in view and the carry
+      // lane is only weighted, not guaranteed — so staging a meeting without saying which rule
+      // it happens on measures whichever lane the dice chose. A zombie one rule down is
+      // correctly ignored by the scare, and the case then fails for a reason that has nothing
+      // to do with what it is testing.
+      var sy = window.scrollY || window.pageYOffset;
+      var beamFloor = beam.c.getBoundingClientRect().bottom - 6 + sy;
+      z.zLaneDoc = D.laneOf(beamFloor, D.zombieLanes());
+      z.c.style.top = (z.zLaneDoc - (z.h - 6)) + 'px';
+      await new Promise(function (r) { setTimeout(r, 60); });
+      // 150px AHEAD of them, in the direction they are already walking, facing back at them.
+      z.zX = (at() + cdir * 150) - z.c.getBoundingClientRect().left;
+      z.zDir = -cdir;
+      var t0 = performance.now();
+      while (performance.now() - t0 < 12000) {
+        await new Promise(function (r) { setTimeout(r, 200); });
+        if (beam.fl) break;
+      }
+      return { fl: beam.fl || null, flDir: beam.flDir, cdir: cdir,
+               kept: D.drops().filter(function (d) { return d.keep; }).length };
+    });
+    want(!meet.err, 'ambush: ' + meet.err);
+    if (!meet.err) {
+      want(meet.fl === 'raise', 'ambush: the crew did not throw their hands up ("' + meet.fl + '")');
+      want(meet.flDir === -meet.cdir,
+        'ambush: the crew were walking ' + meet.cdir + ' and the carrier ran ' + meet.flDir +
+        ' — into the zombie, not back the way he came');
+      want(meet.kept >= 1, 'ambush: he ran without dropping anything (' + meet.kept + ' kept)');
+      seen.push('ambush: met head-on walking ' + meet.cdir + ' -> ' + meet.fl + ', runs ' +
+                meet.flDir + ', leaves ' + meet.kept);
+    }
+
+    // Click him. Unlike every other bubble on this page his walks with him, because he does
+    // not stop to say it — so the follow is asserted, not just the opening.
+    const say = await page.evaluate(async function () {
+      var D = window.__evFigDebug;
+      D.zom.MAX = 1; D.zom.MAX_END = 1;
+      D.zombies().forEach(function (e) { if (!e.gone) e.zX = -400; });
+      await new Promise(function (r) { setTimeout(r, 200); });
+      if (!D.zombieSpawn()) return { err: 'no lane on screen to spawn onto' };
+      var z = D.zombies().filter(function (e) { return !e.gone; }).pop();
+      z.zX = z.w * 0.5;                       // mid-screen, so the bubble is not clamped
+      await new Promise(function (r) { setTimeout(r, 120); });
+      // ONE dispatch: the canvas is pointer-events:none, the handler is the document's, and
+      // a second dispatch is a second click, which toggles the bubble straight back off.
+      document.dispatchEvent(new MouseEvent('click',
+        { bubbles: true, clientX: z._zSX, clientY: z._zFY - 40 }));
+      await new Promise(function (r) { setTimeout(r, 200); });
+      var el = document.querySelector('.ev-quote.ev-say');
+      var x0 = el ? el.getBoundingClientRect().left : null;
+      await new Promise(function (r) { setTimeout(r, 1200); });
+      var el2 = document.querySelector('.ev-quote.ev-say');
+      var x1 = el2 ? el2.getBoundingClientRect().left : null;
+      // and again: it goes away
+      document.dispatchEvent(new MouseEvent('click',
+        { bubbles: true, clientX: z._zSX, clientY: z._zFY - 40 }));
+      await new Promise(function (r) { setTimeout(r, 300); });
+      return { text: el ? el.textContent.trim() : null, said: z.zSay,
+               followed: (x0 != null && x1 != null) ? Math.round(x1 - x0) : null,
+               stillOpen: !!z.zh, egg: D.zom.EGG };
+    });
+    want(!say.err, 'says: ' + say.err);
+    if (!say.err) {
+      want(say.text === say.said,
+        'says: the bubble reads "' + say.text + '" but he was handed "' + say.said + '"');
+      want(/brains|Happy Halloween/.test(say.text || ''), 'says: unexpected line "' + say.text + '"');
+      want(Math.abs(say.followed || 0) > 20,
+        'says: the bubble stayed put while he walked off from under it (moved ' +
+        say.followed + 'px in 1.2s)');
+      want(!say.stillOpen, 'says: clicking him a second time did not put it away');
+      seen.push('says: "' + say.text + '", bubble tracked ' + say.followed + 'px, click again closes');
+    }
+    want(errors.length === 0, 'ambush/says: page errors — ' + errors.join(' | '));
+    await page.close();
+  }
+
   await browser.close();
   seen.forEach(function (s) { console.log('  ' + s); });
   if (failures.length) {
     failures.forEach(function (f) { console.error('FAIL ' + f); });
     throw new Error('halloween-zombies: ' + failures.length + ' failure(s)');
   }
-  console.log('halloween-zombies: PASS (november gate, spawn, panic, cast thins, phone width)');
+  console.log('halloween-zombies: PASS (november gate, spawn, panic, cast thins, phone width, chase from behind, ambush, the line)');
 })();

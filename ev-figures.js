@@ -112,6 +112,17 @@
         if (e.spec.mode === 'patrol' && e.spec.toddler && e._toddSX != null && !e._fall && !e.greet) {
           if (Math.abs(ev.clientX - e._toddSX) < 42 && Math.abs(ev.clientY - e._toddSY) < 72) { e._fall = 4.5; return; }
         }
+        // zombie: click him and he says the one thing he has to say. A switch, like the
+        // greeter — click him again and it goes away — except that it also times out on its
+        // own after ZOM.SAY, because he is walking away from the bubble the whole time.
+        if (e.spec.mode === 'zombie' && !e.gone && e._zSX != null) {
+          if (Math.abs(ev.clientX - e._zSX) < 42 && ev.clientY > e._zFY - 104 && ev.clientY < e._zFY + 8) {
+            hitBubble = true;
+            if (e.zh) { window.EVQuotes.close(e.zh); e.zh = null; }
+            else zombieSay(e);
+            return;
+          }
+        }
         // light-gag Bobit: click him and he waves briefly, then gets right back to work
         if (e.spec.mode === 'beam' && e.scene === 'light' && e._lgSX != null && !(e.lightWave > 0)) {
           if (Math.abs(ev.clientX - e._lgSX) < 42 && Math.abs(ev.clientY - e._lgSY) < 72) { e.lightWave = 1.4; return; }
@@ -230,6 +241,7 @@
       entries.forEach(function (e) {
         if (e.qh) { e.qh = null; e.qs = 'resume'; e.qsT = 0; }
         if (e.gh) { e.gh = null; greetSettle(e); }
+        if (e.zh) { e.zh = null; e.zSayT = 0; }
       });
     }
 
@@ -4187,18 +4199,28 @@
     })();
 
     var ZOM = {
-      SPEED:   17,        // px/s. Slower than every gait in GSPEED bar trudge — he never catches anyone
-      SCARE:   118,       // "within a handful of steps"; a stride at this scale is a little over 20px
+      SPEED:   44,        // px/s. Over every walk (carry 30, march 34, strut 40), under
+      STRIDE:  1.73,      // every hurry (button carry 51, scurry 62). His step, against a
+      CADENCE: 1.08,      // trudge, and how often. ALL THREE ARE ONE SETTING — see zombiePose
+      SCARE:   118,       // "within a handful of steps" — at STRIDE a step is about 36px, so three
       MAX:     3,         // at once, to begin with
       MAX_END: 8,         // ...and once the place has been overrun
       GROW:    40,        // seconds of being open per extra zombie allowed on screen
       LITTER:  24,        // pieces of abandoned cargo kept on the floor at once
-      CARRY_W: 0.6,       // how often to pick the carry lane when it is on screen, if there is a choice
+      CARRY_W: 0.35,      // how often to pick the carry lane when it is on screen, if there is a choice
+      PER_LANE: 3,        // most on any ONE rule at a time. Without this they queue up single file
+                          // on whichever rule you happen to be looking at: parked on the hero the
+                          // whole cap ends up on the carry lane, which reads as a train, not a crowd
       FIRST:   [4, 9],    // seconds after load before the first one wanders on
-      GAP:     [13, 24],  // between spawns
+      GAP:     [5, 10],   // between spawns. TIED TO SPEED: a zombie is on screen for the
+                          // time it takes to cross the viewport, so how many are there at once is
+                          // that time over this gap. Tripling SPEED cut the crowd from 4.3 to 1.9
+                          // measured, which is the opposite of overrun; the gap came down with it
       TURN:    [8, 15],   // after a Bobit is gone, before he shambles back as one of them
+      SAY:     3.2,       // seconds a clicked zombie's bubble stays up
+      EGG:     0.10,      // share of zombies who say the other thing. Fixed at SPAWN, not
+                          // per click: it is 10% of the zombies, not 10% of the clicks
       TONE:    3,         // green; runPlay picked the same slot for the same reason
-      LANE:    60,        // floor lines further apart than this are different ledges, not one
       RETRY:   2          // after a spawn that found no lane on screen; see zombieTick
     };
     var zomT = 0;
@@ -4224,7 +4246,13 @@
     // trudge is the base because it is the slowest gait in the file and already hunches and
     // drops the head, so most of the lurch is there before anything is overridden.
     function zombiePose(t, seed) {
-      var p = A.trudge.frame(t * 0.72);
+      var p = A.trudge.frame(t * ZOM.CADENCE);
+      // Long dragging strides rather than quick little ones. SPEED, CADENCE and STRIDE are one
+      // setting in three parts and only their product is free: a gait plants a foot every
+      // half cycle, so ground covered per step is SPEED / (1.1 * CADENCE) and the step the
+      // legs actually draw is proportional to STRIDE. Change one alone and he skates.
+      p.legRU *= ZOM.STRIDE; p.legRF *= ZOM.STRIDE;
+      p.legLU *= ZOM.STRIDE; p.legLF *= ZOM.STRIDE;
       var sway = Math.sin(t * 1.6 + seed), drift = Math.sin(t * 0.9 + seed * 2.3);
       p.armRU = 96 + sway * 4;  p.armRF = 86 + drift * 6;
       p.armLU = 78 + drift * 4; p.armLF = 62 + sway * 6;
@@ -4270,6 +4298,41 @@
     // feet on the anchor's top edge and the canvas bottom 6px below them.
     function feetDoc(e, sy) { return e.c.getBoundingClientRect().bottom - 6 + sy; }
 
+    // The lane a figure BELONGS to: the nearest one to his feet. Almost nobody actually stands
+    // on a rule — measured across six deals, only the full-width walkers do (beam, patrol,
+    // dogfetch, crosser). Everyone else stands on the top edge of a card: the note-card row is
+    // 533px off its nearest rule, the talk-card row 304, the readers 558. So a test of "is his
+    // floor MY floor" to within a lane's width answers no for the whole standing cast, and a
+    // zombie walks the length of the page past people who never look up.
+    //
+    // Nearest-lane is the fix and it needs no distance constant, because the caller has already
+    // established that both of them are ON SCREEN. Two figures you can see at once are near
+    // enough to be frightened by each other; that is the whole standard a visual gag needs, and
+    // it is self-maintaining when the page's shelves move.
+    function laneOf(feetDocY, lanes) {
+      var best = null, bd = Infinity;
+      for (var i = 0; i < lanes.length; i++) {
+        var d = Math.abs(lanes[i] - feetDocY);
+        if (d < bd) { bd = d; best = lanes[i]; }
+      }
+      return best;
+    }
+
+    // Which way somebody carrying something is WALKING: +1 right, -1 left, 0 for anybody who
+    // is not both holding something and on the move. The beam crew are the only figures on the
+    // page who are, which is why this looks at one mode: everyone else who holds anything —
+    // the seated readers, the paddleball player, the kite flyer — is standing still.
+    //
+    // `dwell` is the pause at the end of a pass, off-screen, before they turn round and come
+    // back. Reading `dir` during it would aim at where they are about to go, not where they
+    // are going.
+    function carrierHeading(e) {
+      if (e.spec.mode !== 'beam' || !e.dir) return 0;
+      if (e.scene !== 'carry' && e.scene !== 'letters' && e.scene !== 'play') return 0;
+      if (e.dwell > 0 || e.greet) return 0;
+      return e.dir > 0 ? 1 : -1;
+    }
+
     function zombieSpawn() {
       var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
       var vw = document.documentElement.clientWidth, vh = window.innerHeight;
@@ -4289,20 +4352,37 @@
 
       // Prefer a lane somebody is standing on, so he has someone to shamble at. Failing that
       // any visible rule will do - he is still walking on something, and the page scrolls.
+      // Peopled by the SAME rule the scare uses, or the two disagree: on this page only the
+      // four full-width walkers stand on a rule, so a nearest-lane test here is the difference
+      // between "three of the four lanes have nobody on them" and the truth.
+      var allLanes = zombieLanes();
       var peopled = lanes.filter(function (y) {
-        return pool.some(function (e) { return Math.abs(feetDoc(e, sy) - y) <= ZOM.LANE; });
+        return pool.some(function (e) { return laneOf(feetDoc(e, sy), allLanes) === y; });
       });
-      var pickFrom = peopled.length ? peopled : lanes;
+      // Who is already walking which rule. A lane that is full is not offered again: the spawn
+      // only ever picks a lane that is ON SCREEN, so parked at the top of the page every zombie
+      // for minutes on end is dealt the same rule and they arrive in single file.
+      var onIt = {};
+      entries.forEach(function (z) {
+        if (z.spec.mode !== 'zombie' || z.gone) return;
+        var k = Math.round(z.zLaneDoc);
+        onIt[k] = (onIt[k] || 0) + 1;
+      });
+      var room = function (y) { return (onIt[Math.round(y)] || 0) < ZOM.PER_LANE; };
+
+      var pickFrom = (peopled.length ? peopled : lanes).filter(room);
+      if (!pickFrom.length) return false;          // every visible rule is full; zombieTick retries
+
       // Favour the CARRY LANE — the hero's bottom edge, lane 0, the one the beam crew walk
       // along. It is the only line on the page where anybody is holding anything, so it is the
-      // only one where the panic leaves something behind, and a takeover you can see is one
-      // that keeps coming back to where the stuff is.
+      // only one where the panic leaves something behind. Only a third of the time, though:
+      // at 0.6 it took most of the arrivals even when three other rules were in view.
       var carry = zombieLanes()[0];
       var floorDoc = (pickFrom.indexOf(carry) >= 0 && pickFrom.length > 1 && Math.random() < ZOM.CARRY_W)
         ? carry
         : pickFrom[Math.floor(Math.random() * pickFrom.length)];
 
-      var onLane = pool.filter(function (e) { return Math.abs(feetDoc(e, sy) - floorDoc) <= ZOM.LANE; });
+      var onLane = pool.filter(function (e) { return laneOf(feetDoc(e, sy), allLanes) === floorDoc; });
       var hostX = onLane.length
         ? (function () {
             var hr = onLane[0].c.getBoundingClientRect();
@@ -4319,14 +4399,44 @@
       c.style.top = (floorDoc - (h - 6)) + 'px';
       document.body.appendChild(c);
 
-      var dir = (hostX < vw / 2) ? 1 : -1;                 // enter from the far side and walk at him
+      // Which edge he comes in at, in order of preference.
+      //
+      // 1. CROSSING TRAFFIC. If somebody is already walking this rule, come in from the other
+      //    end and walk into him. Two zombies passing each other reads as a place being
+      //    overrun; two zombies nose to tail reads as a queue, and that is what a lane with no
+      //    rule about entry sides produces, because the side is otherwise decided by where one
+      //    host happens to be standing and he does not move between spawns.
+      //
+      // 2. AMBUSH A CARRIER. Coming in behind somebody holding something means a long stern
+      //    chase and then a drop at the screen edge, where nobody sees it. Coming in from the
+      //    edge he is WALKING TOWARD puts the meeting in front of him: he drops the beam where
+      //    he stands, turns, and runs back down the line he just walked, past his own load.
+      //
+      // 3. Otherwise the FAR side from whoever is standing there, so there is a walk to watch
+      //    before he arrives. This used to read `hostX < vw / 2 ? 1 : -1`, which is the near
+      //    side — the comment said far and the code did the opposite, so a zombie coming for
+      //    the man with the walking stick materialised beside him instead of crossing to him.
+      var last = null;
+      entries.forEach(function (z) {
+        if (z.spec.mode !== 'zombie' || z.gone) return;
+        if (Math.round(z.zLaneDoc) === Math.round(floorDoc)) last = z;
+      });
+
+      var carrier = 0;
+      for (var oi = 0; oi < onLane.length && !carrier; oi++) carrier = carrierHeading(onLane[oi]);
+
+      var dir = last ? -last.zDir
+              : carrier ? -carrier
+              : ((hostX < vw / 2) ? -1 : 1);
       var e = {
         spec: { mode: 'zombie', anchor: null, tone: ZOM.TONE },
         el: null, c: c, ctx: c.getContext('2d'),
         phase: Math.random() * 6, w: 0, h: 0, ci: ZOM.TONE,
         lt: 0, greet: 0, linger: 0,
         zDir: dir, zX: dir > 0 ? -70 : w + 70,
-        zSeed: Math.random() * 6.3, zLeft: left, zLaneDoc: floorDoc
+        zSeed: Math.random() * 6.3, zLeft: left, zLaneDoc: floorDoc,
+        zSay: (Math.random() < ZOM.EGG) ? '\u2026Happy Halloween!' : '\u2026brains!',
+        zh: null, zSayT: 0
       };
       sizeCanvas(e, w, h);
       entries.push(e);
@@ -4351,13 +4461,70 @@
       R.drawShadow(ctx, e.zX, feetY, 16, shadow);
       drawFig(ctx, e.zX, feetY - 112 * S, S, e.zDir < 0,
               zombiePose(e.lt + e.phase, e.zSeed), { color: figColor(ZOM.TONE) });
+
+      // Where he is on SCREEN this frame. Every other clickable Bobit in this file publishes
+      // the same pair for the same reason — the click handler runs in viewport coordinates
+      // and each figure lives in its own canvas placed in document space.
+      var zcr = e.c.getBoundingClientRect();
+      e._zSX = zcr.left + e.zX;
+      e._zFY = zcr.top + feetY;
+
+      // He does not stop to talk. The bubble is pinned to his head each frame instead, which
+      // no other bubble on the page has to do because nothing else that speaks is walking.
+      if (e.zh) {
+        e.zSayT += dt;
+        if (e.zSayT >= ZOM.SAY) { window.EVQuotes.close(e.zh); e.zh = null; }
+        else zombieSayMove(e);
+      }
       // Off the far side. The husk stays in `entries` marked gone, exactly as a figure who
       // fled does, so nothing else in the file has to learn that the array can shrink.
       if (e.zX < -90 || e.zX > w + 90) {
         e.gone = true;
+        if (e.zh) { window.EVQuotes.close(e.zh); e.zh = null; }   // or it hangs there with nobody under it
         e.c.width = e.c.height = 0;                        // frees the backing store, which removeChild does not
         if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
       }
+    }
+
+    // Head top in DOCUMENT coords — the same measurement greetBubble and the readers' bubbles
+    // use, so his bubble sits at the height every other one does.
+    function zombieHeadDoc(e) {
+      var sx = window.scrollX || window.pageXOffset || 0;
+      var sy = window.scrollY || window.pageYOffset || 0;
+      var cr = e.c.getBoundingClientRect();
+      return { x: cr.left + sx + e.zX,
+               y: cr.top + sy + (e.h - 6) - (112 + 128 + CFG.R) * S };
+    }
+
+    // Re-place an open bubble over a head that has moved. EVQuotes.place is private, so this
+    // repeats its clamp: keep the box on screen and slide the tail along the bottom edge so it
+    // still points at him. Without the clamp a zombie walking off the right edge drags his
+    // bubble past the document width and the page grows a horizontal scrollbar.
+    function zombieSayMove(e) {
+      var h = e.zh;
+      if (!h || !h.el) return;
+      var at = zombieHeadDoc(e);
+      var sx = window.scrollX || window.pageXOffset || 0;
+      var bw = h.el.offsetWidth, bh = h.el.offsetHeight;
+      var docW = document.documentElement.clientWidth;
+      var left = Math.max(sx + 8, Math.min(at.x - bw / 2, sx + docW - bw - 8));
+      h.el.style.left = left + 'px';
+      h.el.style.top = (at.y - bh - 14) + 'px';
+      var tx = Math.max(18, Math.min(at.x - left, bw - 18));
+      h.tail.style.left = (tx - 11) + 'px';
+      h.tailIn.style.left = (tx - 8) + 'px';
+    }
+
+    function zombieSay(e) {
+      if (!window.EVQuotes || e.zh) return false;
+      var at = zombieHeadDoc(e);
+      e.zh = window.EVQuotes.open({
+        headX: at.x, headY: at.y,
+        tone: figColor(ZOM.TONE),
+        quote: { text: e.zSay }           // no `who`: he is speaking for himself, such as it is
+      });
+      e.zSayT = 0;
+      return true;
     }
 
     // One pass a frame: move the clock, spawn what is due, and let each zombie frighten
@@ -4398,16 +4565,21 @@
 
       var vh = window.innerHeight;
       var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
+      var lanesNow = zombieLanes();
       entries.forEach(function (z) {
         if (z.spec.mode !== 'zombie' || z.gone || !z.w) return;
         var zr = z.c.getBoundingClientRect();
-        var zScreenX = zr.left + z.zX, zFloor = zr.bottom - 6;
+        var zScreenX = zr.left + z.zX;
+        var zLane = Math.round(z.zLaneDoc);
         entries.forEach(function (e) {
           if (e === z || e.gone || e.fl || e.ab || !e.w) return;
           if (isChrome(e.spec) || e.spec.mode === 'zombie') return;
           var r = e.c.getBoundingClientRect();
-          if (r.bottom < -40 || r.top > vh + 40) return;
-          if (Math.abs((r.bottom - 6) - zFloor) > ZOM.LANE) return;   // a different ledge entirely
+          if (r.bottom < -40 || r.top > vh + 40) return;            // not both on screen: not his problem
+          // His shelf has to be the one I am walking. See laneOf — comparing his floor to mine
+          // within a lane width is what left the whole standing cast unfrightenable, because they
+          // stand on cards and I walk on rules.
+          if (Math.round(laneOf(r.bottom - 6 + sy, lanesNow)) !== zLane) return;
           var ex = r.left + (e._figX != null ? e._figX : e.w / 2);
           if (Math.abs(ex - zScreenX) > ZOM.SCARE) return;
           var away = (ex < zScreenX) ? -1 : 1;
@@ -5120,6 +5292,7 @@
       beamLoads: BEAM_LOADS, beamSpecials: BEAM_SPECIALS, heavyProp: HEAVY_PROP,
       startPlay: startPlay, playR: PLAY_R,
       halloween: HALLOWEEN, zom: ZOM, zomCap: zomCap, dropProp: dropProp, zombieSpawn: zombieSpawn, zombiePose: zombiePose,
+      carrierHeading: carrierHeading, zombieSay: zombieSay, laneOf: laneOf,
       zombies: function () { return entries.filter(function (e) { return e.spec.mode === 'zombie'; }); },
       fleeConst: { FIT_SCREENS: FIT_SCREENS, GONE_BELOW_FOLD: GONE_BELOW_FOLD, FALL_G: FALL_G, FLEE_DROP: FLEE_DROP }
     };

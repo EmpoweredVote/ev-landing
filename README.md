@@ -259,11 +259,19 @@ bolts for the nearest edge. The zombie turns and follows him off. Nobody who run
 as himself — a while later he shambles on as another zombie — so a page left open slowly
 turns, and the cast only ever converts.
 
-**He walks on a full-bleed rule, and only the lower three.** The page's 1px rules between
+**He walks on a full-bleed rule, and there are four of them.** The page's 1px rules between
 sections are the only horizontal surfaces that exist for the whole width he crosses, and
-`sectionBreakLines()` already finds them. `zombieLanes()` keeps the ones from the bottom of
-section 01 downward — between Why and How, between How and Watch, and the one under Watch —
-so he comes in low rather than through the headline.
+`sectionBreakLines()` already finds them. `zombieLanes()` keeps every rule from the **bottom
+of the hero** downward: that edge, then between Why and How, between How and Watch, and the
+one under Watch. The banner rule under the header stays out — a zombie crossing the headline
+is a different joke from one wandering in past the work, and it is the one rule with nobody
+standing on it.
+
+The hero's bottom edge is the **carry lane**, and it earns its own name. It is the line the
+beam crew walk, which makes it the only line on the page where anybody is holding anything —
+so it is the only one where the panic leaves something behind. `ZOM.CARRY_W` picks it 60% of
+the time when it is on screen and there is a choice. The lanes originally started a section
+lower, which meant the carriers could never be reached at all.
 
 Anchoring him to a host figure's own floor instead is what left him treading air: a seated
 reader's floor is the edge of a note card, 190px of surface under a 1432px walk, and measured
@@ -295,6 +303,86 @@ this way:
   derived set rather than adding to it. That is how the off path is tested on a day when the
   real clock says otherwise.
 
+**He is faster than a walk and slower than a hurry.** `ZOM.SPEED` is 44px/s against the beam
+crew's 30, stroll 32, march 34 and strut 40 — and against the button carry's 51 and scurry's
+62. So he overhauls anybody strolling and never catches anybody running, which is the whole
+rule the number encodes. He shipped at 17, slower than everything on the page bar trudge, and
+at that speed he could only ever meet somebody **head-on**: the encounter always happened on
+their turn, and a chase from behind was arithmetically impossible.
+
+Speed cannot be raised on its own. A gait plants a foot every half cycle, so the ground
+covered per step is `SPEED / (1.1 * CADENCE)` and the step the legs actually draw is
+proportional to `STRIDE` — raise one and the other two have to follow or he skates. The
+three move together: at 44px/s with `STRIDE` 1.73 and `CADENCE` 1.08 the planted foot drifts
+5px while the body travels 37, which is the same 13% it was at 17px/s. Long dragging strides
+at close to a trudge's cadence, which is also what a shamble should look like.
+
+**How many are on screen is the crossing time over the spawn gap**, and the crossing time
+is set by `SPEED`. That is not obvious and it bit immediately: raising him from 17 to 44px/s
+cut the measured crowd from a mean of 4.3 on screen to 1.9, because each one now clears the
+viewport in 37 seconds instead of 95. Faster alone made the takeover *weaker*. `ZOM.GAP`
+came down from 13-24s to 5-10s in the same change, which puts it back to 4.1-4.3. Move one
+of those two and measure the other.
+
+**Almost nobody on this page stands on a rule, and that is what the scare test has to cope
+with.** Measured across six deals: only the four full-width walkers — beam, patrol, dogfetch,
+crosser — have their feet on a lane. Everyone else stands on the top edge of a card. The
+note-card row is 533px from its nearest rule, the talk-card row 304, the readers 558, the
+kite flyer 288. So a scare test of "is his floor my floor, to within a lane's width" answers
+no for the entire standing cast, and a zombie walks the length of the page past people who
+never look up — which is exactly what it did.
+
+`laneOf()` replaces it: a figure belongs to the rule NEAREST his feet, and a zombie
+frightens whoever belongs to the rule he is walking. There is no distance constant, because
+the caller has already established that both of them are on screen — two figures you can see
+at once are near enough to frighten each other, which is the whole standard a visual gag
+needs, and it keeps working when the page's shelves move. The same rule decides which lanes
+count as "peopled" at spawn time; using one rule in one place and another in the other is
+what made three of the four lanes look empty.
+
+**Three at most on any one rule** (`ZOM.PER_LANE`). The spawn only picks lanes that are ON
+SCREEN, so parked at the top of the page every zombie for minutes on end is dealt the same
+rule — they arrived in single file along the hero's bottom edge, five of them, which reads as
+a train rather than a crowd. With the cap and `CARRY_W` down from 0.6 to 0.35, a measured
+two minutes parked on the hero gives 9 arrivals on that lane, never more than 3 at once; two
+minutes parked at the bottom gives 13 spread over the two rules down there.
+
+**They come in from both ends and pass each other.** If somebody is already walking a rule,
+the next one in comes from the other end. Without that the side is decided by where a host
+happens to be standing, and he does not move between spawns, so every arrival takes the same
+edge. Measured on the hero lane: 4 from the left, 5 from the right.
+
+**He ambushes a carrier rather than chasing one.** When somebody on the lane is holding
+something and walking, the zombie comes in from the edge that person is walking TOWARD, so
+the meeting happens in front of them: they drop the beam where they stand, turn, and run
+back down the line they just walked, past their own load. Coming in behind them gets the
+same catch, but at the screen edge, where the drop lands outside the viewport and the whole
+point of it is lost. `carrierHeading()` is the test — the beam crew are the only figures on
+the page who both hold something and move, so it looks at one mode and ignores `dwell`, the
+off-screen pause before they turn round.
+
+**Click a zombie and he says the one thing he has to say.** Nine in ten say "…brains!" and
+one in ten says "…Happy Halloween!". The line is fixed at SPAWN, not per click, because the
+ask was that a tenth of the *zombies* are the easter egg — so the same one says the same
+thing however many times you prod him. Clicking again puts it away, and it times out after
+`ZOM.SAY` on its own.
+
+His bubble is the only one on the page that MOVES. Every other speaker — the greeter, the
+seated readers — stands still, so `EVQuotes.open()` places the box once and leaves it. A
+zombie does not stop to talk, so `zombieSayMove()` re-pins it to his head every frame and
+repeats `place()`'s clamp, which is private: without the clamp a zombie walking off the
+right-hand edge drags his bubble past the document width and the page grows a horizontal
+scrollbar.
+
+**The chase is the half of the gag that nothing else tests.** A head-on meeting needs no
+speed at all, so every other case in `halloween-zombies.cjs` passes just as happily with the
+chase quietly gone. Case 5 walks the crew down from 240px back and refuses the result unless
+*our* zombie was inside `ZOM.SCARE` when they bolted — "he caught somebody" is also what it
+looks like when a different zombie wanders into the same crew, so the cap is pinned to one
+and the lane cleared **before** the case works out which way they are walking. Doing that
+after was a real flake: deciding the direction takes up to 24s and the scheduler puts a
+zombie on the carry lane every 13 to 24.
+
 **The panic is not new code.** `poofArmFlee` and `drawFlee` are the click-a-Bobit exodus's own
 machinery and already know how to widen a canvas to the viewport, split a carrying pair into
 separate runners, bring the dog along with his owner, and mark a figure gone at the screen
@@ -318,7 +406,7 @@ suite stayed green, the test spoofs `navigator.webdriver` back to `false` and ch
 agrees with the wall calendar. A guard meant for the harness must never decide what a visitor
 sees.
 
-Three traps paid for while building it, all three in `tests/layout/halloween-zombies.cjs`:
+Four traps paid for while building it, all four in `tests/layout/halloween-zombies.cjs`:
 
 - **`POOF.phase` rests on the string `'idle'`, which is truthy.** A guard written as
   `if (POOF.phase) return` returns on every frame forever. No error, no warning, and the gate
@@ -346,8 +434,23 @@ Zombies arrive for as long as the tab is open, unlike the cast, which is fixed a
 fourteen. So a retired one is spliced out of `entries` and has its canvas zeroed — these are
 viewport-wide, and `removeChild` alone leaves the backing store alive at roughly 1.9 MB each.
 
-The knobs are the `ZOM` object at the top of the block: `SPEED`, `SCARE` (how close is "a
-handful of steps"), `MAX` on screen at once, and the three delays.
+**The place fills up, and what people were carrying stays on the floor.** Three at once is
+right for the first minute and wrong for the tenth, so `zomCap()` climbs from `ZOM.MAX` 3 to
+`ZOM.MAX_END` 8 at one more every `ZOM.GROW` seconds the page has been open. Anyone caught
+mid-carry drops his load where he stood and it is **not** faded away afterwards, up to
+`ZOM.LITTER` 24 pieces — oldest first when that fills, so the floor near the visitor stays
+dressed. The litter is what makes it read as a takeover; without it the page just quietly
+empties.
+
+`dropProp(e, sx, sy, keep)` is the single-figure half of the click-exodus's `stunDropAll`,
+with `keep` skipping the fade. **Call it before `poofArmFlee`, never after:** it finds the
+figure's hands with `scanInk()`, and `poofArmFlee` resizes and clears that canvas, so
+afterwards the scan finds no ink and the prop lands at the fallback instead of in his hands.
+
+The knobs are the `ZOM` object at the top of the block: `SPEED`/`STRIDE`/`CADENCE` (which
+move together), `GAP` (which moves with `SPEED`), `SCARE` (how close is "a handful of
+steps"), `MAX` through `MAX_END` over `GROW`, `PER_LANE`, `LITTER`, `CARRY_W`, `SAY`,
+`EGG`, and the other delays.
 
 ## Deploy
 
