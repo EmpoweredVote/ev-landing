@@ -501,6 +501,47 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
     FROM inform.politician_answers WHERE value = 0;
   ```
   Generalise it: **a query that watches for new rows cannot see a campaign that edits old ones.**
+- 🔴 **`financials.empowered.vote` IS EMPOWERED VOTE'S OWN FINANCE PAGE, NOT THE BUDGET EXPLORER,
+  AND EIGHT EDITIONS GAVE THE WRONG REASON FOR A RIGHT NUMBER.**  From 2026-09-11 to 2026-10-23
+  every edition reported that most people who reach a budget address land on our own
+  organisation's budget, and every one explained it as "one click from the donate page".  Opened
+  in a browser on 2026-10-27, that host serves *our* finances (h1 "Empowered Vote Finances", a
+  Donate element, FY 2026) and **rewrites its own address to `?entity=empowered-vote-ca&year=2026
+  &dataset=operating` during load**.  Nobody clicks anything; arriving at the host is enough to be
+  counted.  The explorer with the place search is `treasurytracker.empowered.vote`.  The
+  conclusion never changed — that traffic is not budget exploration — but the mechanism was
+  invented and repeated for six weeks.  It also cost a timing run: a Playwright script pointed at
+  `financials` waited out three 90-second timeouts on a search box that only exists on
+  `treasurytracker`, which read exactly like a broken page.  **Generalise it: a host name is a
+  guess about what a host serves until you open it.**
+- **The Treasury page is TIMED now, and this is the method, so it does not have to be argued
+  again.**  Five editions said the real page was untimed.  Measured 2026-10-27 with a scripted
+  Chromium against production, three cold browser contexts, one machine on a home connection:
+  search box visible **0.4–0.9 s**, the `fields=index` place index **1.1–1.4 s at 1.95 MB**, and a
+  city's headline spending figure **2.1–2.6 s**.  A direct entity link (`?entity=atlanta-ga`)
+  never requests the place index at all and renders in **2.7 s cold / 0.9 s warm**.  Say which of
+  those a sentence is about: the deep link and the search front page are different pages.
+- 🔴 **THE TRIVIA EXPIRY JOB DOES NOT ALWAYS BUMP `updated_at`.  READ `expiration_history`.**
+  On 2026-10-27 the live bank had fallen 3,323 → 3,306 while 40 questions were written, and a
+  `status='expired' AND updated_at >= :since` count found only **15** of the **57** expiries that
+  actually happened — the other 42 carry an untouched `updated_at` and an `expiration_history`
+  entry whose own `timestamp` records the transition.  The honest query is
+  ```sql
+  SELECT count(DISTINCT q.id) FROM trivia.questions q,
+         jsonb_array_elements(q.expiration_history::jsonb) h
+   WHERE h->>'action' = 'expired' AND (h->>'timestamp')::timestamptz >= :since;
+  ```
+  With it the bank reconciles exactly: 3,323 + 40 written − 57 expired = 3,306.  **Generalise it:
+  when a total will not reconcile, suspect the timestamp you are filtering on before the count.**
+  Related: numeric questions now carry a 7-mark `options_scale` and the server rolls which four
+  marks a player sees, so `correct_answer` no longer describes the slot a player meets.  Report the
+  A/B/C/D split over the **unscaled** questions only, and say so.
+- **`voice-check.mjs` reports one over-length sentence that is not this edition's prose, and that
+  is expected.**  The "Previous Briefings" picker carries each past edition's own summary verbatim,
+  and the 2026-10-23 summary is 37 words of three clauses — the very string "How to write it" holds
+  up as the bad example.  Carrying it forward is right; rewriting another edition's description of
+  itself is not.  So the 2026-10-27 edition published with `longest sentence 37 / want <= 35` and
+  everything else green.  **Do not retune an archive label to make the counter go green.**
 - 🔴 **DO NOT COUNT WHILE A LOAD IS RUNNING — THE SNAPSHOT MEASURES THE LOAD, NOT THE WORK.**
   The 2026-10-20 edition published two figures taken mid-write and drew a wrong conclusion from
   both.  It read 72 stance positions across 15 Georgia officials at 06:01; the batch was still
