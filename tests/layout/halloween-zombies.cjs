@@ -681,11 +681,58 @@ async function parkOnPeopledLane(page) {
     await page.close();
   }
 
+  // ───────────────────────────── 8. he is not drawn in the cast's green
+  // ZOM.COL, not figColor(ZOM.TONE). On the palette green he was the same ink as a living
+  // Bobit, which reads as a cheerful man with his arms out rather than something drained —
+  // and the whole gag is that you can tell at a glance which of them has turned.
+  //
+  // Asked of the PIXELS in both themes, because the fault this guards against is a colour
+  // looking right in one of them: the dark palette's green is three shades lighter than the
+  // light one's, so a value picked against a white page can come back glowing on a black one.
+  {
+    const { page, errors } = await open(browser, '?evlines=halloween#figdebug');
+    for (const theme of ['light', 'dark']) {
+      const r = await page.evaluate(async function (th) {
+        var D = window.__evFigDebug;
+        document.documentElement.dataset.theme = th;
+        var lane = D.zombieLanes()[0];
+        window.scrollTo(0, Math.max(0, lane - window.innerHeight * 0.62));
+        await new Promise(function (r) { setTimeout(r, 300); });
+        var z = D.makeZombie(lane, 1, 300);
+        await new Promise(function (r) { setTimeout(r, 600); });
+        var g = z.c.getContext('2d');
+        var d = g.getImageData(0, 0, z.c.width, z.c.height).data;
+        var tally = {}, top = null;
+        for (var i = 0; i < d.length; i += 4) {
+          if (d[i + 3] < 200) continue;
+          var k = '#' + [d[i], d[i + 1], d[i + 2]].map(function (v) {
+            return (v < 16 ? '0' : '') + v.toString(16);
+          }).join('').toUpperCase();
+          tally[k] = (tally[k] || 0) + 1;
+          if (!top || tally[k] > tally[top]) top = k;
+        }
+        z.gone = true; z.c.width = z.c.height = 0;
+        if (z.c.parentNode) z.c.parentNode.removeChild(z.c);
+        return { ink: top, px: tally[top], want: D.zomColor().toUpperCase(),
+                 cast: (th === 'dark' ? '#43D07E' : '#2E9E5B') };
+      }, theme);
+      want(r.px > 200, theme + ' ink: only ' + r.px + 'px of solid colour — he was not drawn');
+      want(r.ink === r.want,
+        theme + ' ink: he is drawn ' + r.ink + ', not ZOM.COL ' + r.want);
+      want(r.ink !== r.cast,
+        theme + " ink: he is still the cast's green " + r.cast + ' — a zombie and a living ' +
+        'Bobit are the same colour');
+      seen.push('ink (' + theme + '): ' + r.px + 'px of ' + r.ink + ', cast green is ' + r.cast);
+    }
+    want(errors.length === 0, 'ink: page errors — ' + errors.join(' | '));
+    await page.close();
+  }
+
   await browser.close();
   seen.forEach(function (s) { console.log('  ' + s); });
   if (failures.length) {
     failures.forEach(function (f) { console.error('FAIL ' + f); });
     throw new Error('halloween-zombies: ' + failures.length + ' failure(s)');
   }
-  console.log('halloween-zombies: PASS (november gate, spawn, panic, cast thins, phone width, chase from behind, ambush, the line, host holds)');
+  console.log('halloween-zombies: PASS (november gate, spawn, panic, cast thins, phone width, chase from behind, ambush, the line, host holds, his own green)');
 })();

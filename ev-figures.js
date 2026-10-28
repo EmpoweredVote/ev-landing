@@ -4347,7 +4347,10 @@
                           // crew instead of a third zombie. "It's more fun to see them encounter
                           // other bobits than just walk around" — and two is where a rule stops
                           // needing another shambler and starts needing somebody to shamble at
-      CREWS:    3,        // most crews the takeover may add. They never leave, so this is a budget
+      CREWS:    2,        // most crews the takeover may add. They never leave, so this is a budget.
+                          // Was 3 while a crew could be cast on any of the four rules; now that
+                          // they all land on the carry lane, 3 put four pairs — eight figures,
+                          // all holding something — on one line, and the band read as a depot
       DOWN:     1.6,      // seconds a zombie spends flat on his back after the dog gets him
       // THE CONVERSION IS A SHORT SCENE, NOT A SWAP. Chris, watching the first version: "the
       // conversion to a zombie should last for about 2 seconds, where both the zombie and person
@@ -4373,10 +4376,21 @@
       SAY:     3.2,       // seconds a clicked zombie's bubble stays up
       EGG:     0.10,      // share of zombies who say the other thing. Fixed at SPAWN, not
                           // per click: it is 10% of the zombies, not 10% of the clicks
-      TONE:    3,         // green; runPlay picked the same slot for the same reason
+      TONE:    3,         // green; runPlay picked the same slot for the same reason. Kept on his
+                          // spec as the slot he stands for; nothing draws from it any more
+      // ...but NOT the palette's green. The cast's green (#2E9E5B / #43D07E) is the same ink a
+      // living Bobit is drawn in, so a zombie read as a cheerful man with his arms out. These are
+      // one step down from it in each theme: dark enough to look drained, light enough to hold
+      // their edge against the background they stand on. Kept beside TONE rather than added to
+      // FIG_COLORS, because that palette is the CAST's and nobody should be dealt this one.
+      COL:     { light: '#1B6B40', dark: '#2E9E5B' },
       RETRY:   2          // after a spawn that found no lane on screen; see zombieTick
     };
     var zomT = 0;
+    // Same shape as figColor, and deliberately not a call into it; see ZOM.COL.
+    function zomColor() {
+      return ZOM.COL[document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'];
+    }
     // "Eventually it should feel like the place has been taken over." Three at once is right
     // for the first minute and wrong for the tenth, so the ceiling climbs with how long the
     // page has been open: 3 to start, one more every GROW seconds, MAX_END at the top.
@@ -4624,11 +4638,18 @@
     // Nearest edge wins, and only within a few pixels — the same nearest-match laneOf uses — so a
     // reflow between the lane being chosen and the crew being cast cannot land them on different
     // lines from each other.
+    //
+    // ONE LANE, AND IT IS THE CARRY LANE. Chris, seeing a pair haul a line across the 02 / 03
+    // divider: "the carry scenes only live above 01 and below the host." They do — the crew this
+    // page ships with walks the hero's bottom edge, the band between the host on the meta row and
+    // the 01 / Why heading, and that is the set the whole carry scene was built for. A crew cast
+    // on the watch divider is the same animation playing in a room it does not belong in.
+    //
+    // So the map holds the one rule. A lane that is not it finds no anchor, workerSpawn returns
+    // false, and the caller casts an ordinary zombie instead — which is why PER_LANE exists and
+    // says what it says: it is the backstop for the lanes a crew cannot be put on.
     var LANE_ANCHORS = [
-      { sel: 'section.why',   edge: 'top' },
-      { sel: 'section.how',   edge: 'top' },
-      { sel: 'section.watch', edge: 'top' },
-      { sel: 'footer',        edge: 'top' }
+      { sel: 'section.why', edge: 'top' }    // the hero's bottom edge, deduped: zombieLanes()[0]
     ];
     function laneAnchor(laneDoc) {
       var sy = window.scrollY || window.pageYOffset;
@@ -4693,7 +4714,7 @@
         R.drawShadow(ctx, e.zX, feetY, 16, shadow);
         drawFig(ctx, e.zX, feetY - 112 * S + HEAP_YOFF * dk, S, e.zDir < 0,
                 lerpPose(A.standstill.frame(0), cwHeap(e.lt), dk),
-                { color: figColor(ZOM.TONE), rot: e.zDir * 1.45 * dk });
+                { color: zomColor(), rot: e.zDir * 1.45 * dk });
         // Not clickable and not talking while he is down: the click handler keys off _zSX, and a
         // bubble opened over a man lying on his back would be closed again on the next frame.
         e._zSX = null;
@@ -4703,7 +4724,7 @@
       e.zX += ZOM.SPEED * e.zDir * dt;
       R.drawShadow(ctx, e.zX, feetY, 16, shadow);
       drawFig(ctx, e.zX, feetY - 112 * S, S, e.zDir < 0,
-              zombiePose(e.lt + e.phase, e.zSeed), { color: figColor(ZOM.TONE) });
+              zombiePose(e.lt + e.phase, e.zSeed), { color: zomColor() });
 
       // Where he is on SCREEN this frame. Every other clickable Bobit in this file publishes
       // the same pair for the same reason — the click handler runs in viewport coordinates
@@ -4763,7 +4784,7 @@
       var at = zombieHeadDoc(e);
       e.zh = window.EVQuotes.open({
         headX: at.x, headY: at.y,
-        tone: figColor(ZOM.TONE),
+        tone: zomColor(),
         tight: true,                      // two words; the greeter's 300px box would be mostly air
         quote: { text: e.zSay }           // no `who`: he is speaking for himself, such as it is
       });
@@ -4946,7 +4967,7 @@
           drawFallen(g, c.px - sx, c.py - sy, fk, bAlpha, c.pdir,
                      c.pcol, c.psmall ? TOT_S : S, c.t * 1.6);
           drawFallen(g, c.zx - sx, c.lane - sy, fk, bAlpha, c.zdir,
-                     figColor(ZOM.TONE), S, c.t * 1.6 + 1.1);
+                     zomColor(), S, c.t * 1.6 + 1.1);
         }
         var k = (c.t - ZOM.CONV_SMOKE) / (ZOM.CONV - ZOM.CONV_SMOKE);
         if (k <= 0) continue;
@@ -6197,7 +6218,7 @@
       startPlay: startPlay, playR: PLAY_R,
       halloween: HALLOWEEN, zom: ZOM, zomCap: zomCap, dropProp: dropProp, zombieSpawn: zombieSpawn, zombiePose: zombiePose,
       carrierHeading: carrierHeading, zombieSay: zombieSay, laneOf: laneOf,
-      makeZombie: makeZombie, workerSpawn: workerSpawn, laneAnchor: laneAnchor,
+      makeZombie: makeZombie, workerSpawn: workerSpawn, laneAnchor: laneAnchor, zomColor: zomColor,
       convs: function () { return CONV; }, zombieCatch: zombieCatch, convTick: convTick,
       dog: DOG, dogGuardSpawn: dogGuardSpawn,
       dogGuards: function () { return entries.filter(function (e) { return e.spec.mode === 'dogguard' && !e.gone; }); },

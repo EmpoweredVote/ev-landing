@@ -303,6 +303,13 @@ this way:
   derived set rather than adding to it. That is how the off path is tested on a day when the
   real clock says otherwise.
 
+**He is not drawn in the cast's green.** `ZOM.COL` is its own pair — `#1B6B40` in light,
+`#2E9E5B` in dark — one step down from the palette's green in each theme. On the palette green
+he was the same ink as a living Bobit, which read as a cheerful man with his arms out rather
+than something drained. It sits beside `ZOM.TONE` rather than in `FIG_COLORS`, because that
+palette is the **cast's**: adding a seventh entry would deal this colour to somebody alive.
+`ZOM.TONE` stays on his `spec` as the slot he stands for, but nothing draws from it any more.
+
 **He is faster than a walk and slower than a hurry.** `ZOM.SPEED` is 44px/s against the beam
 crew's 30, stroll 32, march 34 and strut 40 — and against the button carry's 51 and scurry's
 62. So he overhauls anybody strolling and never catches anybody running, which is the whole
@@ -359,7 +366,17 @@ drop, the ambush, `reposition`) handles the new crew without knowing it arrived 
 pinned to plain two-carries (`spec.plain`): the light gag measures the hero's 501(c)(3) swatch
 against its OWN canvas top, so a crew walking the watch divider would loft a yellow box half a
 page away, and the letters and the play button are hero set pieces for the same reason.
-`ZOM.CREWS` 3 is the budget, because a crew never leaves.
+
+**A crew is only ever cast on the carry lane.** "The carry scenes only live above 01 and below
+the host." They do: the crew this page ships with walks the hero's bottom edge, the band between
+the host on the meta row and the 01 / Why heading, and that is the set the scene was built for —
+a pair hauling a yellow line across the 02 / 03 divider is the same animation playing in a room
+it does not belong in. So `LANE_ANCHORS` holds that one rule; `laneAnchor()` returns null for
+every other lane, `workerSpawn()` refuses, and the caller casts an ordinary zombie instead. That
+is what `PER_LANE` is for, and why its note calls itself the backstop for the lanes a crew cannot
+be put on. `ZOM.CREWS` is 2, down from 3 once they all landed on one line: a crew never leaves,
+and three of them beside the one the page ships with put eight figures, all holding something,
+along the hero's bottom edge — a depot, not a gag.
 
 **They come in from both ends and pass each other.** If somebody is already walking a rule,
 the next one in comes from the other end. Without that the side is decided by where a host

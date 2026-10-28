@@ -34,6 +34,11 @@
 //    placed a section away is invisible rather than broken, which is the kind of wrong that
 //    survives a release.
 //
+//    And the rule is THE CARRY LANE, the hero's bottom edge, and nothing else: "the carry scenes
+//    only live above 01 and below the host." A crew hauling a yellow line across the 02 / 03
+//    divider is the same animation playing in a room it does not belong in, so every other lane
+//    has to refuse one and leave the caller to cast an ordinary zombie.
+//
 // 3. THE DOG DOES NOT RUN AND DOES NOT CONVERT. He is moved onto his own entry the moment his
 //    owner is frightened, because the owner's canvas is about to belong to drawFlee. He backs off
 //    barking, and only when he is boxed in on both sides does he leap — knocking exactly ONE
@@ -371,11 +376,14 @@ async function reset(page) {
     const r = await page.evaluate(async function () {
       var D = window.__evFigDebug;
       var sy = window.scrollY || 0;
-      var lanes = D.zombieLanes().filter(function (y) {
-        return y > sy + 60 && y < sy + window.innerHeight - 30;
+      // THE CARRY LANE, not whichever rule happens to be on screen: a crew is only ever cast on
+      // this one, and `reset` parks the page on it. Every other lane must REFUSE, which is the
+      // second half of this case.
+      var lane = D.zombieLanes()[0];
+      if (!(lane > sy + 60 && lane < sy + window.innerHeight - 30)) return { err: 'carry lane off screen' };
+      var refused = D.zombieLanes().slice(1).map(function (y) {
+        return { y: Math.round(y), anchor: (D.laneAnchor(y) || {}).sel || null, spawned: D.workerSpawn(y) };
       });
-      if (!lanes.length) return { err: 'no rule on screen' };
-      var lane = lanes[0];
       var before = D.crews().length;
       for (var i = 0; i < D.zom.CREW_AT; i++) D.makeZombie(lane, i % 2 ? 1 : -1, 100 + i * 200);
       var tries = 0;
@@ -384,7 +392,7 @@ async function reset(page) {
       var c = D.crews()[D.crews().length - 1];
       if (!c) return { err: 'a rule with ' + D.zom.CREW_AT + ' zombies produced no crew in ' +
                             tries + ' spawns' };
-      return { before: before, after: D.crews().length, anchor: c.spec.anchor,
+      return { before: before, after: D.crews().length, anchor: c.spec.anchor, refused: refused,
                plain: !!c.spec.plain, scene: c.scene,
                feet: Math.round(c.c.getBoundingClientRect().top + window.scrollY + c.h - 6),
                edge: Math.round(c.el.getBoundingClientRect().top + window.scrollY) };
@@ -396,7 +404,12 @@ async function reset(page) {
       want(r.scene === 'carry', 'the crew opened on scene "' + r.scene + '", not a carry');
       want(Math.abs(r.feet - r.edge) < 3,
         'the crew stands at ' + r.feet + ' and its rule is at ' + r.edge + ' — it is on a different line');
-      seen.push('crew: cast on ' + r.anchor + ' carrying, feet ' + r.feet + ' = rule ' + r.edge);
+      want(r.anchor === 'section.why',
+        'the crew was anchored to ' + r.anchor + ', not the carry lane');
+      want(r.refused.every(function (x) { return !x.spawned && x.anchor === null; }),
+        'a crew was cast off the carry lane: ' + JSON.stringify(r.refused));
+      seen.push('crew: cast on ' + r.anchor + ' carrying, feet ' + r.feet + ' = rule ' + r.edge +
+                '; ' + r.refused.length + ' other lanes refused one');
     }
   }
 
