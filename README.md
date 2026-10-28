@@ -464,7 +464,7 @@ afterwards the scan finds no ink and the prop lands at the fallback instead of i
 The knobs are the `ZOM` object at the top of the block: `SPEED`/`STRIDE`/`CADENCE` (which
 move together), `GAP` (which moves with `SPEED`), `SCARE` (how close is "a handful of
 steps"), `MAX` through `MAX_END` over `GROW`, `PER_LANE` and `CREW_AT`/`CREWS`, `LITTER`,
-`CARRY_W`, `SAY`, `EGG`, `CONV`/`CONV_UP`/`CONV_X`/`CONV_Y`, `DOWN`, and the other delays.
+`CARRY_W`, `SAY`, `EGG`, the five `CONV*` beats, `CONV_X`/`CONV_Y`, `DOWN`, and the other delays.
 
 ## The ghost
 
@@ -532,16 +532,38 @@ a phone.
 anyone already fleeing, so a runner could sprint the length of the page straight THROUGH a
 zombie and out the other side — which is the most common way the two ever meet, because a
 runner crosses the whole viewport and a zombie is standing in the middle of it. The thing you
-saw most often was the thing that did nothing. Purple smoke takes him where he stands and one
-of them walks out of it `ZOM.CONV_UP` into the `ZOM.CONV` the smoke lasts, still going the way
-he was running. Purple is slot 4 of the page's own palette and reads as "something happened to
-him"; the abduction's smoke is grey and means "something is dusty".
+saw most often was the thing that did nothing.
 
-**The census is the half worth guarding.** Everyone who flees is already booked to come back as
-a zombie (`zomQueue`), so being caught SPENDS that booking rather than adding to it — one Bobit
-still becomes exactly one zombie, he just does it in front of you. Get that wrong and the page
-silently doubles its population every time somebody is caught, which nothing else here would
-notice. `tests/layout/halloween-caught.cjs` asserts the count, not just the smoke.
+**It is a two-second scene, not a swap.** Chris, watching the first version: "the conversion to
+a zombie should last for about 2 seconds, where both the zombie and person disappear after they
+fall to the ground. Then 2 zombies appear. Right now, they just come together." So both of them
+go over — the same heap-and-rotate the exodus uses for a faller and `drawZombie` uses for one
+the dog has knocked down, because a body on this page always falls the same way — they lie
+there, purple rises over the pair and takes them, and `ZOM.CONV_UP` in, TWO of them walk out of
+it a stride apart: the one who caught him, and him. Purple is slot 4 of the page's own palette
+and reads as "something happened to him"; the abduction's smoke is grey and means "something is
+dusty". The five beats are five knobs in order — `CONV`, `CONV_FALL`, `CONV_SMOKE`,
+`CONV_GONE`, `CONV_UP` — and the file reads better if they are kept that way.
+
+The pair is drawn by `drawConversions` on the smoke overlay, not on their own canvases, because
+by then neither of them has one. That is also why `convTick` is its own pass in `tick()` rather
+than a branch of `zombieTick`: `zombieTick` stands down for the whole of a poof, and a
+conversion already under way has to finish or the runner is gone, the smoke is frozen and
+nobody ever arrives.
+
+**The census is the half worth guarding, and the sum is not obvious.** Everyone who flees is
+booked to come back as a zombie (`zomQueue`). A catch SPENDS one of those bookings and ALSO
+takes the catching zombie off the page, so it removes one live zombie and one pending one — and
+then puts two live ones back. Net zero. One Bobit still becomes exactly one zombie; he just
+does it in front of you, and the zombie who got him stands back up beside him.
+
+**One booking per BODY, not per entry.** An entry can be a whole crew, and `drawFlee` takes all
+of them off the page, so booking one return for the lot quietly lost everybody else from the
+census. It never showed while a crew could not be caught. Now that one can be, each body has to
+own its own booking or a catch spends a return that was never promised.
+`tests/layout/halloween-caught.cjs` counts the zombies that rise out of THIS smoke, on this
+rule, rather than totalling the page: the takeover keeps spawning its own throughout, so a
+total is a number that is right until it is not.
 
 Two tolerances, and they are deliberately not the scare's. `ZOM.CONV_X` 34 against `SCARE`'s
 118: being frightened is noticing him, being caught is touching him. And `ZOM.CONV_Y` 90, which
@@ -549,8 +571,39 @@ the scare has no equivalent of at all — `laneOf()` answers "nearest rule" with
 which is right for being frightened across a page, but the zombie that rises out of the smoke
 stands ON the rule, so a plume 300px above it would not line up with him. A runner mid-`raise`
 or mid-`drop` is exempt: the first is the beat where his hands go up with the zombie who
-frightened him still beside him, and the second is mid-air. So is anyone whose entry still has
-mates or a dog on it, because a caught runner's canvas goes away with him.
+frightened him still beside him, and the second is mid-air.
+
+**A crew is frightened by its NEAREST carrier and caught one carrier at a time.** Chris: "the
+people carrying the fallacy finders banner are walking past the zombie without converting or
+triggering a conversion." Two separate faults under one sentence.
+
+*Triggering.* The scare measured the gap to `_figX`, which is one point — and for a crew it is
+the MIDPOINT between the two of them. With the Fallacy Finders button that is a half-card, about
+178px, from either carrier, against a `SCARE` of 118. So a zombie walked clean through the front
+carrier AND most of the banner before he was close enough to anything, and if they turned at the
+screen edge first he never got there at all. Every multi-body mode already publishes `_bodies`
+for the exodus, so the answer was on the entry already; the scan takes the nearest of them now
+and keeps `_figX` as the fallback for everyone else.
+
+*Converting.* A fleeing entry draws its whole crew on ONE canvas — the runner plus everyone in
+`e.flMates` — so catching "the entry" would have deleted the rest of them, which is why any
+entry with mates was skipped outright. The catch is per body now. A mate is spliced out of
+`flMates`. The runner himself cannot be, because every field `drawFlee` reads about him lives on
+the entry, so the first mate is PROMOTED into his place and the entry carries on as that figure;
+only when there is nobody left to promote does the canvas go. An entry is then catchable again
+only after `ZOM.CONV`, or the zombie standing there takes the next one on the very next frame
+and the whole crew disappears into one pile instead of two events a second apart.
+
+The dog is still exempt, and only when he is the body in question: he is drawn on the runner's
+own canvas, so taking the runner would take him too. A mate beside him can still be caught.
+
+**One housekeeping line moved, and it had been wrong since the takeover shipped.** `zombieTick`
+takes retired zombies out of `entries`, and that loop sat BELOW the guard that stands the whole
+function down during a poof — so for as long as a gag ran, dead entries stayed in the array.
+Nearly invisible while the only way to retire was to walk off the side of the screen. A
+conversion retires one every time somebody is caught, which is often, and the husks then piled
+up for the length of the gag. Retiring a figure who has left the page is bookkeeping, not
+behaviour, and it does not belong behind a behaviour guard.
 
 **The dog does not run and does not convert.** He is lifted onto his own entry
 (`mode: 'dogguard'`) the moment his owner is frightened, before `poofArmFlee`, because the
@@ -588,7 +641,7 @@ a zombie is still walking afterwards. The second half is the real check — a th
 
 They should not run anyway. A zombie keeps shambling through a panic he started.
 
-## Three more things from the live page
+## Four more things from the live page
 
 **The Fallacy Finders button lands as the button.** Every other dropped prop is a few strokes,
 because at S=0.32 the read that matters is "he was holding something and now it is on the
@@ -600,6 +653,17 @@ kind and `drawGroundProp` hands them to `drawButtonCard`, which rotates 180 itse
 up is not a decision made at drop time. The dropped card is the carried card, parked. Without a
 size (the abduction's prop, and the unit test, neither of which measures) the
 old slab is still the fallback.
+
+**When they drop a bar, it lands as a bar.** Chris, off the live page: "when they drop a bar, it
+is turning into a yellow circle." The crew's circle load really is a ball and lands as one; the
+line load is a 24px gold bar held between the two of them, and a 7px circle on the floor is not
+a smaller version of it — it is a different object, and it is the one the circle load already
+drops. Both loads share one prop KIND on purpose: `tests/poof/14-card-prop.cjs` asserts that
+`circle` and `line` both report `beamload`, because one kind cannot carry two colours and the
+colour already travels beside the kind. So the shape does too. `propOf` reports the bar's real
+length — `BEAM_LINE_LEN`, derived from the same two constants the carry is drawn from, so the
+thing on the floor is the thing that was in their hands — and without it the circle is still the
+fallback.
 
 **A scared Bobit changed colour as he ran off.** `_bodies` is the list a mode publishes of the
 figures it drew, so the takeovers can act on the ONE that was grabbed and leave the rest

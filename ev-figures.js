@@ -1089,7 +1089,15 @@
           var bsz = buttonCardSize(e, e.w);
           return { kind: 'card', x: null, y: null, cw: bsz.w, ch: bsz.h };
         }
+        // THE BAR LANDS AS A BAR. The same reasoning as the card above: the line load is carried as
+        // a 24px gold bar held between the two of them, and a 7px circle on the floor is not a
+        // smaller version of that — it is a different object, and the one the circle load already
+        // drops. Chris, off the live page: "when they drop a bar, it is turning into a yellow
+        // circle." The KIND still has to stay `beamload` for both (see the note above, and
+        // tests/poof/14-card-prop.cjs, which asserts exactly that), so the shape travels beside the
+        // kind the way the colour and the card's measured size already do.
         return { kind: 'beamload', x: null, y: null,
+                 bar: (e.load === 'line') ? BEAM_LINE_LEN : 0,
                  col: (e.load === 'circle') ? cssVar('--coral', '#FF5740') : figColor(2) };
       }
       if (m === 'seat') return s.phone ? { kind: 'phone', x: null, y: null }
@@ -1139,7 +1147,19 @@
           ctx.stroke();
         }
       } else if (kind === 'beamload' || kind === 'light') {
-        ctx.beginPath(); ctx.arc(x, y - 7, 7, 0, Math.PI * 2); ctx.stroke();
+        // ONE KIND, TWO SHAPES. The crew's circle load really is a ball and lands as one; the line
+        // load is a bar and has to land as a bar. `opt.bar` is its carried length, measured off the
+        // same two constants the carry is drawn from, so the thing on the floor is the thing that
+        // was in their hands. Without it (the abduction's prop, and tests/poof/14-card-prop.cjs,
+        // neither of which measures) the circle is still the fallback.
+        if (opt && opt.bar) {
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(x - opt.bar / 2, y - 3); ctx.lineTo(x + opt.bar / 2, y - 3);
+          ctx.stroke();
+        } else {
+          ctx.beginPath(); ctx.arc(x, y - 7, 7, 0, Math.PI * 2); ctx.stroke();
+        }
       } else if (kind === 'playbtn') {
         // the disc plus the triangle that makes it a play button rather than another ball — the
         // one dropped prop where a bare circle would be indistinguishable from the beam load
@@ -1492,7 +1512,7 @@
       e.propGone = true;                              // his mode stops drawing it from this frame on
       DROPS.push({
         kind: p.kind, owner: e, keep: !!keep, col: p.col || null,
-        cw: p.cw || null, ch: p.ch || null,
+        cw: p.cw || null, ch: p.ch || null, bar: p.bar || 0,
         x: cr.left + sx + lx, x0: cr.left + sx + lx,
         y: cr.top + sy + ly, y0: cr.top + sy + ly,
         floor: surfaceFloorDoc(e, ink, cr, sy),
@@ -1525,6 +1545,7 @@
         DROPS.push({
           kind: p.kind, owner: e, col: p.col || null,
           cw: p.cw || null, ch: p.ch || null,
+          bar: p.bar || 0,
           x: cr.left + sx + lx, x0: cr.left + sx + lx,
           y: cr.top + sy + ly, y0: cr.top + sy + ly,
           floor: surfaceFloorDoc(e, ink, cr, sy),
@@ -2001,6 +2022,11 @@
     // call site in the file, including the ones written against this one. Don't add a local blend
     // helper here — it will silently lose to that one.
     var BEAM_LOADS = ['circle', 'line', 'button'];   // the ball, the yellow line, and the Fallacy Finders button (no notched triangle); beamPick rotates and avoids repeats
+    // How far apart the two of them stand on an ordinary carry, and how far inside each carrier the
+    // gold line is drawn. Named rather than typed twice, because propOf has to report the line's real
+    // LENGTH so the dropped form is the same object at rest — see the `bar` field there.
+    var BEAM_HALF_GAP = 24, BEAM_LINE_INSET = 12;
+    var BEAM_LINE_LEN = BEAM_HALF_GAP * 2 - BEAM_LINE_INSET * 2;
     // The set-piece passes the crew runs INSTEAD of a two-carry: the light gag, the letter carriers,
     // and the play-button carrier. Rotated by beamPick the same deterministic way as the loads.
     //
@@ -4323,8 +4349,17 @@
                           // needing another shambler and starts needing somebody to shamble at
       CREWS:    3,        // most crews the takeover may add. They never leave, so this is a budget
       DOWN:     1.6,      // seconds a zombie spends flat on his back after the dog gets him
-      CONV:     1.25,     // seconds of purple smoke when a runner is caught
-      CONV_UP:  0.55,     // ...and how far into it the new one walks out
+      // THE CONVERSION IS A SHORT SCENE, NOT A SWAP. Chris, watching the first version: "the
+      // conversion to a zombie should last for about 2 seconds, where both the zombie and person
+      // disappear after they fall to the ground. Then 2 zombies appear. Right now, they just come
+      // together." So the two of them go down together, the smoke takes them both off the page, and
+      // what rises out of it is a pair. These five run in order and the file reads better if they
+      // are kept that way.
+      CONV:      2.0,     // the whole scene, start to finish
+      CONV_FALL: 0.5,     // they tip over during this, and are flat on the floor at the end of it
+      CONV_SMOKE: 0.42,   // purple starts just before they land, so it is already there to take them
+      CONV_GONE: 0.9,     // both bodies have faded out inside the smoke by here
+      CONV_UP:   1.45,    // and TWO of them walk out of it: the one who caught him, and him
       CONV_X:   34,       // how close a RUNNER has to pass to be caught. Much tighter than SCARE:
                           // being frightened is noticing him, being caught is touching him
       CONV_Y:   90,       // ...and how near his own rule he has to be, so the smoke and the zombie
@@ -4743,45 +4778,118 @@
     // is standing in the middle of it. Chris: "bobits are running by zombies and not triggering a
     // purple smoke-to-zombie convergence."
     //
-    // So a runner who actually touches one does not get away. Purple smoke takes him where he
-    // stands, and what walks out of it a beat later is one of them, still going the way he was
-    // running. Purple because it is slot 4 of the page's own palette and reads as "something
+    // A runner who actually touches one does not get away, and what happens then is a SCENE rather
+    // than a swap. Both of them go over. Both lie there. Purple smoke rises over the pair and takes
+    // them off the page, and two seconds after the first contact TWO of them walk out of it — the
+    // one who caught him, and him. Chris again, on the first version: "right now, they just come
+    // together." Purple because it is slot 4 of the page's own palette and reads as "something
     // happened to him"; the abduction's smoke is grey and means "something is dusty".
     //
-    // THE CENSUS IS NOT TOUCHED. Everyone who flees is already booked to shamble back on as a
-    // zombie some seconds later (zomQueue), so being caught SPENDS that booking rather than adding
-    // to it: one Bobit still becomes exactly one zombie. He just does it in front of you.
-    function zombieCatch(e, docX, docY, laneDoc) {
-      if (zomQueue.length) zomQueue.pop();
-      CONV.push({ x: docX, y: docY, lane: laneDoc, dir: e.flDir, t: 0, made: false });
+    // THE CENSUS IS NOT TOUCHED, and the bookkeeping is worth following because it is not obvious.
+    // Everyone who flees is already booked to shamble back on as a zombie some seconds later
+    // (zomQueue). A catch SPENDS that booking and ALSO takes the catching zombie off the page, so
+    // it removes one live zombie and one pending one — and then puts two live ones back. Net zero.
+    // One Bobit still becomes exactly one zombie; he just does it in front of you, and the zombie
+    // who got him stands back up beside him.
+    //
+    // A FLEEING ENTRY CAN BE A CREW. drawFlee draws one runner plus everyone in e.flMates, all on
+    // the one canvas, so "catching the entry" would silently delete the rest of them — which is why
+    // the pair used to be skipped outright, and why Chris saw "the people carrying the fallacy
+    // finders banner walking past the zombie without converting". The catch is per BODY now: the
+    // nearest body to the zombie is the one taken, and the entry keeps running with one fewer.
+    function fleeBodies(e) {
+      var out = [{ mate: null, x: e.flLeft + e.flX, col: e.flCol, small: !!e.flSmall }];
+      if (e.flMates) {
+        for (var i = 0; i < e.flMates.length; i++) {
+          var m = e.flMates[i];
+          out.push({ mate: m, x: e.flLeft + m.x, col: m.col, small: !!m.small });
+        }
+      }
+      return out;
+    }
+
+    // Take ONE body off a fleeing entry. A mate is simply spliced out. The runner himself cannot
+    // be, because every field drawFlee reads about him lives on the entry — so the first mate is
+    // PROMOTED into his place and the entry carries on as that figure. Only when there is nobody
+    // left to promote does the canvas go.
+    function fleeDropBody(e, body) {
+      if (body.mate) {
+        var i = e.flMates.indexOf(body.mate);
+        if (i >= 0) e.flMates.splice(i, 1);
+        if (!e.flMates.length) e.flMates = null;
+        return;
+      }
+      if (e.flMates && e.flMates.length) {
+        var m = e.flMates.shift();
+        e.flX = m.x; e.flCol = m.col; e.flSmall = !!m.small;
+        if (m.seed) e.flSeed = m.seed;
+        // flFloor is deliberately left alone: every entry that draws more than one body stands them
+        // on the same line (both carriers, both players, parent and toddler), so a mate's floor and
+        // the runner's are the same number, and flFloor is also what the landing and the dog read.
+        if (!e.flMates.length) e.flMates = null;
+        return;
+      }
       e.gone = true;
       e.c.width = e.c.height = 0;                    // frees the backing store, which removeChild does not
       if (e.c.parentNode) e.c.parentNode.removeChild(e.c);
     }
 
-    // Is this runner close enough to this zombie to be caught? Everything in DOCUMENT coords read
-    // straight off the flee state rather than off the canvas rect, because a flee canvas is
-    // viewport-wide and its rect says nothing about where the figure inside it is.
-    function zombieCatchTest(e, zScreenX, zLane, lanes, sx, sy, vh) {
-      // ONE BODY ONLY. A caught runner's canvas goes away with him, and a beam pair or a patrol
-      // and toddler are both drawn on it — converting the one would silently delete the other, and
-      // converting both would hand the page a zombie nobody paid for. flMates clears itself once
-      // they run off the sides, so a pair becomes catchable again a second later.
-      if (e.flMates || e.flDog) return;
+    function zombieCatch(e, body, z, docY, laneDoc) {
+      if (zomQueue.length) zomQueue.pop();
+      e.flCaughtAt = zomT;
+      var sx = window.scrollX || window.pageXOffset;
+      var zDocX = z.c.getBoundingClientRect().left + sx + z.zX;
+      CONV.push({
+        lane: laneDoc,
+        py: docY, px: body.x, pdir: e.flDir,
+        pcol: body.col || figColor(e.spec.tone != null ? e.spec.tone : e.ci),
+        psmall: !!body.small,
+        zx: zDocX, zdir: z.zDir,
+        t: 0, made: false
+      });
+      // The zombie goes down with him. His bubble closes first or it hangs in the air over nobody,
+      // which is the same fault zombieTick guards when one walks off the side.
+      z.gone = true;
+      if (z.zh) { window.EVQuotes.close(z.zh); z.zh = null; }
+      z._zSX = null;
+      z.c.width = z.c.height = 0;
+      if (z.c.parentNode) z.c.parentNode.removeChild(z.c);
+      fleeDropBody(e, body);
+    }
+
+    // Is any of this runner's bodies close enough to this zombie to be caught? Everything in
+    // DOCUMENT coords read straight off the flee state rather than off the canvas rect, because a
+    // flee canvas is viewport-wide and its rect says nothing about where the figures inside it are.
+    function zombieCatchTest(e, z, zScreenX, zLane, lanes, sx, sy, vh) {
       // 'raise' is the beat where his hands go up, with the zombie who frightened him still beside
       // him — catching him there would eat the flee before it started. 'drop' is mid-air.
       if (e.fl === 'raise' || e.fl === 'drop') return;
-      var fDocX = e.flLeft + e.flX;
+      // ONE AT A TIME OUT OF A CREW. The body taken is removed from the entry and the rest run on
+      // from the same spot, so without this the zombie standing there takes the next one on the
+      // very next frame and the whole crew disappears into one pile instead of two events a
+      // second apart. CONV long enough to see is the point of the whole scene.
+      if (e.flCaughtAt != null && zomT - e.flCaughtAt < ZOM.CONV) return;
       var fDocY = e.flTopDoc + e.flFloor + (e.flYOff || 0);
       if (fDocY - sy < -40 || fDocY - sy > vh + 40) return;
       var fLane = laneOf(fDocY, lanes);
       if (fLane == null || Math.round(fLane) !== zLane) return;
       // Near his own rule as well as on it. laneOf answers "nearest" with no distance at all, which
-      // is right for being FRIGHTENED across a page — but the zombie that rises out of the smoke
-      // stands on the rule, so if the smoke is 300px above it the two do not line up.
+      // is right for being FRIGHTENED across a page — but the zombies that rise out of the smoke
+      // stand on the rule, so if the smoke is 300px above it the three do not line up.
       if (Math.abs(fDocY - fLane) > ZOM.CONV_Y) return;
-      if (Math.abs((fDocX - sx) - zScreenX) > ZOM.CONV_X) return;
-      zombieCatch(e, fDocX, fDocY, fLane);
+      var bodies = fleeBodies(e), best = null;
+      for (var i = 0; i < bodies.length; i++) {
+        var d = Math.abs((bodies[i].x - sx) - zScreenX);
+        if (d > ZOM.CONV_X) continue;
+        if (!best || d < best.d) best = { b: bodies[i], d: d };
+      }
+      if (!best) return;
+      // THE DOG IS NOT CONVERTED AND IS NOT ORPHANED. He is drawn on the runner's own canvas by
+      // drawFlee, so taking the runner would take him too. Under the zombies he has normally been
+      // lifted onto his own entry already (dogGuardSpawn) and flDog is null; this is the ghost's
+      // panic, where he is still here. A MATE beside him can still be caught.
+      if (e.flDog && !best.b.mate) return;
+      zombieCatch(e, best.b, z, fDocY, fLane);
     }
 
     // Move the conversions along. Its own pass rather than a branch of zombieTick, because
@@ -4795,22 +4903,57 @@
           c.made = true;
           var sx = window.scrollX || window.pageXOffset;
           var w = fitW(document.documentElement.clientWidth);
-          makeZombie(c.lane, c.dir, c.x - fitLeft(0, w, sx));
+          var left = fitLeft(0, w, sx);
+          var mid = (c.px + c.zx) / 2 - left;
+          // Two of them, a stride apart, each going the way his own half of this was going. Placed
+          // left and right by INDEX rather than by direction: when both were travelling the same
+          // way, siting each one on the side he faces stood them in exactly the same spot and the
+          // pair read as one.
+          makeZombie(c.lane, c.pdir, mid - 28);
+          makeZombie(c.lane, c.zdir, mid + 28);
         }
         if (c.t >= ZOM.CONV) CONV.splice(i, 1);
       }
     }
 
-    // The puff itself. R.drawSmoke is the abduction's and takes no colour; this one is a different
-    // event and says so. Nine blobs on a fixed deterministic spray, swelling and lifting as they
-    // thin out — the same shape as the rig's, in the page's purple.
+    // One body on the floor, mid-topple. The same heap-and-rotate the exodus uses for a faller and
+    // drawZombie uses for one the dog has knocked over, so a body on this page always goes down the
+    // same way. HEAP_YOFF is why it lies ON the floor rather than pivoted above it; see its note.
+    function drawFallen(g, x, floorY, k, alpha, dir, col, s, tw) {
+      g.save();
+      g.globalAlpha = Math.max(0, Math.min(1, alpha));
+      R.drawShadow(g, x, floorY, 15 * (s / S), 'rgba(127,127,127,0.18)');
+      drawFig(g, x, floorY - 112 * s + HEAP_YOFF * k, s, dir < 0,
+              lerpPose(A.standstill.frame(0), cwHeap(tw), k),
+              { color: col, rot: dir * 1.45 * k });
+      g.restore();
+    }
+
+    // The scene itself: two bodies going over, then purple over the pair. R.drawSmoke is the
+    // abduction's and takes no colour; this one is a different event and says so. Nine blobs on a
+    // fixed deterministic spray, swelling and lifting as they thin out — the same shape as the
+    // rig's, in the page's purple, and wide enough to cover two people rather than one.
     function drawConversions(g) {
       var sx = window.scrollX || window.pageXOffset, sy = window.scrollY || window.pageYOffset;
       for (var i = 0; i < CONV.length; i++) {
-        var c = CONV[i], k = Math.min(1, c.t / ZOM.CONV);
-        var spread = 16 + k * 46;
-        var alpha = (k < 0.18) ? (k / 0.18) : Math.max(0, 1 - (k - 0.18) / 0.82);
-        var x = c.x - sx, y = c.y - sy;
+        var c = CONV[i];
+        // Both of them, until the smoke has them. The fade runs from the moment they land to
+        // CONV_GONE, so they do not blink out — they are swallowed.
+        if (c.t < ZOM.CONV_GONE) {
+          var fk = Math.min(1, c.t / ZOM.CONV_FALL);
+          var bAlpha = (c.t <= ZOM.CONV_FALL) ? 1
+                     : Math.max(0, 1 - (c.t - ZOM.CONV_FALL) / (ZOM.CONV_GONE - ZOM.CONV_FALL));
+          drawFallen(g, c.px - sx, c.py - sy, fk, bAlpha, c.pdir,
+                     c.pcol, c.psmall ? TOT_S : S, c.t * 1.6);
+          drawFallen(g, c.zx - sx, c.lane - sy, fk, bAlpha, c.zdir,
+                     figColor(ZOM.TONE), S, c.t * 1.6 + 1.1);
+        }
+        var k = (c.t - ZOM.CONV_SMOKE) / (ZOM.CONV - ZOM.CONV_SMOKE);
+        if (k <= 0) continue;
+        k = Math.min(1, k);
+        var spread = 22 + k * 66;
+        var alpha = (k < 0.16) ? (k / 0.16) : Math.max(0, 1 - (k - 0.16) / 0.84);
+        var x = (c.px + c.zx) / 2 - sx, y = (c.py + c.lane) / 2 - sy;
         g.save();
         g.fillStyle = figColor(4);
         for (var j = 0; j < 9; j++) {
@@ -5219,16 +5362,21 @@
     function zombieTick(dt) {
       if (!HALLOWEEN) return;
       zomT += dt;
-      // NOT `if (POOF.phase)`. The resting value is the STRING 'idle', which is truthy, so
-      // that test returned on every frame and no zombie ever arrived. The poof machine has
-      // seven phases and only one of them means "nothing is happening".
-      if (POOF.phase !== 'idle') return;  // mid-gag: the room is already bolting, nobody left to scare
-
+      // TAKE THE HUSKS OUT FIRST, above the poof guard. Retiring a zombie who has left the page
+      // is bookkeeping, not behaviour, and it used to sit below the guard — so for the whole of
+      // a poof a dead entry stayed in the array. That was nearly invisible while the only way to
+      // retire was to walk off the side; a conversion retires one every time somebody is caught,
+      // which is often, and the husks then pile up for as long as the gag runs.
       var live = 0;
       for (var zi = entries.length - 1; zi >= 0; zi--) {
         if (entries[zi].spec.mode !== 'zombie') continue;
         if (entries[zi].gone) entries.splice(zi, 1); else live++;
       }
+
+      // NOT `if (POOF.phase)`. The resting value is the STRING 'idle', which is truthy, so
+      // that test returned on every frame and no zombie ever arrived. The poof machine has
+      // seven phases and only one of them means "nothing is happening".
+      if (POOF.phase !== 'idle') return;  // mid-gag: the room is already bolting, nobody left to scare
 
       // Anyone who ran is due back as one of them. This is the rule: they do not come back as
       // themselves, so the cast only ever converts.
@@ -5258,12 +5406,15 @@
         var zScreenX = zr.left + z.zX;
         var zLane = Math.round(z.zLaneDoc);
         entries.forEach(function (e) {
+          // A catch takes the CATCHING zombie off the page as well as his victim, so from that
+          // frame on this z is a husk. forEach cannot be broken out of, so the guard goes here.
+          if (z.gone) return;
           if (e === z || e.gone || e.ab || !e.w) return;
           if (isChrome(e.spec) || e.spec.mode === 'zombie' || e.spec.mode === 'ghost') return;
           if (e.spec.mode === 'dogguard') return;                   // dogs do not convert
           // Already running: the question is no longer whether he notices one, it is whether he
           // runs into one. See zombieCatchTest.
-          if (e.fl) { zombieCatchTest(e, zScreenX, zLane, lanesNow, sx, sy, vh); return; }
+          if (e.fl) { zombieCatchTest(e, z, zScreenX, zLane, lanesNow, sx, sy, vh); return; }
           // THE HOST STAYS. He is the one figure on the page who is talking TO you, and his
           // bubble is placed once over his head and left there — so when he bolted, the words
           // hung in the air with nobody under them. He is also the only figure whose absence
@@ -5275,7 +5426,21 @@
           // within a lane width is what left the whole standing cast unfrightenable, because they
           // stand on cards and I walk on rules.
           if (Math.round(laneOf(r.bottom - 6 + sy, lanesNow)) !== zLane) return;
+          // THE NEAREST BODY, NOT THE MIDDLE OF THE SCENE. `_figX` is one point, and the Fallacy
+          // Finders crew is 356px wide: the two of them stand a half-card either side of it. So a
+          // zombie walking into them passed clean through the front carrier AND most of the banner
+          // before he was within SCARE of the midpoint, and if they turned at the screen edge first
+          // he never got there at all. Chris: "the people carrying the fallacy finders banner are
+          // walking past the zombie without converting or triggering a conversion." Every
+          // multi-body mode already publishes `_bodies` for the exodus (see splitBodies), so the
+          // answer was already on the entry; `_figX` stays the fallback for everyone else.
           var ex = r.left + (e._figX != null ? e._figX : e.w / 2);
+          if (e._bodies && e._bodies.length) {
+            for (var bi = 0; bi < e._bodies.length; bi++) {
+              var bx = r.left + e._bodies[bi].x;
+              if (Math.abs(bx - zScreenX) < Math.abs(ex - zScreenX)) ex = bx;
+            }
+          }
           if (Math.abs(ex - zScreenX) > ZOM.SCARE) return;
           var away = (ex < zScreenX) ? -1 : 1;
           // Whatever he was carrying hits the floor and STAYS there. Before poofArmFlee, not
@@ -5294,7 +5459,16 @@
           // him, so this is a real check rather than a formality.
           if (e.fl) {
             z.zDir = away;                                            // shamble after him
-            zomQueue.push(zomT + ZOM.TURN[0] + Math.random() * (ZOM.TURN[1] - ZOM.TURN[0]));
+            // ONE BOOKING PER BODY, not per entry. An entry can be a whole crew — two carriers,
+            // two players, a parent and a toddler — and drawFlee takes all of them off the page,
+            // so booking one return for the lot quietly lost everybody else from the census. It
+            // never showed while a crew could not be caught; now that one can be, each body has to
+            // own its own booking or a catch spends a return that was never promised.
+            var owed = 1 + (e.flMates ? e.flMates.length : 0);
+            for (var oi = 0; oi < owed; oi++) {
+              zomQueue.push(zomT + ZOM.TURN[0] + Math.random() * (ZOM.TURN[1] - ZOM.TURN[0]));
+            }
+            zomQueue.sort(function (a2, b2) { return a2 - b2; });      // zombieTick reads the head
           }
         });
       });
@@ -5656,7 +5830,7 @@
           // +8, not -8: just OUTSIDE the card's edge. Standing inside its footprint put the card's
           // edge through each carrier's torso, so they read as loitering in front of a billboard
           // rather than carrying it. Outside, the hanging inner hand lands right on the edge.
-          var halfGap = isBtn ? (card.w / 2 + 8) : 24;
+          var halfGap = isBtn ? (card.w / 2 + 8) : BEAM_HALF_GAP;
           var endMargin = loadMargin(e, e.load, w);
           if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = BEAM_SPECIALS[(BEAM_SPECIALS.indexOf(BEAM_FIRST_SPECIAL) + BEAM_SPECIALS.length - 1) % BEAM_SPECIALS.length]; e.carryRun = 1; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows soon
           // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
@@ -5841,11 +6015,11 @@
               var peB2 = Math.max(0, peF - 0.2), liftB = peB2 < 0.6 ? 0 : (peB2 - 0.6) / 0.6;
               var yLF = groundY + (carryY - groundY) * smooth01(liftF);
               var yLB = groundY + (carryY - groundY) * smooth01(liftB);
-              ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yLF); ctx.lineTo(bx2 - e.dir * 12, yLB); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(fx + e.dir * BEAM_LINE_INSET, yLF); ctx.lineTo(bx2 - e.dir * BEAM_LINE_INSET, yLB); ctx.stroke();
             } else {
               var yF = carryY + (groundY - carryY) * e.dF;
               var yB = carryY + (groundY - carryY) * e.dB;
-              ctx.beginPath(); ctx.moveTo(fx + e.dir * 12, yF); ctx.lineTo(bx2 - e.dir * 12, yB); ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(fx + e.dir * BEAM_LINE_INSET, yF); ctx.lineTo(bx2 - e.dir * BEAM_LINE_INSET, yB); ctx.stroke();
             }
           }
           R.drawShadow(ctx, fx, feetY, 15, shadow);
@@ -6028,6 +6202,10 @@
       dog: DOG, dogGuardSpawn: dogGuardSpawn,
       dogGuards: function () { return entries.filter(function (e) { return e.spec.mode === 'dogguard' && !e.gone; }); },
       crews: function () { return entries.filter(function (e) { return e.spec.mode === 'beam' && e.spec.plain && !e.gone; }); },
+      // The budget is a lifetime count, not a census — crews never leave, so nothing on the page
+      // ever gives one back. A test that sweeps them between cases has to hand the budget back
+      // too, or the third case onwards asks for a crew that can no longer be cast.
+      crewBudget: function (n) { if (n != null) zomCrews = n; return zomCrews; },
       ghost: GHOST, ghostSpawn: ghostSpawn, ghostBand: ghostBand, ghostScare: ghostScare,
       ghosts: function () { return entries.filter(function (e) { return e.spec.mode === 'ghost'; }); },
       zombies: function () { return entries.filter(function (e) { return e.spec.mode === 'zombie'; }); },

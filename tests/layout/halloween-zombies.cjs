@@ -125,7 +125,14 @@ async function parkOnPeopledLane(page) {
 
     const before = await page.evaluate(function () {
       return window.__evFigDebug.entries.filter(function (e) {
-        return !e.gone && e.spec.mode !== 'why' && e.spec.mode !== 'zombie';
+        // THE CAST, not everything on the page. The takeover ADDS entries while it runs — a work
+        // crew when a rule already holds two zombies, a guard dog when a dogfetch owner bolts,
+        // a ghost over the notes — so counting every non-zombie entry measured the cast leaving
+        // minus the takeover arriving, and reported 11 -> 13 on a page where three people had
+        // run. Runtime arrivals are not inhabitants; `spec.plain` is what marks a work crew.
+        if (e.gone || e.spec.plain) return false;
+        var m = e.spec.mode;
+        return m !== 'why' && m !== 'zombie' && m !== 'ghost' && m !== 'dogguard';
       }).length;
     });
 
@@ -158,6 +165,38 @@ async function parkOnPeopledLane(page) {
     const panic = await page.evaluate(async function (vi) {
       var D = window.__evFigDebug;
       var victim = D.entries[vi];
+      // ANYBODY STILL STANDING WILL DO. The case above waits for a WILD zombie to arrive and
+      // walk, and he does not stop when it is done with him — he goes on frightening people.
+      // The scare measures to the nearest BODY now rather than to the middle of a scene, so a
+      // crew is frightened from up to a half-card further out than it used to be, and the lane
+      // victim picked several seconds ago was regularly already mid-flight by the time this
+      // case staged its own zombie beside him. It then read `fl` as "hlimp" and reported that
+      // the panic had skipped the hands-up beat, which is a true reading of the wrong moment.
+      //
+      // Re-picking, rather than sweeping the lane first: the wild zombies are part of what the
+      // two assertions after this one count, and walking them off the edge to tidy the staging
+      // changed the number they measure.
+      if (victim && !victim.gone && victim.w && victim.fl) {
+        var lanes0 = D.zombieLanes();
+        var standing = function () {
+          var sy0 = window.scrollY || window.pageYOffset;
+          return D.entries.find(function (e) {
+            if (e.gone || e.fl || e.ab || !e.w || e.spec.presenter) return false;
+            if (e.spec.mode === 'why' || e.spec.mode === 'zombie') return false;
+            var r0 = e.c.getBoundingClientRect();
+            if (r0.bottom < 20 || r0.top > window.innerHeight - 20) return false;
+            return D.laneOf(r0.bottom - 6 + sy0, lanes0) != null;
+          });
+        };
+        // Walk the rules if this screen has nobody left standing on one. A wild zombie can
+        // have cleared the whole viewport by now, and "nobody HERE" is not "nobody".
+        victim = standing();
+        for (var li0 = 0; !victim && li0 < lanes0.length; li0++) {
+          window.scrollTo(0, Math.max(0, lanes0[li0] - window.innerHeight * 0.55));
+          await new Promise(function (r) { setTimeout(r, 500); });
+          victim = standing();
+        }
+      }
       if (!victim || victim.gone || !victim.w) return { err: 'the lane victim is no longer on the page' };
       var vr = victim.c.getBoundingClientRect();
       var vx = vr.left + (victim._figX != null ? victim._figX : victim.w / 2);
@@ -194,7 +233,14 @@ async function parkOnPeopledLane(page) {
 
     const after = await page.evaluate(function () {
       return window.__evFigDebug.entries.filter(function (e) {
-        return !e.gone && e.spec.mode !== 'why' && e.spec.mode !== 'zombie';
+        // THE CAST, not everything on the page. The takeover ADDS entries while it runs — a work
+        // crew when a rule already holds two zombies, a guard dog when a dogfetch owner bolts,
+        // a ghost over the notes — so counting every non-zombie entry measured the cast leaving
+        // minus the takeover arriving, and reported 11 -> 13 on a page where three people had
+        // run. Runtime arrivals are not inhabitants; `spec.plain` is what marks a work crew.
+        if (e.gone || e.spec.plain) return false;
+        var m = e.spec.mode;
+        return m !== 'why' && m !== 'zombie' && m !== 'ghost' && m !== 'dogguard';
       }).length;
     });
     want(after < before, 'halloween: the cast did not thin out (' + before + ' -> ' + after + ')');
@@ -309,6 +355,25 @@ async function parkOnPeopledLane(page) {
       var at = function () {
         return beam.c.getBoundingClientRect().left + (beam._figX != null ? beam._figX : beam.w / 2);
       };
+      // WHERE THE BACK OF THE CREW IS, which is not where the middle of it is. `_figX` is the
+      // MIDPOINT between the two carriers, and with the Fallacy Finders button they stand a
+      // half-card — about 178px — either side of it. The page frightens them off the body
+      // NEAREST the zombie, so a chase staged and measured from the midpoint is 178px wrong in
+      // both directions: he starts almost on top of them, and when they bolt the midpoint is
+      // still ~296px away, which this case then reported as "something else frightened them".
+      // It only went wrong on the passes that happened to deal the button, which is why it
+      // failed about one run in four. Measure the carrier he actually reaches.
+      var dir = 0, crewSpeed = 0;
+      var rear = function () {
+        var r = beam.c.getBoundingClientRect();
+        if (!beam._bodies || !beam._bodies.length) return at();
+        var best = r.left + beam._bodies[0].x;
+        for (var i = 1; i < beam._bodies.length; i++) {
+          var bx = r.left + beam._bodies[i].x;
+          if ((bx - best) * dir < 0) best = bx;
+        }
+        return best;
+      };
 
       // CLEAR THE LANE FIRST, before the wait below and not after it. Working out which way
       // the crew are walking takes up to twenty-four seconds, and the scheduler puts a zombie
@@ -328,7 +393,6 @@ async function parkOnPeopledLane(page) {
       //
       // The upper bound matters as much as the lower one: the light gag walks at 104px/s and
       // he is not supposed to catch that. Only a carry pass is slower than he is.
-      var dir = 0, crewSpeed = 0;
       for (var i = 0; i < 60 && !dir; i++) {
         var a = at();
         await new Promise(function (r) { setTimeout(r, 400); });
@@ -357,7 +421,7 @@ async function parkOnPeopledLane(page) {
       var gap0 = 240, zl = z.c.getBoundingClientRect().left, startX = 0;
       var fits = false;
       for (var w5 = 0; w5 < 25 && !fits; w5++) {
-        startX = (at() - dir * gap0) - zl;
+        startX = (rear() - dir * gap0) - zl;
         if (startX > 20 && startX < z.w - 20) { fits = true; break; }
         await new Promise(function (r) { setTimeout(r, 600); });
         zl = z.c.getBoundingClientRect().left;
@@ -367,7 +431,7 @@ async function parkOnPeopledLane(page) {
       z.zDir = dir;
 
       var gapNow = function () {
-        return (at() - (z.c.getBoundingClientRect().left + z.zX)) * dir;
+        return (rear() - (z.c.getBoundingClientRect().left + z.zX)) * dir;
       };
       var t0 = performance.now(), caught = false, gap = gap0, why = 'timeout';
       while (performance.now() - t0 < 30000) {
@@ -513,6 +577,13 @@ async function parkOnPeopledLane(page) {
       var D = window.__evFigDebug;
       D.zom.MAX = 1; D.zom.MAX_END = 1;
       D.zombies().forEach(function (e) { if (!e.gone) e.zX = -400; });
+      // The ambush case above leaves a crew mid-flight, and a runner who meets a zombie is now
+      // CAUGHT — which takes the zombie off the page with him and closes the bubble this case is
+      // measuring. Sweep the runners before spawning the one who talks.
+      D.entries.forEach(function (e) {
+        if (e.fl && !e.gone) { e.gone = true; if (e.c.parentNode) e.c.parentNode.removeChild(e.c); }
+      });
+      D.convs().length = 0;
       await new Promise(function (r) { setTimeout(r, 200); });
       if (!D.zombieSpawn()) return { err: 'no lane on screen to spawn onto' };
       var z = D.zombies().filter(function (e) { return !e.gone; }).pop();
