@@ -180,14 +180,20 @@ export default {
       askAt: 0.96,
       cast: [{ at: [0.22, 0.94], anim: 'ponder', color: VIEWER, scale: 0.85 }] },
 
-    // One printed line, held. It arrives at 1.51, on "a nation cannot be both
-    // ignorant and free", and the last four words of the line are picked out
-    // at 13.75 — "the condition of one" is the claim, not the decoration.
+    // THESE THREE TIMES ARE PROVISIONAL. L021 is a pickup: the line changed
+    // from a Jefferson paraphrase to a sourced Madison quote on 2026-10-27 and
+    // has not been read onto tape yet. Every other cue in this file sits on a
+    // word in build/ctc/words.md; these three are estimates from the shape of
+    // the sentence, and they are wrong until the pickup is split and this
+    // scene is re-timed off the real word sheet. Nothing else in the film
+    // depends on them — the scene is cut to the voice, whatever the voice is.
     //
-    // He stumbles the first "Jefferson's" and says it again, which is inside
-    // the cut and is meant to be: the pause is his, not a join.
+    // Where each one belongs when the words arrive:
+    //   lineAt  the quote prints as he starts speaking it
+    //   fromAt  the source block, on "James Madison wrote that"
+    //   condAt  the yellow claim, on "It is the condition of one"
     { id: 'why-idea', type: 'art', vo: 'L021', art: 'drawWhy', stage: 'idea',
-      lineAt: 1.51, condAt: 13.75 },
+      lineAt: 0.30, fromAt: 7.10, condAt: 14.90 },
 
     // The expiry. The card arrives at 0.90, on "the collections are evolving",
     // the mayor question lands on it at 3.17, the retirement at 7.53

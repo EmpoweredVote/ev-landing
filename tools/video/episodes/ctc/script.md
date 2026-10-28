@@ -86,7 +86,7 @@ Three more went on 2026-10-26, and all three are real behaviour too:
   quiz about who runs your city.** The local-gap argument.
 
 L022 and L023 were two of the three legs chapter 6 stood on; it now rests on
-Jefferson and on the expiry. The scenes that drew all three are gone from
+Madison and on the expiry. The scenes that drew all three are gone from
 `episode.mjs`, but their `drawCrowd` and `drawWhy` stages are still in
 `art.js` — unreachable, and left there deliberately so restoring a line is
 putting a scene back rather than drawing it again.
@@ -118,6 +118,54 @@ repair pass would have caught, but the wrong words confidently stamped on the ri
 same three seconds transcribed on their own come back correct. **A low match score is not the
 only way a line can be mis-read, and a sentence that looks absent can simply have been written
 down as something else.** Transcribe the span alone before believing it is missing.
+
+## L021 is Madison now, and L021 is a pickup, 2026-10-27
+
+**The line used to put words in Jefferson's mouth.** It said "Jefferson's argument was that a
+nation cannot be both ignorant and free", which is a hard compression of a real sentence —
+Jefferson to Charles Yancey, 6 January 1816, "if a nation expects to be ignorant and free, in a
+state of civilization, it expects what never was and never will be." Close enough to recognise,
+not close enough to be his. Chris looked it up: "given our brand, it's important we source our
+quotes. When I sourced it, that's not what Jefferson said."
+
+The picture never claimed it — `drawWhy` printed the line without quotation marks precisely
+because the voice was paraphrasing — but the voice still attributed it, and that is the half
+nobody can check while watching.
+
+**What it says now is quoted, and the picture shows where it came from.**
+
+> "A people who mean to be their own Governors, must arm themselves with the power which
+> knowledge gives."
+>
+> James Madison to W. T. Barry, 4 August 1822. *The Writings of James Madison*, ed. Gaillard
+> Hunt, vol. 9, pp. 103–109; reprinted in *The Founders' Constitution*, vol. 1, ch. 18, doc. 35.
+> https://press-pubs.uchicago.edu/founders/documents/v1ch18s35.html
+
+Verified at that link on 2026-10-27, by asking it about the characters in dispute rather than
+for the passage — the method in `presidential_quotes.md`, which already carries this entry. Two
+thing the circulating version gets wrong and the screen must not: Madison capitalises
+**Governors**, and the comma after it is his.
+
+**It starts at the second clause, and that was a choice.** The letter reads “Knowledge will
+for ever govern ignorance: And a people who mean to be their own Governors...” Chris cut the
+first clause: “truncate the first part of the quote.” What is left is a whole sentence of
+Madison's, it makes the point without the run-up, and the source line under it says which
+letter the rest of it is in. One silent change comes with the cut — the **A** is capital on
+screen and lowercase in Madison, because it now opens the sentence. Strict citation style
+would print it as [A]; a bracket on screen would read as a typo, so the film does not.
+
+**One honest footnote.** Madison's own hand reads "Knowlege will for ever govern ignorance" —
+one `d`, two words. The text above is Hunt's modernised edition, which is what the link shows
+and what the citation names. Quote and source match; that is the whole standard.
+
+**L021 therefore has to be recorded again.** It is the only line that changes. The engine takes
+later takes first, so a pickup WAV holding just this line is enough:
+
+```
+node tools/video/engine/split.mjs tools/video/episodes/ctc <original>.WAV <pickup>.WAV
+```
+
+Until that is run, the scene's cue times in `episode.mjs` are provisional and marked as such.
 
 Chapter 1 — the test you were made to fear
 
@@ -208,8 +256,8 @@ Chapter 6 — why a trivia game
 That's fair to ask why a trivia game sits inside a voting platform.
 
 ## L021
-> Direction: `art` — one line of type, printed and held.
-Jefferson's argument was that a nation cannot be both ignorant and free. Nothing in the two centuries since has made that less true.  An informed citizen is not a nice addition to a democracy.  It is the condition of one.
+> Direction: `art` — the quote prints, and then the source arrives under it.
+A people who mean to be their own governors must arm themselves with the power which knowledge gives.  James Madison wrote that, in a letter, in 1822.  An informed citizen is not a nice addition to a democracy.  It is the condition of one.
 
 ## L024
 > Direction: `art` — a card with a date on it retires, and a new one takes its place.

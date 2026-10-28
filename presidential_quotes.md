@@ -423,7 +423,22 @@ reprinted in *The Founders' Constitution*, vol. 1, ch. 18, doc. 35.
 **Link:** https://press-pubs.uchicago.edu/founders/documents/v1ch18s35.html
 **Status:** ✅ Verified at source. Note the **colon** after "ignorance" (not a semicolon) and Madison's
 capital **G** in "Governors" — the circulating version changes both. Madison's capitalization is kept
-as he wrote it, the same choice made for the Adams entry above.
+as he wrote it, the same choice made for the Adams entry above. Re-checked at the link 2026-10-27.
+
+> **This one is on screen.** The Civic Trivia film prints it in chapter 6 (`L021`, scene
+> `why-idea`), with the attribution under it. It replaced a Jefferson paraphrase the film had
+> been attributing in the voice-over. If the wording here ever changes, `MADISON` in
+> `tools/video/episodes/ctc/art.js` has to change with it, and the line has to be read again.
+>
+> **The film starts at the second clause**, not at "Knowledge": "A people who mean to be their
+> own Governors, must arm themselves with the power which knowledge gives." Chris cut the
+> first clause so one sentence carries the screen. The **A** is capital there and lowercase
+> here, because there it opens the sentence. The full text above is the quote of record; the
+> film prints a sentence out of it and names the letter the rest is in.
+>
+> Footnote carried there and worth having here: Madison's own hand reads "Knowlege ... for ever".
+> The text above is Hunt's modernized edition, which is what the link shows and the citation
+> names. Do not pair the manuscript spelling with this citation.
 
 ---
 

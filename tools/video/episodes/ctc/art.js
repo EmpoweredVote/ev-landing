@@ -46,6 +46,33 @@
     url: "archives.gov/founding-docs/bill-of-rights"
   };
 
+  // ── The Madison quote, exactly as its source prints it ────────────────
+  // Madison to W. T. Barry, 4 August 1822. Text from Hunt's *Writings of
+  // James Madison*, vol. 9, as printed at
+  // press-pubs.uchicago.edu/founders/documents/v1ch18s35.html, which is the
+  // link the citation names and the one `presidential_quotes.md` carries.
+  //
+  // TWO CHARACTERS THE CIRCULATING VERSION CHANGES, AND THIS MUST NOT: the
+  // mark after "ignorance" is a COLON, not a semicolon, and Madison writes a
+  // capital G on "Governors". Verified at the link on 2026-10-27.
+  //
+  // Madison's own hand reads "Knowlege ... for ever". This is the modernised
+  // edition, which is what the citation points at, so quote and source agree.
+  // Do not mix the two: the manuscript spelling with Hunt's citation would be
+  // a sourced quote that is not at the source.
+  //
+  // Printed from "A people", not from "Knowledge": Chris cut the first clause
+  // so the screen carries one sentence instead of two. The fragment is a whole
+  // sentence of Madison's and says the thing on its own, and the source line
+  // under it points at the letter the rest of it is in. The one silent change
+  // is the capital A, which Madison wrote lowercase after "ignorance: And".
+  var MADISON = {
+    quote: "“A people who mean to be their own Governors, must arm themselves " +
+           "with the power which knowledge gives.”",
+    who:   "JAMES MADISON",
+    where: "letter to W. T. Barry · 4 August 1822"
+  };
+
   // Real collections, with their real tiers. The hue is theirs; the lightness
   // is ours, for a dark stage.
   var COLLECTIONS = [
@@ -759,26 +786,68 @@
     }
 
     if (stage === "idea") {
-      // One line, printed and held. Jefferson's argument in his own shape,
-      // not in quotation marks: the script paraphrases it and the picture
-      // must not pretend to quote it.
+      // A QUOTE NOW, AND MARKED AS ONE.
+      //
+      // What this used to print was "A nation cannot be both ignorant and
+      // free." — set deliberately WITHOUT quotation marks, because the voice
+      // was paraphrasing Jefferson and a picture must not pretend to quote
+      // what is only being summarised. The marks were the right call for the
+      // wrong line: the voice still said "Jefferson's argument was", and that
+      // is the half a viewer cannot check. Chris sourced it and it is not what
+      // Jefferson wrote.
+      //
+      // So it is Madison's own words, the marks go on, and the source arrives
+      // under them. The source block IS the change — "visually explain where
+      // the quote came from" — not decoration under a line that would be fine
+      // alone.
       var lv = at(scene, "lineAt", t, 0.8);
+      var fv = at(scene, "fromAt", t, 0.7);
       var cv2 = at(scene, "condAt", t, 0.8);
+
+      // The quote is measured whether or not it is drawn yet, because the
+      // source hangs off its LAST line. Measured and not assumed, and the
+      // measuring is why the box is 0.84 and not 0.76: the fixtures render at
+      // 320x180 and the episode at 1920x1080, and at 0.76 this quote broke to
+      // two lines on the fixture and three on the film, orphaning "gives."
+      // 0.84 is in the middle of a band where both sizes break identically.
+      // Set for the two lines the truncated quote wraps to. nq is counted,
+      // not assumed, and everything under the quote hangs off it, so a
+      // rewrap at another size moves the source and the claim with it
+      // instead of running them into each other.
+      var qTop = H * 0.34, qLine = H * 0.070, nq;
+      ctx.save();
+      ctx.font = "700 " + Math.round(H * 0.052) + "px " + FONT;
+      ctx.textAlign = "center";
       if (lv > 0) {
-        ctx.save();
         ctx.globalAlpha = a * lv;
         ctx.fillStyle = FG;
-        ctx.font = "700 " + Math.round(H * 0.058) + "px " + FONT;
-        ctx.textAlign = "center";
-        wrap(ctx, "A nation cannot be both ignorant and free.",
-             W / 2, H * 0.40, W * 0.72, H * 0.072);
+        nq = wrap(ctx, MADISON.quote, W / 2, qTop, W * 0.84, qLine);
+      } else {
+        nq = wrapLines(ctx, MADISON.quote, W * 0.84).length;
+      }
+      ctx.restore();
+
+      var sy = qTop + nq * qLine;
+
+      if (fv > 0) {
+        ctx.save();
+        ctx.globalAlpha = a * fv;
+        ctx.strokeStyle = DIM;
+        ctx.lineWidth = Math.max(1, H * 0.0025);
+        ctx.beginPath();
+        ctx.moveTo(W / 2 - W * 0.035, sy + H * 0.022);
+        ctx.lineTo(W / 2 + W * 0.035, sy + H * 0.022);
+        ctx.stroke();
+        label(ctx, MADISON.who, W / 2, sy + H * 0.072, H * 0.030, FG, "700", "center");
+        label(ctx, MADISON.where, W / 2, sy + H * 0.114, H * 0.026, MUTED, "500", "center");
         ctx.restore();
       }
+
       if (cv2 > 0) {
         ctx.save();
         ctx.globalAlpha = a * cv2;
-        label(ctx, "an informed citizen is the condition of one", W / 2, H * 0.58,
-              H * 0.038, YELLOW, "700", "center");
+        label(ctx, "an informed citizen is the condition of one", W / 2, sy + H * 0.214,
+              H * 0.034, YELLOW, "700", "center");
         ctx.restore();
       }
       ctx.restore();
