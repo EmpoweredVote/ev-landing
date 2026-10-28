@@ -1,0 +1,19 @@
+{
+  "_why": [
+    "Cuts settled by listening, because the words cannot settle them.",
+    "Seconds into the named take. Only the fields given here are pinned.",
+    "Chris restarts a line fast — he does not wait between attempts — so a",
+    "false start is a short burst and a second of silence, not the long pause",
+    "align.mjs looks for."
+  ],
+  "L024": {
+    "take": "DJI_38_20261027_102134.WAV",
+    "start": 465.85,
+    "_heard": "Two attempts, each transcribed on its own. 457.26-460.53 is \"And the collections are evolving. Some answers have DATES\" — he drops the word \"end\", catches it and stops. Then 5.46s of nothing. 465.99-478.10 is the line read whole, \"end dates\" and all. A flub, not an edit, so the last complete reading wins. The alignment opened at 460.44, inside the tail of the abandoned attempt, and then held the whole 5.46s of silence."
+  },
+  "L015": {
+    "take": "DJI_38_20261027_102134.WAV",
+    "start": 323.8,
+    "_heard": "Not a false start — a MIS-TRANSCRIPTION. The whole-file pass writes \"No civics textbook is ever going to carry those, which is the corner of government standing closest to you\" over 323.96-326.36, which is L013's wording and is not what is there. The same seconds transcribed on their own come back \"Between questions, they stay and hang out\", which is the opening of this line as Chris read it. The alignment cannot find words the stream does not hold, so it opened seven words in, at \"Come back for another round\". 323.96-326.09, 326.54-328.49 and 328.82-330.31 are the line's three sentences; the pin is 0.15s before the first of them. The repair pass does not catch this: it looks for gaps the tape was speaking through, and this gap is not empty, it is wrong."
+  }
+}

@@ -95,6 +95,30 @@ putting a scene back rather than drawing it again.
 the way Treasury is missing L015 and L022. Every cut, pin and scene keys off
 the numbers.
 
+## What the booth changed, 2026-10-27
+
+Chris recorded the whole script in one take (`DJI_38_20261027_102134.WAV`, 8.5 minutes, 24 of
+24 lines) and edited as he read, which is the rule for this series: his read IS the script, and
+only a flub, a cough or a broken sentence is a mistake. Twelve lines moved. All of them move the
+same way — contractions, present tense, a plainer word, one fewer clause.
+
+Two are more than wording. **L015 opens somewhere else now.** It used to begin "When you get a
+correct answer, they stay and hang out", which repeated L014's "when you get a question right"
+one line later; he read "Between questions, they stay and hang out" instead, and the repetition
+is gone. And **L019 says Championship*s***, plural, which is the name of the product.
+
+**One flub, and it is the only one.** L024 was started twice: the first attempt says "Some
+answers have dates", drops the word "end", stops, and he comes back 5.5 seconds later and reads
+the line whole. The later reading is the cut; the pin is in `cuts.json` with what is on the tape
+written beside it.
+
+**Two pins, and the second one is a warning.** L024's is an ordinary false start. L015's is not:
+the whole-file transcript writes L013's words over L015's opening seconds — not a gap, which the
+repair pass would have caught, but the wrong words confidently stamped on the right seconds. The
+same three seconds transcribed on their own come back correct. **A low match score is not the
+only way a line can be mis-read, and a sentence that looks absent can simply have been written
+down as something else.** Transcribe the span alone before believing it is missing.
+
 Chapter 1 — the test you were made to fear
 
 ## L001
@@ -103,11 +127,11 @@ Most of us met civics once, in a room like this one. Three branches of governmen
 
 ## L002
 > Direction: the paper is marked and slides away. `bored`.
-You learned it for a test, you passed the test, and then you never used any of it again. Not because you didn't care. Because nothing in your week ever asked you.
+You learned it for a test, you passed the test, and then you never had to use any of it again. Not because you didn't care. But because nothing in your week ever asked you.
 
 ## L003
 > Direction: the desk is gone. The Bobit holds a ballot at a kitchen table. `confused`.
-Then one day something does ask. A ballot, or a meeting, or an argument you did not want to be in. And the answer is in there somewhere, under years of dust.
+Then one day something does ask. A ballot, or a meeting, or an argument you do not want to be in. And the answer is in there somewhere, under years of dust.
 
 ## L004
 > Direction: `art` — the marked paper turns over and becomes a bright game card.
@@ -121,17 +145,17 @@ Chapter 2 — how a game runs
 
 ## L006
 > Direction: `art` — one question card, four answers under it, a clock in the corner.
-Matches are quick. A game is five questions. Each one gives you four answers and twenty-five seconds.
+Matches are quick. A game is five questions. Each one gives you four answers in twenty-five seconds.
 
 ## L007
 > Direction: `art` — the clock runs down and the points fall with it, in two steps.
-A right answer is a hundred points. Answer inside the first ten seconds and it is fifty more. Inside twenty, twenty-five more. Knowing it is worth more than working it out.
+A right answer is a hundred points. Answer inside the first ten seconds and it's fifty more. Inside twenty, twenty-five more. Knowing an answer is worth more than working it out.
 
 Chapter 3 — being wrong is the lesson
 
 ## L008
 > Direction: `art` — the answer card opens into an explanation panel.
-Every question ends the same way, whether you got it or not. The right answer, and an explanation why it is the right answer.
+Every question ends the same way, whether you got it or not. The right answer, and an explanation of why it's the right answer.
 
 ## L009
 > Direction: `art` — a named source and a link appear under the explanation.
@@ -139,7 +163,7 @@ Under that is where it came from. A named source, with a link you can open, so y
 
 ## L010
 > Direction: a Bobit beside the card. A small flag on the question.
-And if you think a question is wrong, then flag it for us; it goes into a queue that a person works through.
+And if you think a question is wrong, then flag it for us; it goes into a queue that a real person works through.
 
 Chapter 4 — the collections
 
@@ -153,7 +177,7 @@ There are federal ones, state ones and city ones. The federal collection is a go
 
 ## L013
 > Direction: `art` — one city card opens, and its questions are about that city.
-A city collection asks about that city. Its council, its budget, its measures, its own particular history. No civics textbook was ever going to carry those, and that's the corner of the government standing closest to you.
+A city collection asks about that city. Its council, its budget, its measures, its own particular history. No civics textbook was ever going to carry those, and that's the corner of government standing closest to you.
 
 Chapter 5 — the crowd
 
@@ -163,7 +187,7 @@ When you get a question right, these little folks start showing up to cheer you 
 
 ## L015
 > Direction: `art` — more figures arrive, one for each right answer, and stay.
-When you get a correct answer, they stay and hang out. Come back for another round and they are still standing there, and the next right answer brings another one.
+Between questions, they stay and hang out. Come back for another round and they're still standing there. Then the next right answer brings another one.
 
 ## L016
 > Direction: `art` — the crowd is big enough that some of them start building.
@@ -171,17 +195,17 @@ Once there are enough of them, they stop milling about and start building someth
 
 ## L018
 > Direction: `art` — one figure walks off the field.
-And if you get one wrong that you had right before, then that one leaves. Your crowd is what you know today, not what you knew once.  
+And if you get an answer wrong that you had right before, then that one leaves. Your crowd is what you know today, not what you knew once.  
 
 ## L019
 > Direction: a Bobit `present` beside the field.
-You can play Civic Trivia Championship without an account. Signed out, your crowd lives in your browser.  But when you sign in, it remembers your progress, with your level and your place on the week's leaderboard.
+You can play Civic Trivia Championships without an account. Signed out, your crowd lives in your browser.  But when you sign in, it remembers your progress, with your level and your place on the week's leaderboard.
 
 Chapter 6 — why a trivia game
 
 ## L020
 > Direction: a Bobit `ponder`, alone.
-It is fair to ask why a trivia game sits inside a voting platform.
+That's fair to ask why a trivia game sits inside a voting platform.
 
 ## L021
 > Direction: `art` — one line of type, printed and held.
@@ -195,7 +219,7 @@ Chapter 7 — close
 
 ## L025
 > Direction: cut to a few seconds of the real ctc.empowered.vote screen.
-It is live today, at c t c dot empowered dot vote.
+It's live today, at ctc dot empowered dot vote.
 
 ## L026
 > Direction: the real screen holds, and keeps moving.
