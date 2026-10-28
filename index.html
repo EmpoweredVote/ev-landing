@@ -19,10 +19,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <!-- Anti-FOUC: apply theme before first paint -->
     <script>
+        // The ev_theme cookie on .empowered.vote is the cross-app truth, so it is read first and
+        // the toggle writes it; a local choice made before that cookie existed is published here
+        // so the next Empowered Vote site inherits it. This page applies the value as data-theme
+        // rather than a .dark class — the cookie carries the value, not the markup.
+        //
+        // Dark is the default and the OS is never consulted. A browser reports
+        // prefers-color-scheme: light when the OS has no preference set at all, so reading it
+        // could not tell "never chose" apart from "chose light", and every undecided visitor got
+        // a light page. Only a choice made on an Empowered Vote site counts.
         (function () {
-            var s = localStorage.getItem('ev:color-scheme');
-            var t = (s === 'dark' || s === 'light') ? s : 'dark';
-            document.documentElement.dataset.theme = t;
+            var m = document.cookie.match(/(?:^|;\s*)ev_theme=([^;]+)/);
+            var s = m ? m[1] : null;
+            try {
+                if (!s) {
+                    s = localStorage.getItem('ev:color-scheme');
+                    if (s) {
+                        var d = new Date();
+                        d.setFullYear(d.getFullYear() + 1);
+                        document.cookie = 'ev_theme=' + s + '; domain=.empowered.vote; path=/; expires=' + d.toUTCString() + '; SameSite=Lax';
+                    }
+                }
+            } catch (err) { /* best-effort: storage is unavailable, fall through to the dark default */ }
+            document.documentElement.dataset.theme = (s === 'light') ? 'light' : 'dark';
         })();
     </script>
     <style>
@@ -2337,12 +2356,17 @@
         })();
 
         // Theme management
-        // Priority: account preference (future) → ev:color-scheme in localStorage → dark.
-        // prefers-color-scheme is NOT read on load: the anti-FOUC script in <head> takes the stored
-        // key or falls straight to dark, because dark is the house look and the thing to show when
-        // we have no preference to go on. The matchMedia listener below is the one place the OS gets
-        // a say — with nothing stored, flipping the OS scheme mid-session flips the page. The
-        // asymmetry with the load path is deliberate, not a leftover.
+        // Priority: account preference (future) → ev_theme cookie → ev:color-scheme in
+        // localStorage → dark. The cookie is the cross-app truth; the <head> script resolves it
+        // before first paint and the toggle below writes it, so a choice made on any Empowered
+        // Vote site follows the visitor here, and a choice made here follows them away.
+        //
+        // The OS is never consulted, on load or after it. There WAS a matchMedia listener here
+        // that flipped an undecided visitor when the OS scheme changed mid-session, and its
+        // asymmetry with the load path was deliberate at the time. It was removed on 2026-10-27:
+        // once dark became the default for everyone undecided, that listener was the one path
+        // left that could still move them to light without them asking. It could not see a
+        // cookie-borne choice either, because it read only localStorage.
         // TODO: after load, GET /auth/me, check user.color_scheme_preference, apply + write back to
         //       localStorage['ev:color-scheme']. Uncomment when account preferences land in the schema.
         (function () {
@@ -2352,23 +2376,26 @@
                 document.documentElement.dataset.theme = theme;
             }
 
-            function getStoredTheme() {
-                var s = localStorage.getItem(KEY);
-                return (s === 'dark' || s === 'light') ? s : null;
+            // Publish the choice to the cross-app cookie as well as this origin's storage,
+            // matching essentials, Profile and Admin exactly: .empowered.vote, one year,
+            // SameSite=Lax. The cookie is what carries the choice between sites; localStorage is
+            // the per-origin fallback for when a cookie cannot be set.
+            function writeTheme(value) {
+                var d = new Date();
+                d.setFullYear(d.getFullYear() + 1);
+                document.cookie = 'ev_theme=' + value + '; domain=.empowered.vote; path=/; expires=' + d.toUTCString() + '; SameSite=Lax';
+                try {
+                    localStorage.setItem(KEY, value);
+                } catch (err) {
+                    // Blocked or full storage. The cookie above already carries the choice.
+                }
             }
 
             document.getElementById('theme-toggle').addEventListener('click', function () {
                 var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem(KEY, next);
+                writeTheme(next);
                 applyTheme(next);
                 if (window.posthog) posthog.capture('landing_theme_toggled', { to: next });
-            });
-
-            // React to OS preference changes only when no EV preference is stored
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
-                if (!getStoredTheme()) {
-                    applyTheme(e.matches ? 'dark' : 'light');
-                }
             });
         })();
 
