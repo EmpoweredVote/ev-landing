@@ -76,8 +76,63 @@
       p.headTilt = -13 + s * 2;
       p.lean = (p.lean || 0) + 2;
       return p;
+    } },
+
+    // ── The high five, which is TWO poses and has to be ───────────────────
+    //
+    // A high five needs a partner, and the partner cannot play the same pose:
+    // two figures both reaching with the near hand reach past each other and
+    // slap nothing. So there are two, named for the hand that goes up, and the
+    // caller pairs them — LEFT PARTNER PLAYS `highfiveR`, because the one on
+    // the left reaches to its right. That is the same rule CTC's own crowd
+    // uses (`pairUp` in crowdReactions.ts returns each pair left-first), and
+    // it is stated here because the two modules will never see each other.
+    //
+    // THE UPPER ARM CARRIES THE BEAT, NOT THE FOREARM, and that is measured
+    // rather than chosen. Reading the rig's own hand joint back at sixteen
+    // angle pairs: lifting the FOREARM from 125 to 155 raises the hand 26
+    // units but also pulls it 15 units INBOARD, so a pair of partners drift
+    // apart exactly as they reach the top and the five misses. Lifting the
+    // UPPER arm from 88 to 112 raises the hand the same 17 units and moves
+    // it sideways by 2. So the forearm is parked near 130, where the open
+    // hand sits out at the side of the head, and the upper arm swings.
+    //
+    // WHICH MAKES THE PAIR'S SPACING PART OF THE POSE. The hand lands about
+    // 83 rig units from the figure's own centre line, so two partners meet
+    // when their centres are about 166 units apart at scale 1 — exported
+    // below as `HIGHFIVE_GAP`. Closer than that and the forearms cross
+    // through each other's heads, which is what the first cut of this did.
+    //
+    // The free arm is left close to the body. Swung clear it reads as a second
+    // gesture, and two gestures at once is semaphore.
+    //
+    // 1.1 Hz, not faster. At two per second a pair reads as sparring.
+    highfiveR: { label: "High five (right)", mood: "yes! up top", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var swing = 0.5 + 0.5 * osc(t, 1.1);
+      p.armRU = 80 + swing * 32;   p.armRF = 128 + swing * 8;
+      p.armLU = -24;  p.armLF = -30;
+      p.headTilt = -7 - swing * 4;
+      p.lean = (p.lean || 0) + 2 + swing * 2;
+      p.bob = (p.bob || 0) - swing * 2.5;
+      return p;
+    } },
+    highfiveL: { label: "High five (left)", mood: "yes! up top", frame: function (t) {
+      var p = Object.assign({}, base.frame(t));
+      var swing = 0.5 + 0.5 * osc(t, 1.1);
+      p.armLU = -80 - swing * 32;  p.armLF = -128 - swing * 8;
+      p.armRU = 24;   p.armRF = 30;
+      p.headTilt = 7 + swing * 4;
+      p.lean = (p.lean || 0) - 2 - swing * 2;
+      p.bob = (p.bob || 0) - swing * 2.5;
+      return p;
     } }
   };
+
+  // The spacing the two high-five poses were solved for, in rig units at
+  // scale 1. Exported because the pose is useless without it: a caller
+  // that places a pair by eye gets crossed arms.
+  window.LeremyRig.HIGHFIVE_GAP = 166;
 
   Object.keys(EXTRAS).forEach(function (k) {
     A[k] = EXTRAS[k];

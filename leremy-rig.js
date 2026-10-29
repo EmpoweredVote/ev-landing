@@ -319,11 +319,16 @@ function drawBook(ctx, x, y, color, rot) {
 // when he goes — only spread and alpha differ. The scatter is derived from `seed` rather than
 // Math.random so a given frame is reproducible in tests; `t` (seconds) drifts the puffs so the
 // cloud churns instead of sitting still. Grey #8A8F98 reads against both themes' grounds.
-function drawSmoke(ctx, x, y, spread, alpha, seed, t) {
+// `color` is optional and defaults to the grey this has always drawn. It is
+// here because a puff can mean two different things: smoke, which is grey,
+// and something ARRIVING, which in Civic Trivia is a figure appearing out of
+// a purple flash. Same nine deterministic puffs either way, so a caller that
+// passes nothing is unaffected.
+function drawSmoke(ctx, x, y, spread, alpha, seed, t, color) {
   if (!(alpha > 0) || !(spread > 0)) return;
   const N = 9;
   ctx.save();
-  ctx.fillStyle = "#8A8F98";
+  ctx.fillStyle = color || "#8A8F98";
   for (let i = 0; i < N; i++) {
     const ang = ((seed * 37 + i * 61) % 360) * D;          // deterministic angle
     const rad = 0.35 + (((seed * 13 + i * 29) % 100) / 100) * 0.65;
