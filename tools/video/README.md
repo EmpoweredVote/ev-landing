@@ -735,6 +735,36 @@ element holding its text — every ancestor up to the root also contains that
 text, and hiding all of them writes a blank white still that still looks like a
 successful run.
 
+**Civic Trivia holds two stills, and a script took neither of them.** The close
+makes two claims, so it shows two pictures: `screen.js` is the home page, panned
+under L025, and `screen-play.js` is a live question, held under L026. A scene
+names which one it wants with `shot`.
+
+Both came off Chris's own browser through Chrome's **Capture full size
+screenshot** (F12, Ctrl+Shift+M, set 1440x900, Ctrl+Shift+P, type `screenshot`).
+A headless run gets a worse picture of both: it is signed out, so the home page
+has no level or XP in the header, and it is served whatever collection is
+featured that morning, so the question has nothing to do with the page before
+it. The two that ship follow each other — Santa Monica is selected on the home
+page, and the question is about the Santa Monica City Council.
+
+One trap if you take one by hand: the collection photographs below the fold load
+as they scroll into view, so a full-size capture taken without scrolling to the
+bottom first comes back with grey boxes where a dozen photographs should be, and
+looks like a successful run.
+
+`grab-screen.mjs --from <png> --fit WxH` embeds a picture somebody took,
+centre-cropping to that aspect and re-encoding as JPEG. `--fit` is not a
+nicety: a full-size capture off a HiDPI screen is 3428px wide and 7MB, and
+these files are committed and served. The same picture is 345KB at
+`--fit 1440x1428`. Pick the shape from what the DRAW needs — `drawLiveScreen`
+gives a still a box `W*0.62` by at most `H*0.70`, so anything taller than 0.635
+of its width pans and anything flatter is held still by the same code.
+
+Every generated file records the command that made it, and `--note` records
+what a re-run cannot: a still nobody can reproduce has to say where it came
+from, or the next person has no way to find out.
+
 `episodes/compass/brand.js` is generated the same way, by `embed-brand.mjs`,
 from the dark variants in `brand/compass/`. Both files are committed on purpose:
 without them a fresh checkout builds a different episode, because the capture
