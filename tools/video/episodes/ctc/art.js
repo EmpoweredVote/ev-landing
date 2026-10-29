@@ -28,6 +28,9 @@
   "use strict";
   var FG = "#F2F2F2", MUTED = "#9A9AA0", GRID = "#33333D", DIM = "#5A5A68";
   var CARD = "#1A1A20", EDGE = "#2C2C36";
+  // The cast's purple, repeated here because chapter 1 draws the viewer as art
+  // rather than as cast and so cannot read it off the scene.
+  var VIEWER_TONE = "#7C6B9E";
   var FONT = '"Figtree", "Segoe UI", system-ui, sans-serif';
   var YELLOW = "#FFD426", GOOD = "#43D07E", BAD = "#FF6B52";
   // Type printed ON a bright surface. Never white: every bright colour used
@@ -111,8 +114,14 @@
     return { img: img, ready: ready };
   }
   var logoA = load(window.EVCtcLogo);
+  // TWO stills, because the close makes two different claims. screen.js is
+  // the home page and screen-play.js is a question being answered; a scene
+  // names which one it wants with `shot`. Both are optional: either global
+  // missing degrades to the empty frame, which is what this episode drew
+  // for its whole first cut.
   var shotA = load(window.EVCtcShot);
-  var logo = logoA.img, shot = shotA.img;
+  var playA = load(window.EVCtcPlayShot);
+  var logo = logoA.img, shot = shotA.img, play = playA.img;
 
   function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
   function fade(t, t0, dur) { return ease((t - t0) / dur); }
@@ -210,8 +219,14 @@
   }
 
   // ── Chapter 1: the desk ────────────────────────────────────────────────
-  // One prop through four scenes. The desk and the paper are drawn left of
-  // centre because the viewer stands at 0.72 for the whole chapter.
+  // One prop through four scenes. The board is drawn left of centre because
+  // the class sits on the right of frame and faces it.
+  //
+  // THE FIRST TWO STAGES ARE A CLASSROOM, and that was a note: the pupil used
+  // to be a figure standing beside a table. He sits at a desk now, facing the
+  // lesson, with two more of the class at desks behind him. The third stage
+  // is twenty years later at a polling place and has no desks in it, so it
+  // keeps the cast entry it always had.
   function drawDesk(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
@@ -222,11 +237,12 @@
     ctx.globalAlpha = a;
 
     if (stage !== "ballot") {
-      // The desk: a top and two legs, nothing more.
+      // What the lesson is ON. It was a table with a sheet propped on it; it
+      // is a board on a stand now, because a lesson a class is facing has to
+      // be up where a class can see it.
       ctx.fillStyle = GRID;
-      ctx.fillRect(cx - deskW / 2, deskY, deskW, H * 0.022);
-      ctx.fillRect(cx - deskW * 0.40, deskY + H * 0.022, H * 0.016, H * 0.17);
-      ctx.fillRect(cx + deskW * 0.40 - H * 0.016, deskY + H * 0.022, H * 0.016, H * 0.17);
+      ctx.fillRect(cx - H * 0.010, deskY, H * 0.020, H * 0.19);
+      ctx.fillRect(cx - deskW * 0.22, deskY + H * 0.17, deskW * 0.44, H * 0.016);
     }
 
     if (stage === "paper" || stage === "marked") {
@@ -306,6 +322,9 @@
       }
     }
 
+    // The class, in front of the board and after it, so a pupil can overlap it.
+    if (stage === "paper" || stage === "marked") classroom(ctx, t, W, H, a, scene);
+
     if (stage === "turn") {
       // The paper turns over and is a game card on the other side. One
       // object, one rotation: the squash through the middle is what makes it
@@ -323,16 +342,78 @@
         ctx.fillStyle = CARD;
         roundRect(ctx, -pw2 / 2, -ph2 / 2, pw2, ph2, H * 0.014); ctx.fill();
         ctx.strokeStyle = YELLOW; ctx.lineWidth = Math.max(2, H * 0.004); ctx.stroke();
-        if (sx > 0.55) {
-          ctx.fillStyle = YELLOW;
-          ctx.font = "700 " + Math.round(H * 0.055) + "px " + FONT;
-          ctx.textAlign = "center";
-          ctx.fillText("?", 0, H * 0.02);
-        }
+        // What is on the other side of the test paper is the GAME, and it has
+        // to look like the game. It used to be a yellow question mark in a
+        // yellow box, which is the universal symbol for "a quiz thing" and
+        // tells a viewer nothing about this one. Chris: "can it look more
+        // exciting — and more accurate to CTC — than a yellow question mark
+        // in a yellow box?"
+        //
+        // So it is the live game's own screen, drawn small: the score, the
+        // ring counting down from twenty-five, the question number, the
+        // progress bar under them, and a question beginning to arrive. Drawn
+        // only once the card is more than half turned, because a screen read
+        // through a 30% horizontal squash is a smear.
+        if (sx > 0.55) gameFace(ctx, pw2, ph2, H, Math.min(1, (sx - 0.55) / 0.3));
       }
       ctx.restore();
     }
 
+    ctx.restore();
+  }
+
+  // The live game screen, small, drawn around the origin inside a card
+  // `cw` by `ch`. Every number on it is the engine's: twenty-five seconds is
+  // the round clock, five is `TOTAL_QUESTIONS` in services/questionService.ts,
+  // and the question is `Q`, which is q001 out of `fallbackQuestions`.
+  function gameFace(ctx, cw, ch, H, v) {
+    var pad = cw * 0.07;
+    ctx.save();
+    ctx.globalAlpha = v;
+
+    // SCORE and QUESTION, the two chips either side of the clock.
+    function chip(x, cap, val, tone) {
+      var w = cw * 0.22, h = ch * 0.15;
+      ctx.fillStyle = "#13131A";
+      roundRect(ctx, x, -ch / 2 + pad, w, h, H * 0.008); ctx.fill();
+      ctx.strokeStyle = EDGE; ctx.lineWidth = Math.max(1, H * 0.0018); ctx.stroke();
+      label(ctx, cap, x + w / 2, -ch / 2 + pad + h * 0.38, H * 0.013, GOOD, "700", "center");
+      label(ctx, val, x + w / 2, -ch / 2 + pad + h * 0.86, H * 0.026, tone, "700", "center");
+    }
+    chip(-cw / 2 + pad, "SCORE", "0", FG);
+    chip(cw / 2 - pad - cw * 0.22, "QUESTION", "1/5", FG);
+
+    // The ring. `clockFace` is the same one chapter 2 uses, so the shape a
+    // viewer sees here is the shape they see when the round actually starts.
+    clockFace(ctx, 0, -ch / 2 + pad + ch * 0.075, ch * 0.105, H, v, [0, 0], false, 0);
+
+    // The progress bar: five segments, the first one filled.
+    // Below the clock's own readout, which hangs under the dial. At 0.20 the
+    // bar ran straight through the number.
+    var by = -ch / 2 + pad + ch * 0.29, bw = (cw - pad * 2) / 5;
+    for (var i = 0; i < 5; i++) {
+      ctx.fillStyle = i === 0 ? GOOD : EDGE;
+      ctx.fillRect(-cw / 2 + pad + i * bw + bw * 0.04, by, bw * 0.92, H * 0.005);
+    }
+
+    // The question, arriving.
+    label(ctx, "BILL OF RIGHTS", 0, ch * 0.02, H * 0.015, GOOD, "700", "center");
+    ctx.font = "700 " + Math.round(H * 0.022) + "px " + FONT;
+    ctx.textAlign = "center";
+    ctx.fillStyle = FG;
+    wrap(ctx, Q.text, 0, ch * 0.10, cw * 0.84, H * 0.028);
+
+    // Two tiles, so the shape of a four-answer round is on screen without the
+    // card turning into a wall of type at this size.
+    for (var k = 0; k < 2; k++) {
+      var tw = (cw - pad * 2) * 0.47;
+      var tx = -cw / 2 + pad + k * (tw + (cw - pad * 2) * 0.06);
+      ctx.fillStyle = "#13131A";
+      roundRect(ctx, tx, ch * 0.24, tw, ch * 0.13, H * 0.007); ctx.fill();
+      ctx.strokeStyle = EDGE; ctx.lineWidth = Math.max(1, H * 0.0018); ctx.stroke();
+      label(ctx, "AB".charAt(k), tx + tw * 0.12, ch * 0.325, H * 0.016, DIM, "700");
+      label(ctx, Q.options[k], tx + tw * 0.30, ch * 0.325, H * 0.020, MUTED, "600");
+    }
     ctx.restore();
   }
 
@@ -643,80 +724,370 @@
     ctx.restore();
   }
 
-  // ── Chapter 6: the crowd ───────────────────────────────────────────────
+  // ── Chapter 6: the crowd ───────────────────────────────────
   // The product's own mechanic, drawn with the product's own unit: one figure
   // per question answered correctly. `grantBobit` on a right answer,
   // `revokeBobit` on a wrong one — both are in routes/game.ts, and the film
   // shows both because the app does both.
+  //
+  // THESE ARE RIGGED BOBITS, NOT STAMPS, AND THAT WAS A NOTE. The first cut
+  // drew the crowd as flat glyphs because the cast is capped at three and the
+  // crowd is twenty; Chris watched it and said what the picture was actually
+  // saying: "I'd rather have them spawn with purple smoke and be real bobits
+  // instead of stamps of stick people that don't move." He is right, and the
+  // cap was never the obstacle — the cap is on `scene.cast`, which is the
+  // authored foreground. An art function may drive the rig itself, which is
+  // all `cast.js` does, so this one does too.
+  //
+  // Everything here is a pure function of (i, t). That is not a style
+  // preference: `tests/video/02-determinism.cjs` renders the same frame twice
+  // and compares bytes, so a crowd that reached for Math.random would fail the
+  // episode rather than look slightly different. Per-figure variety comes from
+  // `jit`, a hash of the figure's index.
+  //
+  // The layout is the live collection page's, because that is the other half
+  // of the note: the question card sits up top, the floor is under it, and the
+  // TABLEAU rises in the two margins either side. Figures therefore spawn
+  // below the answers, which is where the app puts them.
+
+  // A figure's own number, stable for the life of the chapter. Index and a
+  // channel in, 0..1 out.
+  function jit(i, k) {
+    var x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  // The crowd's colours are the house six. The cast's purple is deliberately
+  // NOT among them: the viewer has to stay findable in his own crowd.
+  var CROWD_TONES = ["#FFD426", "#1DA8C6", "#43D07E", "#FF9A4D", "#FF6B52", "#E86FC4"];
+
+  // The flash a bobit arrives in. Purple because that is what the app does,
+  // and because every other bright colour in this chapter already means
+  // something — yellow is the crowd, green is right, red is wrong.
+  var SPAWN_PURPLE = "#B49BFF";
+
+  // One rigged figure, placed by its FEET. `cast.js` works out how far the
+  // deepest foot of an animation falls below the pelvis and lifts by that; the
+  // same call is reused here rather than re-derived, so a crowd figure and a
+  // cast figure standing on the same line stand on the same line.
+  function rigFig(ctx, name, cx, groundY, scale, color, tt, flip, alpha, prop) {
+    var R = window.LeremyRig, anim = R.ANIMATIONS[name];
+    if (!anim || alpha <= 0) return;
+    var lift = window.EVCast.footDepth(name, anim) * scale;
+    var opts = { color: color, time: tt };
+    if (anim.book) opts.book = true;
+    if (prop) for (var k in prop) if (prop.hasOwnProperty(k)) opts[k] = prop[k];
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    R.drawShadow(ctx, cx, groundY, 62 * scale, "rgba(0,0,0,0.32)");
+    ctx.translate(cx, groundY - lift);
+    ctx.scale(flip ? -scale : scale, scale);
+    R.draw(ctx, R.computePose(anim.frame(tt), R.CFG, { x: 0, y: 0 }), R.CFG, opts);
+    ctx.restore();
+  }
+
+  // ── School furniture ───────────────────────────────────────────────────
+  // The rig HAS a `desk` prop and this does not use it, which is worth saying
+  // out loud: the rig's desk is an office desk with a monitor on it, and its
+  // `chair` is an office swivel chair. Both are right for the pose they were
+  // drawn for (`witsend`, somebody at work) and both are wrong in a classroom.
+  //
+  // Drawn in two halves on purpose. The seat goes down BEFORE the figure and
+  // the desk goes down AFTER, so the figure sits in front of his chair and
+  // behind his desk. That is the whole reason this chapter stopped using
+  // `scene.cast` for the pupils: the engine draws the cast after the art, so
+  // a cast figure can never have anything in front of him.
+  //
+  // Everything is in rig units times `s`, the same units the figure is drawn
+  // in, so a desk scales with its pupil instead of drifting off him.
+  function schoolSeat(ctx, fx, groundY, s, color, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineCap = "round";
+    ctx.lineWidth = 7 * s;
+    ctx.beginPath();
+    ctx.moveTo(fx - 10 * s, groundY - 56 * s); ctx.lineTo(fx + 46 * s, groundY - 56 * s);
+    ctx.moveTo(fx + 30 * s, groundY - 56 * s); ctx.lineTo(fx + 30 * s, groundY - 120 * s);
+    ctx.stroke();
+    ctx.lineWidth = 5 * s;
+    ctx.beginPath();
+    ctx.moveTo(fx + 34 * s, groundY - 54 * s); ctx.lineTo(fx + 34 * s, groundY);
+    ctx.moveTo(fx - 4 * s, groundY - 54 * s);  ctx.lineTo(fx - 4 * s, groundY);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function schoolDesk(ctx, fx, groundY, s, color, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    // The top is slanted away from the pupil, which is the one line that makes
+    // a rectangle read as a school desk rather than as a table.
+    ctx.lineWidth = 8 * s;
+    ctx.beginPath();
+    ctx.moveTo(fx - 108 * s, groundY - 98 * s);
+    ctx.lineTo(fx - 20 * s, groundY - 84 * s);
+    ctx.stroke();
+    ctx.lineWidth = 6 * s;
+    ctx.beginPath();
+    ctx.moveTo(fx - 100 * s, groundY - 96 * s); ctx.lineTo(fx - 100 * s, groundY);
+    ctx.moveTo(fx - 28 * s, groundY - 85 * s);  ctx.lineTo(fx - 28 * s, groundY);
+    ctx.moveTo(fx - 100 * s, groundY - 34 * s); ctx.lineTo(fx - 28 * s, groundY - 34 * s);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // The room. One pupil is the viewer and the rest are the rest of the class,
+  // because Chris asked the obvious question about the first shot: "can there
+  // be other Bobits in desks behind them because it’s at a school?"
+  //
+  // They RECEDE: further back is higher in frame, smaller, and dimmer. Three
+  // is enough. A full class drawn at this size is a texture, and a texture
+  // behind the one figure the film is about pulls the eye off him.
+  var CLASS_ROW = [
+    { x: 0.645, g: 0.945, s: 1.05, dim: 1.00, anim: null,    ph: 0.0 },
+    { x: 0.800, g: 0.880, s: 0.80, dim: 0.58, anim: "read",  ph: 2.7 },
+    { x: 0.908, g: 0.833, s: 0.63, dim: 0.38, anim: "sit",   ph: 5.1 }
+  ];
+  function classroom(ctx, t, W, H, a, scene) {
+    var seat = scene.seat || "read";
+    for (var i = 0; i < CLASS_ROW.length; i++) {
+      var r = CLASS_ROW[i];
+      var fx = W * r.x, gy = H * r.g, s = r.s * H * 0.00085;
+      var al = a * r.dim;
+      var tone = i === 0 ? VIEWER_TONE : (i === 1 ? "#1DA8C6" : "#FF9A4D");
+      schoolSeat(ctx, fx, gy, s, GRID, al);
+      // Facing LEFT, at the board. `flip` mirrors the figure, and the
+      // furniture is authored for a pupil who faces left, so it is not
+      // mirrored with him.
+      rigFig(ctx, i === 0 ? seat : r.anim, fx, gy, s, tone, t * 0.8 + r.ph, true, al);
+      schoolDesk(ctx, fx, gy, s, GRID, al);
+    }
+  }
+
+
+  // Where figure `i` lives, and how big it is. Spread across the middle band
+  // only: the margins belong to the tableau, and a bobit standing in front of
+  // the mast reads as part of it.
+  //
+  // The spread is golden-ratio rather than a modulo. `(i * 53) % 61` put four
+  // of the first eight within a figure's width of each other and left a hole
+  // in the middle of the field; this is the fix the first cut already carried
+  // and it is kept.
+  function crowdSpot(i, W, H, groundY) {
+    var u = (i * 0.6180339887) % 1;
+    var depth = jit(i, 3);
+    return {
+      x: W * 0.265 + u * W * 0.47,
+      // Nearer figures stand lower and bigger. A flat rank of identical
+      // figures is a fence.
+      y: groundY - depth * H * 0.045,
+      scale: H * (0.00058 - depth * 0.00009)
+    };
+  }
+
+  // What figure `i` is doing, as a name and a clock. Pure.
+  //
+  // The order of the tests IS the priority: a spawning figure is landing
+  // whatever else is happening, a cheering room beats a pair's high five, and
+  // a five beats standing about. Reordering these changes the scene.
+  function crowdAct(i, i_age, t, scene, paired) {
+    // Landing out of the flash — the END of the jump, not the start of it.
+    // The cycle is about 1.5s long and the figure is in the air from 0.8 to
+    // 1.3; played from its own zero he CROUCHES and springs, which out of a
+    // puff of smoke reads as a shape, not a person. Mapped onto 1.05..1.55 he
+    // comes down and lands, which is what arriving looks like.
+    if (i_age != null && i_age < 0.75) return { name: "jump", tt: 1.05 + i_age * 0.67 };
+
+    var cheer = at(scene, "cheerAt", t, 0.35);
+    if (cheer > 0.5) return { name: "cheer", tt: t + jit(i, 7) * 2 };
+
+    if (paired) return { name: paired, tt: t * 1.0 + jit(i, 11) * 0.3 };
+
+    // Idle. One in three wanders; the rest stand and breathe. A crowd where
+    // nobody moves is a crowd of posters, which was the other half of the note.
+    var pick = jit(i, 5);
+    if (pick < 0.34) return { name: "stroll", tt: t * 0.55 + jit(i, 6) * 4, wander: true };
+    if (pick < 0.62) return { name: "bored", tt: t * 0.8 + jit(i, 6) * 4 };
+    return { name: "present", tt: t * 0.7 + jit(i, 6) * 4 };
+  }
+
+  // The answered question, as the app draws it: category over the question,
+  // four lettered tiles, the right one filled green. This is `Q`, which is
+  // q001 out of `fallbackQuestions`, so the card is the engine's own.
+  function answeredCard(ctx, W, H, v) {
+    var cw = W * 0.44, cx = (W - cw) / 2, cy = H * 0.055, ch = H * 0.285;
+    ctx.save();
+    ctx.globalAlpha = v;
+    panel(ctx, cx, cy, cw, ch, H, 1, EDGE);
+    label(ctx, "BILL OF RIGHTS", W / 2, cy + H * 0.040, H * 0.020, GOOD, "700", "center");
+    ctx.font = "700 " + Math.round(H * 0.030) + "px " + FONT;
+    ctx.textAlign = "center";
+    ctx.fillStyle = FG;
+    wrap(ctx, Q.text, W / 2, cy + H * 0.082, cw * 0.84, H * 0.038);
+
+    var tw = cw * 0.44, th = H * 0.052, gap = cw * 0.04;
+    for (var k = 0; k < 4; k++) {
+      var col = k % 2, row = (k - col) / 2;
+      var tx = cx + cw * 0.04 + col * (tw + gap), ty = cy + H * 0.150 + row * (th + H * 0.016);
+      var right = k === Q.correct;
+      ctx.globalAlpha = v * (right ? 1 : 0.45);
+      ctx.fillStyle = right ? GOOD : CARD;
+      roundRect(ctx, tx, ty, tw, th, H * 0.010); ctx.fill();
+      if (!right) { ctx.strokeStyle = EDGE; ctx.lineWidth = Math.max(1, H * 0.002); ctx.stroke(); }
+      label(ctx, "ABCD"[k], tx + tw * 0.08, ty + th * 0.64, H * 0.020,
+            right ? ONBRIGHT : DIM, "700");
+      label(ctx, Q.options[k], tx + tw * 0.20, ty + th * 0.64, H * 0.024,
+            right ? ONBRIGHT : MUTED, right ? "700" : "500");
+    }
+    ctx.globalAlpha = v;
+    ctx.restore();
+  }
+
   function drawCrowd(ctx, t, W, H, scene) {
     var a = arrive(scene, t, 0.1, 0.5);
     if (a <= 0) return;
-    var groundY = H * 0.74, fh = H * 0.11;
+    var T = window.EVTableau;
+    var groundY = H * 0.845;
 
     ctx.save();
     ctx.globalAlpha = a;
 
-    // The field: a line, and the collection's name above it.
+    // The card the figures are standing under. It holds for the whole chapter
+    // because the chapter is about what answering it DOES.
+    var card = at(scene, "cardAt", t, 0.5);
+    if (card > 0) answeredCard(ctx, W, H, a * card);
+
+    // The floor, and the collection this crowd belongs to.
     ctx.strokeStyle = GRID;
     ctx.lineWidth = Math.max(2, H * 0.004);
     ctx.beginPath();
-    ctx.moveTo(W * 0.10, groundY); ctx.lineTo(W * 0.90, groundY); ctx.stroke();
-    label(ctx, "Los Angeles, CA", W * 0.10, H * 0.16, H * 0.030, MUTED, "700");
+    ctx.moveTo(W * 0.04, groundY); ctx.lineTo(W * 0.96, groundY); ctx.stroke();
+    label(ctx, "Los Angeles, CA", W / 2, H * 0.040, H * 0.026, MUTED, "700", "center");
 
-    var first = at(scene, "arriveAt", t, 0.7);
-    if (first > 0) {
-      // The first one walks in from the left rather than appearing. Somebody
-      // arriving reads as somebody arriving; appearing at full size between
-      // one frame and the next reads as a glitch.
-      var fx = W * 0.10 + first * (W * 0.16 - W * 0.10) + W * 0.06;
-      glyph(ctx, fx, groundY, fh, YELLOW, a);
-    }
-
-    var built = at(scene, "buildAt", t, 1.0);
-
-    // What they build once there are enough of them. The real app raises a
-    // tableau at a milestone; here it is one frame of one, because the line is
-    // four seconds long.
+    // ── The tableau, in both margins ──
     //
-    // It is drawn BEFORE the crowd and it rises above head height. Drawn after
-    // them, at head height, it read as a tent pitched over the crowd rather
-    // than as something they were putting up.
+    // `builtFrom` is what is already standing when the scene opens and
+    // `builtTo` is what is standing when it ends, so a scene that raises
+    // nothing states the same number twice and the cue can stay absent.
+    var from = scene.builtFrom || 0;
+    var to = scene.builtTo == null ? from : scene.builtTo;
+    var raise = scene.buildAt == null ? (to > from ? 1 : 0) : at(scene, "buildAt", t, 1.0);
+    var built = from + (to - from) * raise;
     if (built > 0) {
-      ctx.save();
-      ctx.globalAlpha = a * built;
-      var bw = W * 0.17, bh = H * 0.30;
-      var bx = W * 0.56, by = groundY - bh;
-      ctx.strokeStyle = YELLOW;
-      ctx.lineWidth = Math.max(2, H * 0.005);
-      ctx.beginPath();
-      ctx.moveTo(bx, by + bh); ctx.lineTo(bx + bw * 0.5, by); ctx.lineTo(bx + bw, by + bh);
-      ctx.stroke();
-      for (var r = 1; r < 4; r++) {
-        ctx.globalAlpha = a * built * 0.55;
-        ctx.beginPath();
-        ctx.moveTo(bx + bw * 0.5 - (bw * 0.5) * (r / 4), by + bh * (r / 4));
-        ctx.lineTo(bx + bw * 0.5 + (bw * 0.5) * (r / 4), by + bh * (r / 4));
-        ctx.stroke();
-      }
-      ctx.restore();
+      // 1000 rig units high has to fit between the floor and the card. Solved
+      // from the frame rather than chosen, so the mast clears the crowd and
+      // stops short of the answers.
+      var tscale = (groundY - H * 0.355) / 1000;
+      T.drawStack(ctx, "left",  built, W * 0.145, groundY, tscale, { alpha: a });
+      T.drawStack(ctx, "right", built, W * 0.855, groundY, tscale, { alpha: a, flag: YELLOW });
     }
 
-    // The rest of the crowd. `moreAt` is five named arrivals; beyond that the
-    // field fills from a fixed layout so the count never depends on t.
+    // ── The crowd ──
     //
-    // The spread is golden-ratio rather than a modulo: `(i * 53) % 61` put
-    // four of the first eight within a figure's width of each other and left
-    // a hole in the middle of the field.
-    var count = 0;
-    for (var m = 0; m < 5; m++) if (atIndex(scene.moreAt, m, t, 0.5) > 0.5) count++;
-    var total = built > 0 ? 22 : count;
-    for (var i = 0; i < total; i++) {
-      var av = i < 5 && built <= 0 ? atIndex(scene.moreAt, i, t, 0.5) : 1;
-      if (built > 0 && i >= 5) av = built;
-      if (av <= 0) continue;
-      var gx = W * 0.14 + ((i * 0.6180339887) % 1) * W * 0.74;
-      var gy = groundY - ((i * 29) % 7) * H * 0.006;
-      glyph(ctx, gx, gy, fh * (0.9 + ((i * 17) % 5) * 0.04), YELLOW, a * av * 0.9);
+    // `have` is how many were already standing when the scene opened, and
+    // `spawnAt` is one second per figure that arrives DURING it. The two
+    // together are the population, which is why neither is optional once the
+    // chapter has anybody in it.
+    var have = scene.have || 0;
+    var spawn = scene.spawnAt || [];
+    var pop = have + spawn.length;
+
+    // Pair the room off for a high five, left-first, the way CTC's own
+    // `pairUp` does it: the left partner reaches RIGHT. Pairs are taken in
+    // index order over the figures that are actually standing, so the pairing
+    // cannot change between two renders of the same frame.
+    //
+    // AND THE PAIR HAS TO CLOSE THE GAP. `HIGHFIVE_GAP` is part of the pose,
+    // not a layout detail: the two hands land about 83 rig units off each
+    // figure's centre line, so partners standing anywhere else reach past each
+    // other. The first cut of this scene did exactly that — sixteen arms up
+    // and not one hand touching. So each partner steps to its half of the
+    // pair's midpoint, arriving as the arms come up.
+    //
+    // `maxGap` is what stops a figure sprinting across the field to find a
+    // partner. CTC's own `pairUp` takes the same argument for the same reason.
+    var five = at(scene, "fiveAt", t, 0.4);
+    var partner = {}, stepTo = {}, pairDepth = {};
+    if (five > 0) {
+      var standing = [];
+      for (var q = 0; q < pop; q++) {
+        var bq = q < have ? null : spawn[q - have];
+        if (bq != null && t < bq + 0.75) continue;
+        var sp = crowdSpot(q, W, H, groundY);
+        standing.push({ i: q, x: sp.x, y: sp.y, scale: sp.scale });
+      }
+      standing.sort(function (p, r) { return p.x - r.x; });
+      for (var q2 = 0; q2 + 1 < standing.length; q2 += 2) {
+        var Lp = standing[q2], Rp = standing[q2 + 1];
+        // AND THE PAIR HAS TO STAND AT THE SAME DEPTH. The crowd is spread
+        // over a shallow depth — nearer figures stand lower and bigger — and
+        // two neighbours can be most of that spread apart. Spaced correctly
+        // but at different depths their hands pass thirty pixels above and
+        // below each other, which is what the first cut of this did and what
+        // a frame grab, not the code, showed. So the right partner steps onto
+        // the LEFT one's line and matches his size for the length of the
+        // five: two people slapping hands are at arm's length, which means
+        // they are standing in the same place.
+        var want = window.LeremyRig.HIGHFIVE_GAP * Lp.scale;
+        if (Rp.x - Lp.x > want * 3) { q2 -= 1; continue; }   // too far: he waves alone
+        var mid = (Lp.x + Rp.x) / 2;
+        partner[Lp.i] = "highfiveR"; stepTo[Lp.i] = mid - want / 2;
+        partner[Rp.i] = "highfiveL"; stepTo[Rp.i] = mid + want / 2;
+        pairDepth[Lp.i] = { y: Lp.y, scale: Lp.scale };
+        pairDepth[Rp.i] = { y: Lp.y, scale: Lp.scale };
+      }
+    }
+
+    for (var i = 0; i < pop; i++) {
+      var born = i < have ? null : spawn[i - have];
+      var age = born == null ? null : t - born;
+      if (age != null && age < 0) continue;
+
+      var spot = crowdSpot(i, W, H, groundY);
+      var act = crowdAct(i, age, t, scene, partner[i]);
+      // A partner eases onto his pair's line as the arms come up, and back off
+      // it when the five is over, so nobody teleports between depths.
+      if (pairDepth[i]) {
+        spot = {
+          x: spot.x,
+          y: spot.y + (pairDepth[i].y - spot.y) * five,
+          scale: spot.scale + (pairDepth[i].scale - spot.scale) * five
+        };
+      }
+      var x = spot.x;
+      // A wanderer drifts inside a stride of home and turns round at the ends,
+      // which is what makes it a person loitering rather than a person leaving.
+      var flip = jit(i, 9) > 0.5;
+      if (stepTo[i] != null) {
+        x = x + (stepTo[i] - x) * five;
+        // NOT FLIPPED, and this cost a frame grab to find. The pose already
+        // says which arm goes up — the left partner plays highfiveR and
+        // reaches right — so mirroring the figure as well reverses it, and
+        // the pair end up reaching the SAME way with their hands eighty
+        // pixels apart. It read as two people waving at something offscreen.
+        flip = false;
+      } else if (act.wander) {
+        var sway = Math.sin(t * 0.33 + jit(i, 8) * 6.28);
+        x += sway * W * 0.012;
+        flip = sway < 0;
+      }
+
+      // The flash. It is drawn UNDER the figure and outlives him by a beat, so
+      // he reads as having come out of it rather than as having been hidden
+      // behind it.
+      if (age != null && age < 0.85) {
+        var pv = age < 0.18 ? age / 0.18 : Math.max(0, 1 - (age - 0.18) / 0.67);
+        window.LeremyRig.drawSmoke(ctx, x, spot.y - H * 0.036, H * 0.080 * (0.55 + age),
+                                   a * pv * 1.15, i + 3, t, SPAWN_PURPLE);
+      }
+      if (age != null && age < 0.16) continue;
+
+      var tone = CROWD_TONES[Math.floor(jit(i, 1) * CROWD_TONES.length) % CROWD_TONES.length];
+      rigFig(ctx, act.name, x, spot.y, spot.scale, tone, act.tt, flip, a);
     }
 
     // The question the field has no figure for: dealt face-up, marked new.
@@ -724,7 +1095,7 @@
     if (deal > 0) {
       ctx.save();
       ctx.globalAlpha = a * deal;
-      var dw = W * 0.26, dh = H * 0.13, dx = (W - dw) / 2, dy = H * 0.22;
+      var dw = W * 0.26, dh = H * 0.11, dx = (W - dw) / 2, dy = H * 0.375;
       panel(ctx, dx, dy, dw, dh, H, 1, YELLOW);
       label(ctx, "NOT YET EARNED", dx + dw * 0.06, dy + dh * 0.38, H * 0.022, YELLOW, "700");
       label(ctx, "a question you have never got right", dx + dw * 0.06, dy + dh * 0.76,
@@ -733,12 +1104,13 @@
     }
 
     // And one walks off, for a question that was right once and is wrong now.
+    // He is a real figure too, and he TRUDGES: the app takes the bobit back,
+    // and the picture should not make that look like a stroll.
     var leave = at(scene, "leaveAt", t, 0.9);
     if (leave > 0) {
-      ctx.save();
-      var lx = W * 0.30 + leave * W * 0.30;
-      glyph(ctx, lx, groundY, fh, BAD, a * (1 - leave * 0.8));
-      ctx.restore();
+      var lx = W * 0.30 + leave * W * 0.26;
+      rigFig(ctx, "trudge", lx, groundY - H * 0.012, H * 0.00048, BAD,
+             t * 0.9, false, a * (1 - leave * 0.75));
     }
 
     // Signed out, signed in.
@@ -746,9 +1118,9 @@
     if (split > 0) {
       ctx.save();
       ctx.globalAlpha = a * split;
-      label(ctx, "signed out  ·  kept in this browser", W * 0.30, H * 0.86,
+      label(ctx, "signed out  ·  kept in this browser", W * 0.28, H * 0.935,
             H * 0.024, MUTED, "600", "center");
-      label(ctx, "signed in  ·  follows you, with your level", W * 0.70, H * 0.86,
+      label(ctx, "signed in  ·  follows you, with your level", W * 0.72, H * 0.935,
             H * 0.024, YELLOW, "600", "center");
       ctx.restore();
     }
@@ -1000,16 +1372,23 @@
     if (a <= 0) return;
     var host = scene.host || "ctc.empowered.vote";
     var boxW = W * 0.62, x = (W - boxW) / 2, y = H * 0.10, maxH = H * 0.70;
+    var img = scene.shot === "play" ? play : shot;
 
-    if (shot.naturalWidth) {
-      var full = boxW * (shot.naturalHeight / shot.naturalWidth);
+    // The pan is a consequence of the picture's shape, not a setting. A
+    // still taller than maxH/boxW has somewhere to travel and panRate moves
+    // it; one that is flatter fills the width and `travel` is 0, so the same
+    // code holds it still however the scene is cued. screen-play.js is cut
+    // to exactly that ratio on purpose: it fills the identical box the home
+    // page fills, so the cut between the two scenes does not resize the frame.
+    if (img.naturalWidth) {
+      var full = boxW * (img.naturalHeight / img.naturalWidth);
       var boxH = Math.min(full, maxH);
       var travel = full - boxH;
       var frac = Math.max(0, Math.min(1, (scene.panFrom || 0) + t * (scene.panRate || 0)));
       ctx.save();
       ctx.globalAlpha = a;
       ctx.beginPath(); ctx.rect(x, y, boxW, boxH); ctx.clip();
-      ctx.drawImage(shot, x, y - travel * frac, boxW, full);
+      ctx.drawImage(img, x, y - travel * frac, boxW, full);
       ctx.restore();
       frameAndHost(ctx, x, y, boxW, boxH, H, W, a, host, scene);
       return;
@@ -1046,5 +1425,5 @@
     drawWhy: drawWhy,
     drawLiveScreen: drawLiveScreen
   });
-  window.EVArt.ready = Promise.all([logoA.ready, shotA.ready]);
+  window.EVArt.ready = Promise.all([logoA.ready, shotA.ready, playA.ready]);
 })();
