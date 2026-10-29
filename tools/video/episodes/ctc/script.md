@@ -158,14 +158,28 @@ would print it as [A]; a bracket on screen would read as a typo, so the film doe
 one `d`, two words. The text above is Hunt's modernised edition, which is what the link shows
 and what the citation names. Quote and source match; that is the whole standard.
 
-**L021 therefore has to be recorded again.** It is the only line that changes. The engine takes
-later takes first, so a pickup WAV holding just this line is enough:
+**L021 was recorded again on 2026-10-28** — `audio/DJI_39_20261028_095121.wav`, the only line on
+it. Three readings; the third is the one in the film, which is both what the engine does and
+what Chris asked for. The cut is 64.70–81.43 and the scene's three cues now sit on words in
+`build/ctc/words.md` instead of on estimates.
 
 ```
-node tools/video/engine/split.mjs tools/video/episodes/ctc <original>.WAV <pickup>.WAV
+node tools/video/engine/split.mjs tools/video/episodes/ctc \
+  audio/DJI_38_20261027_102134.WAV audio/DJI_39_20261028_095121.wav
 ```
 
-Until that is run, the scene's cue times in `episode.mjs` are provisional and marked as such.
+**The re-split moved two lines it had no business moving, and they are pinned now.** L019 and
+L020 were each read twice on the first take, and the second reading of each is the one the film
+had always used. Changing L021's words changed the alignment path through the whole script — the
+take ends "Jefferson's argument was...", which the script no longer says — and the aligner began
+handing both lines their FIRST reading instead. L020's came out 0.84 seconds long, for a line
+that takes four seconds to say.
+
+The word stream could not settle it, because the word stream is what was wrong: the whole-file
+pass stamps fourteen words at 408.50, and `silencedetect` says 406.18–411.45 is silent. So these
+two were settled on the energy envelope rather than by ear, which is a first for this file and is
+written down in `cuts.json` as exactly that. Both pins restore the seconds the shipped cut was
+already using, so no cue outside L021 moved.
 
 Chapter 1 — the test you were made to fear
 
@@ -179,7 +193,7 @@ You learned it for a test, you passed the test, and then you never had to use an
 
 ## L003
 > Direction: the desk is gone. The Bobit holds a ballot at a kitchen table. `confused`.
-Then one day something does ask. A ballot, or a meeting, or an argument you do not want to be in. And the answer is in there somewhere, under years of dust.
+Then one day something does ask. A ballot, or a meeting, or an argument you did not want to be a part of. And the answer is in there somewhere, under years of dust.
 
 ## L004
 > Direction: `art` — the marked paper turns over and becomes a bright game card.
@@ -235,7 +249,7 @@ When you get a question right, these little folks start showing up to cheer you 
 
 ## L015
 > Direction: `art` — more figures arrive, one for each right answer, and stay.
-Between questions, they stay and hang out. Come back for another round and they're still standing there. Then the next right answer brings another one.
+Between questions, they stay and hang out. They come back for another round and they're still standing there. Then the next right answer brings another one.
 
 ## L016
 > Direction: `art` — the crowd is big enough that some of them start building.
@@ -243,7 +257,7 @@ Once there are enough of them, they stop milling about and start building someth
 
 ## L018
 > Direction: `art` — one figure walks off the field.
-And if you get an answer wrong that you had right before, then that one leaves. Your crowd is what you know today, not what you knew once.  
+And if you get an answer wrong that you had right before, then that one leaves. Your crowd is what you know today, not what you once knew.  
 
 ## L019
 > Direction: a Bobit `present` beside the field.
@@ -253,7 +267,7 @@ Chapter 6 — why a trivia game
 
 ## L020
 > Direction: a Bobit `ponder`, alone.
-That's fair to ask why a trivia game sits inside a voting platform.
+It's fair to ask why a trivia game sits inside a voting platform.
 
 ## L021
 > Direction: `art` — the quote prints, and then the source arrives under it.
