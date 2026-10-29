@@ -204,6 +204,29 @@ The per-app actions are:
 | Treasury | anything past the front page | OR of `treasury_line_item_viewed`, `treasury_category_drilled`, `treasury_entity_selected`, `treasury_search`, `treasury_year_changed`, `treasury_visualization_changed` |
 | Main site | clicked through to an app | OR of `landing_tool_clicked`, `landing_app_link_clicked`, `landing_financials_clicked` |
 
+🔴 **`read-data-schema` lists the last 30 days, so a real event with older data is simply
+absent from it — and that absence reads exactly like "this event does not exist."**  Paid for on
+2026-10-29.  `treasury_search` is in the list above, did not appear in the taxonomy, and was
+written off as a stale reference in the recipe.  It is real: `BudgetSearch.tsx:69` fires it, and
+PostHog holds **19** of them, the last on **2026-09-22** — more than 30 days before the snapshot
+and well inside the 90-day window being published.  The 2026-10-29 edition therefore omitted
+18 searches from its Treasury event list.
+
+**The check takes one query and settles it:**
+
+```sql
+SELECT event, count() AS n, min(timestamp), max(timestamp)
+FROM events WHERE event LIKE 'treasury_%' GROUP BY event ORDER BY n DESC
+```
+
+Run that, not the taxonomy, before concluding an event in this recipe is dead.  The same query
+turned up `treasury_donate_clicked` (3 events), which is in neither this table nor the page.
+
+**What saved the headline figure was that the OR is a per-person union.**  Dropping
+`treasury_search` from the six left the 90-day count at **31 either way**, because everyone who
+searched also did one of the other five.  That is luck, not design: a reader who only searched
+would have been dropped silently, and nothing in the funnel would have looked wrong.
+
 Two traps in that table, both already paid for:
 
 - **EVERY app has more than one hostname.  Union them, or an app reads as two small ones.**
