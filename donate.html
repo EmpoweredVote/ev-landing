@@ -109,6 +109,42 @@
     .ledger-line a:hover { color: var(--teal-press); }
     .reassure { margin-top: 16px; font-size: 0.85rem; color: var(--muted); max-width: 44ch; line-height: 1.55; }
 
+    /* Giving Tuesday goals: opening, three progress lines, then what volunteers
+       built. Left column on desktop, above the form on phones. */
+    .hero:has(.goals) { align-items: start; }
+    @media (min-width: 801px) { .hero:has(.goals) .give-card { position: sticky; top: 24px; } }
+    .goals-opening { margin-top: 14px; font-size: 1rem; max-width: 52ch; }
+    .goals, .built { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); max-width: 52ch; }
+    .goals-heading, .built h2 { font-size: 1.25rem; font-weight: 800; color: var(--heading); letter-spacing: -0.015em; line-height: 1.25; }
+    .goals-rule { margin-top: 8px; font-size: 0.95rem; font-weight: 600; color: var(--heading); }
+    .goal { margin-top: 14px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 16px; }
+    .goal h3 { font-size: 1.02rem; font-weight: 800; color: var(--heading); line-height: 1.3; }
+    .goal-line { margin-top: 4px; font-size: 0.9rem; line-height: 1.5; }
+    .goal-progress { margin-top: 10px; font-size: 0.92rem; font-weight: 600; color: var(--heading); }
+    .goal-progress strong { color: var(--teal); font-weight: 800; }
+    .goal-longrun { margin-top: 12px; font-size: 0.88rem; color: var(--muted); }
+    .bar { margin-top: 8px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 18%, transparent); overflow: hidden; }
+    .bar span { display: block; height: 100%; width: 0; background: var(--teal); border-radius: inherit; }
+    .steps { list-style: none; margin-top: 12px; display: grid; gap: 8px; counter-reset: step; }
+    .step { position: relative; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px 10px 44px; }
+    .step::before { content: ""; position: absolute; left: 12px; top: 10px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 0.74rem; font-weight: 800; color: var(--muted); border: 1.5px solid var(--border); }
+    .step-paid { counter-increment: step; }
+    .step-paid::before { content: counter(step); }
+    .step-milestone { padding-top: 7px; padding-bottom: 7px; }
+    .step-milestone::before { width: 10px; height: 10px; left: 18px; top: 13px; background: var(--border); border: 0; }
+    .step.is-funded::before { content: "✓"; color: var(--bg); background: var(--teal); border-color: var(--teal); }
+    .step-milestone.is-funded::before { content: ""; background: var(--teal); }
+    .step.is-next { border-color: color-mix(in srgb, var(--teal) 55%, var(--border)); }
+    .step-top { display: flex; justify-content: space-between; align-items: baseline; gap: 4px 12px; flex-wrap: wrap; }
+    .step-name { font-weight: 700; color: var(--heading); line-height: 1.35; font-size: 0.95rem; }
+    .step-amount { font-size: 0.85rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+    .step-line { margin-top: 2px; font-size: 0.86rem; line-height: 1.5; }
+    .step-line a { color: var(--teal); }
+    .goals-fees { margin-top: 14px; font-size: 0.85rem; color: var(--muted); line-height: 1.55; }
+    .built p { margin-top: 8px; font-size: 0.95rem; }
+    /* Unfilled copy, names or numbers. Must be gone before merge: grep -n 'class="ph"' donate.html */
+    .ph { background: color-mix(in srgb, var(--yellow) 22%, transparent); outline: 1px dashed var(--yellow); border-radius: 4px; padding: 0 4px; color: var(--heading); }
+
     .give-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-card); padding: 22px; }
     .give-card h2 { font-size: 1.2rem; font-weight: 800; color: var(--heading); margin-bottom: 14px; }
     .gb-slot { min-height: 120px; }
@@ -168,6 +204,114 @@
           <h1>Support free civic transparency.</h1>
           <p class="tagline">Anti-partisan nonprofit · No ads · No subscriptions · No catch.</p>
           <p class="lede">We build Empowered Vote as a small all-volunteer team today; your donation will help us keep the lights on so we can keep building civic tools for a better democracy.</p>
+
+          <p class="goals-opening"><span class="ph">[OPENING COPY: 80 to 120 words, block 3 of the GT ladder brief]</span></p>
+
+          <!-- Giving Tuesday goals. EDIT THE NUMBERS HERE. Whole dollars, no "$" or commas.
+               Leave a value "" until it is known; the page then shows a placeholder.
+                 data-monthly-total   monthly gifts today. Update by hand each week.
+                 data-running-costs   monthly running costs (hosting, data, tools). Board sets it.
+                 data-one-time-total  one-time gifts so far toward the first one-time goal.
+               Further down: data-goal and data-at on the one-time steps (running totals),
+               data-at on the monthly milestones, and data-cost on each paid step (what that
+               step adds per month). Every amount is illustrative until the board sets it.
+               Paid-day progress counts only the monthly gifts above running costs. -->
+          <section id="goals" class="goals" data-monthly-total="110" data-running-costs="" data-one-time-total="" aria-labelledby="goals-heading">
+            <h2 id="goals-heading" class="goals-heading"><span class="ph">[PROGRESS HEADING]</span></h2>
+            <p class="goals-rule">Paid days come only from monthly gifts. One-time gifts fund one-off items.</p>
+
+            <article class="goal" id="goal-running">
+              <h3>Running costs</h3>
+              <p class="goal-line">Hosting, data and tools, shown apart from development. Monthly gifts cover this first.</p>
+              <p class="goal-progress" role="status"></p>
+              <div class="bar" aria-hidden="true"><span></span></div>
+            </article>
+
+            <article class="goal" id="goal-one-time" data-goal="5000">
+              <h3>One-time gifts</h3>
+              <p class="goal-line">The first one-time goal is $5,000.</p>
+              <p class="goal-progress" role="status"></p>
+              <div class="bar" aria-hidden="true"><span></span></div>
+              <ol class="steps">
+                <li class="step step-paid" data-at="3500">
+                  <div class="step-top"><span class="step-name">Thank-you stipends for volunteers</span><span class="step-amount"></span></div>
+                  <p class="step-line">$500 for each volunteer listed on <a href="/briefing">our briefing page</a>, about 7 people, paid together.</p>
+                </li>
+                <li class="step step-paid" data-at="5000">
+                  <div class="step-top"><span class="step-name">Finishing features</span><span class="step-amount"></span></div>
+                  <p class="step-line">The rest of the $5,000, about $1,500, goes to <span class="ph">[WHICH FEATURES]</span>.</p>
+                </li>
+              </ol>
+            </article>
+
+            <article class="goal" id="goal-monthly">
+              <h3>Monthly gifts: paid days</h3>
+              <p class="goal-line">One paid day a week costs about $2,000 a month, at a flat, public pay band. Monthly gifts above running costs go here.</p>
+              <p class="goal-progress" role="status"></p>
+              <ol class="steps">
+                <li class="step step-milestone" data-at="500">
+                  <div class="step-top"><span class="step-name">Milestone</span><span class="step-amount"></span></div>
+                  <p class="step-line">Progress toward the first paid day.</p>
+                </li>
+                <li class="step step-milestone" data-at="1000">
+                  <div class="step-top"><span class="step-name">Milestone</span><span class="step-amount"></span></div>
+                  <p class="step-line">Progress toward the first paid day.</p>
+                </li>
+                <li class="step step-milestone" data-at="1500">
+                  <div class="step-top"><span class="step-name">Milestone</span><span class="step-amount"></span></div>
+                  <p class="step-line">Progress toward the first paid day.</p>
+                </li>
+                <li class="step step-paid" data-cost="2000">
+                  <div class="step-top"><span class="step-name">Chris Cantrell, 1 day a week</span><span class="step-amount"></span></div>
+                  <p class="step-line"><span class="ph">[CONFIRM NAME]</span> <span class="ph">[BIO: who he is and why he founded EV, one or two sentences]</span></p>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+                <li class="step step-paid" data-cost="2000">
+                  <div class="step-top"><span class="step-name">Chris Andrews, 1 day a week</span><span class="step-amount"></span></div>
+                  <p class="step-line"><span class="ph">[CONFIRM NAME]</span></p>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+                <!-- One <li> per volunteer, in the order the team agrees. Keep [NAME] until
+                     that person has said yes to appearing by name. Copy or delete rows to match. -->
+                <li class="step step-paid" data-cost="2000">
+                  <div class="step-top"><span class="step-name"><span class="ph">[NAME]</span>, 1 day a week</span><span class="step-amount"></span></div>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+                <li class="step step-paid" data-cost="2000">
+                  <div class="step-top"><span class="step-name"><span class="ph">[NAME]</span>, 1 day a week</span><span class="step-amount"></span></div>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+                <li class="step step-paid" data-cost="2000">
+                  <div class="step-top"><span class="step-name"><span class="ph">[NAME]</span>, 1 day a week</span><span class="step-amount"></span></div>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+                <li class="step step-paid" data-cost="">
+                  <div class="step-top"><span class="step-name">A visual designer, 1 day a week</span><span class="step-amount"></span></div>
+                  <p class="step-line">A new job posting.</p>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+                <li class="step step-paid" data-cost="">
+                  <div class="step-top"><span class="step-name">Health insurance</span><span class="step-amount"></span></div>
+                  <p class="step-line">Once people reach about 3 paid days a week.</p>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+                <li class="step step-paid" data-cost="">
+                  <div class="step-top"><span class="step-name">More roles</span><span class="step-amount"></span></div>
+                  <p class="step-line">A security lead, an engineer, and motion graphics for our videos.</p>
+                  <div class="bar" aria-hidden="true"><span></span></div>
+                </li>
+              </ol>
+              <p class="goal-longrun">Long-run goal: about $10,000 a month, which is 5 paid days a week.</p>
+            </article>
+
+            <p class="goals-fees">Card fees are covered; the optional tip at checkout goes to Givebutter, not to Empowered Vote, and you can set it to $0.</p>
+          </section>
+
+          <section class="built" aria-labelledby="built-heading">
+            <h2 id="built-heading">What volunteers built this year</h2>
+            <p><span class="ph">[VOLUNTEERS BUILT COPY: what the volunteer team shipped this year]</span></p>
+          </section>
+
           <p class="ledger-line"><a href="https://financials.empowered.vote">See every dollar we raise and spend →</a></p>
           <p class="reassure">Small monthly gifts help most. But you'll always have full access — no donation required, ever.</p>
         </div>
@@ -266,6 +410,91 @@
           })
           .catch(function () { setNote('Couldn’t reach us just now. Please try again in a moment.', true); btn.disabled = false; });
       });
+    })();
+  </script>
+
+  <script>
+    // Giving Tuesday goals: fills in each amount, bar and progress line from the
+    // data- numbers in the markup. A value left "" shows a placeholder. Paid-day
+    // steps stack: the second paid day is reached when the money above running
+    // costs covers the first two. A paid step with no cost yet stops the bars after
+    // it, since its place is not known. Static numbers only: no network calls, no
+    // donor data.
+    (function () {
+      var box = document.getElementById('goals');
+      if (!box) return;
+      function ph(t) { return '<span class="ph">' + t + '</span>'; }
+      function money(n) { return '$' + n.toLocaleString('en-US'); }
+      function num(v) { return v === undefined || v === '' ? null : Number(v); }
+      function fill(bar, f) { if (bar) bar.style.width = (Math.max(0, Math.min(1, f)) * 100) + '%'; }
+      function q(el, sel) { return el.querySelector(sel); }
+
+      var monthly = num(box.dataset.monthlyTotal) || 0;
+      var running = num(box.dataset.runningCosts);
+      var oneTime = num(box.dataset.oneTimeTotal);
+
+      // Running costs.
+      var a = document.getElementById('goal-running');
+      if (running) {
+        fill(q(a, '.bar span'), monthly / running);
+        q(a, '.goal-progress').innerHTML = monthly >= running
+          ? 'Covered. Monthly gifts today: <strong>' + money(monthly) + ' a month</strong>, against ' + money(running) + ' a month of running costs.'
+          : '<strong>' + money(monthly) + ' a month</strong> of ' + money(running) + ' a month covered.';
+      } else {
+        q(a, '.goal-progress').innerHTML = 'Monthly gifts today: <strong>' + money(monthly) + ' a month</strong>, against running costs of ' + ph('[$___/month]') + '.';
+      }
+
+      // One-time gifts.
+      var b = document.getElementById('goal-one-time');
+      var goal = num(b.dataset.goal);
+      if (oneTime !== null) fill(q(b, '.bar span'), oneTime / goal);
+      q(b, '.goal-progress').innerHTML = (oneTime !== null ? '<strong>' + money(oneTime) + '</strong>' : ph('[$___]')) + ' of ' + money(goal) + ' so far.';
+      var nextB = false;
+      b.querySelectorAll('.step').forEach(function (step) {
+        var at = num(step.dataset.at);
+        q(step, '.step-amount').textContent = money(at);
+        if (oneTime !== null && oneTime >= at) step.classList.add('is-funded');
+        else if (oneTime !== null && !nextB) { nextB = true; step.classList.add('is-next'); }
+      });
+
+      // Monthly gifts: paid days. Counts only the money above running costs.
+      var c = document.getElementById('goal-monthly');
+      var paid = running ? Math.max(0, monthly - running) : null;
+      var known = paid !== null, below = 0, next = null;
+      c.querySelectorAll('.step').forEach(function (step) {
+        var amount = q(step, '.step-amount');
+        if (step.classList.contains('step-milestone')) {
+          var at = num(step.dataset.at);
+          amount.textContent = money(at) + ' a month';
+          if (known && paid >= at) step.classList.add('is-funded');
+          else if (known && !next) next = { step: step, at: at };
+          return;
+        }
+        var cost = num(step.dataset.cost);
+        if (!cost) {
+          amount.innerHTML = ph('[$___/month]');
+          if (known && !next) next = { step: step, at: null };
+          known = false;
+          return;
+        }
+        amount.textContent = '+' + money(cost) + ' a month';
+        if (!known) return;
+        var f = (paid - below) / cost;
+        below += cost;
+        fill(q(step, '.bar span'), f);
+        if (f >= 1) step.classList.add('is-funded');
+        else if (!next) next = { step: step, at: below };
+      });
+      var line = paid === 0
+        ? 'Paid days start once running costs are covered.'
+        : (paid !== null ? '<strong>' + money(paid) + ' a month</strong>' : ph('[$___/month]')) + ' above running costs goes to paid days.';
+      if (next) {
+        next.step.classList.add('is-next');
+        line += ' Next: ' + q(next.step, '.step-name').textContent + (next.at ? ', at ' + money(next.at) + ' a month.' : '.');
+      } else if (paid !== null) {
+        line += ' Every step on this list is funded.';
+      }
+      q(c, '.goal-progress').innerHTML = line;
     })();
   </script>
 
