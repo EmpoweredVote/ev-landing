@@ -25,6 +25,28 @@ if (!process.env.DATABASE_URL) {
   process.exit(2);
 }
 
+// An edition can carry a note saying which of its figures were added AFTER publication and
+// on what date — the Treasury Tracker and Officials-on-file maps were, on 2026-10-29.  A
+// refresh rewrites those figures, and the note is then a false claim about a page whose
+// whole offer to the reader is that its numbers can be checked.  So a write refuses while
+// the note is there; --dry still reports, because inspecting a page is always safe.
+// Rewrite or remove the note first.  The next edition removes it anyway: it is written
+// fresh, and every figure it carries shares one as-of date again.
+//
+// This runs BEFORE the connection on purpose.  Refusing after the queries means waiting out
+// the campaign-finance aggregate — about twenty minutes — to be told no.
+if (/Added after publication, and dated separately/.test(readFileSync(PAGE, 'utf8'))) {
+  console.error('This edition carries an "Added after publication" note, which names figures that');
+  console.error('  were queried on a date of their own.  Refreshing rewrites them and leaves the');
+  console.error('  note claiming something that is no longer true.  Rewrite or remove the note in');
+  console.error('  briefing/index.html first.');
+  if (!DRY) {
+    console.error('REFUSING to write.  Re-run with --dry to see what would change.');
+    process.exit(3);
+  }
+  console.error('  (--dry, so reporting anyway; nothing will be written.)\n');
+}
+
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();
 // The server default is 30s, which the campaign-finance aggregate (tens of millions of
@@ -250,6 +272,58 @@ const byState = await all(`
                     WHERE e.politician_id = u.pid AND e.is_placeholder_occupancy)
   GROUP BY 1`);
 
+// The SECOND and THIRD maps, added 2026-10-29.  All three draw the same 52 boxes and differ
+// only in what fills them, so the two new ones have to resolve a jurisdiction exactly the way
+// byState does or the tabs stop being comparable — and comparing them is the whole point of
+// putting them behind tabs.  seatsByState is literally byState with the `politician_answers`
+// join lifted out, which is why its `researched` column reproduces byState state for state;
+// that equality is asserted below and is the cheapest guard against the three maps drifting
+// apart.  It starts from office_terms and offices, never from a scan of politicians: the first
+// draft of the old per-jurisdiction seat count walked all 85k people and never finished.
+const seatsByState = await all(`
+  WITH pol_state AS (
+    SELECT upper(trim(g.state)) AS st, ot.politician_id AS pid
+    FROM essentials.office_terms ot
+    JOIN essentials.offices o ON o.id = ot.office_id
+    JOIN essentials.chambers c ON c.id = o.chamber_id
+    JOIN essentials.governments g ON g.id = c.government_id
+    WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+      AND (ot.term_end IS NULL OR ot.term_end >= current_date)
+    UNION
+    SELECT upper(trim(g.state)), p.id
+    FROM essentials.politicians p
+    JOIN essentials.offices o ON o.id = p.office_id
+    JOIN essentials.chambers c ON c.id = o.chamber_id
+    JOIN essentials.governments g ON g.id = c.government_id
+    WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+    UNION
+    SELECT upper(btrim(o.representing_state)), p.id
+    FROM essentials.politicians p
+    LEFT JOIN essentials.office_terms ot ON ot.politician_id = p.id
+         AND (ot.term_end IS NULL OR ot.term_end >= current_date)
+    JOIN essentials.offices o ON o.id = coalesce(ot.office_id, p.office_id)
+    WHERE o.chamber_id IS NULL AND btrim(coalesce(o.representing_state, '')) <> ''
+  )
+  SELECT st, count(*) AS seated,
+         count(*) FILTER (WHERE EXISTS (SELECT 1 FROM inform.politician_answers a
+                                         WHERE a.politician_id = u.pid)) AS researched
+  FROM pol_state u
+  WHERE NOT EXISTS (SELECT 1 FROM essentials.politician_occupancy_evidence e
+                    WHERE e.politician_id = u.pid AND e.is_placeholder_occupancy)
+  GROUP BY 1`);
+
+// Treasury coverage, by the state the government sits in.  A government is "covered" when it has
+// a budget, not when it has a row — treasury.municipalities holds entities we know about ahead of
+// any budget for them, and on 2026-10-29 that was 46 entities in four states.  Counting rows
+// instead of budgets would have shaded Texas 32 where it has 17.  `state` is the only geography
+// on the table; the federal row carries 'US' and deliberately gets no tile.
+const treasuryByState = await all(`
+  SELECT upper(btrim(m.state)) AS st, count(*) AS entities
+  FROM treasury.municipalities m
+  WHERE btrim(coalesce(m.state, '')) <> ''
+    AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id = m.id)
+  GROUP BY 1`);
+
 // Campaign finance (FEC).  Wrapped: if the schema is absent, leave the spans as-is.
 let finance = null;
 try {
@@ -271,34 +345,44 @@ try {
 // draws, how many researched officials each has, and the seat count for any with none.
 const stateNames = { AK:'Alaska', AL:'Alabama', AR:'Arkansas', AZ:'Arizona', CA:'California', CO:'Colorado', CT:'Connecticut', DE:'Delaware', FL:'Florida', GA:'Georgia', HI:'Hawaii', IA:'Iowa', ID:'Idaho', IL:'Illinois', IN:'Indiana', KS:'Kansas', KY:'Kentucky', LA:'Louisiana', MA:'Massachusetts', MD:'Maryland', ME:'Maine', MI:'Michigan', MN:'Minnesota', MO:'Missouri', MS:'Mississippi', MT:'Montana', NC:'North Carolina', ND:'North Dakota', NE:'Nebraska', NH:'New Hampshire', NJ:'New Jersey', NM:'New Mexico', NV:'Nevada', NY:'New York', OH:'Ohio', OK:'Oklahoma', OR:'Oregon', PA:'Pennsylvania', RI:'Rhode Island', SC:'South Carolina', SD:'South Dakota', TN:'Tennessee', TX:'Texas', UT:'Utah', VA:'Virginia', VT:'Vermont', WA:'Washington', WI:'Wisconsin', WV:'West Virginia', WY:'Wyoming', DC:'District of Columbia', PR:'Puerto Rico' };
 const counts = Object.fromEntries(byState.map(r => [r.st, Number(r.pols)]));
-// How many officials a jurisdiction has SEATED, for the tooltip on a tile with nothing researched
-// yet.  Runs only for the jurisdictions that need it (normally just Puerto Rico) and starts from
-// the OFFICES rather than the people — filtering 161 offices beats scanning 85k politicians, which
-// is what the first version did, and it never finished.  The count is queried rather than typed
-// into the caption, which is how DC's tooltip came to claim 27 seats long after that changed.
-const unresearched = Object.keys(stateNames).filter((abbr) => !counts[abbr]);
-let seeded = {};
-if (unresearched.length) {
-  const list = unresearched.map((s) => `'${s}'`).join(',');
-  const rows = await all(`
-    WITH tgt AS (
-      SELECT o.id, upper(btrim(coalesce(g.state, o.representing_state))) AS st
-      FROM essentials.offices o
-      LEFT JOIN essentials.chambers ch ON ch.id = o.chamber_id
-      LEFT JOIN essentials.governments g ON g.id = ch.government_id
-      WHERE upper(btrim(coalesce(g.state, o.representing_state, ''))) IN (${list})
-    )
-    SELECT t.st, count(DISTINCT p.id) AS seats
-    FROM tgt t
-    JOIN essentials.office_terms ot ON ot.office_id = t.id
-         AND (ot.term_end IS NULL OR ot.term_end >= current_date)
-    JOIN essentials.politicians p ON p.id = ot.politician_id
-    WHERE NOT EXISTS (SELECT 1 FROM essentials.politician_occupancy_evidence e
-                      WHERE e.politician_id = p.id AND e.is_placeholder_occupancy)
-    GROUP BY 1`);
-  seeded = Object.fromEntries(rows.map((r) => [r.st, Number(r.seats)]));
-  for (const abbr of unresearched) {
-    console.log(`note: ${abbr} has ${seeded[abbr] ?? 0} seats seeded and no researched stances yet.`);
+const seatCounts = Object.fromEntries(seatsByState.map(r => [r.st, Number(r.seated)]));
+const researched = Object.fromEntries(seatsByState.map(r => [r.st, Number(r.researched)]));
+const treasuryCounts = Object.fromEntries(treasuryByState.map(r => [r.st, Number(r.entities)]));
+
+// The seat count behind a t0 tooltip used to come from its own query, run only for the
+// jurisdictions that needed it.  It comes off seatsByState now — one query, one number, so the
+// tooltip on the stance map and the tooltip on the Officials-on-file map can never disagree
+// about how many officials a jurisdiction holds.  Either way it is QUERIED, not typed into a
+// caption: DC's said "27 officials seeded" long after that stopped being true.
+const seeded = seatCounts;
+for (const abbr of Object.keys(stateNames).filter((a) => !counts[a])) {
+  console.log(`note: ${abbr} has ${seeded[abbr] ?? 0} seats seeded and no researched stances yet.`);
+}
+
+// The three maps must agree about who is researched, or the tabs are measuring different things.
+// seatsByState.researched is byState with one join removed, so they have to match state for state.
+{
+  const off = Object.keys(stateNames)
+    .filter((a) => (counts[a] ?? 0) !== (researched[a] ?? 0))
+    .map((a) => `${a} ${counts[a] ?? 0}/${researched[a] ?? 0}`);
+  if (off.length) {
+    console.log('WARNING: the stance map and the officials-on-file map disagree on researched');
+    console.log('  counts, which should be impossible — one query is the other with a join taken');
+    console.log(`  out.  Read both before publishing: ${off.join(', ')}`);
+  }
+}
+
+// A jurisdiction can hold officials and have no tile to shade.  Four do: American Samoa, Guam,
+// the Northern Mariana Islands and the US Virgin Islands, one official each, no box anywhere on
+// an 11-column grid of the states.  That is reported rather than fixed, because adding a tile is
+// an editorial decision about the shape of the map and this script does not get to make it.
+{
+  const missing = Object.entries(seatCounts)
+    .filter(([st, n]) => n > 0 && !(st in stateNames))
+    .sort((a, b) => b[1] - a[1]);
+  if (missing.length) {
+    console.log('note: officials on file in jurisdictions with no tile on any of the three maps:');
+    for (const [st, n] of missing) console.log(`        ${st}: ${n}`);
   }
 }
 
@@ -323,36 +407,31 @@ for (const r of REPOS) {
 
 // ---------- compute values ----------
 
-// How many officials a jurisdiction has SEATED, for the tooltip on a tile with no research yet.
-// Only queried for the jurisdictions that need it (normally just Puerto Rico), so this costs
-// nothing on a normal run — and it is a real count rather than a number typed into a caption,
-// which is how DC's tooltip came to claim 27 seats long after that stopped being true.
+// Every map uses the SAME four tiers.  That is deliberate and it is the only reason the tabs
+// can be read against each other: 100+, 10 to 99, 1 to 9, none.  Change this and you have to
+// change all three legends, or a reader comparing two tabs is comparing two different scales.
 const tier = (n) => n >= 100 ? 't3' : n >= 10 ? 't2' : n >= 1 ? 't1' : 't0';
-// t0 is counted now that a jurisdiction can be on the map with seats and no research (Puerto
-// Rico, from 2026-08-19).  Leaving it out is what let DC be shaded on the map while the legend
-// accounted for one tile fewer than the map plainly showed.
-const tiers = { t3: 0, t2: 0, t1: 0, t0: 0 };
-// DC used to be skipped here because it had no stance rows and was captioned by hand.  It has 16
-// now, so it is tallied like anywhere else — otherwise the legend would claim four Growing
-// jurisdictions while the map plainly shows five shaded that way.  The legend labels say
-// "jurisdictions", not "states", for the same reason.
-for (const abbr of Object.keys(stateNames)) {
-  const t = tier(counts[abbr] ?? 0);
-  if (tiers[t] !== undefined) tiers[t]++;
-}
 
-// A jurisdiction can have researched stances and no tile to shade, and nothing above would say
-// so: the tile writer only rewrites tiles that already exist, and the tier loop only walks
-// stateNames.  Puerto Rico is the live case - 161 seats seeded 2026-08-12, no stances yet, no
-// tile, no entry here - so the day its research starts it would silently miss this map, exactly
-// how Wisconsin sat in the palest tier for a month.  Warn instead of dropping it.
-const untiled = Object.entries(counts)
-  .filter(([st, n]) => n > 0 && !(st in stateNames))
-  .sort((a, b) => b[1] - a[1]);
-if (untiled.length) {
-  console.log('WARNING: researched officials in a jurisdiction with no map tile.  Add a tile and');
-  console.log('         a stateNames entry, or they are invisible on the page:');
-  for (const [st, n] of untiled) console.log(`           ${st}: ${n}`);
+// t0 is counted like every other tier.  Leaving a shaded tier out of the count is what once let
+// DC be shaded on the map while the legend accounted for one tile fewer than the map plainly
+// showed, and the same trap is now set three times over.  The labels say "jurisdictions", not
+// "states", because DC and Puerto Rico are tiles and are neither.
+const tally = (by) => {
+  const t = { t3: 0, t2: 0, t1: 0, t0: 0 };
+  for (const abbr of Object.keys(stateNames)) t[tier(by[abbr] ?? 0)]++;
+  return t;
+};
+const tiers = tally(counts);
+const treTiers = tally(treasuryCounts);
+const seatTiers = tally(seatCounts);
+
+// Each map's tiles must sum to the 52 boxes the page draws, or a legend is quietly describing a
+// different map from the one above it.
+for (const [name, t] of [['stances', tiers], ['treasury', treTiers], ['seeded', seatTiers]]) {
+  const n = t.t3 + t.t2 + t.t1 + t.t0;
+  if (n !== Object.keys(stateNames).length) {
+    console.log(`WARNING: the ${name} legend accounts for ${n} tiles, not ${Object.keys(stateNames).length}.`);
+  }
 }
 
 const asof = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -380,6 +459,10 @@ const values = {
   t_villages: fmt(treasury.t_villages), t_other: fmt(treasury.t_other),
   tier_deep: String(tiers.t3), tier_growing: String(tiers.t2), tier_seeded: String(tiers.t1),
   tier_none: String(tiers.t0),
+  tre_deep: String(treTiers.t3), tre_growing: String(treTiers.t2),
+  tre_seeded: String(treTiers.t1), tre_none: String(treTiers.t0),
+  seat_deep: String(seatTiers.t3), seat_growing: String(seatTiers.t2),
+  seat_seeded: String(seatTiers.t1), seat_none: String(seatTiers.t0),
   commits30: reposCounted ? '~' + fmt(Math.round(commits30 / 100) * 100) : null,
   ...(finance ? {
     fin_contribs_m: fmtM(finance.fin_contribs),
@@ -425,27 +508,72 @@ for (const [key, val] of Object.entries(values)) {
   }
 }
 
-// Map tiles: matched by the two-letter abbreviation they display.
-html = html.replace(
-  /<div class="st t\d" (style="[^"]*")( data-state="[A-Z]{2}")? title="[^"]*">([A-Z]{2})<\/div>/g,
-  (m, style, _ds, abbr) => {
+// Map tiles.  THE REWRITE IS SCOPED PER MAP, and that is the whole trick here.  Before the tabs
+// shipped on 2026-10-29 there was one map and one global regex over `.st` tiles; with three maps
+// on the page that same regex rewrites all 156 tiles with stance numbers, and the two new maps
+// come out looking plausible and reading the wrong dataset.  So each `<div class="usmap"
+// data-map="...">` block is pulled out by its own marker and only its tiles are touched.  A map
+// whose name is not in MAPS below is left exactly as it is rather than filled with a guess.
+const MAPS = {
+  stances: (abbr) => {
     const n = counts[abbr] ?? 0;
-    let t = tier(n), title;
     if (n === 0) {
-      // Seeded but unresearched.  The seat count comes from the database rather than being
-      // written into the caption by hand — DC's used to say 27 and had no way to notice when
-      // that changed.  If the count is unavailable, say nothing rather than guess a number.
-      const seats = seeded[abbr];
-      title = seats
-        ? `${stateNames[abbr] ?? abbr}: ${fmt(seats)} officials seeded, stance research not started`
-        : `${stateNames[abbr] ?? abbr}: stance research not started`;
-    } else {
-      title = `${stateNames[abbr] ?? abbr}: ${fmt(n)} researched official${n === 1 ? '' : 's'}`;
+      const s = seeded[abbr];
+      return { n, title: s
+        ? `${stateNames[abbr] ?? abbr}: ${fmt(s)} officials seeded, stance research not started`
+        : `${stateNames[abbr] ?? abbr}: stance research not started` };
     }
-    const next = `<div class="st ${t}" ${style} title="${title}">${abbr}</div>`;
-    if (next !== m) changes.push(`map ${abbr}: ${t} (${n})`);
-    return next;
+    return { n, title: `${stateNames[abbr] ?? abbr}: ${fmt(n)} researched official${n === 1 ? '' : 's'}` };
+  },
+  treasury: (abbr) => {
+    const n = treasuryCounts[abbr] ?? 0;
+    return { n, title: n === 0
+      ? `${stateNames[abbr] ?? abbr}: no budgets published yet`
+      : `${stateNames[abbr] ?? abbr}: ${fmt(n)} government${n === 1 ? '' : 's'} with published budgets` };
+  },
+  seeded: (abbr) => {
+    const n = seatCounts[abbr] ?? 0, r = researched[abbr] ?? 0;
+    return { n, title: n === 0
+      ? `${stateNames[abbr] ?? abbr}: no officials on file`
+      : `${stateNames[abbr] ?? abbr}: ${fmt(n)} official${n === 1 ? '' : 's'} on file, ${fmt(r)} researched` };
+  },
+};
+
+const seenMaps = [];
+html = html.replace(
+  // The closing marker is a </div> alone on its own line at the block's own indent, NOT the
+  // first </div> that turns up: every tile inside the map ends with one, so a lazy match to
+  // `</div>` stops after tile one and rewrites a single box.
+  /(<div class="usmap" data-map="([a-z]+)">)([\s\S]*?)(\r?\n  <\/div>)/g,
+  (whole, open, kind, body, close) => {
+    seenMaps.push(kind);
+    const fill = MAPS[kind];
+    if (!fill) {
+      console.log(`WARNING: the page carries a map named "${kind}" that this script cannot fill.`);
+      console.log('  Its tiles were left untouched, which means they are showing whatever was');
+      console.log('  last written into them by hand.  Add it to MAPS or take it off the page.');
+      return whole;
+    }
+    const next = body.replace(
+      /<div class="st t\d" (style="[^"]*") title="[^"]*">([A-Z]{2})<\/div>/g,
+      (m, style, abbr) => {
+        const { n, title } = fill(abbr);
+        const t = tier(n);
+        const tile = `<div class="st ${t}" ${style} title="${title}">${abbr}</div>`;
+        if (tile !== m) changes.push(`map ${kind} ${abbr}: ${t} (${fmt(n)})`);
+        return tile;
+      });
+    return open + next + close;
   });
+
+// Every map this script knows how to fill should be ON the page.  A map that quietly stops being
+// rendered is how a tab ends up linking to a panel that is not there.
+for (const kind of Object.keys(MAPS)) {
+  if (!seenMaps.includes(kind)) {
+    console.log(`WARNING: no <div class="usmap" data-map="${kind}"> on the page, so that map was`);
+    console.log('  not written.  Either the section was rewritten without it or the marker moved.');
+  }
+}
 
 if (changes.length === 0) {
   console.log('Already up to date.');

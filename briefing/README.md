@@ -160,15 +160,24 @@ What is new is the self-reference: four "this page" in September, 27 in October.
 ## What updates automatically vs by hand
 
 `refresh.mjs` pulls live counts from the platform database and rewrites only the
-elements marked with `data-auto="..."` in `index.html`, plus the US map tile
-shading/tooltips, the legend tier counts, the 30-day commit total (from local
-repos), and the as-of date.
+elements marked with `data-auto="..."` in `index.html`, plus the tile
+shading/tooltips and legend tier counts on **all three** US maps, the 30-day
+commit total (from local repos), and the as-of date.
 
 Everything else is deliberately hand-curated: the narrative sections ("The
 current push", feature journeys and next steps, "The Road Ahead"), the stance
 coverage table (its area groupings are editorial), the volunteer roster, the
 ACFR states bullet, and the **Reach & Engagement** figures (funnel + per-app
 visitors).  Judgment stays human; only facts are automated.
+
+**`refresh.mjs` refuses to write while the page carries an "Added after
+publication, and dated separately" note.**  That note names figures queried on a
+date of their own — the two new coverage maps, added 2026-10-29 to an edition
+published on the 27th — and a refresh rewrites them and leaves the note making a
+false claim about a page whose whole offer is that its numbers can be checked.
+`--dry` still reports, because reading a page is always safe.  Rewrite or remove
+the note and run it again; publishing the next edition removes it anyway, since
+that edition is written fresh and every figure in it shares one as-of date.
 
 The Reach & Engagement numbers are the one set that does NOT come from the
 platform database — they are product-analytics figures from PostHog (project
@@ -438,13 +447,59 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   opposite of the 2026-09-04 cutover this page missed.  `SELECT number, status, opened_at,
   closed_at FROM inform.seasons`.
 
-- Map tiers, by researched state/local officials: Deep = 100+, Growing = 10 to 99, Seeded = 1
-  to 9, and **t0 = seated but nothing researched** — an outlined tile, deliberately not a
-  paler gold, because gold on this map means research.  Its tooltip carries the real seat
-  count, queried for exactly the jurisdictions that need it; DC's used to be the string "27
-  officials seeded" and had no way to notice when that stopped being true.  t0 is counted in
-  the legend like every other tier — leaving a shaded tier out of the count is what once had
-  the legend accounting for one tile fewer than the map plainly showed.
+- **There are THREE maps now, behind tabs, and they draw the same 52 boxes.**  Added
+  2026-10-29.  `data-map="stances"` is researched state and local officials;
+  `data-map="treasury"` is governments with a published budget; `data-map="seeded"` is
+  officials on file whether researched or not.  Two rules hold the section together and
+  both are enforced in `refresh.mjs`:
+
+  - **One tier scale for all three**: Deep = 100+, Growing = 10 to 99, Thin = 1 to 9, and
+    **t0 = none** — an outlined tile, deliberately not a paler gold, because gold on these
+    maps means data.  Change the scale and you change all three legends, or a reader
+    comparing two tabs is comparing two different scales.  t0 is counted in the legend like
+    every other tier; leaving a shaded tier out of the count is what once had the legend
+    accounting for one tile fewer than the map plainly showed.
+  - **The tiles are written per map, scoped by the `data-map` marker.**  🔴 The old writer
+    was one global regex over every `.st` tile on the page.  With three maps that regex
+    fills all 156 tiles with stance numbers, and the two new maps come out looking
+    perfectly plausible while reading the wrong dataset.  The block regex also has to stop
+    at the `</div>` **alone on its own line** — every tile ends with a `</div>`, so a lazy
+    match to the first one rewrites exactly one box and leaves 51 stale.
+
+  `seatsByState` is `byState` with the `politician_answers` join lifted out, so its
+  `researched` column must reproduce `byState` state for state.  `refresh.mjs` asserts that
+  every cycle; it is the cheapest guard against the three maps drifting apart, and it is the
+  reason the Officials-on-file map can be read as the denominator the stance map is a
+  fraction of.  The t0 tooltip's seat count comes off the same query rather than its own, so
+  the two maps can never disagree about how many officials a jurisdiction holds — and it is
+  still QUERIED, never typed into a caption: DC's used to be the string "27 officials
+  seeded" and had no way to notice when that stopped being true.
+
+- **Treasury coverage counts governments with a BUDGET, not rows in `municipalities`.**  That
+  table holds entities we know about before any budget arrives for them — 46 of them in four
+  states on 2026-10-29 — so counting rows shades Texas 32 where it has 17.  `state` is the
+  only geography on the table.  The federal row carries `'US'` and deliberately gets no tile,
+  which is why the 52 tiles hold 11,183 governments and the headline roster is 11,184.
+
+- **Four jurisdictions hold officials and have no tile on any map**: American Samoa, Guam, the
+  Northern Mariana Islands and the US Virgin Islands, one official each.  `refresh.mjs` prints
+  them as a note every run rather than quietly dropping them.  It is a note and not a WARNING
+  because adding a box to an 11-column grid of the states is an editorial decision about the
+  shape of the map, and the script does not get to make it.
+
+- **Federal senators and representatives are on none of the three maps, and that is correct.**
+  They resolve through `districts.district_type`, not through a state's government, so the
+  state/local framing in the captions is the honest one.  **Seven of them leak in anyway**, as
+  of 2026-10-29: 8 federal offices carry `chamber_id` NULL, so the third jurisdiction link
+  picks them up by `representing_state` (DC 2, TX 2, CA 1, MN 1, IL 1).  Seven people in ~2,833
+  moves no tile between tiers, so it is recorded rather than patched — but check it before
+  citing a single tile's count as purely state and local.
+
+- **The `is_placeholder_occupancy` exclusion in `byState` is a dead tripwire, kept on purpose.**
+  CA_0206 retired every placeholder office on 2026-09-24, so the column reads false for every
+  row and the clause now removes nothing.  It costs nothing, `refresh.mjs` already WARNs if the
+  count ever goes back above zero, and the discovery records it used to catch are excluded
+  today by having no office to resolve a state through.
 - **Puerto Rico is seeded but unresearched, and has an outlined t0 tile as of 2026-08-19.** 161 seats landed
   2026-08-12 (Governor, 81 legislators, the Resident Commissioner, and all 78 municipios with
   their alcaldes), 91 with portraits, all on dated terms — and **0 stances**, so it belongs in
