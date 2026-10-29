@@ -246,6 +246,16 @@ const byState = await all(`
     JOIN essentials.chambers c ON c.id = o.chamber_id
     JOIN essentials.governments g ON g.id = c.government_id
     WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+      -- ...and only for someone who holds NO current term at all.  Added 2026-10-29.  The legacy
+      -- link is not cleared when a person moves on: Aisha Wahab's politicians.office_id still
+      -- points at the California state Senate seat she left for Congress, so the union was
+      -- shading her onto California while coverage-table.sql correctly called her national.  The
+      -- union is still a union and not a swap -- 5 researched people reach a state through this
+      -- link ALONE, and they are exactly who it was added to protect -- but a CURRENT term is
+      -- better evidence than a stale one, so where both exist the current one decides.
+      AND NOT EXISTS (SELECT 1 FROM essentials.office_terms t
+                       WHERE t.politician_id = p.id
+                         AND (t.term_end IS NULL OR t.term_end >= current_date))
   ), by_repr AS (
     -- Third link, and the reason it is needed: 93% of offices (77,680 of 83,291) have
     -- chamber_id NULL and carry their jurisdiction on the office row itself.  Both joins above
@@ -259,6 +269,24 @@ const byState = await all(`
          AND (ot.term_end IS NULL OR ot.term_end >= current_date)
     JOIN essentials.offices o ON o.id = coalesce(ot.office_id, p.office_id)
     WHERE o.chamber_id IS NULL AND btrim(coalesce(o.representing_state, '')) <> ''
+      -- ...but NOT a federal seat.  Fixed 2026-10-29.  Eight federal offices carry no chamber
+      -- -- the DC Delegate, DC's two Shadow Senators, and the Delegates for Guam, Puerto Rico,
+      -- the Northern Marianas, the Virgin Islands and American Samoa -- so this link, which
+      -- exists to find offices that hang off no government, was finding them and shading them
+      -- onto a state tile.  These maps are state and local by their own caption, and
+      -- coverage-table.sql already counts every NATIONAL_UPPER/LOWER seat in its one national
+      -- row, so a delegate was being counted twice on the same page.  Measured effect: DC 16
+      -- researched -> 14, DC 27 officials on file -> 24, Puerto Rico 161 -> 160, and the four
+      -- territories that held exactly one official each now hold none.
+      --
+      -- Excluded by OFFICE, never by person.  Four sitting state officials carry a second
+      -- office titled "Candidate for U.S. Senate -- <state>" that is typed NATIONAL_UPPER:
+      -- Ken Paxton (Texas Attorney General), James Talarico (Texas Representative), and the
+      -- Lieutenant Governors of Illinois and Minnesota.  Excluding the PERSON would take all
+      -- four off their own state's tile over a candidacy they have not won.
+      AND NOT EXISTS (SELECT 1 FROM essentials.districts d
+                       WHERE d.id = o.district_id
+                         AND d.district_type IN ('NATIONAL_UPPER','NATIONAL_LOWER'))
   )
   SELECT st, count(*) AS pols
   FROM (SELECT st, pid FROM by_term
@@ -296,6 +324,16 @@ const seatsByState = await all(`
     JOIN essentials.chambers c ON c.id = o.chamber_id
     JOIN essentials.governments g ON g.id = c.government_id
     WHERE g.state IS NOT NULL AND trim(g.state) <> ''
+      -- ...and only for someone who holds NO current term at all.  Added 2026-10-29.  The legacy
+      -- link is not cleared when a person moves on: Aisha Wahab's politicians.office_id still
+      -- points at the California state Senate seat she left for Congress, so the union was
+      -- shading her onto California while coverage-table.sql correctly called her national.  The
+      -- union is still a union and not a swap -- 5 researched people reach a state through this
+      -- link ALONE, and they are exactly who it was added to protect -- but a CURRENT term is
+      -- better evidence than a stale one, so where both exist the current one decides.
+      AND NOT EXISTS (SELECT 1 FROM essentials.office_terms t
+                       WHERE t.politician_id = p.id
+                         AND (t.term_end IS NULL OR t.term_end >= current_date))
     UNION
     SELECT upper(btrim(o.representing_state)), p.id
     FROM essentials.politicians p
@@ -303,6 +341,24 @@ const seatsByState = await all(`
          AND (ot.term_end IS NULL OR ot.term_end >= current_date)
     JOIN essentials.offices o ON o.id = coalesce(ot.office_id, p.office_id)
     WHERE o.chamber_id IS NULL AND btrim(coalesce(o.representing_state, '')) <> ''
+      -- ...but NOT a federal seat.  Fixed 2026-10-29.  Eight federal offices carry no chamber
+      -- -- the DC Delegate, DC's two Shadow Senators, and the Delegates for Guam, Puerto Rico,
+      -- the Northern Marianas, the Virgin Islands and American Samoa -- so this link, which
+      -- exists to find offices that hang off no government, was finding them and shading them
+      -- onto a state tile.  These maps are state and local by their own caption, and
+      -- coverage-table.sql already counts every NATIONAL_UPPER/LOWER seat in its one national
+      -- row, so a delegate was being counted twice on the same page.  Measured effect: DC 16
+      -- researched -> 14, DC 27 officials on file -> 24, Puerto Rico 161 -> 160, and the four
+      -- territories that held exactly one official each now hold none.
+      --
+      -- Excluded by OFFICE, never by person.  Four sitting state officials carry a second
+      -- office titled "Candidate for U.S. Senate -- <state>" that is typed NATIONAL_UPPER:
+      -- Ken Paxton (Texas Attorney General), James Talarico (Texas Representative), and the
+      -- Lieutenant Governors of Illinois and Minnesota.  Excluding the PERSON would take all
+      -- four off their own state's tile over a candidacy they have not won.
+      AND NOT EXISTS (SELECT 1 FROM essentials.districts d
+                       WHERE d.id = o.district_id
+                         AND d.district_type IN ('NATIONAL_UPPER','NATIONAL_LOWER'))
   )
   SELECT st, count(*) AS seated,
          count(*) FILTER (WHERE EXISTS (SELECT 1 FROM inform.politician_answers a
@@ -323,6 +379,25 @@ const treasuryByState = await all(`
   WHERE btrim(coalesce(m.state, '')) <> ''
     AND EXISTS (SELECT 1 FROM treasury.budgets b WHERE b.municipality_id = m.id)
   GROUP BY 1`);
+
+// The first two jurisdiction links walk office -> chamber -> government and are safe from the
+// federal leak only because the federal government row carries no state.  That is a property of
+// the data, not of the query, so it is checked rather than assumed: if a federal office ever
+// becomes reachable through a state government, the guard above will not catch it.
+{
+  const [{ n }] = await all(`
+    SELECT count(*) AS n FROM essentials.offices o
+    JOIN essentials.districts d ON d.id = o.district_id
+    JOIN essentials.chambers ch ON ch.id = o.chamber_id
+    JOIN essentials.governments g ON g.id = ch.government_id
+    WHERE d.district_type IN ('NATIONAL_UPPER','NATIONAL_LOWER')
+      AND g.state IS NOT NULL AND btrim(g.state) <> ''`);
+  if (Number(n) > 0) {
+    console.log(`WARNING: ${n} federal offices now hang off a government carrying a state, so the`);
+    console.log('  first two jurisdiction links can reach Congress and are shading state tiles with');
+    console.log('  it.  The NATIONAL_UPPER/LOWER guard is on the third link only.  Widen it.');
+  }
+}
 
 // Campaign finance (FEC).  Wrapped: if the schema is absent, leave the spans as-is.
 let finance = null;
@@ -359,6 +434,37 @@ for (const abbr of Object.keys(stateNames).filter((a) => !counts[a])) {
   console.log(`note: ${abbr} has ${seeded[abbr] ?? 0} seats seeded and no researched stances yet.`);
 }
 
+// 🔴 THE MAP AND THE COVERAGE TABLE MUST AGREE, STATE FOR STATE.  They are two views of one
+// dataset on one page, and on 2026-10-29 they silently disagreed about six people: the table
+// filed four sitting state officials as national because a Senate candidacy is recorded as a
+// national office, and the map put a DC Delegate and a former California state senator on state
+// tiles.  Nothing on the page explained the difference, and nothing in this script looked.
+//
+// So it looks now, every run, by running coverage-table.sql itself rather than a copy of its
+// logic -- a second copy would drift in exactly the way this check exists to catch.  The file is
+// sliced at its `agg` CTE so every bucket comes back instead of the editorial named rows.
+{
+  const sql = readFileSync(join(HERE, 'coverage-table.sql'), 'utf8');
+  const cut = sql.indexOf('agg AS (');
+  if (cut < 0) {
+    console.log('WARNING: coverage-table.sql no longer has an `agg` CTE to slice at, so the map');
+    console.log('  could not be checked against it.  Re-point this check or drop it; leaving it');
+    console.log('  silently skipped is how the two drifted apart in the first place.');
+  } else {
+    const rows = await all(sql.slice(0, cut) + 'agg AS (SELECT bucket, count(*)::int AS pols FROM part GROUP BY 1) SELECT * FROM agg');
+    const table = Object.fromEntries(rows.map((r) => [r.bucket, Number(r.pols)]));
+    const off = Object.keys(stateNames)
+      .filter((st) => (table[st] ?? 0) !== (counts[st] ?? 0))
+      .map((st) => `${st} table ${table[st] ?? 0} vs map ${counts[st] ?? 0}`);
+    if (off.length) {
+      console.log('WARNING: the coverage table and the stance map disagree about who belongs to a');
+      console.log('  state.  One of them is counting a federal seat as state and local, or missing');
+      console.log('  someone the other has.  Both are on the same page, so fix them together:');
+      for (const o of off) console.log(`    ${o}`);
+    }
+  }
+}
+
 // The three maps must agree about who is researched, or the tabs are measuring different things.
 // seatsByState.researched is byState with one join removed, so they have to match state for state.
 {
@@ -372,10 +478,13 @@ for (const abbr of Object.keys(stateNames).filter((a) => !counts[a])) {
   }
 }
 
-// A jurisdiction can hold officials and have no tile to shade.  Four do: American Samoa, Guam,
-// the Northern Mariana Islands and the US Virgin Islands, one official each, no box anywhere on
-// an 11-column grid of the states.  That is reported rather than fixed, because adding a tile is
-// an editorial decision about the shape of the map and this script does not get to make it.
+// A jurisdiction can hold officials and have no tile to shade.  Four did until 2026-10-29 --
+// American Samoa, Guam, the Northern Marianas and the US Virgin Islands, one official each --
+// and that one official was in every case the territory's non-voting Delegate to Congress, which
+// the federal guard above now excludes.  So this should print nothing, and if it starts printing
+// again a real jurisdiction has gained an official with nowhere to show it.  Reported rather
+// than fixed: adding a box to an 11-column grid of the states is an editorial decision about the
+// shape of the map, and this script does not get to make it.
 {
   const missing = Object.entries(seatCounts)
     .filter(([st, n]) => n > 0 && !(st in stateNames))

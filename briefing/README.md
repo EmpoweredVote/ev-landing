@@ -487,13 +487,77 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   because adding a box to an 11-column grid of the states is an editorial decision about the
   shape of the map, and the script does not get to make it.
 
-- **Federal senators and representatives are on none of the three maps, and that is correct.**
-  They resolve through `districts.district_type`, not through a state's government, so the
-  state/local framing in the captions is the honest one.  **Seven of them leak in anyway**, as
-  of 2026-10-29: 8 federal offices carry `chamber_id` NULL, so the third jurisdiction link
-  picks them up by `representing_state` (DC 2, TX 2, CA 1, MN 1, IL 1).  Seven people in ~2,833
-  moves no tile between tiers, so it is recorded rather than patched — but check it before
-  citing a single tile's count as purely state and local.
+- 🔴 **The federal leak, found and FIXED 2026-10-29 — and the first diagnosis of it was wrong,
+  which is the more useful half of this entry.**
+
+  Federal seats belong on none of the three maps: they resolve through `districts.district_type`,
+  not through a state's government, and `coverage-table.sql` already counts every one of them in
+  its single national row.  Eight federal offices carry `chamber_id` NULL, so the **third**
+  jurisdiction link — the one that exists to find offices hanging off no government — was
+  picking them up by `representing_state` and shading them onto a state tile, where the page was
+  then counting them twice.  All eight are non-voting seats: the **DC Delegate**, DC's **two
+  Shadow Senators**, and the Delegates for **Guam, Puerto Rico, the Northern Marianas, the
+  Virgin Islands and American Samoa**.  Fix: `AND NOT EXISTS (… districts d WHERE d.id =
+  o.district_id AND d.district_type IN ('NATIONAL_UPPER','NATIONAL_LOWER'))` on the third link in
+  both `byState` and `seatsByState`.  Measured effect: **DC 16 researched → 14**, DC **27
+  officials on file → 24**, **Puerto Rico 161 → 160**, and the four territories that held
+  exactly one official each now hold none — that one official was always the Delegate.  No tile
+  changed shade.
+
+  **The first measurement said "seven leak in: DC 2, TX 2, CA 1, MN 1, IL 1", and only the DC 2
+  were real.**  That query asked *which people on a tile hold any current federal term*, which
+  is a different question from *which people are on a tile only because of a federal office*.
+  The Texas, Minnesota and Illinois names are **Ken Paxton (Texas Attorney General), James
+  Talarico (Texas Representative), and the Lieutenant Governors of Illinois and Minnesota** —
+  sitting state officials who each carry a second office titled `Candidate for U.S. Senate —
+  <state>` that is typed `NATIONAL_UPPER`.  They are on their own state's tile through their
+  real state office, which is correct.  **So the exclusion is by OFFICE and never by person**:
+  excluding the person would take four sitting state officials off their state over a candidacy
+  they have not won.  The general lesson: *holds a federal term* and *is on this tile because of
+  a federal office* are not the same predicate, and the first one over-reports by every dual
+  officeholder in the data.
+
+  **`coverage-table.sql` had the opposite half of this defect, and it is fixed too (2026-10-29).**
+  Its partition is per person, first match wins, and `nat` ran second — so all four of those
+  sitting state officials went to the **national** row, the one the page labels "US Congress +
+  national".  The fix is a **reorder, not a new test**: `nat` now runs *below* the two
+  government walks, so a person with a real state seat resolves to their state and `nat` catches
+  only those whose sole link is federal.  The two `CASE` arms in `cur_st`/`leg_st` were flipped
+  for the same reason — a state beats `'national'` when someone's current terms include both,
+  instead of `bool_or` poisoning the whole aggregate.  Measured: national **556 → 552**, TX
+  **270 → 272**, REST **365 → 367**, the other twelve named rows reproduce to the row, and
+  `TOTAL(partition)` still equals `TOTAL(headline)` at 4,311.
+
+  **Why a reorder rather than a test for candidacies:** there is no structural column separating
+  a candidacy office from a real seat.  Both carry a district, a chamber, the federal government
+  and a `representing_state`, and `seats` is null on 98 of the 102 real Senate offices as well as
+  all 52 candidacy ones.  The only thing that distinguishes them is the **title** — "Candidate
+  for U.S. Senate — <state>" — and a title test is the class of test this file exists to avoid.
+  The reorder needs no such test.
+
+- **A third fault, found by making the two agree: the legacy office link went stale (fixed
+  2026-10-29).**  `politicians.office_id` is not cleared when someone moves on.  Aisha Wahab's
+  still points at the California state Senate seat she left for Congress, so `byState`'s union
+  shaded her onto California while the corrected coverage table — rightly — called her national.
+  The second link now applies **only to people holding no current term at all**.  That keeps the
+  union a union rather than turning it into a swap: **5** researched people reach a state through
+  the legacy link alone, and they are exactly who it was added to protect.  A current term is
+  simply better evidence than a stale one.  Effect: **California 377 → 376** researched,
+  **2,031 → 2,030** on file.
+
+- 🔴 **`refresh.mjs` now checks the map against the coverage table on every run, and that check
+  is the point of all three fixes above.**  It runs `coverage-table.sql` itself — sliced at its
+  `agg` CTE so every bucket comes back instead of the editorial named rows — rather than a second
+  copy of the partition logic, because a copy would drift in exactly the way the check exists to
+  catch.  With all three fixes in, **all 51 state buckets match the map person for person.**  If
+  that warning ever fires, the two artifacts have started telling the page two different stories
+  about the same people, and they get fixed together or not at all.
+
+  **What the next edition owes the reader.**  The stance map published on 2026-10-27 still
+  carries the fault — its DC tile reads **16** where the corrected rule gives **14** — and a
+  published figure is not edited.  The next edition carries 14 and says what it corrects.  The
+  Officials-on-file tab was corrected on the day it was added, before the freeze, and the note
+  at the foot of the map section records what it first said.
 
 - **The `is_placeholder_occupancy` exclusion in `byState` is a dead tripwire, kept on purpose.**
   CA_0206 retired every placeholder office on 2026-09-24, so the column reads false for every
