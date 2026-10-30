@@ -247,7 +247,30 @@ async function parkOnPeopledLane(page) {
     seen.push('halloween: inhabitants ' + before + ' -> ' + after);
 
     // Retired zombies must not pile up: out of entries, and their backing store dropped.
-    const husks = await page.evaluate(function () {
+    //
+    // WAIT FOR THE SWEEP, DO NOT SAMPLE ONCE. This read is a FRAME-ORDERED invariant and it
+    // flaked about one run in four until 2026-10-29. Nothing retires a zombie inside the
+    // sweep: the guard dog sets `gone` where it pulls one down, and so does a conversion.
+    // The husk then leaves `entries` at the top of the NEXT zombieTick, which is once per
+    // animation frame from tick(). So a husk is legitimately in the array for up to ~16.7ms
+    // after every retirement, and the poll above this breaks the moment the victim is gone —
+    // which is the same instant a zombie can be retired. Two page.evaluate round-trips take
+    // a couple of milliseconds, so the old single sample simply landed inside that window
+    // sometimes. The page was right every time it failed.
+    //
+    // Polling keeps the thing worth testing. A real leak never clears, so this still fails —
+    // it just fails after 2s instead of inside one frame, and the message still carries the
+    // count. Each husk is about 1.9 MB of backing store (see case 4 at the top of this file),
+    // so this assertion is not decorative.
+    let husks = null;
+    try {
+      await page.waitForFunction(function () {
+        return window.__evFigDebug.entries.filter(function (e) {
+          return e.spec.mode === 'zombie' && e.gone;
+        }).length === 0;
+      }, null, { timeout: 2000, polling: 'raf' });
+    } catch (e) { /* fall through: the sample below reports the count that did not clear */ }
+    husks = await page.evaluate(function () {
       var D = window.__evFigDebug;
       return {
         inEntries: D.entries.filter(function (e) { return e.spec.mode === 'zombie' && e.gone; }).length,
@@ -255,7 +278,8 @@ async function parkOnPeopledLane(page) {
         cap: D.zomCap()
       };
     });
-    want(husks.inEntries === 0, 'halloween: ' + husks.inEntries + ' retired zombie(s) left in entries');
+    want(husks.inEntries === 0, 'halloween: ' + husks.inEntries +
+      ' retired zombie(s) still in entries 2s after the sweep should have taken them');
     // Against the CAP AS IT STANDS, not against ZOM.MAX. The ceiling climbs with how long the
     // tab has been open — one more every ZOM.GROW seconds — and this case can run past the
     // first step of that climb on a slow machine, which would have failed a correct page.
