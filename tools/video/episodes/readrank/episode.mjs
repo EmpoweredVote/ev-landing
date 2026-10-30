@@ -9,6 +9,16 @@
 // them off words.md after the first record, relative to that line's own cut
 // start, rather than shifting them by a delta.
 //
+// THE SCRIPT WAS REWRITTEN ON 2026-10-29 AND THESE SECONDS HAVE NOT CAUGHT UP.
+// Eleven lines went (L012, L015, L016, L020, L024, L025, L026, L029, L030,
+// L031, L033) and their scenes went with them, which is what this file now
+// reflects. Most of the SURVIVING lines were reworded too, so a cue written
+// against the old wording can point at a phrase that is no longer spoken --
+// `plainAt: 3.08` on label-cups was "The labels come off" six words later than
+// the rewrite puts it. Every one of them still needs re-reading. Doing that
+// off a real recording is the remedy either way, so they were left as they
+// are rather than re-estimated twice.
+//
 // One scene per narration line, in order.
 //
 // The three states of an optional field: undefined is "not in this scene", 0
@@ -123,11 +133,6 @@ export default {
     { id: 'race-address', type: 'art', vo: 'L011', art: 'drawRaces', stage: 'address',
       continues: true, raceAt: [0, 0, 0], addrAt: 1.10, filterAt: 3.20, allAt: 5.63 },
 
-    // The race opens into its questions. "the question, not the candidate" at
-    // 3.33 is where one of them is picked out of the row.
-    { id: 'race-open', type: 'art', vo: 'L012', art: 'drawRaces', stage: 'open',
-      continues: true, raceAt: [0, 0, 0], openAt: 0.80, pickAt: 3.33 },
-
     // ── 5. Reading blind ────────────────────────────────────────────────
     // One question, three answers, nothing on them. The answers arrive from
     // "Under it are the answers" at 2.17.
@@ -139,19 +144,6 @@ export default {
     // name 0.25, photograph 1.02, party 1.79 — so they cannot fade slowly.
     { id: 'blind-nothing', type: 'art', vo: 'L014', art: 'drawBlind', stage: 'nothing',
       continues: true, quoteAt: [0, 0, 0], gapAt: [0.25, 1.02, 1.79] },
-
-    // The structural guard, which is the strongest claim in the film and the
-    // one most worth drawing honestly: a payload arrives, is rebuilt, and only
-    // the words survive the rebuild. 3.71 is "The page takes what the server
-    // sends"; 9.87 is "so a name cannot reach your screen by accident".
-    { id: 'blind-guard', type: 'art', vo: 'L015', art: 'drawBlind', stage: 'guard',
-      continues: true, quoteAt: [0, 0, 0], gapAt: [0, 0, 0],
-      inAt: 3.71, sieveAt: 6.20, outAt: 9.87 },
-
-    // A different card: one with a single answer on it, lifted out and
-    // dropped. "One voice is not a comparison" at 4.87 is the drop.
-    { id: 'blind-one', type: 'art', vo: 'L016', art: 'drawBlind', stage: 'one',
-      loneAt: 1.20, dropAt: 4.87 },
 
     // Back to the three-answer card. The one the viewer does not agree with is
     // left behind at 4.48 — the third answer, which is the one that says it is
@@ -170,15 +162,11 @@ export default {
     { id: 'rank-order', type: 'art', vo: 'L019', art: 'drawRank', stage: 'order',
       continues: true, pileAt: 0, orderAt: 2.94 },
 
-    // The two settle level on one rank at 2.17, on "you can tie them".
-    { id: 'rank-tie', type: 'art', vo: 'L020', art: 'drawRank', stage: 'tie',
-      continues: true, pileAt: 0, orderAt: 0, tieAt: 2.17 },
-
     // The ranked choice line, which is the chapter's payoff: the thing the
     // viewer just did, named. 2.17 is "You have just done ranked choice
     // voting".
     { id: 'rank-rcv', type: 'art', vo: 'L021', art: 'drawRank', stage: 'rcv',
-      continues: true, pileAt: 0, orderAt: 0, tieAt: 0, rcvAt: 2.17,
+      continues: true, pileAt: 0, orderAt: 0, rcvAt: 2.17,
       cast: [{ at: [0.80, 0.94], anim: 'present', color: VIEWER, scale: 0.80 }] },
 
     // ── 7. The reveal ───────────────────────────────────────────────────
@@ -191,26 +179,6 @@ export default {
     { id: 'reveal-ballot', type: 'art', vo: 'L023', art: 'drawReveal', stage: 'ballot',
       continues: true, nameAt: 0, sortAt: 2.94 },
 
-    // The grid: people down the side, questions across the top. The columns
-    // land on "every question across the top" at 5.25 and the marks fill after
-    // them. The caption under it says whose verdicts these are, and it is not
-    // optional — see the script header.
-    { id: 'reveal-grid', type: 'art', vo: 'L024', art: 'drawReveal', stage: 'grid',
-      continues: true, nameAt: 0, sortAt: 0, gridAt: 2.00, colAt: 5.25, markAt: 7.40 },
-
-    // The row of the person agreed with once. 3.70 is "Everybody who is
-    // running is on your ballot", and the row must be visibly PRESENT rather
-    // than faded: the line is that the page does not drop it.
-    { id: 'reveal-rest', type: 'art', vo: 'L025', art: 'drawReveal', stage: 'rest',
-      continues: true, nameAt: 0, sortAt: 0, gridAt: 0, colAt: 0, markAt: 0,
-      restAt: 3.70 },
-
-    // Nothing arrives. The figure looks at what it built and the frame holds,
-    // which is the only way a line about being surprised can play.
-    { id: 'reveal-think', type: 'art', vo: 'L026', art: 'drawReveal', stage: 'rest',
-      continues: true, nameAt: 0, sortAt: 0, gridAt: 0, colAt: 0, markAt: 0, restAt: 0,
-      cast: [{ at: [0.80, 0.94], anim: 'confused', color: VIEWER, scale: 0.80 }] },
-
     // ── 8. Where the words come from ────────────────────────────────────
     // One revealed answer, alone, and the question asked about it.
     { id: 'src-ask', type: 'art', vo: 'L027', art: 'drawSource', stage: 'ask',
@@ -221,31 +189,12 @@ export default {
     { id: 'src-four', type: 'art', vo: 'L028', art: 'drawSource', stage: 'four',
       continues: true, askAt: 0, kindAt: [2.17, 3.33, 5.25, 6.40] },
 
-    // The excerpt inside the original. The full quote opens at 7.17, "After
-    // the reveal", and the highlight showing where the excerpt sat follows it.
-    { id: 'src-excerpt', type: 'art', vo: 'L029', art: 'drawSource', stage: 'excerpt',
-      continues: true, askAt: 0, kindAt: [0, 0, 0, 0], fullAt: 7.17, markAt: 9.60 },
-
-    { id: 'src-line', type: 'art', vo: 'L030', art: 'drawSource', stage: 'line',
-      continues: true, askAt: 0, kindAt: [0, 0, 0, 0], fullAt: 0, markAt: 0,
-      lineAt: 1.40 },
-
     // ── 9. What exists today ────────────────────────────────────────────
-    // Plain and level, like every honesty chapter in this series.
-    { id: 'honest-say', type: 'art', vo: 'L031', art: 'drawCoverage', stage: 'say',
-      cast: [{ at: [0.76, 0.94], anim: 'standstill', color: VIEWER, scale: 0.90 }] },
-
     // The map fills for the reading and stays mostly empty for the material:
     // "The material does not exist wherever you are" at 5.25.
     { id: 'honest-map', type: 'art', vo: 'L032', art: 'drawCoverage', stage: 'map',
-      continues: true, readAt: 1.60, matAt: 5.25,
+      readAt: 1.60, matAt: 5.25,
       cast: [{ at: [0.76, 0.94], anim: 'standstill', color: VIEWER, scale: 0.90 }] },
-
-    // A long race beside a short one, and the question that nobody can be
-    // compared on taken out of the short one at 9.48.
-    { id: 'honest-short', type: 'art', vo: 'L033', art: 'drawCoverage', stage: 'short',
-      continues: true, readAt: 0, matAt: 0, pairAt: 1.60, cutAt: 9.48,
-      cast: [{ at: [0.76, 0.94], anim: 'offer', color: VIEWER, scale: 0.90 }] },
 
     // ── 10. Afterwards ──────────────────────────────────────────────────
     // The top-ranked issue is carried across to a compass at 8.71.

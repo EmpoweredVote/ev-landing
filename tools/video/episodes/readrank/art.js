@@ -1,5 +1,15 @@
 // Episode 5 art — Read & Rank.
 //
+// SOME OF THE DRAWING BELOW IS NOW UNREACHABLE, ON PURPOSE. The script was
+// rewritten on 2026-10-29 and eleven narration lines went with it, so the
+// scenes that named these stages are gone from episode.mjs: drawBlind "guard"
+// and "one", and the beats keyed by openAt, sieveAt, outAt, loneAt, dropAt,
+// tieAt, gridAt, colAt, restAt, fullAt, lineAt, pairAt and cutAt. None of it
+// renders -- at() returns 0 for a key no scene supplies, so each element
+// simply never arrives -- and none of it was deleted, because the lines may
+// come back and the drawings are the expensive half. Do not debug a fault in
+// this code by what you see on screen: you will not see it.
+//
 // Every function is a pure function of (ctx, t, W, H, scene). No module-level
 // mutable state, or the determinism guarantee in tests/video/02-determinism.cjs
 // is void for this episode. Everything is sized from W and H so the same code

@@ -67,19 +67,19 @@ Chapter 1 — the labels come off
 
 ## L001
 > Direction: `art` — a table, two plain cups on it, nothing written on either one. A Bobit `ponder`.
-A blind taste test works for one reason. The labels come off. Two cups, nothing written on either one, and the only thing left to judge is what is in them.
+A blind taste test works because the labels come off. Two cups, nothing written on either one, and the only thing left to judge is what is in them.
 
 ## L002
 > Direction: `art` — one cup is chosen, and only then do the names go under both.
-You try both, you choose, and you are told what you picked after you have picked it. People surprise themselves. That is the whole reason the labels go back on last.
+You try both, you choose, and you're told what you picked after you have picked it.  Sometimes, people surprise themselves. That's the whole reason the labels go back on last.
 
 ## L003
-> Direction: `art` — a card with a name at the top and a paragraph under it. The name is read first, and the paragraph second.
-A ballot is read the other way round. The name is at the top, so you know what you are about to think before you reach the first line of what they wrote.
+> Direction: `art` — a card with a name at the top and a paragraph under it; the R or D for the party name is beside it.  The name is read first, and the paragraph second.
+But a ballot is read the other way round. The name is at the top, alongside thier party - and when that happens, you know what you are about to think before anyone's said a word.
 
 ## L004
 > Direction: `art` — the name lifts off the card and the paragraph brightens.
-That is not a character flaw. A label is an extremely efficient way to not read something. So take the labels off. What would you make of these people then?
+But what if, just for a second, we took the labels off?  What would you make of these people then?
 
 ## L005
 > Direction: title card on Inform yellow.
@@ -89,19 +89,19 @@ Chapter 2 — the question turned around
 
 ## L006
 > Direction: `art` — a row of candidates, and an arrow running from them to one person.
-Most voting tools start at the candidates. They line them up, ask you some questions, and hand you back a name with a percentage beside it.
+Typically, voting guides start at the candidates.  They line them up, ask you some questions, and hand you back a name with a percentage beside it.
 
 ## L007
 > Direction: `art` — the arrow turns and runs the other way.
-This one starts at you. It gives you a window to read what somebody would actually do, before you know whose team they are on.
+But this one starts with you.  It focuses on the solutions being presented; giving you a brief window to read what somebody would actually do, before you know whose team they are on.
 
 ## L008
 > Direction: `art` — one card, with nothing on it but words.
-No name. No team. Only the solution, and your own opinion of it.
+No name.  No political party.  Only the solution, and your own opinion of it.
 
 ## L009
 > Direction: a Bobit `present` beside the turned arrow.
-So the question at the end is not which candidate you fit. It is how these candidates fit you. Those are different questions, and they do not always have the same answer.
+So the question at the end is not which candidate you fit. It is how these candidates fit you. Ultimately, those are different questions, and they don't always have the same answer.
 
 Chapter 3 — pick a race
 
@@ -111,51 +111,37 @@ You start by picking a real race. A mayor, a council seat, a governor.
 
 ## L011
 > Direction: `art` — an address field above the list; the list shortens to one place.
-You can type your address and see the races you can actually vote in, or you can ignore that and read any of them.
+You can type your address and see the races you can actually vote in, or you can ignore that and explore any of them.
 
-## L012
-> Direction: `art` — the race opens into a short row of question cards.
-A race arrives as a set of questions. And the question, not the candidate, is the thing you work on.
 
 Chapter 4 — reading blind
 
 ## L013
 > Direction: `art` — one question card, with three answers under it and no names on them.
-Every card is one question. Under it are the answers, one for each candidate, and there is nothing on them.
+You pick the topics you care about.  After that are the answers, one for each candidate, but you don't know who said what.
 
 ## L014
 > Direction: `art` — the empty space where a name, a photograph and a party would be.
 No name. No photograph. No party. Nothing but what the person said.
 
-## L015
-> Direction: `art` — the incoming data is rebuilt, and everything except the words falls away.
-And that is held structurally, not as a courtesy. The page takes what the server sends and rebuilds it with the words and nothing else, so a name cannot reach your screen by accident, even if something upstream sends one.
-
-## L016
-> Direction: `art` — a question with only one answer is lifted out and dropped.
-If only one candidate answered a question, the question does not appear. One voice is not a comparison.
-
 ## L017
 > Direction: a Bobit reading the card. `ponder`.
-So you read them, and you agree, or you do not. Anything you do not agree with you simply leave behind.
+You read the options, and you either agree or you don't.  The ones you don't agree with you, we simply leave behind.
 
 Chapter 5 — ranking your pile
 
 ## L018
 > Direction: `art` — the answers you agreed with gather into a short pile.
-What you agree with goes into a pile.
+The ones you do agree with goes into a pile.
 
 ## L019
 > Direction: `art` — the pile is dragged into an order, first, then second.
-Then you put the pile in order. The one you most want first, then the next.
+Then you sort the answers that you liked; you rank them. The responses you like the most go first, then the next best, and so forth.
 
-## L020
-> Direction: `art` — two entries settle level on the same rank.
-And you can tie them, if you really do want both of them the same amount.
 
 ## L021
 > Direction: a Bobit `present` beside the ordered pile.
-Which should feel oddly familiar. You have just done ranked choice voting, on the words alone, without anybody's name attached to a single one of them.
+From a systems perspective, when you Rank your vote, it leads us to a much more nuanced response.  And for those who are familiar with Ranked Choice Voting, this will feel oddly familiar. 
 
 Chapter 6 — the reveal
 
@@ -167,65 +153,41 @@ When you are finished, the names come back.
 > Direction: `art` — a ballot assembles itself, ordered by how often you agreed.
 Every answer you kept gets its face, and a ballot builds itself out of them, with the person whose words you picked most often at the top.
 
-## L024
-> Direction: `art` — a grid: candidates down the side, questions across the top.
-Under it there is a grid. Everyone who is running down the side, every question across the top, and in each square what you did with that person's answer.
-
-## L025
-> Direction: `art` — the row of the person agreed with only once, still present at the bottom.
-Including the person you agreed with only once. Everybody who is running is on your ballot, and the page does not quietly drop the ones you did not pick.
-
-## L026
-> Direction: a Bobit looking at the ballot. `confused`.
-And you can be surprised here. That is the entire reason the names were off.
 
 Chapter 7 — where the words come from
 
 ## L027
 > Direction: a Bobit `ponder` beside one revealed answer.
-Which raises the next fair question. Who wrote these answers?
+Which raises the question. Who wrote these answers?
 
 ## L028
 > Direction: `art` — four named kinds of source.
-They come from the record. Official candidate statements. Debate transcripts, word for word. Clipped debate video. Verified news reporting.
+They come from the record. Official candidate statements. Debate transcripts, word for word. Clipped debate video. Verified news reporting.  All sourced so that you can follow-up and see the statements in context.
 
-## L029
-> Direction: `art` — a short excerpt sits highlighted inside the full original quote.
-What you read while you were blind is an excerpt, kept short so the answers can be compared. After the reveal you can open the whole original and see exactly where that excerpt sat inside it, with the date and the source beside it.
-
-## L030
-> Direction: `art` — the source line, with its link.
-We show the cut because a quote you cannot check is only us telling you what somebody meant.
 
 Chapter 8 — what exists today
 
-## L031
-> Direction: a Bobit `standstill`, plain and level.
-Now the honest part, and for this one it decides whether the app is worth your evening.
 
 ## L032
 > Direction: `art` — a map with a few places lit.
-Read and Rank is still in development. The reading works wherever you are. The material does not exist wherever you are.
+Read and Rank is still in development. While you can explore it for many of our Alpha communities, that's not everywhere.  Our plan is to incorporate this into an upcoming Election Hub.  Finding sourced quotes that also hit our quality bar is trickier than it sounds.
 
-## L033
-> Direction: `art` — a long race beside a short one.
-A race opens where the candidates in it have actually answered, and it opens question by question. A question nobody can be compared on is taken out before you see it, so a thin race is simply a short one.
 
 Chapter 9 — afterwards
 
 ## L034
 > Direction: `art` — one issue from the ranking, carried across to a compass.
-At the end there is one more offer. The issue you ranked highest is the one this now knows matters to you, and it will point you at your Compass so that your next race starts from what you care about.
+At the end, if you have your compass calibrated, we show you how you overlap with each candidate.
 
 ## L035
 > Direction: `art` — a revealed name, with the link out to their profile.
-And every name on that ballot carries a link to their full profile in Essentials. Their record, their funding, their votes. You read them blind first, and you can read everything else afterwards.
+And a link to their full profile in Essentials. Their record, their funding, their votes. You read them blind first, and you can read everything else afterwards.
 
 Chapter 10 — close
 
 ## L036
 > Direction: cut to a few seconds of the real readrank.empowered.vote screen.
-It is at read rank dot empowered dot vote.
+This is at read rank dot empowered dot vote.
 
 ## L037
 > Direction: the real screen holds, and keeps moving.
@@ -233,4 +195,4 @@ Read a handful of answers with the names off. Decide what you think. Then look a
 
 ## L038
 > Direction: two Bobits, `cheer`. Text of 'readrank.empowered.vote'.
-That is Read and Rank. Go and find out who you actually agree with.
+That is Read and Rank. Go find who you agree with.
