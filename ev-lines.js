@@ -32,6 +32,74 @@
 
   function force(tags) { forced = (tags && tags.length) ? tags : null; }
 
+  // ?evdays=7 pins the DAY COUNT for this page load. Separate lever from ?evlines= on
+  // purpose, and the separation is the whole point: ?evlines= decides which tags are true,
+  // ?evdays= decides what number the sentence carries. Folding the two together would mean
+  // ?evdays=0 silently switched on the election-day tag — and with it the entire polling
+  // place on the landing page — which is a lever nobody asked for.
+  //
+  // Anything that is not a non-negative integer is DISCARDED rather than coerced. Without
+  // that guard `?evdays=abc` reaches {days} as NaN and the greeter says "Election Day is
+  // NaN days away"; parseInt alone would also take "1e3" as 1 and " 7" as 7.
+  var forcedDays = (function () {
+    var m = /[?&]evdays=([^&#]*)/.exec(window.location.search);
+    if (!m) return null;
+    var raw = decodeURIComponent(m[1]);
+    if (!/^\d+$/.test(raw)) return null;
+    var n = parseInt(raw, 10);
+    return isFinite(n) ? n : null;
+  })();
+
+  // ── FEDERAL ELECTION DAY ────────────────────────────────────────────────────────────
+  // The first Tuesday after the first Monday in November of an even-numbered year. Written
+  // as the rule rather than as a table of dates, because a table is something a person has
+  // to remember to extend and the failure when they forget is SILENT: the countdown simply
+  // never appears again, in an off year, on a page nobody is watching. The rule has been
+  // federal law since 1845 and costs six lines. Verified against 2022 (8 Nov), 2024 (5 Nov),
+  // 2026 (3 Nov) and 2028 (7 Nov) in tests/lines/02-predicates.cjs.
+  //
+  // LOCAL time throughout, like every other date window in this file: a visitor's Election
+  // Day is the one where they are standing.
+  function federalElectionDay(year) {
+    if (year % 2 !== 0) return null;              // no federal general election in an odd year
+    var d = new Date(year, 10, 1);                // 1 November
+    while (d.getDay() !== 1) d.setDate(d.getDate() + 1);   // walk to the first Monday
+    d.setDate(d.getDate() + 1);                   // the Tuesday after it
+    return d;
+  }
+
+  // The next one that has not happened yet. Looking FORWARD is what makes the count below
+  // total — never null, never negative — so {days} can never render as an empty string or
+  // as a minus number, and no caller has to defend against either.
+  function nextElectionDay(now) {
+    var y = now.getFullYear();
+    var today = new Date(y, now.getMonth(), now.getDate());
+    for (var i = 0; i <= 3; i++) {
+      var e = federalElectionDay(y + i);
+      if (e && e >= today) return e;
+    }
+    return null;   // unreachable: an even year is at most 2 away
+  }
+
+  // Calendar days between two LOCAL midnights, so a visitor at 23:50 and one at 00:10 on the
+  // same date are told the same number.
+  //
+  // Math.round, not Math.floor, and the usual argument for it is backwards. The instinct is
+  // that DST ending inside the window (the first Sunday in November) makes a floor read low.
+  // It does not: falling back makes a day LONGER — 31 Oct to 3 Nov 2026 is 73 hours, and
+  // floor and round both give 3. The off-by-one is across a SHORT day, i.e. spring forward,
+  // which a countdown ending in November never crosses. Round is used anyway because it is
+  // right whichever way a transition falls, and being right by rule rather than by
+  // coincidence costs nothing. There is deliberately no test for the DST case: one driving
+  // 31 Oct and asserting 3 would pass identically against the floor it is meant to rule out,
+  // which is worse than no test.
+  function daysUntilElection(now) {
+    var e = nextElectionDay(now);
+    if (!e) return null;
+    var a = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((e - a) / 86400000);
+  }
+
   // Third Monday in January.
   function isMlkDay(d) {
     if (d.getMonth() !== 0) return false;
@@ -126,6 +194,10 @@
     };
     if (facts) for (var k in facts) if (Object.prototype.hasOwnProperty.call(facts, k)) c[k] = facts[k];
     c.hour = c.now.getHours();
+    // Set BEFORE the early return below, so a forced tag set still carries a real number —
+    // a preview pinned with ?evlines=election-soon has to render a day count, not a blank.
+    // forcedDays overrides the fact and NOTHING ELSE; it must never add or remove a tag.
+    c.daysToElection = (forcedDays != null) ? forcedDays : daysUntilElection(c.now);
 
     if (forced) { c.tags = forced.slice(); return c; }
     c.tags = [];
@@ -235,6 +307,9 @@
   // that is fine, but it should be a deliberate removal, not a drive-by "unused export" cut.
   window.EVLines = {
     context: context, force: force, PREDICATES: PREDICATES,
+    // Public for the same reason PREDICATES is: it is the handle a person opens in devtools
+    // to check the date rule against a real calendar, and the tests assert it directly.
+    federalElectionDay: federalElectionDay,
     register: register, resolve: resolve, say: say
   };
 

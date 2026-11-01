@@ -22,6 +22,21 @@ function tagsAt(page, y, m, d, h) {
   }, [y, m, d, h]);
 }
 
+// how many days to the next federal Election Day, as the greeter would count them
+function daysAt(page, y, m, d) {
+  return page.evaluate(function (a) {
+    return window.EVLines.context({ now: new Date(a[0], a[1], a[2], 12, 0, 0) }).daysToElection;
+  }, [y, m, d]);
+}
+
+// the computed election date for a year, as [y, m, d] or null
+function electionFor(page, y) {
+  return page.evaluate(function (yy) {
+    var e = window.EVLines.federalElectionDay(yy);
+    return e ? [e.getFullYear(), e.getMonth(), e.getDate()] : null;
+  }, y);
+}
+
 (async function () {
   const browser = await chromium.launch();
   const page = await makePage(browser);
@@ -57,6 +72,25 @@ function tagsAt(page, y, m, d, h) {
   assert.ok((await tagsAt(page, 2026, 0, 19, 12)).includes('mlk-day'), '19 Jan 2026 is MLK Day');
   assert.ok((await tagsAt(page, 2027, 0, 18, 12)).includes('mlk-day'), '18 Jan 2027 is MLK Day');
   assert.ok(!(await tagsAt(page, 2026, 0, 12, 12)).includes('mlk-day'), '12 Jan 2026 is the 2nd Monday');
+
+  // ── THE ELECTION DATE IS A RULE, NOT A TABLE. First Tuesday after the first Monday in
+  //    November of an even year. A table is a thing somebody has to remember to extend, and
+  //    the failure when they don't is silent — the countdown just never appears again, in an
+  //    off year, on a page nobody is watching. So the rule is asserted against four real
+  //    cycles: this is the thing that would otherwise be wrong forever.
+  assert.deepStrictEqual(await electionFor(page, 2022), [2022, 10, 8], '2022 election is 8 Nov');
+  assert.deepStrictEqual(await electionFor(page, 2024), [2024, 10, 5], '2024 election is 5 Nov');
+  assert.deepStrictEqual(await electionFor(page, 2026), [2026, 10, 3], '2026 election is 3 Nov');
+  assert.deepStrictEqual(await electionFor(page, 2028), [2028, 10, 7], '2028 election is 7 Nov');
+  assert.strictEqual(await electionFor(page, 2027), null, 'no federal election in an odd year');
+
+  // ── the fact itself. It looks FORWARD and is never null and never negative, which is what
+  //    keeps "{days}" from ever rendering as an empty string or a minus number.
+  assert.strictEqual(await daysAt(page, 2026, 10, 3), 0, 'election day is 0');
+  assert.strictEqual(await daysAt(page, 2026, 10, 2), 1, 'the day before is 1');
+  assert.strictEqual(await daysAt(page, 2026, 9, 4), 30, '4 Oct is 30 days out');
+  assert.strictEqual(await daysAt(page, 2026, 10, 4), 734, 'the day after rolls to the 2028 election');
+  assert.strictEqual(await daysAt(page, 2027, 5, 15), 511, 'mid odd-year still counts forward');
 
   // ── session facts, and the guest/first-visit defaults with no session at all
   const guest = await tagsAt(page, 2026, 5, 10, 9);
@@ -99,6 +133,20 @@ function tagsAt(page, y, m, d, h) {
   assert.deepStrictEqual(ft.slice().sort(), ['evening', 'halloween'],
     'forced tags must REPLACE the derived ones, got: ' + ft.join(','));
   await forced.close();
+
+  // ── ?evdays= is the lever for the NUMBER, and it has one job. A value that is not a
+  //    non-negative integer is ignored outright rather than reaching {days}: without this,
+  //    ?evdays=abc puts "Election Day is NaN days away" in the greeter's mouth.
+  for (const bad of ['abc', '', '-5', '1.5', '1e3', ' 7']) {
+    const p = await makePage(browser, '?evdays=' + encodeURIComponent(bad));
+    assert.strictEqual(await daysAt(p, 2026, 10, 1), 2,
+      '?evdays=' + JSON.stringify(bad) + ' must be ignored, not override the real count');
+    await p.close();
+  }
+  const pinned = await makePage(browser, '?evdays=7');
+  assert.strictEqual(await daysAt(pinned, 2026, 5, 10), 7, '?evdays=7 overrides the count');
+  assert.strictEqual(await daysAt(pinned, 2026, 10, 3), 7, '?evdays= wins over the real date too');
+  await pinned.close();
 
   // ── returning is snapshotted at load, so a tool hover during the visit cannot
   //    retroactively make a first-timer "returning"
