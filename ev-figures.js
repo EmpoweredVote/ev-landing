@@ -4214,6 +4214,11 @@
     }
 
     function beamPick(e, w) {
+      // The polling place is not a pass in the rotation, it is the whole day. The carry
+      // scenes, the light gag, the letter carriers and the play-button carrier are all off
+      // until the tag stops matching, at which point this entry opens in 'carry' again on
+      // the next load and all four come back with nothing to deploy.
+      if (e.scene === 'polls') return;
       var lastWasSpecial = BEAM_SPECIALS.indexOf(e.lastAction) >= 0;
       // after a special always carry; after a carry usually go special, but ~30% of the time run ONE
       // more carry (the other load) — capped at 2 carries in a row so specials still come around often.
@@ -4327,6 +4332,71 @@
         return true;
       } catch (err) { return false; }
     })();
+
+    // ══ ELECTION DAY ════════════════════════════════════════════════════════════════════
+    // On the day itself the hero's bottom rule stops being the carry lane and becomes a
+    // polling place: a booth at the left end, a line of Bobits waiting to its right, one
+    // going in at a time, and each walking off the left edge afterwards.
+    //
+    // THE SCENE LIVES ON THE CREW'S OWN ENTRY, and that is the load-bearing decision here
+    // rather than a convenience. The click-exodus arms every entry with poofArmFlee, which
+    // reads e.el for the perch the runner leaps off — and Halloween's figures have no
+    // anchor element, so the arming THREW, inside tick(), which killed the animation loop
+    // for the whole page for the rest of the session with no error visible and nothing
+    // looking wrong until you noticed nobody was moving. Drawn on the beam entry the scene
+    // inherits e.el = .hero, and the exodus, reposition and everything else handle it
+    // without knowing it exists. Entries of its own would walk straight back into that bug.
+    //
+    // Same arrangement with the date as the zombies: it is a dialogue TAG, not a second
+    // calendar, so there is one definition of "it is Election Day" on the page,
+    // ?evlines=election-day previews it in June, and on 4 November the tag stops matching
+    // and the scene disappears with nothing to deploy and nothing to remember to remove.
+    //
+    // Read ONCE at load, like HALLOWEEN. A tab left open across midnight into 4 November
+    // keeps the polling place until it is reloaded; that is accepted rather than
+    // overlooked, because a page that agrees with itself all session is better than one
+    // that rearranges the furniture while somebody is reading it.
+    var ELECTION = (function () {
+      try {
+        if ((window.EVLines ? window.EVLines.context({}).tags : []).indexOf('election-day') < 0) return false;
+        // The harness guard, for the same reason Halloween has one: 36 files in tests/ load
+        // this page with no tags pinned and assert on who is standing where, and a scene
+        // that takes over the hero lane makes every one of them date-dependent — green for
+        // two years and failing on the one morning nobody wants to be debugging.
+        if (navigator.webdriver && !/[?&]evlines=/.test(location.search)) return false;
+        return true;
+      } catch (err) { return false; }
+    })();
+
+    // Every knob in one place, the way ZOM and GHOST already are.
+    var POLL = {
+      BOOTH_W:      96,   // panel width
+      BOOTH_H:     135,   // design height — 1.9x a 71px figure. NOT the canvas height: the
+                          // canvas is 240 and a booth that tall is 3.4x the people queuing
+                          // at it, which is a tower, not a booth.
+      CLAMP_H:      93,   // the .meta-row headroom. A ceiling on BOOTH_H, never the thing
+                          // that picks the size — see boothRect.
+      INSET_WIDE:   44,   // booth's left inset above 900px wide...
+      INSET_NARROW: 16,   // ...and at 900px or below. This inset is also the leaver's walk.
+      GAP_MIN:      26,   // queue spacing, clamped. Scales with the canvas between these:
+      GAP_MAX:      46,   // a fixed gap puts eight people in a huddle on a wide screen.
+      GAP0:         34,   // door to the first waiting slot
+      TARGET_MIN:    4,   // how many wait, re-drawn from time to time so the line visibly
+      TARGET_MAX:    8,   // grows and shrinks rather than sitting at one length
+      VOTE_SECS:     4,   // hidden behind the panel
+      ARRIVE_GAP:  3.5,   // seconds between arrivals while under target
+      SHUFFLE_SPEED: 26,  // px/s stepping up one slot — a walk, never a teleport
+      SAY:           6    // seconds a waiter's bubble stays up on its own
+    };
+
+    // The people in and around the line this frame. Task 6 fills it; the debug surface
+    // reports it, and the exodus acts on e._bodies rather than on this.
+    var POLLS = [];
+
+    function runPolls(e, ctx, w, h, feetY, tt, shadow, dt, cr) {
+      // filled in by the booth and the queue
+    }
+    // ══ end ELECTION DAY ════════════════════════════════════════════════════════════════
 
     var ZOM = {
       SPEED:   44,        // px/s. Over every walk (carry 30, march 34, strut 40), under
@@ -5853,12 +5923,19 @@
           // rather than carrying it. Outside, the hanging inner hand lands right on the edge.
           var halfGap = isBtn ? (card.w / 2 + 8) : BEAM_HALF_GAP;
           var endMargin = loadMargin(e, e.load, w);
-          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = BEAM_SPECIALS[(BEAM_SPECIALS.indexOf(BEAM_FIRST_SPECIAL) + BEAM_SPECIALS.length - 1) % BEAM_SPECIALS.length]; e.carryRun = 1; e.dwell = 0; e.scene = 'carry'; }   // open mid-screen with a carry; a special follows soon
+          if (e.bx == null) { e.bx = w * 0.5; e.dir = 1; e.load = pick(BEAM_LOADS); e.lastLoad = e.load; e.lastAction = e.load; e.lastSpecial = BEAM_SPECIALS[(BEAM_SPECIALS.indexOf(BEAM_FIRST_SPECIAL) + BEAM_SPECIALS.length - 1) % BEAM_SPECIALS.length]; e.carryRun = 1; e.dwell = 0; e.scene = 'carry';
+            // On Election Day this entry runs the polling place instead of the rotation.
+            // NOT a `plain` crew: those are the Halloween work crews cast at runtime, and
+            // they share this init path. The two takeovers' calendars cannot overlap, so
+            // this is guarded explicitly rather than left resting on the calendar being kind.
+            if (ELECTION && !spec.plain) e.scene = 'polls';
+          }   // open mid-screen with a carry; a special follows soon
           // some passes run a solo gag instead of the two-carry: the "light went out" fix, or the letter carriers
           e._figX = (e.scene === 'light' && e.lgX != null) ? e.lgX
                 : (e.scene === 'play' && e.pX != null) ? e.pX
                 : (e.scene === 'letters' && e.eX != null) ? e.eX
                 : (e.bx != null ? e.bx : w / 2);
+          if (e.scene === 'polls') { runPolls(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
         if (e.scene === 'light') { runLightGag(e, ctx, w, h, feetY, tt, col, shadow, cr, dt); return; }
           if (e.scene === 'letters') { runLetters(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
           if (e.scene === 'play') { runPlay(e, ctx, w, h, feetY, tt, shadow, dt, cr); return; }
@@ -6216,6 +6293,8 @@
       buttonCardSize: buttonCardSize, beamPick: beamPick, drawButtonCard: drawButtonCard,
       beamLoads: BEAM_LOADS, beamSpecials: BEAM_SPECIALS, heavyProp: HEAVY_PROP,
       startPlay: startPlay, playR: PLAY_R,
+      election: ELECTION, poll: POLL,
+      polls: function () { return POLLS.slice(); },
       halloween: HALLOWEEN, zom: ZOM, zomCap: zomCap, dropProp: dropProp, zombieSpawn: zombieSpawn, zombiePose: zombiePose,
       carrierHeading: carrierHeading, zombieSay: zombieSay, laneOf: laneOf,
       makeZombie: makeZombie, workerSpawn: workerSpawn, laneAnchor: laneAnchor, zomColor: zomColor,
