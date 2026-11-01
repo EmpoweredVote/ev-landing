@@ -92,6 +92,29 @@ function electionFor(page, y) {
   assert.strictEqual(await daysAt(page, 2026, 10, 4), 734, 'the day after rolls to the 2028 election');
   assert.strictEqual(await daysAt(page, 2027, 5, 15), 511, 'mid odd-year still counts forward');
 
+  // ── the three tags, at both sides of every boundary. Three and not one because `when` is
+  //    an AND with no arithmetic in it, so a singular sentence and a plural one each need
+  //    their own name — the same shape `needs-tools` already uses.
+  const el = async function (y, m, d) { return await tagsAt(page, y, m, d, 12); };
+  assert.ok((await el(2026, 10, 3)).includes('election-day'), '3 Nov is election-day');
+  assert.ok((await el(2026, 10, 2)).includes('election-tomorrow'), '2 Nov is election-tomorrow');
+  assert.ok((await el(2026, 10, 1)).includes('election-soon'), '1 Nov is election-soon');
+  assert.ok((await el(2026, 9, 4)).includes('election-soon'), '4 Oct (30 days) is election-soon');
+  assert.ok(!(await el(2026, 9, 3)).some(function (t) { return t.indexOf('election-') === 0; }),
+    '3 Oct (31 days) is outside the window');
+  assert.ok(!(await el(2026, 10, 4)).some(function (t) { return t.indexOf('election-') === 0; }),
+    '4 Nov is after it, so no election tag');
+  assert.ok(!(await el(2027, 10, 2)).some(function (t) { return t.indexOf('election-') === 0; }),
+    'an odd year has no election tag at all');
+
+  // ── exactly one election tag at a time, for the same reason the suite already asserts
+  //    exactly one time-of-day tag: two would make selection ORDER load-bearing in a way
+  //    the copy author cannot see from the catalog.
+  for (const d of [1, 2, 3, 4]) {
+    const t = (await el(2026, 10, d)).filter(function (x) { return x.indexOf('election-') === 0; });
+    assert.ok(t.length <= 1, 'Nov ' + d + ' produced ' + t.length + ' election tags: ' + t);
+  }
+
   // ── session facts, and the guest/first-visit defaults with no session at all
   const guest = await tagsAt(page, 2026, 5, 10, 9);
   assert.ok(guest.includes('guest'), 'no session means guest');
@@ -134,18 +157,29 @@ function electionFor(page, y) {
     'forced tags must REPLACE the derived ones, got: ' + ft.join(','));
   await forced.close();
 
-  // ── ?evdays= is the lever for the NUMBER, and it has one job. A value that is not a
-  //    non-negative integer is ignored outright rather than reaching {days}: without this,
-  //    ?evdays=abc puts "Election Day is NaN days away" in the greeter's mouth.
-  for (const bad of ['abc', '', '-5', '1.5', '1e3', ' 7']) {
-    const p = await makePage(browser, '?evdays=' + encodeURIComponent(bad));
-    assert.strictEqual(await daysAt(p, 2026, 10, 1), 2,
-      '?evdays=' + JSON.stringify(bad) + ' must be ignored, not override the real count');
-    await p.close();
-  }
+  // ── ?evdays= is a RENDER lever, not a fact. It changes what {days} prints and nothing
+  //    else: the derived count stays true, so the predicates below cannot be moved by it.
+  //    What it actually prints is 01-select's business, including the guard against a junk
+  //    value reaching the sentence as NaN.
+  // The number moves; the TAGS do not. This is the gate on where forcedDays was wired in:
+  // above the `forced` early return it sets the fact, and it must reach nothing else. If
+  // this fails, the bug is that ?evdays= is feeding the predicate set.
+  const zero = await makePage(browser, '?evdays=0');
+  const zt = await zero.evaluate(function () {
+    return window.EVLines.context({ now: new Date(2026, 5, 10, 12) }).tags;
+  });
+  assert.ok(!zt.some(function (x) { return x.indexOf('election-') === 0; }),
+    '?evdays=0 must not switch election-day on, got: ' + zt.join(','));
+  await zero.close();
+
   const pinned = await makePage(browser, '?evdays=7');
-  assert.strictEqual(await daysAt(pinned, 2026, 5, 10), 7, '?evdays=7 overrides the count');
-  assert.strictEqual(await daysAt(pinned, 2026, 10, 3), 7, '?evdays= wins over the real date too');
+  assert.strictEqual(await daysAt(pinned, 2026, 5, 10), 146,
+    '?evdays= must leave the derived count alone');
+  const pt = await pinned.evaluate(function () {
+    return window.EVLines.context({ now: new Date(2026, 10, 1, 12) }).tags;
+  });
+  assert.ok(pt.includes('election-soon'), '?evdays=7 on 1 Nov still derives election-soon from the real clock');
+  assert.ok(!pt.includes('election-day'), 'and ?evdays= cannot promote it to election-day');
   await pinned.close();
 
   // ── returning is snapshotted at load, so a tool hover during the visit cannot

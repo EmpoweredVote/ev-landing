@@ -123,6 +123,19 @@
                     },
     'mlk-day':      function (c) { return isMlkDay(c.now); },
 
+    // The countdown, as three tags rather than one. `when` is an AND with no arithmetic in
+    // it, so the only way the catalog can hold a singular sentence ("tomorrow") and a plural
+    // one ("{days} days away") is for each to have its own name. That is the same reason
+    // `needs-tools` exists as the inverse of `tools-found`: the engine deliberately cannot
+    // express either, and a name is cheaper than making it able to.
+    //
+    // 30 days is "about a month out". daysToElection is total (see above), so none of these
+    // needs a null branch, and in an odd year it is a number in the hundreds and all three
+    // are simply false — the same self-switching the Halloween window has.
+    'election-day':      function (c) { return c.daysToElection === 0; },
+    'election-tomorrow': function (c) { return c.daysToElection === 1; },
+    'election-soon':     function (c) { return c.daysToElection >= 2 && c.daysToElection <= 30; },
+
     'first-visit':  function (c) { return !c.returning; },
     'returning':    function (c) { return !!c.returning; },
     'logged-in':    function (c) { return !!c.loggedIn; },
@@ -196,8 +209,14 @@
     c.hour = c.now.getHours();
     // Set BEFORE the early return below, so a forced tag set still carries a real number —
     // a preview pinned with ?evlines=election-soon has to render a day count, not a blank.
-    // forcedDays overrides the fact and NOTHING ELSE; it must never add or remove a tag.
-    c.daysToElection = (forcedDays != null) ? forcedDays : daysUntilElection(c.now);
+    //
+    // This is the REAL count and ?evdays= deliberately does not touch it. The predicates
+    // below derive from this fact, so an override here would move the tags with it, and
+    // ?evdays=0 would switch on election-day and with it the whole polling place. ?evdays=
+    // is a RENDER lever: fill() applies it to {days} and nothing else reads it. Keeping the
+    // fact honest is what lets the two levers stay independent — ?evlines= decides which
+    // tags are true, ?evdays= decides what number the sentence carries.
+    c.daysToElection = daysUntilElection(c.now);
 
     if (forced) { c.tags = forced.slice(); return c; }
     c.tags = [];
