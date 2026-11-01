@@ -6,12 +6,12 @@ const assert = require('assert');
 
 const URL = 'file:///C:/ev-landing/ev-landing-main/tests/lines/fixture.html';
 
-async function makePage(browser) {
+async function makePage(browser, query) {
   const page = await browser.newPage();
   await page.route('**/*', function (r) {
     return /^https?:/.test(r.request().url()) ? r.abort() : r.continue();
   });
-  await page.goto(URL);
+  await page.goto(URL + (query || ''));
   return page;
 }
 
@@ -182,6 +182,84 @@ async function makePage(browser) {
     'the nudge must read the same for a known visitor as for a stranger');
   assert.ok(/^tip\./.test(g.returningId), 'a returning visitor must be past the nudge, got: ' + g.returningId);
   await greeter.close();
+
+  // ── THE COUNTDOWN ───────────────────────────────────────────────────────────────────
+  // The day count comes from the real clock via `now`, so these drive dates rather than
+  // pinning a number: that exercises the whole wire (date rule -> fact -> tag -> {days}),
+  // not just the substitution at the end of it.
+  const el = await makePage(browser);
+  const ec = await el.evaluate(function () {
+    function say(tags, beat, now) {
+      window.EVLines.force(tags);
+      return window.EVLines.say('greeter', beat, now ? { now: now } : undefined);
+    }
+    return {
+      soon:     say(['election-soon'], 'wave', new Date(2026, 9, 22, 12)),   // 12 days out
+      tomorrow: say(['election-tomorrow'], 'wave', new Date(2026, 10, 2, 12)),
+      day:      say(['election-day'], 'wave', new Date(2026, 10, 3, 12)),
+      // Halloween outranks the countdown -- the ask, and the reason file order IS priority.
+      both:     say(['halloween', 'election-soon'], 'wave', new Date(2026, 9, 28, 12)),
+      // ...and the countdown outranks the welcome-back, or the people who return most often
+      // are the one group that never hears it.
+      back:     say(['named', 'returning', 'election-soon'], 'wave', new Date(2026, 9, 22, 12)),
+      // Far out: no election tag at all, and he still gives the ordinary opener rather than
+      // falling through to nothing. A beat that matches nothing is an authoring gap.
+      plain:    say(['morning'], 'wave', new Date(2026, 5, 10, 9))
+    };
+  });
+
+  assert.ok(/\b12 days\b/.test(ec.soon), 'the real count must render into the line: ' + ec.soon);
+  assert.ok(!/\{days\}/.test(ec.soon), 'no unsubstituted token may survive: ' + ec.soon);
+  assert.ok(/tomorrow/i.test(ec.tomorrow), 'the day before says tomorrow, not a number: ' + ec.tomorrow);
+  assert.ok(!/\b1 days\b/.test(ec.tomorrow), 'nothing may ever say "1 days": ' + ec.tomorrow);
+  assert.ok(/Election Day/i.test(ec.day), 'the day itself says so: ' + ec.day);
+  assert.ok(!/\d/.test(ec.day), 'the day-of line carries no number at all: ' + ec.day);
+  assert.ok(/Halloween/i.test(ec.both), 'Halloween must win when both are true: ' + ec.both);
+  assert.ok(/\b12 days\b/.test(ec.back), 'a signed-in returning visitor still gets the countdown: ' + ec.back);
+  assert.ok(ec.plain && ec.plain.length, 'with no election tag he must still speak');
+  assert.ok(!/Election Day/i.test(ec.plain), 'and must not mention the election: ' + ec.plain);
+
+  // ── No line may tell anyone to go and vote. We are antipartisan by design and the
+  //    greeter's register is warm, not instructional: "Election Day is 12 days away" is a
+  //    fact, "Don't forget to vote!" is a nag, and a nag from us reads as a side being
+  //    taken. "Empowered Vote" is the organisation's name, so it is discounted first.
+  const voteCheck = await el.evaluate(function () {
+    var out = [];
+    var ids = window.EVCopy.ids().filter(function (i) { return i.indexOf('greet.election.') === 0; });
+    for (var i = 0; i < ids.length; i++) out.push([ids[i], window.EVCopy.get(ids[i])]);
+    return out;
+  });
+  assert.ok(voteCheck.length >= 3, 'expected the election copy to exist, found ' + voteCheck.length);
+  for (const [id, text] of voteCheck) {
+    const stripped = text.replace(/Empowered Vote/g, '');
+    assert.ok(!/\bvote\b/i.test(stripped), id + ' must not instruct anyone to vote: ' + text);
+    assert.ok(!/!\s*$/.test(text.trim()) || !/vote/i.test(text), id + ' reads as a nag: ' + text);
+  }
+  await el.close();
+
+  // ── ?evdays= renders a pinned number WITHOUT moving a tag, and a junk value is ignored
+  //    rather than reaching the sentence. Without the guard ?evdays=abc puts "Election Day
+  //    is NaN days away" in his mouth; parseInt alone would also take "1e3" as 1.
+  const pin = await makePage(browser, '?evdays=7');
+  const pinned = await pin.evaluate(function () {
+    window.EVLines.force(['election-soon']);
+    return window.EVLines.say('greeter', 'wave', { now: new Date(2026, 9, 22, 12) });
+  });
+  assert.ok(/\b7 days\b/.test(pinned), '?evdays=7 must render 7, not the real 12: ' + pinned);
+
+  for (const bad of ['abc', '', '-5', '1.5', '1e3', 'NaN']) {
+    const bp = await makePage(browser, '?evdays=' + encodeURIComponent(bad));
+    const line = await bp.evaluate(function () {
+      window.EVLines.force(['election-soon']);
+      return window.EVLines.say('greeter', 'wave', { now: new Date(2026, 9, 22, 12) });
+    });
+    assert.ok(/\b12 days\b/.test(line),
+      '?evdays=' + JSON.stringify(bad) + ' must be ignored and the real count used: ' + line);
+    assert.ok(!/NaN|undefined|null/.test(line),
+      '?evdays=' + JSON.stringify(bad) + ' leaked into the sentence: ' + line);
+    await bp.close();
+  }
+  await pin.close();
 
   console.log('01-select: PASS');
   await page.close();

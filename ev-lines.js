@@ -261,7 +261,14 @@
   // having to parse anything.
   function fill(text, c) {
     if (!text) return text;
-    return text.replace(/\{name\}/g, c.name || '');
+    // {days} is the countdown's number. ?evdays= is applied HERE and only here: the fact on
+    // the context stays the real derived count, because the predicates read it and an
+    // override there would drag the tags along with it (?evdays=0 would switch on
+    // election-day, and with it the whole polling place). Two levers, one job each.
+    var days = (forcedDays != null) ? forcedDays : c.daysToElection;
+    return text
+      .replace(/\{name\}/g, c.name || '')
+      .replace(/\{days\}/g, (days == null) ? '' : String(days));
   }
 
   // A POOL is the second and last selection shape: the entries in it are unordered, and one
@@ -341,6 +348,21 @@
     beats: [
       { at: 'wave', lines: [
           { id: 'greet.halloween', when: ['halloween'] },
+          // THE COUNTDOWN SITS HERE, and both ends of that position are decisions.
+          //
+          // Below Halloween, which is the ask: 25-31 October is the takeover's greeting and
+          // 1 November falls back to the countdown with nothing to switch over. The windows
+          // cannot actually overlap for election-day (Election Day is always 2-8 November),
+          // but writing it in priority order keeps the list reading correctly out loud,
+          // which is the property this whole file is organised around.
+          //
+          // ABOVE greet.back, and that is the one that matters. A signed-in returning
+          // visitor matches greet.back ahead of everything under it, so a countdown placed
+          // below would be invisible to exactly the people who come back most often.
+          { id: 'greet.election.day',      when: ['election-day'] },
+          { id: 'greet.election.tomorrow', when: ['election-tomorrow'] },
+          { id: ['greet.election.soon', 'greet.election.soon.b', 'greet.election.soon.c'],
+                                           when: ['election-soon'] },
           { id: 'greet.holidays',  when: ['holidays'] },
           // An id ARRAY draws one at random per page load and holds it for that load. Three
           // openers per case, so a visitor who arrives twice is not read the same sentence
