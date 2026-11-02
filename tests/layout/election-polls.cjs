@@ -287,8 +287,7 @@ async function parkOnLane(page) {
     want(peak <= 8, 'case 6: the line overshot eight, peaked at ' + peak);
     want(typical >= 3, 'case 6: the line typically held only ' + typical + ' (' + samples.join(',') + ')');
     want(tones.size > 1, 'case 6: the line must not be all one colour, got ' + JSON.stringify([...tones]));
-    const q = { length: peak };
-    want(errors.length === 0, 'case 6: page errors — ' + errors.join(' | '));
+        want(errors.length === 0, 'case 6: page errors — ' + errors.join(' | '));
     seen.push('case 6: peak ' + peak + ', typical ' + typical + ', ' + tones.size + ' colours');
 
     // ── Case 7: the line MOVES, and every state is reached ──────────────────────────
@@ -305,6 +304,9 @@ async function parkOnLane(page) {
     want(JSON.stringify(before) !== JSON.stringify(after),
       'case 7: the queue must advance, not freeze: ' + JSON.stringify(before));
 
+    // Every state must be reached BY THE STATE MACHINE, not announced by the seeder. Two of
+    // these four used to be set unconditionally while seeding the line, so they were true
+    // before anybody had arrived or waited and proved nothing at all.
     const states = await page.evaluate(function () { return window.__evFigDebug.pollStates(); });
     for (const st of ['arriving', 'waiting', 'voting', 'leaving']) {
       want(states.indexOf(st) >= 0, 'case 7: nobody was ever ' + st + ' (saw ' + states.join(',') + ')');
@@ -349,15 +351,31 @@ async function parkOnLane(page) {
       var e = window.__evFigDebug.entries.filter(function (x) {
         return x.spec.mode === 'beam' && !x.spec.plain && !x.gone;
       })[0];
+      var all = window.__evFigDebug.polls();
+      // EVERY state, not just `waiting`. This case was written to catch a figure parked off
+      // the right edge and for a while it could not: the ones that overflow are `arriving`,
+      // which the filter excluded, so it passed green with two people standing in the dark
+      // past the canvas edge. A test that cannot see the thing it was written for is worse
+      // than no test, because it reports the risk as covered.
+      var off = all.filter(function (f) { return f.state !== 'leaving' && f.x > e.w - 8; })
+                   .map(function (f) { return [f.state, Math.round(f.x)]; });
+      // ...and nobody may stand inside anybody else.
+      var stacked = [];
+      for (var i = 0; i < all.length; i++) {
+        for (var j = i + 1; j < all.length; j++) {
+          if (all[i].state === 'voting' || all[j].state === 'voting') continue;
+          if (Math.abs(all[i].x - all[j].x) < 10) stacked.push([all[i].state, Math.round(all[i].x)]);
+        }
+      }
       return {
-        over: window.__evFigDebug.polls().filter(function (f) {
-          return f.state === 'waiting' && f.x > e.w - 8;
-        }).length,
-        waiting: window.__evFigDebug.polls().filter(function (f) { return f.state === 'waiting'; }).length,
+        over: off.length, offDetail: JSON.stringify(off),
+        stacked: stacked.length, stackDetail: JSON.stringify(stacked),
+        waiting: all.filter(function (f) { return f.state === 'waiting'; }).length,
         scroll: document.documentElement.scrollWidth > window.innerWidth
       };
     });
-    want(r.over === 0, 'case 8 @320: ' + r.over + ' waiter(s) standing off the right edge of the canvas');
+    want(r.over === 0, 'case 8 @320: ' + r.over + ' figure(s) off the right edge: ' + r.offDetail);
+    want(r.stacked === 0, 'case 8 @320: ' + r.stacked + ' figure(s) standing inside each other: ' + r.stackDetail);
     want(r.waiting > 0, 'case 8 @320: the line must still form at all');
     want(r.scroll === false, 'case 8 @320: the page grew a horizontal scrollbar');
     want(errors.length === 0, 'case 8 @320: page errors — ' + errors.join(' | '));
@@ -503,9 +521,18 @@ async function parkOnLane(page) {
       var x0 = entry.flX, mates0 = entry.flMates ? entry.flMates.length : 0;
       await new Promise(function (res) { setTimeout(res, 900); });
       var x1 = entry.flX;
-      await new Promise(function (res) { setTimeout(res, 2500); });
+      // WAIT FOR IT, do not guess at it. A runner crosses up to a full viewport at scurry
+      // speed, so how long the exodus takes depends on how many bodies the scene had and
+      // where they were standing — a fixed delay here passed with six runners and failed
+      // with eight, which is a flaky test rather than a finding. Polling keeps the
+      // assertion meaningful: if tick() had thrown, this never clears and the wait expires.
+      var waited = 0;
+      while (waited < 30000 && D.poof.phase !== 'cleared' && entry.gone !== true) {
+        await new Promise(function (res) { setTimeout(res, 500); });
+        waited += 500;
+      }
       return {
-        hadAnchor: hadAnchor, armed: armed, phase: D.poof.phase,
+        hadAnchor: hadAnchor, armed: armed, phase: D.poof.phase, waited: waited,
         before: before.length, mates: mates0,
         ran: (x0 != null && x1 != null && x0 !== x1) || entry.gone === true,
         cleared: D.poof.phase === 'cleared' || entry.gone === true
@@ -525,9 +552,9 @@ async function parkOnLane(page) {
       want(r.mates > 0,
         'case 13: the queue left as a single figure — _bodies was not published (' + r.mates + ' mates)');
       want(r.cleared,
-        'case 13: the exodus never finished, phase stuck at ' + r.phase);
+        'case 13: the exodus never finished in 30s, phase stuck at ' + r.phase);
       seen.push('case 13: anchored queue armed, split into ' + (r.mates + 1) +
-        ' runners and ran (' + r.before + ' in the scene)');
+        ' runners, ran, and cleared in ' + (r.waited / 1000) + 's (' + r.before + ' in the scene)');
     }
     want(errors.length === 0, 'case 13: a poof must not throw — ' + errors.join(' | '));
     await page.close();
@@ -564,11 +591,143 @@ async function parkOnLane(page) {
     await page.close();
   }
 
+  // ── Case 15: a poof must not leave a bubble hanging over an empty page ────────────
+  // The exodus clears the page until reload. While the entry is fleeing but not yet gone,
+  // a waiter's last published hitbox is still sitting there, so a click on bare floor could
+  // open a bubble over nobody — and runPolls has stopped being called, so the SAY timeout
+  // that would normally take it away never runs either. It stays until reload.
+  {
+    const { page, errors } = await open(browser, '?evlines=election-day#figdebug');
+    await parkOnLane(page);
+    await page.waitForTimeout(9000);
+    const at = await page.evaluate(function () {
+      var D = window.__evFigDebug;
+      var f = D.polls().filter(function (x) { return x.state === 'waiting' && x.sx != null; })[0];
+      var victim = D.entries.find(function (e) { return !e.gone && e.w && e.spec.mode === 'stand'; });
+      if (!f || !victim) return null;
+      D.poof.victim = victim; D.poof.fx = 0.5; D.poof.fy = 0.5;
+      D.poof.phase = 'stunned'; D.poof.t = 99;
+      return { sx: f.sx, fy: f.fy };
+    });
+    want(at !== null, 'case 15: needed a waiter and a victim');
+    if (at) {
+      await page.waitForTimeout(900);
+      await page.mouse.click(at.sx, at.fy - 40);
+      await page.waitForTimeout(600);
+      want(await page.evaluate(function () { return window.EVQuotes.openCount(); }) === 0,
+        'case 15: a click during the exodus opened a bubble over an empty page');
+      await page.waitForTimeout(3000);
+      want(await page.evaluate(function () { return window.EVQuotes.openCount(); }) === 0,
+        'case 15: a bubble survived the exodus and nothing is left to time it out');
+    }
+    want(errors.length === 0, 'case 15: page errors — ' + errors.join(' | '));
+    seen.push('case 15: no bubble survives a poof');
+    await page.close();
+  }
+
+  // ── Case 16: clicking off does not leave a waiter mute ────────────────────────────
+  // dismissBubbles() resets the handle on ENTRIES; the people in the line are not entries,
+  // so their `qh` was left dangling. The bubble closed on screen and the figure still
+  // believed he was talking, so the next click on him read as "put it away" and he refused
+  // to speak. You had to click him twice, with nothing to say why.
+  {
+    const { page, errors } = await open(browser, '?evlines=election-day#figdebug');
+    await parkOnLane(page);
+    await page.waitForTimeout(10000);
+    await page.evaluate(function () { window.__evFigDebug.pollFreeze(true); });
+    await page.waitForFunction(function () {
+      var slots = window.__evFigDebug.pollSlots();
+      return window.__evFigDebug.polls().filter(function (f) { return f.state === 'waiting'; })
+        .every(function (f) { return Math.abs(f.x - slots[f.slot]) < 1; });
+    }, { timeout: 15000 });
+
+    const who = await page.evaluate(function () {
+      var f = window.__evFigDebug.polls().filter(function (x) { return x.state === 'waiting'; })[0];
+      return f ? { id: f.id, sx: f.sx, fy: f.fy } : null;
+    });
+    want(who !== null, 'case 16: needed a settled waiter');
+    if (who) {
+      await page.mouse.click(who.sx, who.fy - 40);
+      await page.waitForTimeout(350);
+      want(await page.evaluate(function () { return window.EVQuotes.openCount(); }) === 1,
+        'case 16: first click must open');
+      // click a quiet patch of page, which is how anyone dismisses a bubble
+      await page.mouse.click(who.sx, who.fy - 220);
+      await page.waitForTimeout(350);
+      const mid = await page.evaluate(function (i) {
+        return { open: window.EVQuotes.openCount(),
+                 qh: !!window.__evFigDebug.polls().filter(function (x) { return x.id === i; })[0].qh };
+      }, who.id);
+      want(mid.open === 0, 'case 16: clicking off must close it');
+      want(mid.qh === false, 'case 16: the figure still thinks he is talking — dangling handle');
+      await page.mouse.click(who.sx, who.fy - 40);
+      await page.waitForTimeout(350);
+      want(await page.evaluate(function () { return window.EVQuotes.openCount(); }) === 1,
+        'case 16: he refused to speak again after a click-off');
+    }
+    want(errors.length === 0, 'case 16: page errors — ' + errors.join(' | '));
+    seen.push('case 16: click-off leaves no dangling handle');
+    await page.close();
+  }
+
+  // ── Case 17: only somebody STANDING STILL can be clicked ──────────────────────────
+  // A waiter's bubble is placed once and never re-pinned, which is right because he stands
+  // still. An arriving or leaving figure is walking, so his bubble would hang in the air
+  // behind him — ~190px of drift over the SAY window, which is precisely what the zombies'
+  // re-pin machinery exists for and precisely what this scene chose not to carry.
+  {
+    const { page, errors } = await open(browser, '?evlines=election-day#figdebug');
+    await parkOnLane(page);
+    await page.waitForTimeout(9000);
+    const walker = await page.evaluate(function () {
+      var f = window.__evFigDebug.polls().filter(function (x) {
+        return x.state === 'arriving' && x.sx != null;
+      })[0];
+      return f ? { sx: f.sx, fy: f.fy, id: f.id } : null;
+    });
+    want(walker !== null, 'case 17: needed somebody walking in');
+    if (walker) {
+      await page.mouse.click(walker.sx, walker.fy - 40);
+      await page.waitForTimeout(500);
+      want(await page.evaluate(function () { return window.EVQuotes.openCount(); }) === 0,
+        'case 17: a walking figure must not open a bubble it cannot carry');
+    }
+    want(errors.length === 0, 'case 17: page errors — ' + errors.join(' | '));
+    seen.push('case 17: only a standing waiter can be prodded');
+    await page.close();
+  }
+
+  // ── Case 18: a resize that SHRINKS capacity must not strand anybody ────────────────
+  // Case 9 resizes 1440 -> 760, where capacity stays at 8, so it exercises re-seating but
+  // never a capacity shrink. Going to a phone width cuts the number of slots, and a waiter
+  // holding a slot index past the new capacity stands off the canvas edge, invisible, until
+  // the line happens to advance him back on.
+  {
+    const { page, errors } = await open(browser, '?evlines=election-day#figdebug');
+    await parkOnLane(page);
+    await page.waitForTimeout(11000);
+    await page.setViewportSize({ width: 320, height: 700 });
+    await parkOnLane(page);
+    await page.waitForTimeout(3000);
+    const r = await page.evaluate(function () {
+      var e = window.__evFigDebug.entries.filter(function (x) {
+        return x.spec.mode === 'beam' && !x.spec.plain && !x.gone;
+      })[0];
+      return window.__evFigDebug.polls()
+        .filter(function (f) { return f.state !== 'leaving' && f.x > e.w - 8; })
+        .map(function (f) { return [f.state, Math.round(f.x), 'canvas ' + Math.round(e.w)]; });
+    });
+    want(r.length === 0, 'case 18: ' + r.length + ' figure(s) stranded off-canvas after 1440->320: ' + JSON.stringify(r));
+    want(errors.length === 0, 'case 18: page errors — ' + errors.join(' | '));
+    seen.push('case 18: nobody stranded by a capacity shrink');
+    await page.close();
+  }
+
   await browser.close();
   seen.forEach(function (s) { console.log('  ' + s); });
   if (failures.length) {
     failures.forEach(function (f) { console.error('FAIL ' + f); });
     throw new Error('election-polls: ' + failures.length + ' failure(s)');
   }
-  console.log('election-polls: PASS (gate, meta-row clear, clamp, theme, line forms, line moves, resize, 320px, clicks, exodus, visitor guard)');
+  console.log('election-polls: PASS (gate, booth, queue, clicks, exodus, guard, bubble lifecycle, narrow + shrinking widths)');
 })();

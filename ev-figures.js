@@ -137,11 +137,20 @@
         // somebody in the polling-place line: click him and he says his one line. Same
         // switch as the zombie, and the same tight box — a five-word line in the greeter's
         // fixed 300px bubble is mostly bubble.
-        if (e.spec.mode === 'beam' && e.scene === 'polls' && !e.gone) {
+        // POOF.phase gates it: during an exodus the scene has stopped drawing but every
+        // waiter's LAST hitbox is still on the entry, so a click on the now-empty rule
+        // opened a bubble over nobody — and with runPolls no longer running, the SAY
+        // timeout that would take it away never fired either. It stayed until reload, on a
+        // page whose whole contract is "empty until you reload".
+        if (e.spec.mode === 'beam' && e.scene === 'polls' && !e.gone && POOF.phase === 'idle') {
           var pq = POLLS;
           for (var pi = 0; pi < pq.length; pi++) {
             var pf = pq[pi];
-            if (pf.sx == null || pf.state === 'voting') continue;
+            // ONLY SOMEBODY STANDING STILL. His bubble is placed once and never re-pinned,
+            // which is the whole reason this scene does not carry the zombies' moving-box
+            // machinery — so a figure who is still walking would leave it hanging in the
+            // air behind him, about 190px adrift over the SAY window.
+            if (pf.sx == null || pf.state !== 'waiting') continue;
             if (Math.abs(ev.clientX - pf.sx) < 26 && ev.clientY > pf.fy - 104 && ev.clientY < pf.fy + 8) {
               hitBubble = true;
               pollSay(pf, !!pf.qh);
@@ -262,6 +271,13 @@
     // or the greeter stuck holding a point at nothing. This was three copies of the same
     // forEach and the third one was written by hand each time; it is one function now.
     function dismissBubbles() {
+      // The people in the line are NOT entries, so the loop below cannot see them. Without
+      // this their handle was left dangling when you clicked off or pressed Escape: the box
+      // vanished, the figure still believed he was talking, and his next click read as "put
+      // it away" — so he silently refused to speak and you had to click him twice.
+      for (var pk = 0; pk < POLLS.length; pk++) {
+        if (POLLS[pk].qh) pollSay(POLLS[pk], true);
+      }
       if (!window.EVQuotes || !window.EVQuotes.openCount()) return;
       window.EVQuotes.closeAll();
       entries.forEach(function (e) {
@@ -4690,7 +4706,6 @@
             say: pick(POLL_LINES), qh: null, sx: null, fy: null
           });
         }
-        pollSeen.waiting = 1;
         // ...and some are already ON THEIR WAY. Seeding only the standing line leaves a
         // trough: it drains at one voter every VOTE_SECS + BETWEEN while the first real
         // arrival is still walking the width of the page, so the queue sagged to two or
@@ -4707,7 +4722,6 @@
             say: pick(POLL_LINES), qh: null, sx: null, fy: null
           });
         }
-        pollSeen.arriving = 1;
       }
 
       // ARRIVALS. Below target, somebody walks on from the right edge. The approach walk is
@@ -4730,7 +4744,7 @@
           tone: takeTone(), idle: pick(IDLES), phone: chance(0.25),
           say: pick(POLL_LINES), qh: null, sx: null, fy: null
         });
-        pollSeen.arriving = 1;
+        pollSeen.arriving = 1;   // somebody really set off, rather than being seeded mid-walk
         pollNext = POLL.ARRIVE_GAP * (0.6 + Math.random() * 0.8);
       }
 
@@ -4739,6 +4753,30 @@
       if (!pollFrozen && pollHold <= 0 && !POLLS.some(function (f) { return f.state === 'voting'; })) {
         var q0 = pollWaiting();
         if (q0.length && q0[0].slot === 0 && q0[0].settled > 0.6) pollAdvance();
+      }
+
+      // THE LINE IS RE-INDEXED DENSELY EVERY FRAME, and this is load-bearing rather than
+      // tidiness. A slot is assigned from the COUNT of people waiting but held as an
+      // absolute index, so any removal that is not a step-up punches a HOLE in the
+      // sequence — and two things then break at once, neither of them visibly:
+      //
+      //   pollAdvance() refuses unless somebody holds slot 0, so if the front of the line
+      //   leaves by any other route the queue DEADLOCKS and never moves again;
+      //   and the next arrival takes slot = count, which with a hole below him is a slot
+      //   somebody else is already standing in.
+      //
+      // Closing the gaps each frame makes both unreachable by construction, whatever adds
+      // or removes a waiter later.
+      var seated = pollWaiting();
+      for (var sv = 0; sv < seated.length; sv++) seated[sv].slot = sv;
+      // A RESIZE CAN ALSO TAKE SLOTS AWAY. Nothing re-clamped an index when the canvas
+      // narrowed, so rotating a phone left people holding slot 6 on a canvas with five —
+      // off the edge and invisible until the line happened to advance them back on. Their
+      // x was recomputed every frame, which is why this looked covered; the INDEX was the
+      // stale part. The surplus leave the way they came rather than stacking on the last.
+      for (var sw = cap; sw < seated.length; sw++) {
+        seated[sw].state = 'leaving'; seated[sw].exit = 1; seated[sw].t = 0;
+        pollSay(seated[sw], true);
       }
 
       var bodies = [];
@@ -4753,19 +4791,23 @@
           // line drains while he walks, so he would stop short of a gap and leave a hole;
           // and at 320px the index could exceed capacity, which parked him off the right
           // edge of his own canvas standing on nothing.
-          // A SLOT HOLDS ONE PERSON. Clamping the index to cap-1 looked like the safe way
-          // to keep him on the canvas and was not: once the line was full every further
-          // arrival was handed the same last slot, so two figures stood inside each other
-          // and the queue read nine deep in eight places. When there is no room he stops
-          // one gap behind the back and STAYS 'arriving' until a slot frees, which is also
-          // what a person does when they walk up to a full line.
+          // A SLOT HOLDS ONE PERSON, and there is no slot `cap` to park in. Two earlier
+          // cuts of this both put somebody in the dark past the canvas edge: clamping the
+          // index to cap-1 handed every surplus arrival the SAME last slot, so two figures
+          // stood inside each other; parking them at slot `cap` instead just moved the
+          // stack one gap further off the edge, where the test could not see it either.
+          //
+          // There is no room on a full line, so he does what a person does: gives up and
+          // goes, back the way he came. That is self-limiting, needs no parking spot, and
+          // cannot put anybody anywhere there is no canvas.
           var nWait = pollWaiting().length;
-          f.slot = Math.min(nWait, cap);
+          if (nWait >= cap) { f.state = 'leaving'; f.exit = 1; f.t = 0; pollSay(f, true); continue; }
+          f.slot = nWait;
           target = pollSlotX(f.slot, w, r);
           f.x -= GSPEED.stroll * dt;
           if (f.x <= target) {
-            f.x = target;
-            if (f.slot < cap) { f.state = 'waiting'; f.settled = 0; }
+            f.x = target; f.state = 'waiting'; f.settled = 0;
+            pollSeen.waiting = 1;              // reached by the state machine, not the seeder
           }
           pose = A.stroll.frame(f.t); flip = false; drawX = f.x;
         } else if (f.state === 'waiting') {
@@ -4800,8 +4842,10 @@
           pose = A.stroll.frame(f.t); drawX = f.x;
           if (f.x <= dxw + 0.5) { continue; }    // inside: nothing to draw, he is behind it
         } else {   // leaving
-          f.x -= GSPEED.stroll * dt;
-          if (f.x < -24) { pollSay(f, true); POLLS.splice(i, 1); continue; }
+          // Out past the booth to the left after voting, or back out to the right for
+          // somebody who walked up to a full line and thought better of it.
+          f.x += (f.exit ? 1 : -1) * GSPEED.stroll * dt;
+          if (f.x < -24 || f.x > w + 24) { pollSay(f, true); POLLS.splice(i, 1); continue; }
           // Drawn in the second pass below, in FRONT of the booth, not here.
           f.sx = cr.left + f.x; f.fy = cr.top + feetY;
           bodies.push({ x: f.x, floor: feetY, col: figColor(f.tone) });
@@ -4824,7 +4868,7 @@
         var g = POLLS[j];
         if (g.state !== 'leaving') continue;
         R.drawShadow(ctx, g.x, feetY, 15, shadow);
-        drawFig(ctx, g.x, feetY - 112 * S, S, true, A.stroll.frame(g.t),
+        drawFig(ctx, g.x, feetY - 112 * S, S, !g.exit, A.stroll.frame(g.t),
           { color: figColor(g.tone) });
       }
 
