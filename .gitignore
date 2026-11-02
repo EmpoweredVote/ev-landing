@@ -38,3 +38,16 @@ tools/video/build/
 # keep them in the history forever. cuts.json names the take each line came
 # from; keep the files themselves beside the repo.
 audio/
+
+# Raw browser captures the video pipeline was traced from. Same reasoning as
+# audio/ above: these are SOURCE, not output, but they are 13 MB of PNG and
+# render.yaml publishes the whole repo. The screen they became is already
+# committed, embedded in tools/video/episodes/<ep>/screen*.js, and the comment
+# at the top of each of those names the file it came from -- which is why these
+# keep their names and stay in place rather than being tidied away somewhere
+# the comment no longer points at.
+screenshots/Essentials_with_Compass.png
+screenshots/Essentials_with_Compass_cropped.png
+screenshots/calibrated.JPG
+screenshots/ctc.empowered.vote_landing_page.png
+screenshots/ctc.empowered.vote_play.png
