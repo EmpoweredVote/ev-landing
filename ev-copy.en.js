@@ -76,6 +76,23 @@
     'greet.evening.b':    "Good evening. Thanks for stopping in.",
     'greet.evening.c':    "Evening. There's plenty here whenever you're ready.",
     'greet.halloween':    "Happy Halloween. Welcome to Empowered Vote.",
+
+    // ── The countdown. Statements of fact, never instructions: we are antipartisan by
+    // design, and "Election Day is 12 days away" is a fact where "Don't forget to vote!"
+    // is a nag — which from an organisation in this space reads as a side being taken.
+    //
+    // {days} is filled from the visitor's clock. Only the `soon` lines carry it: the
+    // day-of and tomorrow lines are fixed sentences, so there is no path on which a
+    // number can land next to a singular noun and produce "1 days away".
+    //
+    // Three variants on `soon` for the same reason the time-of-day openers have them,
+    // and more urgently: this line runs for a MONTH, so a daily visitor would otherwise
+    // read one sentence thirty times.
+    'greet.election.day':      "Today is Election Day. Welcome to Empowered Vote.",
+    'greet.election.tomorrow': "Election Day is tomorrow. Welcome to Empowered Vote.",
+    'greet.election.soon':     "Election Day is {days} days away. Welcome to Empowered Vote.",
+    'greet.election.soon.b':   "{days} days until Election Day. Glad you stopped by.",
+    'greet.election.soon.c':   "Election Day is {days} days out. Take your time and have a look around.",
     'greet.holidays':     "Happy holidays. Welcome to Empowered Vote.",
     // {name} is filled from the session. Only ever reached behind the `named` tag, so it
     // cannot render as "Welcome back, undefined."
