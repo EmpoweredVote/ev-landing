@@ -24,7 +24,11 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 
 const PAGE = pathToFileURL(path.resolve(__dirname, '../../briefing/index.html')).href;
-const KINDS = ['stances', 'treasury', 'seeded'];
+// DOM order of the three maps, which is also the tab order and therefore what a reader
+// sees first: the script selects index 0 on load, so whatever is first here is the map
+// that greets them.  Changed 2026-11-02 to lead with `seeded` (Officials on file), which
+// is the denominator the other two are fractions of.
+const KINDS = ['seeded', 'stances', 'treasury'];
 const TILES = 52;
 
 // Narrow phones first: 320px is where the tab strip has to give way, and the iPhone
@@ -103,6 +107,12 @@ const SMALL = [
       focused: document.activeElement.id,
     }));
 
+    // WHICH map greets a reader, by NAME.  Every assertion below is relative to the first
+    // tab, so they all stay green if the order is shuffled -- the one thing they cannot
+    // see is the thing that was actually asked for.
+    const firstTab = await page.$eval('.maptab', (t) => t.textContent.trim());
+    if (firstTab !== 'Officials on file') failures.push(`the first tab is "${firstTab}", not "Officials on file"`);
+
     let s = await state();
     if (String(s.shown) !== String([true, false, false])) failures.push(`on load the panes are ${s.shown}, not the first alone`);
     if (String(s.selected) !== String(['true', 'false', 'false'])) failures.push(`on load aria-selected is ${s.selected}`);
@@ -117,11 +127,14 @@ const SMALL = [
       if (String(s.shown) !== String(want)) failures.push(`clicking ${KINDS[i]} shows ${s.shown}, not ${want}`);
     }
 
-    await page.focus('#mtab-seeded');
+    // Derived from KINDS rather than named, so re-ordering the tabs cannot leave this
+    // case focusing the middle of the strip while claiming to test the end of it --
+    // which is exactly what it did when `seeded` moved to the front on 2026-11-02.
+    await page.focus('#mtab-' + KINDS[KINDS.length - 1]);
     await page.keyboard.press('ArrowRight');           // wraps off the end
     s = await state();
     if (String(s.shown) !== String([true, false, false])) failures.push('ArrowRight off the last tab must wrap to the first');
-    if (s.focused !== 'mtab-stances') failures.push(`ArrowRight left focus on ${s.focused}`);
+    if (s.focused !== 'mtab-' + KINDS[0]) failures.push(`ArrowRight left focus on ${s.focused}`);
     await page.keyboard.press('End');
     if (String((await state()).shown) !== String([false, false, true])) failures.push('End must select the last tab');
     await page.keyboard.press('Home');
