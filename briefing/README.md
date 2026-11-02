@@ -364,6 +364,33 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   Generalise it: **when a total rises during a campaign whose whole purpose is to remove things,
   the total is not measuring the campaign.**
 
+- 🔴 **AND `stances_served` WAS STILL NOT WHAT A VOTER READS, BECAUSE A SEASON HAS A STATUS.**
+  Found 2026-10-30, three weeks after the fix above.  `stances_served` takes the newest season's
+  answer per pair *whatever that season's status is*.  The voter-facing service does not: every
+  read in `compassService` goes through `SEASON_IS_PUBLISHED`, which is `s.status <> 'draft'`
+  (`seasonService.ts:99`).  A draft season is assembled in the open, so answers land in it long
+  before a voter sees anything — on 2026-10-30 a 539-row sweep went into draft Season 3 in a day,
+  and **the number a voter could read did not move at all**.  `refresh.mjs` now carries
+  `stances_live` and `pols_live` beside `stances_served`, and WARNs whenever the two part.
+  Publish `stances_live` as the headline.
+  ⚠ **The gap is NOT the draft season's row count**, and assuming it is will give you a wrong
+  number.  It has two halves pulling opposite ways: a draft answer with no published answer under
+  it is counted and unreadable, while a draft **withdrawal** suppresses a published answer in the
+  old basis that a voter still reads.  On 2026-10-30 that was 368 one way and 152 the other, for
+  a net 216 on a draft season holding 646 rows.  Only a query settles it.
+  ⚠ **The map counts researched people, not readable ones**, and it is a union over
+  `politician_answers` with no season filter at all.  160 people were shaded on a state tile
+  purely on draft-season research that day, 64 of them Michigan and 60 North Carolina, which is
+  what took Michigan's tile from 9 to 73 and moved it a tier.  That is not wrong — the map says
+  "researched" — but say it on the page, because the two tabs and the headline then count
+  different things.
+  Generalise it, and this is the second time this page has paid for the same shape: **a status
+  column decides what a reader gets, and no count that ignores it can be checked by looking at
+  the count.**  The only test that settles it is from OUTSIDE — `/api/compass/politicians/<id>/answers`
+  returned 41 for Edward Markey, matching his 41 to the row, and 0 for two Michigan legislators
+  whose only positions were Season 3.  Pick controls whose records make the two bases disagree,
+  and include one researched weeks ago so a stale cache cannot explain the result.
+
 - 🔴 **`git log --since=2026-09-29` does NOT mean midnight.**  Git's approxidate fills the unstated
   time of day from *now*, so a bare date silently starts the window at this afternoon's clock time
   and drops everything earlier that day.  On 2026-10-05 the same query read **11** commits as a bare
@@ -442,6 +469,19 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   `person id NOT IN COHORT 333605`, and write `AND person_id NOT IN COHORT 333605`.  **Control the
   substitution before trusting it**: run one single-event row both ways and require them to agree.
   They did, exactly, on two rows (37/37 and 12/12).  The project timezone is `US/Pacific`.
+- 🔴 **A GRADING PASS CAN FOLLOW A LOADER BY HALF AN HOUR, AND A COUNT TAKEN BETWEEN THEM IS
+  WRONG IN BOTH THE FIGURE AND THE CONCLUSION.**  Paid for on 2026-10-29, corrected 2026-10-30.
+  The Hawaii seed wrote 67 budget rows at 21:02 UTC and a grading pass graded all 67
+  `audited_gaap` in a single instant at 21:30.  The edition counted in between, published
+  **38,486** ungraded across **1,177** governments where the settled figures were **38,419** and
+  **1,173**, and then drew a conclusion from it: that the loader was still filling the pile.  The
+  loader asserts a grade from each document's own audit opinion, so there was no hole.
+  **Two cheap checks would have caught it.**  `updated_at` on those rows is one shared instant,
+  which is the signature of a sweep rather than a load; and the loader's own design note said in
+  advance which rows would stay ungraded (the `Hawaii / state` node's 42).  Generalise it:
+  **"created" and "finished" are different events, and a pipeline's own spec will usually tell you
+  how far apart they are.**
+
 - **A section that genuinely cannot be re-measured gets DATED, not restated** — its own heading
   says when it was measured, both cards name the window, and the footer says plainly that it was
   not re-taken.  That is the treatment the April source sweep gets.  Never quietly re-publish a

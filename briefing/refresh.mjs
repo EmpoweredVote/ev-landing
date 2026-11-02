@@ -161,6 +161,42 @@ const servedRows = await one(`
                / NULLIF(count(DISTINCT politician_id) FILTER (WHERE value > 0), 0), 1) AS avg_served
     FROM latest`);
 
+// 🔴 `stances_served` COUNTS POSITIONS NO VOTER CAN READ, AND THE LABEL ON THE PAGE SAYS
+// OTHERWISE.  Found 2026-10-30.  The query above takes the newest season's answer per pair
+// whatever that season's STATUS is.  The voter-facing service does not: every read in
+// compassService goes through `SEASON_IS_PUBLISHED`, which is `s.status <> 'draft'`
+// (seasonService.ts:99).  A draft season is assembled in the open, so answers land in it long
+// before a voter is shown anything, and on 2026-10-30 a 487-row sweep went into draft Season 3
+// in a single day.  Checked from OUTSIDE against the live API rather than argued from the code:
+// /api/compass/politicians/<id>/answers returns 41 rows for Edward Markey, matching his 41
+// served to the row, and 0 for two Michigan legislators whose only positions are Season 3.
+//
+// So the page needs BOTH, the way it already carries `topics` beside `topics_open`:
+//   stances_served — newest season of any status.  The old basis, kept so the gap is visible.
+//   stances_live   — newest PUBLISHED season.  What a voter can actually read.  The headline.
+// The gap is not simply "the draft season's rows": a draft withdrawal SUPPRESSES a live answer
+// in the old basis while a voter still reads it, so the two bases move against each other in
+// both directions at once and only a query settles the net.
+const liveRows = await one(`
+  WITH latest AS (
+    SELECT DISTINCT ON (a.politician_id, a.topic_id)
+           a.politician_id, a.topic_id, a.value
+      FROM inform.politician_answers a
+      JOIN inform.seasons s ON s.id = a.season_id AND s.status <> 'draft'
+     ORDER BY a.politician_id, a.topic_id, s.number DESC
+  )
+  SELECT count(*) FILTER (WHERE value > 0)                      AS stances_live,
+         count(DISTINCT politician_id) FILTER (WHERE value > 0) AS pols_live
+    FROM latest`);
+if (Number(liveRows.stances_live) !== Number(servedRows.stances_served)) {
+  const gap = Number(servedRows.stances_served) - Number(liveRows.stances_live);
+  console.log(`WARNING: a draft season sits between the two served figures.  stances_served reads`);
+  console.log(`  ${fmt(servedRows.stances_served)}, stances_live reads ${fmt(liveRows.stances_live)}, a gap of ${fmt(gap)}.`);
+  console.log('  stances_live is what the voter-facing service returns.  Publish that as the');
+  console.log('  headline and say what the other one counts.  A gap of zero means no draft');
+  console.log('  season holds an answer, which is the normal state and needs no sentence.');
+}
+
 const treasury = await one(`SELECT
   (SELECT count(DISTINCT municipality_id) FROM treasury.budgets) AS budget_entities,
   (SELECT min(fiscal_year) FROM treasury.budgets) AS min_fy,
@@ -550,6 +586,7 @@ const values = {
   stances: fmt(core.stances), pols_with_stances: fmt(core.pols_with_stances),
   stances_served: fmt(servedRows.stances_served), stances_blanked: fmt(servedRows.stances_blanked),
   stance_pairs: fmt(servedRows.stance_pairs), pols_served: fmt(servedRows.pols_served),
+  stances_live: fmt(liveRows.stances_live), pols_live: fmt(liveRows.pols_live),
   avg_served: String(servedRows.avg_served),
   topics: fmt(core.topics), topics_open: fmt(core.topics_open),
   verified_sources: fmt(core.verified_sources),
