@@ -29,12 +29,32 @@ npm install
 npx playwright install    # ~300MB, once per Playwright version
 ```
 
-There is no runner. Each file is its own script, prints PASS, and throws on
-failure:
+Each file is its own script, prints PASS, and throws on failure, so one test is just:
 
 ```bash
 node tests/layout/beam-play-pass.cjs
 ```
+
+`run-tests.mjs` runs the whole set and exits non-zero if anything failed:
+
+```bash
+node run-tests.mjs          # everything except tests/live/
+node run-tests.mjs --live   # ...including the tests that need a deployed site
+```
+
+**Run the full set detached, not in a foreground call.** It is about 25 minutes: every
+file launches its own Chromium and drives real animation frames, one at a time on purpose,
+because run in parallel they starve each other and start failing on timing rather than on
+behaviour.
+
+**A failure at exactly 600s is the runner's timeout, not a verdict.** A test that hangs
+before its browser comes up is killed at that mark and reported as a plain FAIL, which
+reads exactly like a real failure and is not one. `tests/poof/09-raise.cjs` did this on
+2026-11-01 and passes alone in 0.44s. **Re-run any failure on its own before believing
+it** — `tests/quotes/04-poses.cjs` is also a known flake under load.
+
+**Running the suite rewrites files under `screenshots/`.** That churn is a side effect of
+the screenshot helpers, not work; leave it out of commits unless a shot genuinely changed.
 
 **The version is pinned exactly, not caret-ranged, and that is deliberate.**
 Each Playwright release expects its own browser builds, and `npx playwright
