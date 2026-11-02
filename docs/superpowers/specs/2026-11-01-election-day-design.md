@@ -351,12 +351,25 @@ ceiling on top of that, not the thing that decides the size:
 - Otherwise it stands at its design height. The booth is then the same size on every desktop
   width rather than growing with the viewport.
 
-**900px is the width to check, and the margin there is 2px.** The clear floor is 114px, and a
-96px booth at a 16px inset ends at 112. That is not clearance anyone should rely on — it is the
-measurement happening to work out. It is called out here rather than smoothed over because it
-is exactly the kind of number that goes silently wrong when the hero's layout next moves, and
-because the measured per-frame test is what keeps it honest when it does: at 901px the booth
-simply clamps, which is correct rather than broken. Screenshot 900 and 901 side by side.
+**Corrected against the live page, 2026-11-01.** This section first said "900px is the width to
+check, and the margin there is 2px", with 901px clamping. Both halves were wrong, because the
+numbers in the table above are *viewport* coordinates and the beam canvas is inset 4px from the
+page edge. Measured in canvas coordinates, where the comparison actually happens:
+
+| viewport | meta row starts at | booth ends at | result |
+|---|---|---|---|
+| 880 | 100 | 112 | overlaps — clamps to 93 |
+| 900 | 110 | 112 | overlaps — clamps to 93 |
+| 901 | 133 | 140 (wide inset) | overlaps at the wide inset |
+| 1024 | 195 | 140 | clear |
+
+So the clamp does not release at 901; it releases somewhere above it. **Shift before shrinking.**
+Between about 901 and 1024 the row starts just inside where the wide 44px inset puts the booth's
+far edge — at 901 the overlap is 7px — and clamping 135px down to 93 to buy 7px of clearance
+leaves a squat booth on a page with obvious room. The rule is therefore: if the booth overlaps at
+the wide inset and the narrow one would clear, move it left and keep the full height; only clamp
+when neither inset fits. Measured after the change, 901 keeps its 135px at x=16, and only 880 and
+900 clamp — which are the widths where there genuinely is no room.
 
 The rect is read each frame, the way `runLightGag` already measures the 501(c)(3) swatch against
 the canvas top. A fixed breakpoint split is the cheaper alternative and is what `btnHold` does,

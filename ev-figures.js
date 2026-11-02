@@ -134,6 +134,21 @@
             return;
           }
         }
+        // somebody in the polling-place line: click him and he says his one line. Same
+        // switch as the zombie, and the same tight box — a five-word line in the greeter's
+        // fixed 300px bubble is mostly bubble.
+        if (e.spec.mode === 'beam' && e.scene === 'polls' && !e.gone) {
+          var pq = POLLS;
+          for (var pi = 0; pi < pq.length; pi++) {
+            var pf = pq[pi];
+            if (pf.sx == null || pf.state === 'voting') continue;
+            if (Math.abs(ev.clientX - pf.sx) < 26 && ev.clientY > pf.fy - 104 && ev.clientY < pf.fy + 8) {
+              hitBubble = true;
+              pollSay(pf, !!pf.qh);
+              return;
+            }
+          }
+        }
         // light-gag Bobit: click him and he waves briefly, then gets right back to work
         if (e.spec.mode === 'beam' && e.scene === 'light' && e._lgSX != null && !(e.lightWave > 0)) {
           if (Math.abs(ev.clientX - e._lgSX) < 42 && Math.abs(ev.clientY - e._lgSY) < 72) { e.lightWave = 1.4; return; }
@@ -4378,13 +4393,30 @@
                           // that picks the size — see boothRect.
       INSET_WIDE:   44,   // booth's left inset above 900px wide...
       INSET_NARROW: 16,   // ...and at 900px or below. This inset is also the leaver's walk.
-      GAP_MIN:      26,   // queue spacing, clamped. Scales with the canvas between these:
-      GAP_MAX:      46,   // a fixed gap puts eight people in a huddle on a wide screen.
+      GAP_MIN:      34,   // queue spacing, clamped. Scales with the canvas between these:
+      GAP_MAX:      46,   // a fixed gap puts eight people in a huddle on a wide screen, and
+                          // too tight a floor does the same thing on a phone. At 26 a 390px
+                          // line was eight figures shoulder to shoulder with their swinging
+                          // arms overlapping — a crowd, not a queue. 34 leaves daylight
+                          // between them and lets capacity thin the line instead.
       GAP0:         34,   // door to the first waiting slot
       TARGET_MIN:    4,   // how many wait, re-drawn from time to time so the line visibly
       TARGET_MAX:    8,   // grows and shrinks rather than sitting at one length
-      VOTE_SECS:     4,   // hidden behind the panel
-      ARRIVE_GAP:  3.5,   // seconds between arrivals while under target
+      VOTE_SECS:     9,   // hidden behind the panel. NOT a cosmetic number: with the walk-on
+                          // from the right edge taking most of a minute, a booth that turned
+                          // somebody around every 4s emptied the seeded line faster than
+                          // anyone could replace it, and the scene spent a stretch of every
+                          // minute as an empty booth. Throughput has to be slower than the
+                          // arrival interval or the queue is a trough with a spike in it.
+      BETWEEN:     2.5,   // ...and a beat after one leaves before the next steps up, so the
+                          // doorway is not a turnstile
+      ARRIVE_GAP:  2.4,   // seconds between arrivals while under target. Paced against the
+                          // WALK, not against the booth: somebody setting off now joins the
+                          // back in about forty seconds, so the interval has to be well
+                          // under the departure rate or the line never catches up with
+                          // itself. Measured: at 3.5 with five allowed in transit the queue
+                          // typically held three against a target of four to eight.
+      IN_TRANSIT:    8,   // how many may be walking in at once
       SHUFFLE_SPEED: 26,  // px/s stepping up one slot — a walk, never a teleport
       SAY:           6    // seconds a waiter's bubble stays up on its own
     };
@@ -4393,8 +4425,414 @@
     // reports it, and the exodus acts on e._bodies rather than on this.
     var POLLS = [];
 
+    // ── THE BOOTH ───────────────────────────────────────────────────────────────────────
+    // Drawn, not posed: it is architecture, so nothing in leremy-rig.js helps. It follows
+    // the ghost's precedent instead — every ink dimension is a RATIO of two numbers (r.w
+    // and r.h), so re-proportioning it later is those two numbers and nothing else.
+    //
+    // HEIGHT IS A MULTIPLE OF THE FIGURES, with the headroom only as a ceiling. An earlier
+    // draft let it "take the canvas" wherever nothing was overhead; the canvas is 240px, so
+    // that gave a 240px booth at 1440 against a 93px one at 390 — a 2.5x jump between two
+    // widths of one page, and a structure 3.4x the height of the people queuing at it.
+    //
+    // The clamp is measured per frame rather than split on a breakpoint. .meta-row is
+    // max-width 760px and centred, so the clear floor to its left is 407px at 1440 and 20px
+    // at 390: on a desktop the booth stands in empty hero space and may be its full height,
+    // and on a phone the row is directly overhead and anything past 93px covers the
+    // 501(c)(3) line, which is a legal claim. runLightGag already measures that row's swatch
+    // the same way, and measuring beats a breakpoint because it does not go wrong when the
+    // hero's layout next moves.
+    //
+    // 900px is the width to watch and the margin there is 2px: clear floor 114, and a 96px
+    // booth at a 16px inset ends at 112. That is the measurement happening to work out
+    // rather than clearance anyone should rely on. At 901 it simply clamps, which is correct
+    // rather than broken.
+    function boothRect(e, w) {
+      var x = (window.innerWidth > 900) ? POLL.INSET_WIDE : POLL.INSET_NARROW;
+      var bw = Math.min(POLL.BOOTH_W, Math.max(40, w - x - 8));
+      var bh = POLL.BOOTH_H;
+      var onPanel = false;
+      var rowL = null, head = 0;
+      try {
+        var row = document.querySelector('.hero .meta-row');
+        if (row && e && e.c) {
+          var rr = row.getBoundingClientRect();
+          var cq = e.c.getBoundingClientRect();
+          rowL = rr.left - cq.left;
+          head = Math.max(0, (rr.top - cq.top) + rr.height);
+        }
+      } catch (err) { rowL = null; }
+
+      if (rowL != null) {
+        // Only an OVERLAP IN X matters. The desktop booth reaches above the row's bottom
+        // edge in Y while sitting hundreds of px clear of it along the rule, and clamping
+        // for that would shrink it for no reason.
+        //
+        // SHIFT BEFORE SHRINKING. Between about 901 and 1024 the row starts just inside
+        // where the wide inset puts the booth's far edge — at 901 the overlap is 7px — and
+        // clamping 135px down to 93 to buy 7px of clearance leaves a squat booth on a page
+        // with obvious room. Trying the narrow inset first clears it at full height, and
+        // the only thing that costs is a shorter walk for the voter leaving.
+        if (rowL < x + bw && POLL.INSET_NARROW + bw <= rowL) x = POLL.INSET_NARROW;
+        if (rowL < x + bw) {
+          var avail = (h0(e) - 6) - head;   // floor is 6px above the canvas bottom
+          if (avail < bh) { bh = POLL.CLAMP_H; onPanel = true; }
+          if (avail > 0 && bh > avail) bh = avail;
+        }
+      }
+      return { x: x, y: 0, w: bw, h: bh, doorX: x + bw, signOnPanel: onPanel };
+    }
+    function h0(e) { return e && e.c ? (e.h || e.c.getBoundingClientRect().height) : 240; }
+
+    // The booth as ink. A front panel, a dark doorway on its RIGHT (facing the queue) with a
+    // lip over it, and the VOTE board — above the roofline where there is room, and on the
+    // panel's face where there is not.
+    //
+    // A voter has to be HIDDEN while he votes, so the panel can never be shorter than a 71px
+    // figure. Of a clamped 93px that leaves 22px above the roofline, which is not a sign, it
+    // is a smear — hence the board moving down rather than the booth growing.
+    //
+    // Colours are read through cssVar ON EVERY CALL, never captured. A tone fixed at spawn
+    // would be the other theme's ink after a flip, and nothing about the page would look
+    // broken; it would just be wrong.
+    function drawBooth(ctx, r, feetY) {
+      var top = feetY - r.h, kw = r.w, kh = r.h;
+      var ink = cssVar('--heading', '#1C1C1C');
+      var face = cssVar('--card', '#FFFFFF');
+      // A DOORWAY IS A HOLE, and a hole is dark whatever the page is — so this one colour
+      // is fixed in both themes, the way the ghost's white body and black outline are. It
+      // cannot come from a token: --card and --bg are BOTH #FFFFFF on the light theme, so
+      // the opening was white on white and read as a rectangle ruled on the panel rather
+      // than something a voter could step into. Alpha rather than a flat colour so it also
+      // darkens the near-black dark-theme panel (#1C1C1F) instead of matching it.
+      var dark = 'rgba(0, 0, 0, 0.82)';
+
+      // panel
+      ctx.fillStyle = face; ctx.strokeStyle = ink; ctx.lineWidth = 2;
+      var panelTop = r.signOnPanel ? top : top + kh * 0.17;   // roofline
+      ctx.beginPath(); ctx.rect(r.x, panelTop, kw, feetY - panelTop); ctx.fill(); ctx.stroke();
+
+      // doorway, on the queue side, with a lip over it
+      var dw = kw * 0.42, dh = (feetY - panelTop) * 0.74;
+      var dx = r.x + kw - dw - kw * 0.09, dy = feetY - dh;
+      ctx.fillStyle = dark;
+      ctx.beginPath(); ctx.rect(dx, dy, dw, dh); ctx.fill();
+      ctx.strokeStyle = ink; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(dx - kw * 0.05, dy); ctx.lineTo(dx + dw + kw * 0.05, dy); ctx.stroke();
+
+      // the VOTE board
+      var bw = kw * 0.74, bh = Math.max(13, kh * 0.13);
+      var bx = r.x + (r.signOnPanel ? kw * 0.05 : (kw - bw) / 2);
+      var by = r.signOnPanel ? (panelTop + kh * 0.08) : top;
+      if (r.signOnPanel) bw = kw * 0.46;
+      ctx.fillStyle = cssVar('--coral', '#FF5740');
+      ctx.strokeStyle = ink; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.fill(); ctx.stroke();
+      if (!r.signOnPanel) {   // posts holding the board over the roof
+        ctx.beginPath();
+        ctx.moveTo(r.x + kw * 0.3, by + bh); ctx.lineTo(r.x + kw * 0.3, panelTop);
+        ctx.moveTo(r.x + kw * 0.7, by + bh); ctx.lineTo(r.x + kw * 0.7, panelTop);
+        ctx.stroke();
+      }
+      // Canvas text in the page's own stack: the sign has to stay legible at sign size, and
+      // a few strokes at this scale would not read as a word.
+      ctx.save();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '800 ' + Math.round(bh * 0.74) + 'px Manrope, system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('VOTE', bx + bw / 2, by + bh / 2 + 0.5);
+      ctx.restore();
+    }
+
+    // ── THE QUEUE ───────────────────────────────────────────────────────────────────────
+    // Slots are RECOMPUTED FROM WIDTH EVERY FRAME and a waiter stores only its slot index,
+    // never an absolute x. reposition() re-fits this canvas on resize and rotate, and both
+    // the booth's inset and the gap below are functions of width — so a stored position is
+    // stale the instant the viewport moves, and stale in a way nothing on the page would
+    // show you. The one exception is a figure in motion, which carries its own x because it
+    // is between slots by definition.
+    //
+    // GAP SCALES WITH THE CANVAS. A fixed 30px puts the back of an eight-person line about
+    // 300px from the left edge of a 1440px page, which is a huddle in the corner rather
+    // than a queue along the rule.
+    function pollGap(w) {
+      return Math.max(POLL.GAP_MIN, Math.min(POLL.GAP_MAX, w * 0.034));
+    }
+    function pollSlotX(i, w, r) { return r.doorX + POLL.GAP0 + i * pollGap(w); }
+    // How many slots actually fit on this canvas. This is what makes 320px work by SHRINKING
+    // THE LINE rather than letting its back end walk off the edge of its own canvas.
+    function pollCapacity(w, r) {
+      var n = 0;
+      while (n < POLL.TARGET_MAX && pollSlotX(n, w, r) < w - 16) n++;
+      return Math.max(1, n);
+    }
+
+    var pollT = 0, pollNext = 0, pollTarget = 0, pollSeen = {}, pollSeeded = false, pollHold = 0;
+    // A slot is a POSITION, not a person: everybody's changes when the line steps up. An
+    // id is the only stable handle on one figure, for the debug surface and for anything
+    // that has to follow the same person across a shuffle.
+    var pollId = 0, pollFrozen = false, pollRetarget = 0;
+    function pollPick(w, r) {
+      var cap = pollCapacity(w, r);
+      var lo = Math.min(POLL.TARGET_MIN, cap);
+      return lo + Math.floor(Math.random() * (Math.min(POLL.TARGET_MAX, cap) - lo + 1));
+    }
+
+    // ── CLICKING SOMEBODY IN THE LINE ───────────────────────────────────────────────────
+    // His line is dealt AT SPAWN and kept on the figure, so the same person says the same
+    // thing however many times you prod him. That is the rule the zombies' easter egg
+    // established, and the reason given there holds here: a line re-drawn per click makes
+    // the figure a slot machine rather than a person with something to say.
+    //
+    // A SWITCH, like the greeter: click to open, click again to put it away, and a timeout
+    // so a bubble left alone does not sit there forever.
+    //
+    // The zombies' moving bubble is deliberately NOT reused. A zombie never stops walking,
+    // so his box is re-pinned and re-clamped every frame; a waiter stands still except
+    // during a shuffle, so the cheap answer is right — close it when he steps, rather than
+    // carrying that machinery into a second place where it would be dead weight.
+    function pollSay(f, close) {
+      if (!window.EVQuotes) return false;
+      if (close || f.qh) {
+        if (f.qh) { try { window.EVQuotes.close(f.qh); } catch (err) {} f.qh = null; }
+        return false;
+      }
+      var e = pollEntry();
+      if (!e || f.sx == null) return false;
+      var sx = window.scrollX || window.pageXOffset || 0;
+      var sy = window.scrollY || window.pageYOffset || 0;
+      var cr = e.c.getBoundingClientRect();
+      f.qh = window.EVQuotes.open({
+        headX: cr.left + sx + f.x,
+        headY: cr.top + sy + (e.h - 6) - (112 + 128 + CFG.R) * S,
+        tone: figColor(f.tone),
+        tight: true,              // five words; the greeter's 300px box would be mostly air
+        quote: { text: f.say }    // no `who`: he is speaking for himself, not for us
+      });
+      f.sayT = 0;
+      return true;
+    }
+    function pollEntry() {
+      return entries.filter(function (x) {
+        return x.spec.mode === 'beam' && !x.spec.plain && !x.gone;
+      })[0] || null;
+    }
+    function pollSayTick(dt) {
+      for (var i = 0; i < POLLS.length; i++) {
+        var f = POLLS[i];
+        if (!f.qh) continue;
+        f.sayT = (f.sayT || 0) + dt;
+        if (f.sayT > POLL.SAY) pollSay(f, true);
+      }
+    }
+
+    var POLL_LINES = [
+      "Been here twenty minutes.",
+      "Worth the wait.",
+      "Shorter than last time.",
+      "I brought a book.",
+      "Line's moving."
+    ];
+
+    function pollWaiting() {
+      return POLLS.filter(function (f) { return f.state === 'waiting'; })
+                  .sort(function (a, b) { return a.slot - b.slot; });
+    }
+
+    // Send the front of the line in, and step everybody else up one slot. Exposed to the
+    // debug surface so a test can force the beat rather than wait out the dwell.
+    function pollAdvance() {
+      var q = pollWaiting();
+      if (!q.length || POLLS.some(function (f) { return f.state === 'voting'; })) return false;
+      var front = q[0];
+      if (front.slot !== 0) return false;
+      front.state = 'voting'; front.t = 0; pollSeen.voting = 1;
+      pollSay(front, true);                       // whatever he was saying goes with him
+      // STEPPING FORWARD IS AN EVENT, not a position. Closing on "he is not exactly on his
+      // slot" looked equivalent and was not: a resting figure sits a fraction off its slot,
+      // so every bubble shut on the frame after it opened. His slot changing is the real
+      // moment he moves, and it is the only thing that should take his words away.
+      for (var i = 1; i < q.length; i++) { q[i].slot -= 1; pollSay(q[i], true); }
+      return true;
+    }
+
     function runPolls(e, ctx, w, h, feetY, tt, shadow, dt, cr) {
-      // filled in by the booth and the queue
+      var r = boothRect(e, w);
+      e._boothRect = r;
+      var gap = pollGap(w), cap = pollCapacity(w, r);
+      pollT += dt;
+      // Re-drawn every so often so the line GROWS AND SHRINKS rather than sitting at one
+      // length. A queue pinned to a constant reads as scenery; a queue that is six, then
+      // four, then seven reads as a place people are arriving at.
+      if (!pollTarget || pollT > pollRetarget) {
+        pollTarget = pollPick(w, r);
+        pollRetarget = pollT + 22 + Math.random() * 16;
+      }
+
+      // THE LINE IS ALREADY THERE WHEN YOU WALK UP. Seeded once, because the alternative is
+      // what the first cut did: an empty booth, and the first arrival walking the full width
+      // of the page at a stroll's 32px/s before anybody is standing anywhere. On a 1440px
+      // screen that is forty seconds of nothing, and a visitor who scrolls past in ten has
+      // seen an empty polling place on Election Day. Seeding is also what the scene is a
+      // picture OF: a queue is a thing you join, not a thing you watch assemble.
+      if (!pollSeeded) {
+        pollSeeded = true;
+        // Seed a FULL line, not a random one. The first half-minute is what a visitor who
+        // scrolls down and moves on actually sees, and it is also the worst stretch: the
+        // seeded line drains at one voter every VOTE_SECS + BETWEEN while the first
+        // replacements are still walking. Starting at the top of the range is what keeps
+        // that stretch looking like a queue instead of a gap with three people in it.
+        var seedN = Math.min(pollTarget, cap);
+        for (var sI = 0; sI < seedN; sI++) {
+          POLLS.push({
+            id: ++pollId, state: 'waiting', slot: sI, x: pollSlotX(sI, w, r), t: Math.random() * 3,
+            settled: 1, tone: takeTone(), idle: pick(IDLES), phone: chance(0.25),
+            say: pick(POLL_LINES), qh: null, sx: null, fy: null
+          });
+        }
+        pollSeen.waiting = 1;
+        // ...and some are already ON THEIR WAY. Seeding only the standing line leaves a
+        // trough: it drains at one voter every VOTE_SECS + BETWEEN while the first real
+        // arrival is still walking the width of the page, so the queue sagged to two or
+        // three before anybody replaced them. Staggering three along the approach means the
+        // first replacement lands before the seeded line has thinned, and it is also what
+        // the place looks like — people do not arrive in step.
+        for (var aI = 0; aI < 3; aI++) {
+          POLLS.push({
+            // Spread over the NEAR half of the approach, so the first replacement lands
+            // inside ten seconds rather than forty. Further out and they arrive after the
+            // seeded line has already thinned, which is the gap they exist to cover.
+            id: ++pollId, state: 'arriving', x: w * (0.17 + aI * 0.24) + 20, slot: Math.min(seedN + aI, cap - 1), t: Math.random() * 2,
+            tone: takeTone(), idle: pick(IDLES), phone: chance(0.25),
+            say: pick(POLL_LINES), qh: null, sx: null, fy: null
+          });
+        }
+        pollSeen.arriving = 1;
+      }
+
+      // ARRIVALS. Below target, somebody walks on from the right edge. The approach walk is
+      // LONG on purpose — most of a minute across a desktop — because it keeps somebody
+      // moving in the empty right half of the lane the whole time, so the page reads as a
+      // place people are coming to rather than a static queue beside an empty floor. The
+      // interval is the knob, not the walk speed.
+      var waiting = pollWaiting();
+      var incoming = POLLS.filter(function (f) { return f.state === 'arriving'; }).length;
+      pollNext -= dt;
+      // THE TARGET IS ABOUT WHO IS STANDING, not who is on the way. Counting people still
+      // walking against it starved the line: the walk-on is most of a minute, so once a few
+      // were in transit nobody else set off, and meanwhile the queue drained at one voter
+      // every VOTE_SECS + BETWEEN. The line sagged to three while four people were strung
+      // out across the page on their way to it. A separate cap on how many may be in
+      // transit is what keeps that from running away instead.
+      if (!pollFrozen && pollNext <= 0 && waiting.length < Math.min(pollTarget, cap) && incoming < POLL.IN_TRANSIT) {
+        POLLS.push({
+          id: ++pollId, state: 'arriving', x: w + 20, slot: Math.min(waiting.length + incoming, cap - 1), t: 0,
+          tone: takeTone(), idle: pick(IDLES), phone: chance(0.25),
+          say: pick(POLL_LINES), qh: null, sx: null, fy: null
+        });
+        pollSeen.arriving = 1;
+        pollNext = POLL.ARRIVE_GAP * (0.6 + Math.random() * 0.8);
+      }
+
+      // The front of the line goes in whenever the booth is free and the beat has passed.
+      if (pollHold > 0) pollHold -= dt;
+      if (!pollFrozen && pollHold <= 0 && !POLLS.some(function (f) { return f.state === 'voting'; })) {
+        var q0 = pollWaiting();
+        if (q0.length && q0[0].slot === 0 && q0[0].settled > 0.6) pollAdvance();
+      }
+
+      var bodies = [];
+      for (var i = POLLS.length - 1; i >= 0; i--) {
+        var f = POLLS[i];
+        f.t += dt;
+        var target = pollSlotX(f.slot, w, r), pose, flip = false, drawX = f.x;
+
+        if (f.state === 'arriving') {
+          // His slot is THE BACK OF THE LINE AS IT IS NOW, recomputed every frame and
+          // capped by what fits on this canvas. Fixing it at spawn was wrong twice over: the
+          // line drains while he walks, so he would stop short of a gap and leave a hole;
+          // and at 320px the index could exceed capacity, which parked him off the right
+          // edge of his own canvas standing on nothing.
+          // A SLOT HOLDS ONE PERSON. Clamping the index to cap-1 looked like the safe way
+          // to keep him on the canvas and was not: once the line was full every further
+          // arrival was handed the same last slot, so two figures stood inside each other
+          // and the queue read nine deep in eight places. When there is no room he stops
+          // one gap behind the back and STAYS 'arriving' until a slot frees, which is also
+          // what a person does when they walk up to a full line.
+          var nWait = pollWaiting().length;
+          f.slot = Math.min(nWait, cap);
+          target = pollSlotX(f.slot, w, r);
+          f.x -= GSPEED.stroll * dt;
+          if (f.x <= target) {
+            f.x = target;
+            if (f.slot < cap) { f.state = 'waiting'; f.settled = 0; }
+          }
+          pose = A.stroll.frame(f.t); flip = false; drawX = f.x;
+        } else if (f.state === 'waiting') {
+          f.settled = (f.settled || 0) + dt;
+          // Step up on his own feet rather than teleporting when the line moves.
+          // SNAP AT 1px, not at 0.5. A resting figure sits a fraction off its slot — the
+          // step and the slot are both floats — and at a 0.5px threshold he never counted as
+          // arrived: he stayed in the walking branch forever, treading his stride on the
+          // spot, and anything keyed to "is he moving" fired every frame.
+          var err = target - f.x;
+          if (Math.abs(err) > 1) {
+            // A step up the line is one slot, about 40px, and SHUFFLE_SPEED is paced for
+            // that. A RESIZE is not a step: every slot moves at once and the gap can be
+            // hundreds of px, so closing it at a shuffle would leave the line visibly strung
+            // out for several seconds. Big corrections close proportionally faster, which
+            // still reads as walking rather than teleporting.
+            var sp = POLL.SHUFFLE_SPEED * (Math.abs(err) > 60 ? 4 : 1);
+            var step = Math.min(Math.abs(err), sp * dt);
+            f.x += (err > 0 ? step : -step);
+            pose = A.stroll.frame(f.t);
+          } else {
+            f.x = target;
+            pose = (A[f.idle] || A.standstill).frame(f.t + f.slot * 0.7);
+          }
+          pollSeen.waiting = 1;
+          drawX = f.x;
+        } else if (f.state === 'voting') {
+          // Walks into the doorway and is hidden behind the panel for a beat.
+          var dxw = r.doorX - r.w * 0.22;
+          if (f.x > dxw + 0.5) { f.x = Math.max(dxw, f.x - GSPEED.stroll * dt); f.t = f.t; }
+          else if (f.t > POLL.VOTE_SECS) { f.state = 'leaving'; f.t = 0; pollHold = POLL.BETWEEN; pollSeen.leaving = 1; }
+          pose = A.stroll.frame(f.t); drawX = f.x;
+          if (f.x <= dxw + 0.5) { continue; }    // inside: nothing to draw, he is behind it
+        } else {   // leaving
+          f.x -= GSPEED.stroll * dt;
+          if (f.x < -24) { pollSay(f, true); POLLS.splice(i, 1); continue; }
+          // Drawn in the second pass below, in FRONT of the booth, not here.
+          f.sx = cr.left + f.x; f.fy = cr.top + feetY;
+          bodies.push({ x: f.x, floor: feetY, col: figColor(f.tone) });
+          continue;
+        }
+
+        R.drawShadow(ctx, drawX, feetY, 15, shadow);
+        drawFig(ctx, drawX, feetY - 112 * S, S, flip, pose,
+          { color: figColor(f.tone), phone: (f.state === 'waiting' && f.phone) });
+        f.sx = cr.left + drawX; f.fy = cr.top + feetY;
+        bodies.push({ x: drawX, floor: feetY, col: figColor(f.tone) });
+      }
+
+      // The booth is drawn AFTER the people who are behind it and BEFORE the one leaving, so
+      // going in hides you and coming out does not. Drawn here rather than first because the
+      // leaver has to pass in FRONT of the panel: going in is the move that hides somebody,
+      // and the exit has to read as the opposite of it.
+      drawBooth(ctx, r, feetY);
+      for (var j = 0; j < POLLS.length; j++) {
+        var g = POLLS[j];
+        if (g.state !== 'leaving') continue;
+        R.drawShadow(ctx, g.x, feetY, 15, shadow);
+        drawFig(ctx, g.x, feetY - 112 * S, S, true, A.stroll.frame(g.t),
+          { color: figColor(g.tone) });
+      }
+
+      // _bodies is THIS FRAME'S or it is nothing — the exodus needs the real list to split
+      // the queue into separate runners, and a stale one describes people who are not there.
+      e._bodies = bodies;
+      e._figX = bodies.length ? bodies[0].x : r.doorX;
+      pollSayTick(dt);
     }
     // ══ end ELECTION DAY ════════════════════════════════════════════════════════════════
 
@@ -6295,6 +6733,26 @@
       startPlay: startPlay, playR: PLAY_R,
       election: ELECTION, poll: POLL,
       polls: function () { return POLLS.slice(); },
+      pollSlots: function () {
+        var e = entries.filter(function (x) {
+          return x.spec.mode === 'beam' && !x.spec.plain && !x.gone;
+        })[0];
+        if (!e) return [];
+        var r = boothRect(e, e.w), out = [];
+        for (var i = 0; i < POLL.TARGET_MAX; i++) out.push(pollSlotX(i, e.w, r));
+        return out;
+      },
+      pollStates: function () { return Object.keys(pollSeen); },
+      // Stop arrivals and the step-up, so a test can act on a line that is standing
+      // still. Clicking is about the hitbox, not about out-running a shuffle.
+      pollFreeze: function (on) { pollFrozen = !!on; return pollFrozen; },
+      pollAdvance: pollAdvance,
+      boothRect: function () {
+        var e = entries.filter(function (x) {
+          return x.spec.mode === 'beam' && !x.spec.plain && !x.gone;
+        })[0];
+        return e ? boothRect(e, e.w) : null;
+      },
       halloween: HALLOWEEN, zom: ZOM, zomCap: zomCap, dropProp: dropProp, zombieSpawn: zombieSpawn, zombiePose: zombiePose,
       carrierHeading: carrierHeading, zombieSay: zombieSay, laneOf: laneOf,
       makeZombie: makeZombie, workerSpawn: workerSpawn, laneAnchor: laneAnchor, zomColor: zomColor,

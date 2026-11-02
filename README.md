@@ -483,6 +483,145 @@ move together), `GAP` (which moves with `SPEED`), `SCARE` (how close is "a handf
 steps"), `MAX` through `MAX_END` over `GROW`, `PER_LANE` and `CREW_AT`/`CREWS`, `LITTER`,
 `CARRY_W`, `SAY`, `EGG`, the five `CONV*` beats, `CONV_X`/`CONV_Y`, `DOWN`, and the other delays.
 
+## Election Day
+
+Two features that share one date and nothing else: a countdown in the greeter's welcome for the
+month before a federal election, and a polling place that takes over the hero's bottom rule on
+the day itself. Both switch themselves on and off from the clock, so there is nothing to deploy
+on the day and nothing to remember to remove after.
+
+**The date is a rule, not a table.** Federal Election Day is the first Tuesday after the first
+Monday in November of an even year, and `federalElectionDay()` in `ev-lines.js` is written as
+exactly that. A table of dates is a thing somebody has to remember to extend, and the failure
+when they forget is silent — the countdown simply never appears again, in an off year, on a page
+nobody is watching. The rule has been federal law since 1845 and costs six lines. It is asserted
+against 2022 (8 Nov), 2024 (5 Nov), 2026 (3 Nov) and 2028 (7 Nov), which is the one test in this
+half worth having: everything else about the countdown is visible by looking at it.
+
+**`daysToElection` looks forward and is never null and never negative.** On 4 November 2026 it
+rolls straight to 7 November 2028 and reads 734; mid-2027 it is still a real number. That is a
+decision rather than a side effect, and it closes two holes at once. `fill()`'s habit with a
+missing `{name}` is to substitute an empty string, so a null would have produced "Election Day is
+&nbsp;&nbsp;days away"; and a negative would have let a forced preview in late November read
+"-12 days away". Making the fact total is cheaper than defending every place that reads it.
+
+**Three tags, because `when` is an AND with no arithmetic in it.** `election-day`,
+`election-tomorrow` and `election-soon` (2-30 days). The only way the catalog can hold a singular
+sentence and a plural one is for each to have its own name — the same reason `needs-tools` exists
+as the inverse of `tools-found`. "1 days away" is the one error a reader notices and nothing else
+recovers from.
+
+**Two preview levers, one job each.** `?evlines=election-day` forces the tags, exactly as it
+already does for Halloween. `?evdays=7` forces the NUMBER and nothing else. Keeping them separate
+is not tidiness: the predicates derive from `daysToElection`, so an override on the fact drags the
+tags along with it, and `?evdays=0` would have switched on the entire polling place from a URL.
+The fact stays honest and `?evdays=` is applied in `fill()`, where `{days}` is substituted.
+Anything that is not a non-negative integer is discarded rather than coerced, or `?evdays=abc`
+puts "Election Day is NaN days away" in his mouth.
+
+**`Math.round`, and the obvious argument for it is backwards.** The instinct is that DST ending
+inside the window — the first Sunday in November — makes a naive floor read low. It does not:
+falling back makes a day *longer*, and measured in `America/New_York` 31 October to 3 November is
+73 hours, where floor and round both give 3. They agree on every day of this window. The
+off-by-one is across a *short* day, i.e. spring forward, which a November countdown never
+crosses. Round is used because it is right whichever way a transition falls. **There is
+deliberately no DST test**: one driving 31 October and asserting 3 would pass identically against
+the floor it is meant to rule out, which is worse than no test — it records a risk as covered
+when nothing checks it.
+
+**Halloween outranks the countdown, and the countdown outranks the welcome-back.** The first is
+the ask: 25-31 October is the zombies' greeting and 1 November falls back to the countdown with
+nothing to switch over. The second is the ordering that actually matters — a signed-in returning
+visitor matches `greet.back` ahead of everything below it, so a countdown placed under it would
+be invisible to exactly the people who come back most often.
+
+### The polling place
+
+**It lives on the crew's own entry, and that is the load-bearing decision.** The hero's `beam`
+entry already owns a canvas the full width of the hero and 240px tall, and on Election Day it
+runs `e.scene = 'polls'` instead of the carry rotation. Drawing the queue as entries of its own
+would walk straight back into the worst bug Halloween had: the click-exodus arms every entry with
+`poofArmFlee`, which reads `e.el` for the perch the runner leaps off, and an anchorless entry
+**threw inside `tick()`**, which killed the animation loop for the whole page for the rest of the
+session — no error, nothing looking wrong until you noticed nobody was moving. On the beam entry
+the scene inherits `e.el = .hero` and the exodus handles it without knowing it exists.
+
+**`beamPick` stands down for the day**, so the two-carries, the light gag, the letter carriers and
+the play-button carrier are all off. The init guard excludes `plain` crews: those are the
+Halloween work crews cast at runtime and they share that path. The calendars cannot overlap, but
+it is guarded explicitly rather than left resting on the calendar being kind.
+
+**The booth's height is a multiple of the figures, with the headroom only as a ceiling.** 135px,
+about 1.9 figures. An earlier draft let it take the canvas wherever nothing was overhead, which
+gave 240px at 1440 against 93px at 390 — a 2.5x jump between two widths of one page, and a
+structure 3.4x the height of the people queuing at it. `.meta-row` is `max-width: 760px` and
+centred, so the clear floor to its left is 407px at 1440 and 20px at 390; the overlap is measured
+per frame rather than split on a breakpoint, because measuring does not go wrong when the hero's
+layout next moves.
+
+**Shift before shrinking.** Between about 901 and 1024 the row starts just inside where the wide
+44px inset puts the booth's far edge — at 901 the overlap is 7px — and clamping 135px down to 93
+to buy that leaves a squat booth on a page with obvious room. So the narrow inset is tried first,
+and only when neither fits does it clamp. Watch the coordinate space when re-deriving any of
+this: the canvas is inset 4px from the page edge, and the first draft of the design document put
+the clamp boundary at 900/901 purely because it compared viewport numbers against canvas ones.
+
+**The doorway is a fixed dark in both themes, like the ghost.** `--card` and `--bg` are *both*
+`#FFFFFF` on the light theme, so a doorway taking its fill from a token was white on white and
+read as a rectangle ruled on the panel rather than something a voter could step into. A doorway
+is a hole, and a hole is dark whatever the page is. Alpha rather than a flat colour, so it also
+darkens the near-black dark-theme panel instead of matching it.
+
+**A slot holds one person.** Clamping an arrival's slot index to the last position looked like
+the safe way to keep him on the canvas and was not: once the line was full, every further arrival
+was handed that same slot and two figures stood inside each other — the count read nine where the
+line had eight places. A surplus arrival now stops one gap behind the back and stays `arriving`
+until a slot frees, which is also what a person does when they walk up to a full line.
+
+**Slots are recomputed from width every frame; a waiter stores only his index.** `reposition()`
+re-fits this canvas on resize and rotate, and both the booth's inset and the gap are functions of
+width, so a stored position is stale the instant the viewport moves — and stale in a way nothing
+on the page would show you.
+
+**The line is seeded, because a polling place has a queue when you walk up to it.** The first cut
+started empty and had the first arrival walk the full width of the page at a stroll's 32px/s:
+forty seconds of nothing on a 1440px screen, and a visitor who scrolls past in ten has seen an
+empty polling place on Election Day. The standing line and three people already on the approach
+are both seeded, because seeding only the standing line left it draining into the same gap.
+
+**Three numbers move together: `VOTE_SECS`, `BETWEEN` and `ARRIVE_GAP`.** The walk-on is most of
+a minute, so throughput has to be slower than the arrival interval or the queue is a trough with
+a spike in it. At a 4-second vote the seeded line emptied faster than anyone could replace it.
+And the target counts who is STANDING, not who is on the way: counting people still walking
+against it starved the line, which sagged to three while four more were strung out across the
+page on their way to it.
+
+**Stepping forward is an EVENT, not a position.** A waiter's bubble closes when his slot changes.
+Keying it to "he is not exactly on his slot" looked equivalent and was not — a resting figure
+sits a fraction off, so every bubble shut on the frame after it opened, and the same drift kept
+waiters in the walking branch treading their stride on the spot forever. The settle threshold is
+1px for that reason.
+
+**The zombies' moving bubble is deliberately not reused.** A zombie never stops walking, so his
+box is re-pinned and re-clamped every frame. A waiter stands still except during a shuffle, so
+closing on the step is the right answer rather than carrying that machinery into a second place
+where it would be dead weight.
+
+**Off under an automated browser unless the harness names the tag**, the same guard the zombies
+have, because 36 files under `tests/` load this page with no tags pinned and assert on who is
+standing where. Because that guard could equally hide the scene from every real visitor while the
+suite stayed green, `tests/layout/election-polls.cjs` spoofs `navigator.webdriver` back to
+`false` and checks the page agrees with the wall calendar.
+
+**The exodus case cannot be "is the page still animating".** The design said that first and it is
+wrong: this entry deliberately HAS an anchor, so the whole queue is armed and flees, and once
+nothing is left `POOF.phase` goes to `'cleared'` — nothing moving is the correct outcome.
+Halloween's version works only because a zombie is anchorless and gets skipped. The real
+distinction is fleeing versus throwing, and a throw inside `tick()` leaves no error on the page,
+so the half that catches it is the positive one: did they actually run.
+
+The knobs are the `POLL` object at the top of the block.
+
 ## The ghost
 
 A sheet over a Bobit, drifting across Notes 02 and 03. He is **drawn, not posed**: the rig
