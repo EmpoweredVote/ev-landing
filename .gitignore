@@ -51,3 +51,18 @@ screenshots/Essentials_with_Compass_cropped.png
 screenshots/calibrated.JPG
 screenshots/ctc.empowered.vote_landing_page.png
 screenshots/ctc.empowered.vote_play.png
+
+# Screenshot-helper output. tests/{greeter,poof,quotes}/shots.cjs write these,
+# and run-tests.mjs skips shots.cjs files on purpose -- they illustrate, they do
+# not assert. So these only change when somebody runs a helper by hand, and each
+# run captures a different random quote, a different figure colour and a
+# different scroll position. Twenty-four of them sat modified in the working
+# tree for weeks because of that, and committing a re-render costs the history
+# a new copy of every file forever, for a picture that is no better than the one
+# it replaced.
+#
+# The tool previews in this directory -- essentials-*, compass-*, treasury-*,
+# ctc-*, readrank-* -- are NOT this. The home page serves those. They stay.
+screenshots/greeter-*.png
+screenshots/poof-*.png
+screenshots/quote-bubble-*.png
