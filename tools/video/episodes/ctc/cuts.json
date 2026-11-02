@@ -6,6 +6,24 @@
     "false start is a short burst and a second of silence, not the long pause",
     "align.mjs looks for."
   ],
+  "_peak": [
+    "THIS EPISODE IS CUT AT --peak -1.2, NOT THE DEFAULT -3.",
+    "",
+    "split.mjs lifts the loudest point of the whole TAKE to the peak it is given.",
+    "On DJI_42 that point is not inside any line the film uses, so at the default",
+    "the finished voice track came out at -29.5 dBFS mean and -4.8 peak, about",
+    "1.8 dB under the other three films. The lightbox plays all four without",
+    "changing level between them, so that drop is audible when a viewer watches",
+    "two in a row.",
+    "",
+    "-1.2 puts the film itself at -27.7 mean and -3.0 peak, which is Treasury's",
+    "number exactly. Re-cut this episode WITH THE FLAG or the levels revert and",
+    "nothing says so: the cuts come out identical either way, so the usual",
+    "re-split report stays silent about it.",
+    "",
+    "Set 2026-11-02. The gain is the only thing it changes; every cut point was",
+    "compared against vo/_source.json before and after and not one moved."
+  ],
   "_retired": [
     "EMPTY ON PURPOSE, 2026-10-28. This file held four pins — L015, L019, L020",
     "and L024 — and every one of them named DJI_38_20261027_102134.WAV. Chris",

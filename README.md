@@ -53,8 +53,13 @@ reads exactly like a real failure and is not one. `tests/poof/09-raise.cjs` did 
 2026-11-01 and passes alone in 0.44s. **Re-run any failure on its own before believing
 it** — `tests/quotes/04-poses.cjs` is also a known flake under load.
 
-**Running the suite rewrites files under `screenshots/`.** That churn is a side effect of
-the screenshot helpers, not work; leave it out of commits unless a shot genuinely changed.
+**The screenshot helpers rewrite files under `screenshots/`, and git now ignores them.**
+`tests/{greeter,poof,quotes}/shots.cjs` write `greeter-*`, `poof-*` and `quote-bubble-*`;
+those three patterns are gitignored, so the churn no longer reaches `git status`. Running
+the SUITE does not touch them at all — `run-tests.mjs` skips every `shots.cjs`, because
+they illustrate rather than assert — so a helper has to be run by hand to change anything
+here. The tool previews the home page serves (`essentials-*`, `compass-*`, `treasury-*`,
+`ctc-*`, `readrank-*`) are still tracked and are not affected.
 
 **The version is pinned exactly, not caret-ranged, and that is deliberate.**
 Each Playwright release expects its own browser builds, and `npx playwright

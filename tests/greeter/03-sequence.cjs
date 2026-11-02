@@ -166,9 +166,16 @@ async function assertGone(page, label) {
   //      pointing at what you highlighted
   {
     const page = await openBubble(browser);
-    await page.hover('.showcase-logos .logo-trigger:nth-child(5)');
+    // By NAME, not by position. This read `:nth-child(5)` until 2026-11-02, when
+    // Civic Trivia got a play triangle and its tile moved inside a .tool-row: the
+    // tile was still the fifth one on screen and still a .logo-trigger, but it was
+    // no longer the fifth CHILD of anything, so the selector matched nothing and the
+    // hover sat there for its full 30s timeout. Any tile that gains a film will do
+    // this again.
+    const TILE = '.showcase-logos .logo-trigger[data-tool="trivia"]';
+    await page.hover(TILE);
     await assertGone(page, 'highlighted a tool');
-    const aim = await page.evaluate(PROBE, '.showcase-logos .logo-trigger:nth-child(5)');
+    const aim = await page.evaluate(PROBE, TILE);
     assert.ok(aim.aimErr < 12,
       'after the greeting he must point at the highlighted tool, off by ' + aim.aimErr + ' deg');
     await page.close();

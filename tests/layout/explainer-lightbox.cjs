@@ -1,5 +1,5 @@
-// The play triangle beside the Essentials, Compass and Treasury Tracker tiles, and the
-// lightbox it opens.
+// The play triangle beside the Essentials, Compass, Treasury Tracker and Civic Trivia
+// Championships tiles, and the lightbox it opens.
 //
 // Three things here are easy to break without noticing.
 //
@@ -27,7 +27,7 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 
 const URL = 'file:///C:/ev-landing/ev-landing-main/index.html';
-const FILMS = ['essentials', 'compass', 'treasury'];
+const FILMS = ['essentials', 'compass', 'treasury', 'ctc'];
 
 (async function () {
   const browser = await chromium.launch();

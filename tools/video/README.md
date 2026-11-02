@@ -808,7 +808,7 @@ length, `vo/_source.json` gives the seconds of the take it was cut from, and
 take time `t` inside line L lands in the film at `scene.start + (t -
 source.start)`.
 
-The caption text is the SCRIPT, never the recogniser. A read agrees with the
+The caption text is the SCRIPT, never the recogniser — but the script it means is the copy inside `timings.json`, which is not always the one in `script.md`. See below. A read agrees with the
 page on 80 to 100 per cent of its words, so the recogniser only supplies
 anchors and the rest are spread between them. Two things follow from that, and
 both are checks worth repeating after a re-split:
@@ -821,6 +821,45 @@ both are checks worth repeating after a re-split:
   each and ran two seconds ahead of the energy onset the cut was made on. With
   those anchors kept, that line held its first sentence for 4.4 seconds and
   gave its last three words 0.3.
+
+### The script it reads is `timings.json`, not `script.md`
+
+`make-captions.mjs` takes each line's words out of `build/<ep>/timings.json`.
+`split.mjs` wrote that copy from `script.md` at the moment it last cut the
+voice. Edit `script.md` after that and the captions go on showing the old
+words, and nothing anywhere says so: every time is still right, the cue count
+does not move, and the words read fine, because they are words somebody wrote.
+
+Civic Trivia was captioned that way on 2026-11-02, with four lines nobody had
+read, among them "an argument you do not want to be in" for "an argument you
+did not want to be a part of". The script had been corrected three minutes
+after the split — the ordinary booth pass, where the page is brought into line
+with what was actually said — and the next thing to read it was a caption run
+five days later. It reached nobody: it was caught only because the voice was
+being re-cut that afternoon for an unrelated reason, and the re-split rewrote
+`timings.json` on its way past. Nothing in the caption run itself noticed.
+
+**Re-split before you re-caption, whenever `script.md` has been touched.** With
+the same take it reuses the cached word stream, so it costs seconds, and it
+moves no cut — compare `vo/_source.json` before and after if you want that in
+writing. The check, if you would rather look than re-split, is to parse the
+script and compare it to what `timings.json` holds:
+
+```js
+// scratch file, run from the repo root with `node <file>.mjs <episode>...`
+import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+const { parseScript } = await import(pathToFileURL('tools/video/engine/script.mjs').href);
+for (const ep of process.argv.slice(2)) {
+  const s = parseScript(await readFile(`tools/video/episodes/${ep}/script.md`, 'utf8'));
+  const t = JSON.parse(await readFile(`tools/video/build/${ep}/timings.json`, 'utf8'));
+  const now = new Map(s.map(l => [l.id, l.text]));
+  const stale = t.lines.filter(l => (now.get(l.id) ?? '').trim() !== l.text.trim());
+  console.log(`${ep}: ${stale.length ? stale.length + ' STALE - ' + stale.map(l => l.id).join(' ') : 'current'}`);
+}
+```
+
+All four episodes were current when that was last run, on 2026-11-02.
 
 Alignment is Needleman-Wunsch over the two word lists, not a greedy walk. Where
 the recogniser drops the first words of a line, a greedy walk starts out of
