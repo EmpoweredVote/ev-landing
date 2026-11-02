@@ -679,10 +679,10 @@
         .logo-trigger .m-desc { display: none; }
 
         /* ---- Explainer play buttons ----
-           Essentials, Compass and Treasury Tracker have a film; the other two do
-           not. The button is a SIBLING of the tile's <a>, never a child — a button
-           inside a link is invalid markup, and the inner control stops being
-           reachable by keyboard.
+           Essentials, Compass, Treasury Tracker and Civic Trivia Championships have
+           a film; Read & Rank does not. The button is a SIBLING of the tile's <a>,
+           never a child — a button inside a link is invalid markup, and the inner
+           control stops being reachable by keyboard.
            .tool-row wraps the pair so the button can be positioned against the tile
            without being inside it. Every existing selector still matches, because
            the showcase scripts all reach .logo-trigger by descendant or .closest(). */
@@ -1685,12 +1685,19 @@
                             <span class="play-tip" aria-hidden="true">Watch Explainer Video</span>
                         </button>
                     </div>
-                    <a class="logo-trigger" data-tool="trivia" data-name="Civic Trivia Championships"
-                       href="https://ctc.empowered.vote" target="_blank" rel="noopener">
-                        <img class="logo-l" src="icons/ctc-logo-lg-light.svg" alt="Civic Trivia Championships" />
-                        <img class="logo-d" src="icons/ctc-logo-lg-dark.svg" alt="" aria-hidden="true" />
-                        <span class="m-desc">Test how well you really know civics — from local government to national institutions — in a fast, friendly, head-to-head trivia format.</span>
-                    </a>
+                    <div class="tool-row">
+                        <a class="logo-trigger" data-tool="trivia" data-name="Civic Trivia Championships"
+                           href="https://ctc.empowered.vote" target="_blank" rel="noopener">
+                            <img class="logo-l" src="icons/ctc-logo-lg-light.svg" alt="Civic Trivia Championships" />
+                            <img class="logo-d" src="icons/ctc-logo-lg-dark.svg" alt="" aria-hidden="true" />
+                            <span class="m-desc">Test how well you really know civics — from local government to national institutions — in a fast, friendly, head-to-head trivia format.</span>
+                        </a>
+                        <button class="play-btn" type="button" data-film="ctc"
+                                aria-label="Watch Explainer Video">
+                            <svg viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z"/></svg>
+                            <span class="play-tip" aria-hidden="true">Watch Explainer Video</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="showcase-preview" aria-hidden="true">
@@ -2583,7 +2590,7 @@
     <script src="ev-lines.js"></script>
     <script src="ev-quotes.js"></script>
     <script src="ev-figures.js"></script>
-    <!-- Explainer lightbox. One dialog, reused by all three films: the <video> is given
+    <!-- Explainer lightbox. One dialog, reused by all four films: the <video> is given
          its source when a triangle is pressed and has it taken away on close, so a
          closed lightbox is not quietly holding a download open. -->
     <div class="ev-lb" id="ev-lb" hidden>
@@ -2601,7 +2608,8 @@
         var FILMS = {
             essentials: { file: 'essentials', name: 'Empowered Essentials', len: '5:25' },
             compass:    { file: 'compass',    name: 'Empowered Compass',    len: '5:06' },
-            treasury:   { file: 'treasury',   name: 'Treasury Tracker',     len: '5:10' }
+            treasury:   { file: 'treasury',   name: 'Treasury Tracker',     len: '5:10' },
+            ctc:        { file: 'ctc',        name: 'Civic Trivia Championships', len: '3:13' }
         };
 
         var lb = document.getElementById('ev-lb');

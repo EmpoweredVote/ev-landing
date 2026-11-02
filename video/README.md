@@ -1,7 +1,8 @@
 # Explainer films
 
-The three films the home page plays in its lightbox: the play triangle beside the
-Essentials, Compass and Treasury Tracker tiles in the hero. They are served from
+The four films the home page plays in its lightbox: the play triangle beside the
+Essentials, Compass, Treasury Tracker and Civic Trivia Championships tiles in the
+hero. They are served from
 this site, not from YouTube, so that nothing reaches Google before a visitor asks
 for it — the same reason the talk thumbnails are local (see `talks/README.md`).
 
@@ -10,6 +11,7 @@ for it — the same reason the talk thumbnails are local (see `talks/README.md`)
 | `compass.mp4` | Empowered Compass, 5:06 |
 | `essentials.mp4` | Empowered Essentials, 5:25 |
 | `treasury.mp4` | Treasury Tracker, 5:10 |
+| `ctc.mp4` | Civic Trivia Championships, 3:13 |
 | `*.vtt` | captions, which is why the browser offers a CC control at all |
 | `*.jpg` | the poster frame, so the box is not black before play |
 
@@ -28,9 +30,9 @@ ffmpeg -y -i tools/video/build/essentials/Essentials_v1.mp4 \
   -movflags +faststart video/essentials.mp4
 ```
 
-Treasury has no `_v1.mp4` to point that command at. Compass and Essentials were
-exported from Resolve; Treasury's picture and voice never left the pipeline, so
-its master is two files and the encode takes both:
+Treasury and Civic Trivia have no `_v1.mp4` to point that command at. Compass and
+Essentials were exported from Resolve; the other two never left the pipeline, so
+each of their masters is two files and the encode takes both:
 
 ```bash
 ffmpeg -y -i tools/video/build/treasury/treasury-silent.mp4 \
@@ -42,13 +44,26 @@ ffmpeg -y -i tools/video/build/treasury/treasury-silent.mp4 \
   -movflags +faststart video/treasury.mp4
 ```
 
+Civic Trivia is the same command with `ctc` in place of `treasury`.
+
 That is not a shortcut past a mix. `vo-synced.wav` is the real read — cut out of
 Chris's take by `split.mjs` and resynced to the locked picture by the build — and
 the only level change anywhere in it is the single gain that lifts the loudest
-take to -3 dBFS. Measured against the two that did go through Resolve it is in
-family: mean -27.7 dBFS and peak -3.0, against -28.4/-3.9 for Compass and
--26.6/-3.1 for Essentials. If Treasury is ever given a mix pass, re-encode from
-that export and this paragraph comes out.
+take to -3 dBFS. Measured against the two that did go through Resolve, Treasury is
+in family: mean -27.7 dBFS and peak -3.0, against -28.4/-3.9 for Compass and
+-26.6/-3.1 for Essentials. If either is ever given a mix pass, re-encode from that
+export and this paragraph comes out.
+
+**Civic Trivia is cut at `--peak -1.2`, not the default -3.** That is what puts it
+in family at mean -27.7 dBFS and peak -3.0, which is Treasury's number exactly.
+`split.mjs` lifts the loudest point of the whole TAKE to the peak it is given, and
+on DJI_42 that point is not inside any line the film uses, so the default left the
+finished track at -29.5 and -4.8 — about 1.8 dB under the other three, which is
+audible because the lightbox never changes level between films. Re-cut that
+episode WITH THE FLAG or the levels revert and nothing says so: the cut points
+come out identical either way, so the re-split report stays silent about it.
+`tools/video/episodes/ctc/cuts.json` carries the same warning, which is the copy
+that is in reach when somebody is re-cutting.
 
 `-tune animation` is not decoration. These films are flat drawn shapes, and it
 tells x264 to spend its bits on clean edges rather than on grain that is not
@@ -83,20 +98,20 @@ ffmpeg -y -i tools/video/thumbnails/empowered-essentials-1280x720.png \
 
 ## What this costs
 
-About 24 MB in the repository, and git keeps every version of a file forever —
+About 29 MB in the repository, and git keeps every version of a file forever —
 a new cut committed here is another whole copy, because video does not store as
 a difference. Replace a film only when it is settled.
 
 Nothing downloads until a visitor presses play (`preload="none"`), so pageviews
-cost no bandwidth. A full play is about 7-9 MB against the Render workspace's
+cost no bandwidth. A full play is about 4-9 MB against the Render workspace's
 monthly allowance, which is shared with every other Empowered Vote service.
 
-## The two that are not here yet
+## The one that is not here yet
 
-Civic Trivia Championships and Read & Rank have finished scripts and finished
-artwork in `tools/video/episodes/`, and neither has been recorded. Nothing
-reaches this directory until there is a take to cut. When one is ready: encode
-it the same way, drop the three files in beside these, add it to `FILMS` in
-`index.html`, wrap its tile in a `.tool-row` with a play triangle, and add its
-key to `FILMS` in `tests/layout/explainer-lightbox.cjs` — that test counts the
-triangles, so it fails until the markup and the registry agree.
+Read & Rank has a finished script and finished artwork in `tools/video/episodes/`
+and has not been recorded. Nothing reaches this directory until there is a take to
+cut. When it is ready: encode it the same way, drop the three files in beside
+these, add it to `FILMS` in `index.html`, wrap its tile in a `.tool-row` with a
+play triangle, and add its key to `FILMS` in
+`tests/layout/explainer-lightbox.cjs` — that test counts the triangles, so it
+fails until the markup and the registry agree.
