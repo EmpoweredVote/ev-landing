@@ -4642,13 +4642,129 @@
       }
     }
 
+    // WHAT THE PEOPLE IN THE LINE SAY. Five of these was too few: eight figures are standing
+    // there at once, so a visitor who clicked three of them had usually heard two of the five
+    // already, and the line stopped being people and became a machine with five outputs.
+    //
+    // The register is a stranger making conversation in a queue — short, warm, specific, and
+    // about the morning rather than about the ballot. NOTHING HERE TAKES A SIDE, and that is
+    // not squeamishness: it is the one thing the whole page is for. The two lines that come
+    // closest to the subject ("The guy ahead and I disagree", "Nobody's asked who I'm voting
+    // for") are about the NORM, not the vote, which is the only way this scene can say
+    // anything about disagreement at all.
+    //
+    // Keep them SHORT. The bubble is `tight`, so it shrink-wraps the words and clamps at
+    // 300px; everything here fits on one or two lines at that width. A long one does not
+    // break anything, it just stops reading as something somebody said while standing up.
+    //
+    // A line is dealt once per person, at spawn, and never re-rolled — see pollSay.
     var POLL_LINES = [
       "Been here twenty minutes.",
       "Worth the wait.",
       "Shorter than last time.",
       "I brought a book.",
-      "Line's moving."
+      "Line's moving.",
+      "Took the morning off for this.",
+      "Beat the lunch rush.",
+      "Came on my lunch break.",
+      "Told my boss I'd be late.",
+      "Nice day to stand outside.",
+      "Should have worn better shoes.",
+      "Packed snacks. No regrets.",
+      "Dropped the kids off first.",
+      "Brought my daughter to watch.",
+      "First time voting.",
+      "Forty years, never missed one.",
+      "Here for the sticker.",
+      "Did my homework last night.",
+      "I looked every name up.",
+      "Nobody warned me about the judges.",
+      "Three pages this year.",
+      "They moved my polling place.",
+      "Parking was the hard part.",
+      "Dropping my mail ballot off.",
+      "Texted my brother to come.",
+      "Almost forgot it was today.",
+      "The local races are why I'm here.",
+      "Everyone here's been polite.",
+      "We disagree back here. Still friendly.",
+      "Nobody's asked who I'm voting for.",
+      "That part's between me and the booth.",
+      "Still time after work.",
+      "I set an alarm for this."
     ];
+
+    // DEALT FROM A SHUFFLED BAG, not i.i.d. random — the same safeguard takeTone() uses on
+    // the palette, and for the same reason. With 35 lines and eight people standing there,
+    // independent draws collide about 60% of the time, so a visitor clicking along the queue
+    // would still meet a repeat most visits; a bag cannot repeat until all 35 are spent,
+    // which is four full line-ups. The seam is guarded the same way too: a refill that would
+    // open on the line just dealt rotates it to the back instead.
+    // ONE LINE IN THE SET CLAIMS SOMETHING YOU CAN SEE, and for a while the man saying it
+    // stood there with empty hands, which makes the bubble a caption rather than a person.
+    // Named rather than matched inline so his words and his hands are decided in one place
+    // and cannot drift apart when the list is next edited.
+    var POLL_BOOK_LINE = "I brought a book.";
+    // What a new waiter is holding, given what he is about to say. One pair of hands, so the
+    // book takes the phone's place rather than sharing it — drawBook and drawPhone both draw
+    // between the two hands, and both at once is a phone inside a book.
+    function dealProps(f) {
+      f.book = (f.say === POLL_BOOK_LINE);
+      if (f.book) f.phone = false;
+      return f;
+    }
+
+    var _pollLineBag = [], _lastPollLine = null;
+    function takePollLine() {
+      if (!_pollLineBag.length) {
+        var t = POLL_LINES.slice();
+        for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = t[i]; t[i] = t[j]; t[j] = tmp; }
+        if (t[0] === _lastPollLine && t.length > 1) t.push(t.shift());
+        _pollLineBag = t;
+      }
+      _lastPollLine = _pollLineBag.shift();
+      return _lastPollLine;
+    }
+
+    // READING ON HIS FEET. The rig draws an open book between the two hands (drawBook, via
+    // opts.book) and already owns the arm hold that puts them there — the seated `read`
+    // pose. So the only thing borrowed from `read` is that hold; the body underneath stays
+    // whatever he is doing, standing or walking. Borrowing the whole pose instead would sit
+    // him down in the middle of the queue.
+    //
+    // HE KEEPS IT IN EVERY STATE HE IS DRAWN IN — walking in from the edge, standing, the
+    // step up the line, the walk into the booth, and the walk out afterwards. A prop that
+    // appears when he stops and vanishes when he moves is worse than no prop: it reads as a
+    // glitch rather than as a book.
+    function pollBookPose(t, walking) {
+      var p = walking ? A.stroll.frame(t) : A.standstill.frame(t);
+      var br = Math.sin(t * 0.28 * Math.PI * 2);                 // slow breathing sway
+      p.lean = walking ? -2 : 3;
+      p.hunch = -(26 + br * 3);                                   // curled forward over the page
+      p.headTilt = -(18 + br * 2);                                // eyes down on it
+      var flick = Math.pow(Math.max(0, Math.sin(t * 0.18 * Math.PI * 2)), 10);   // page-turn twitch
+      // ELBOWS IN. `read` holds the book out at arm's length, which is right for a man
+      // slumped in a seat and reads as OFFERING it when he is standing up straight. Hanging
+      // the upper arms nearer the vertical and swinging the forearms up tucks it against
+      // his chest, where somebody killing twenty minutes in a queue actually holds a book.
+      p.armRU = 40 + br * 2; p.armRF = 112 + flick * 22;
+      p.armLU = 24 - br * 2; p.armLF = 92 + br * 3;
+      return p;
+    }
+
+    // HOW MANY WILL HAVE GONE IN by the time somebody setting off now reaches the back of
+    // the line. This is the number that makes it safe to count people who are still walking
+    // against the target — which is the thing the dispatch rule below could not do before,
+    // and the reason it could not is that the walk is LONG. Across a desktop it is most of a
+    // minute, and the booth turns somebody around every VOTE_SECS + BETWEEN, so three or four
+    // of the people standing there now will be gone before he arrives. Counting him against
+    // the target without allowing for them starved the line; not counting him at all
+    // over-filled it. Measured per width rather than fixed, because on a phone the approach
+    // is a few seconds and almost nobody leaves during it.
+    function pollDrainDuringWalk(w, r) {
+      var walkSecs = ((w + 20) - pollSlotX(0, w, r)) / GSPEED.stroll;
+      return Math.floor(walkSecs / (POLL.VOTE_SECS + POLL.BETWEEN));
+    }
 
     function pollWaiting() {
       return POLLS.filter(function (f) { return f.state === 'waiting'; })
@@ -4698,13 +4814,18 @@
         // seeded line drains at one voter every VOTE_SECS + BETWEEN while the first
         // replacements are still walking. Starting at the top of the range is what keeps
         // that stretch looking like a queue instead of a gap with three people in it.
-        var seedN = Math.min(pollTarget, cap);
+        // TWO SHORT OF CAPACITY, ALWAYS. Seeding the full line meant that on the rolls
+        // where the target came up at capacity, the three people seeded mid-walk reached the
+        // back on the first frame, found no room, turned round and walked back off the right
+        // edge — about one page load in eight opened with two voters visibly giving up. The
+        // line still looks like a line at six; what it must not do is open with no room in it.
+        var seedN = Math.min(pollTarget, Math.max(1, cap - 2));
         for (var sI = 0; sI < seedN; sI++) {
-          POLLS.push({
+          POLLS.push(dealProps({
             id: ++pollId, state: 'waiting', slot: sI, x: pollSlotX(sI, w, r), t: Math.random() * 3,
             settled: 1, tone: takeTone(), idle: pick(IDLES), phone: chance(0.25),
-            say: pick(POLL_LINES), qh: null, sx: null, fy: null
-          });
+            say: takePollLine(), qh: null, sx: null, fy: null
+          }));
         }
         // ...and some are already ON THEIR WAY. Seeding only the standing line leaves a
         // trough: it drains at one voter every VOTE_SECS + BETWEEN while the first real
@@ -4713,14 +4834,14 @@
         // first replacement lands before the seeded line has thinned, and it is also what
         // the place looks like — people do not arrive in step.
         for (var aI = 0; aI < 3; aI++) {
-          POLLS.push({
+          POLLS.push(dealProps({
             // Spread over the NEAR half of the approach, so the first replacement lands
             // inside ten seconds rather than forty. Further out and they arrive after the
             // seeded line has already thinned, which is the gap they exist to cover.
             id: ++pollId, state: 'arriving', x: w * (0.17 + aI * 0.24) + 20, slot: Math.min(seedN + aI, cap - 1), t: Math.random() * 2,
             tone: takeTone(), idle: pick(IDLES), phone: chance(0.25),
-            say: pick(POLL_LINES), qh: null, sx: null, fy: null
-          });
+            say: takePollLine(), qh: null, sx: null, fy: null
+          }));
         }
       }
 
@@ -4738,12 +4859,30 @@
       // every VOTE_SECS + BETWEEN. The line sagged to three while four people were strung
       // out across the page on their way to it. A separate cap on how many may be in
       // transit is what keeps that from running away instead.
-      if (!pollFrozen && pollNext <= 0 && waiting.length < Math.min(pollTarget, cap) && incoming < POLL.IN_TRANSIT) {
-        POLLS.push({
+      // PEOPLE ON THE WAY COUNT TOWARD THE LINE, less the ones who will have voted and gone
+      // before they get here. The old rule counted only who was STANDING, with a flat cap of
+      // eight in transit as the only brake — so while the line sat below target it kept
+      // dispatching somebody every couple of seconds for a walk that takes most of a minute,
+      // and they arrived to a line that was already full. Measured on the old rule: 25 people
+      // walked up to a full line and turned round over four runs of 150s, one every 24
+      // seconds. Nobody should walk the length of the page and give up.
+      // NOBODY IS SENT WHO WILL NOT HAVE A SLOT WHEN HE GETS HERE, and the clamp to `cap`
+      // is what makes that a guarantee rather than an average. Allowing for the drain is
+      // right on its own — it is what keeps a short line filling at a sensible rate — but it
+      // is an EXPECTED number of departures and an arrival is all-or-nothing, so on the rolls
+      // where the target came up at capacity it still let three people set off toward a line
+      // with no room in it. Measured: the allowance alone took give-ups from 25 to 11 over
+      // four runs of 150s. Clamped, the standing line plus everybody on the way can never
+      // exceed the number of slots, departures only ever make that better, and a walker
+      // arriving to a full line is unreachable rather than rare.
+      var room = Math.min(cap, Math.min(pollTarget, cap) + pollDrainDuringWalk(w, r));
+      if (!pollFrozen && pollNext <= 0 && incoming < POLL.IN_TRANSIT &&
+          waiting.length + incoming < room) {
+        POLLS.push(dealProps({
           id: ++pollId, state: 'arriving', x: w + 20, slot: Math.min(waiting.length + incoming, cap - 1), t: 0,
           tone: takeTone(), idle: pick(IDLES), phone: chance(0.25),
-          say: pick(POLL_LINES), qh: null, sx: null, fy: null
-        });
+          say: takePollLine(), qh: null, sx: null, fy: null
+        }));
         pollSeen.arriving = 1;   // somebody really set off, rather than being seeded mid-walk
         pollNext = POLL.ARRIVE_GAP * (0.6 + Math.random() * 0.8);
       }
@@ -4783,7 +4922,19 @@
       for (var i = POLLS.length - 1; i >= 0; i--) {
         var f = POLLS[i];
         f.t += dt;
-        var target = pollSlotX(f.slot, w, r), pose, flip = false, drawX = f.x;
+        // FACING LEFT IS THE DEFAULT, because the booth is at the left end and everything
+        // in this scene except a change of mind moves toward it. drawFig's `flip` mirrors
+        // the figure, and every other walker on the page sets it as `dir < 0` — so a figure
+        // walking left and drawn unmirrored has his lean, his stride and his arm swing all
+        // pointing the way he came, which is exactly what walking backwards looks like.
+        // This started as `false` and stayed false through the arriving walk, the step up
+        // the queue and the walk into the booth — all three of them leftward moves. The
+        // leaver was the only one drawn correctly, which is why the scene looked like one
+        // man walking out past a line of people moonwalking toward the door.
+        //
+        // It is also right for the people standing still: you face the front of the queue,
+        // not the back of it.
+        var target = pollSlotX(f.slot, w, r), pose, flip = true, drawX = f.x;
 
         if (f.state === 'arriving') {
           // His slot is THE BACK OF THE LINE AS IT IS NOW, recomputed every frame and
@@ -4800,6 +4951,13 @@
           // There is no room on a full line, so he does what a person does: gives up and
           // goes, back the way he came. That is self-limiting, needs no parking spot, and
           // cannot put anybody anywhere there is no canvas.
+          //
+          // ⚠ THIS IS A BACKSTOP AND IT IS NOT DEAD CODE. The dispatcher above can no longer
+          // aim anybody at it, so in ordinary running nobody gives up — Chris's rule: people
+          // should not walk the length of the page and turn round. What still arrives here is
+          // a RESIZE that cuts the number of slots under somebody already walking. Two
+          // earlier cuts of this scene removed the no-room path and put figures off the
+          // canvas edge or standing inside each other; keep it.
           var nWait = pollWaiting().length;
           if (nWait >= cap) { f.state = 'leaving'; f.exit = 1; f.t = 0; pollSay(f, true); continue; }
           f.slot = nWait;
@@ -4809,7 +4967,8 @@
             f.x = target; f.state = 'waiting'; f.settled = 0;
             pollSeen.waiting = 1;              // reached by the state machine, not the seeder
           }
-          pose = A.stroll.frame(f.t); flip = false; drawX = f.x;
+          pose = f.book ? pollBookPose(f.t, true) : A.stroll.frame(f.t);   // walking left, so mirrored — see flip above
+          drawX = f.x;
         } else if (f.state === 'waiting') {
           f.settled = (f.settled || 0) + dt;
           // Step up on his own feet rather than teleporting when the line moves.
@@ -4827,10 +4986,16 @@
             var sp = POLL.SHUFFLE_SPEED * (Math.abs(err) > 60 ? 4 : 1);
             var step = Math.min(Math.abs(err), sp * dt);
             f.x += (err > 0 ? step : -step);
-            pose = A.stroll.frame(f.t);
+            // A step up the line is leftward and he is already facing that way. A RESIZE can
+            // send him the other way, though — the slots move under him when the canvas
+            // widens — and several hundred px of that drawn unmirrored is the backwards walk
+            // again, so he turns to go and turns back when he gets there.
+            flip = err < 0;
+            pose = f.book ? pollBookPose(f.t, true) : A.stroll.frame(f.t);
           } else {
             f.x = target;
-            pose = (A[f.idle] || A.standstill).frame(f.t + f.slot * 0.7);
+            pose = f.book ? pollBookPose(f.t + f.slot * 0.7, false)
+                          : (A[f.idle] || A.standstill).frame(f.t + f.slot * 0.7);
           }
           pollSeen.waiting = 1;
           drawX = f.x;
@@ -4839,7 +5004,7 @@
           var dxw = r.doorX - r.w * 0.22;
           if (f.x > dxw + 0.5) { f.x = Math.max(dxw, f.x - GSPEED.stroll * dt); f.t = f.t; }
           else if (f.t > POLL.VOTE_SECS) { f.state = 'leaving'; f.t = 0; pollHold = POLL.BETWEEN; pollSeen.leaving = 1; }
-          pose = A.stroll.frame(f.t); drawX = f.x;
+          pose = f.book ? pollBookPose(f.t, true) : A.stroll.frame(f.t); drawX = f.x;
           if (f.x <= dxw + 0.5) { continue; }    // inside: nothing to draw, he is behind it
         } else {   // leaving
           // Out past the booth to the left after voting, or back out to the right for
@@ -4854,7 +5019,7 @@
 
         R.drawShadow(ctx, drawX, feetY, 15, shadow);
         drawFig(ctx, drawX, feetY - 112 * S, S, flip, pose,
-          { color: figColor(f.tone), phone: (f.state === 'waiting' && f.phone) });
+          { color: figColor(f.tone), phone: (f.state === 'waiting' && f.phone), book: !!f.book });
         f.sx = cr.left + drawX; f.fy = cr.top + feetY;
         bodies.push({ x: drawX, floor: feetY, col: figColor(f.tone) });
       }
@@ -4868,8 +5033,9 @@
         var g = POLLS[j];
         if (g.state !== 'leaving') continue;
         R.drawShadow(ctx, g.x, feetY, 15, shadow);
-        drawFig(ctx, g.x, feetY - 112 * S, S, !g.exit, A.stroll.frame(g.t),
-          { color: figColor(g.tone) });
+        drawFig(ctx, g.x, feetY - 112 * S, S, !g.exit,
+          g.book ? pollBookPose(g.t, true) : A.stroll.frame(g.t),
+          { color: figColor(g.tone), book: !!g.book });
       }
 
       // _bodies is THIS FRAME'S or it is nothing — the exodus needs the real list to split
