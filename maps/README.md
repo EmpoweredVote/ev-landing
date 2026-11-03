@@ -23,9 +23,9 @@ on the next rebuild and nowhere else.
 
 ### It reads this repo's films
 
-Each of Essentials, Compass and the Treasury Tracker has an **Explainer** node that opens
-the feature's film over the map, from `../video/<key>.mp4` — the same three files the play
-buttons on the landing page use, one directory up from here. A feature gets a node only
+Each of Essentials, Compass, the Treasury Tracker and Civic Trivia has an **Explainer**
+node that opens the feature's film over the map, from `../video/<key>.mp4` — the same four
+files the play buttons on the landing page use, one directory up from here. A feature gets a node only
 once its film is shipped in `video/`; a node with nothing behind it opens a player on a
 broken source. See the Strategy repo's README for how to add one.
 
