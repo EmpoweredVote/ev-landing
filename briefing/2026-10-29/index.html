@@ -411,7 +411,8 @@
 
 <nav class="jump" aria-label="Sections">
   <ul>
-    <li><a href="#archive">Archive</a></li>
+    <li><a href="#coverage">Coverage</a></li>
+    <li><a href="#corrections">Corrections</a></li>
     <li><a href="#inform">Inform</a></li>
     <li><a href="#connect">Connect</a></li>
     <li><a href="#platform">Platform</a></li>
@@ -422,10 +423,224 @@
   </ul>
 </nav>
 
-<div class="h2row" id="archive"><h2>Past Briefings</h2><p>Each update is a dated snapshot.  We do not edit one after publishing it.</p></div>
+<div class="h2row" id="coverage"><h2>Coverage across the map</h2><p>Three readings of the same 52 boxes.  The boxes never move; only the fill changes.  Put a tab beside another and the gap between them is the work left to do.</p></div>
 <div class="card">
-  <p><b>This page is the current briefing, and it always lives at <code>empowered.vote/briefing</code>.</b>  Every edition also keeps a permanent address of its own, so a number you read here can be checked against the date it was published on.  <b>There is a picker at the top of this page</b> that jumps to any of them.  Each update is written from scratch: work that runs for a month stays the headline, but the sentences around it are rewritten every time.  <b>We never edit a published edition.</b>  When an earlier one got something wrong, the next one says what it corrects.</p>
-  <p style="margin-top:14px;font-size:13px;color:var(--dim)"><b>Four figures from October 27 are corrected here.</b>  Its stance map read <b>16</b> researched officials for the District of Columbia; the right number is <b>14</b>.  It read <b>374</b> for California; the right number is <b>376</b>.  In the coverage table, the national row read <b>556</b> and should read <b>552</b>, and Texas read <b>270</b> and should read <b>272</b>.  Nobody left Congress.  The lead above says why.</p>
+  <!--
+    The tabs are an ENHANCEMENT.  With JavaScript off every pane renders, stacked, each
+    under its own heading and legend, so the page still carries all three maps.  The
+    script below hides the inactive panes and nothing else.  That is the same bargain the
+    jump strip and the Previous Briefings picker already make on this page.
+  -->
+  <div class="maptabs" role="tablist" aria-label="Which coverage the map shows">
+    <button type="button" class="maptab" role="tab" id="mtab-seeded" aria-controls="mpane-seeded" aria-selected="true">Officials on file</button>
+    <button type="button" class="maptab" role="tab" id="mtab-stances" aria-controls="mpane-stances" aria-selected="false">Stance research</button>
+    <button type="button" class="maptab" role="tab" id="mtab-treasury" aria-controls="mpane-treasury" aria-selected="false">Treasury Tracker</button>
+  </div>
+
+  <div class="mappane" id="mpane-seeded" role="tabpanel" aria-labelledby="mtab-seeded" tabindex="0">
+  <h4 class="mapttl">Officials on file</h4>
+  <p>Shading shows how many officials each jurisdiction has on file, <b>researched or not</b>.  This is the denominator the first tab is a fraction of, and <b>every one of the 52 tiles is shaded</b>.  Seating a jurisdiction is the cheap half; researching it is the expensive half.  <b>Puerto Rico is the clearest case</b>: 160 officials here, an empty outline on the stance map.  <b>California holds 2,030 and has researched 376.</b>  Fifteen jurisdictions have researched every official they hold, and all fifteen hold nine or fewer.</p>
+  <div class="usmap" data-map="seeded">
+    <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 22 officials on file, 10 researched">AK</div>
+    <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 425 officials on file, 186 researched">ME</div>
+    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 officials on file, 5 researched">VT</div>
+    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 official on file, 1 researched">NH</div>
+    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 213 officials on file, 168 researched">WA</div>
+    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 officials on file, 5 researched">ID</div>
+    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 officials on file, 4 researched">MT</div>
+    <div class="st t3" style="grid-row:3;grid-column:4" title="North Dakota: 162 officials on file, 5 researched">ND</div>
+    <div class="st t3" style="grid-row:3;grid-column:5" title="Minnesota: 247 officials on file, 27 researched">MN</div>
+    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 officials on file, 5 researched">IL</div>
+    <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 374 officials on file, 208 researched">WI</div>
+    <div class="st t3" style="grid-row:3;grid-column:8" title="Michigan: 191 officials on file, 9 researched">MI</div>
+    <div class="st t1" style="grid-row:3;grid-column:9" title="New York: 4 officials on file, 4 researched">NY</div>
+    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 officials on file, 5 researched">RI</div>
+    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 425 officials on file, 302 researched">MA</div>
+    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 292 officials on file, 154 researched">OR</div>
+    <div class="st t3" style="grid-row:4;grid-column:2" title="Nevada: 109 officials on file, 33 researched">NV</div>
+    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 officials on file, 3 researched">WY</div>
+    <div class="st t3" style="grid-row:4;grid-column:4" title="South Dakota: 129 officials on file, 4 researched">SD</div>
+    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 5 officials on file, 4 researched">IA</div>
+    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 618 officials on file, 23 researched">IN</div>
+    <div class="st t3" style="grid-row:4;grid-column:7" title="Ohio: 166 officials on file, 3 researched">OH</div>
+    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 303 officials on file, 19 researched">PA</div>
+    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 officials on file, 2 researched">NJ</div>
+    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 officials on file, 5 researched">CT</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 2,030 officials on file, 376 researched">CA</div>
+    <div class="st t3" style="grid-row:5;grid-column:2" title="Utah: 571 officials on file, 63 researched">UT</div>
+    <div class="st t3" style="grid-row:5;grid-column:3" title="Colorado: 161 officials on file, 34 researched">CO</div>
+    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 5 officials on file, 4 researched">NE</div>
+    <div class="st t3" style="grid-row:5;grid-column:5" title="Missouri: 254 officials on file, 20 researched">MO</div>
+    <div class="st t3" style="grid-row:5;grid-column:6" title="Kentucky: 177 officials on file, 10 researched">KY</div>
+    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 officials on file, 4 researched">WV</div>
+    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 195 officials on file, 166 researched">VA</div>
+    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 209 officials on file, 188 researched">MD</div>
+    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 4 officials on file, 4 researched">DE</div>
+    <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 141 officials on file, 129 researched">AZ</div>
+    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 5 officials on file, 5 researched">NM</div>
+    <div class="st t3" style="grid-row:6;grid-column:4" title="Kansas: 187 officials on file, 6 researched">KS</div>
+    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 officials on file, 5 researched">AR</div>
+    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 174 officials on file, 119 researched">TN</div>
+    <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 235 officials on file, 132 researched">NC</div>
+    <div class="st t3" style="grid-row:6;grid-column:8" title="South Carolina: 229 officials on file, 9 researched">SC</div>
+    <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 24 officials on file, 14 researched">DC</div>
+    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 4 officials on file, 3 researched">OK</div>
+    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 5 officials on file, 5 researched">LA</div>
+    <div class="st t3" style="grid-row:7;grid-column:6" title="Mississippi: 214 officials on file, 5 researched">MS</div>
+    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 5 officials on file, 4 researched">AL</div>
+    <div class="st t3" style="grid-row:7;grid-column:8" title="Georgia: 328 officials on file, 32 researched">GA</div>
+    <div class="st t2" style="grid-row:8;grid-column:1" title="Hawaii: 89 officials on file, 4 researched">HI</div>
+    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 517 officials on file, 272 researched">TX</div>
+    <div class="st t3" style="grid-row:8;grid-column:9" title="Florida: 241 officials on file, 23 researched">FL</div>
+    <div class="st t3" style="grid-row:8;grid-column:10" title="Puerto Rico: 160 officials on file, 0 researched">PR</div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="seat_deep">30</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="seat_growing">3</span>)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Thin: 1 to 9 (<span data-auto="seat_seeded">19</span>)</span>
+    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>None on file (<span data-auto="seat_none">0</span>)</span>
+  </div>
+  <p style="margin-top:12px;font-size:13px">Hover any state for its officials on file and how many of them are researched.  The 52 tiles hold <b>9,893</b> officials, <b>2,830</b> of them researched.  <b>Federal seats are on none of these maps.</b>  They are a national row, not a state one, and the coverage table below counts them.  <b>1,481 researched people sit on no tile at all.</b>  548 hold a federal seat and 1,327 are candidates in a race.  Those overlap, because a member running again is both.  Only <b>34</b> are neither.</p>
+  </div>
+  <div class="mappane" id="mpane-stances" role="tabpanel" aria-labelledby="mtab-stances" tabindex="0">
+  <h4 class="mapttl">Stance research</h4>
+  <p>Every state has at least one researched official.  Shading shows the depth of <b>state and local</b> research, and federal seats are counted in the national row of the coverage table below rather than here.  <b>Two tiles moved this cycle, both upward</b>: Alaska from 2 researched officials to 10, and Pennsylvania from 5 to 19.  <b>One tile moved for a different reason.</b>  The District of Columbia reads 14 where the last edition said 16, because two of the people behind that number sit in Congress.  Puerto Rico is still an outlined tile, with 160 officials on file and no researched positions yet.</p>
+  <div class="usmap" data-map="stances">
+    <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 10 researched officials">AK</div>
+    <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 186 researched officials">ME</div>
+    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 researched officials">VT</div>
+    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 researched official">NH</div>
+    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 168 researched officials">WA</div>
+    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 researched officials">ID</div>
+    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 researched officials">MT</div>
+    <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 5 researched officials">ND</div>
+    <div class="st t2" style="grid-row:3;grid-column:5" title="Minnesota: 27 researched officials">MN</div>
+    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 researched officials">IL</div>
+    <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 208 researched officials">WI</div>
+    <div class="st t1" style="grid-row:3;grid-column:8" title="Michigan: 9 researched officials">MI</div>
+    <div class="st t1" style="grid-row:3;grid-column:9" title="New York: 4 researched officials">NY</div>
+    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 researched officials">RI</div>
+    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 302 researched officials">MA</div>
+    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 154 researched officials">OR</div>
+    <div class="st t2" style="grid-row:4;grid-column:2" title="Nevada: 33 researched officials">NV</div>
+    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 researched officials">WY</div>
+    <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 4 researched officials">SD</div>
+    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 4 researched officials">IA</div>
+    <div class="st t2" style="grid-row:4;grid-column:6" title="Indiana: 23 researched officials">IN</div>
+    <div class="st t1" style="grid-row:4;grid-column:7" title="Ohio: 3 researched officials">OH</div>
+    <div class="st t2" style="grid-row:4;grid-column:8" title="Pennsylvania: 19 researched officials">PA</div>
+    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 researched officials">NJ</div>
+    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 researched officials">CT</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 376 researched officials">CA</div>
+    <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 63 researched officials">UT</div>
+    <div class="st t2" style="grid-row:5;grid-column:3" title="Colorado: 34 researched officials">CO</div>
+    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 4 researched officials">NE</div>
+    <div class="st t2" style="grid-row:5;grid-column:5" title="Missouri: 20 researched officials">MO</div>
+    <div class="st t2" style="grid-row:5;grid-column:6" title="Kentucky: 10 researched officials">KY</div>
+    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 researched officials">WV</div>
+    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 166 researched officials">VA</div>
+    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 188 researched officials">MD</div>
+    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 4 researched officials">DE</div>
+    <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 129 researched officials">AZ</div>
+    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 5 researched officials">NM</div>
+    <div class="st t1" style="grid-row:6;grid-column:4" title="Kansas: 6 researched officials">KS</div>
+    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 researched officials">AR</div>
+    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 119 researched officials">TN</div>
+    <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 132 researched officials">NC</div>
+    <div class="st t1" style="grid-row:6;grid-column:8" title="South Carolina: 9 researched officials">SC</div>
+    <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 14 researched officials">DC</div>
+    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 3 researched officials">OK</div>
+    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 5 researched officials">LA</div>
+    <div class="st t1" style="grid-row:7;grid-column:6" title="Mississippi: 5 researched officials">MS</div>
+    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 4 researched officials">AL</div>
+    <div class="st t2" style="grid-row:7;grid-column:8" title="Georgia: 32 researched officials">GA</div>
+    <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 4 researched officials">HI</div>
+    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 272 researched officials">TX</div>
+    <div class="st t2" style="grid-row:8;grid-column:9" title="Florida: 23 researched officials">FL</div>
+    <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: 160 officials seeded, stance research not started">PR</div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">12</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">12</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">27</span>)</span>
+    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>Seats seeded, research not started (<span data-auto="tier_none">1</span>)</span>
+  </div>
+  <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deeper tiers add legislatures, counties and cities.</p>
+  </div>
+
+  <div class="mappane" id="mpane-treasury" role="tabpanel" aria-labelledby="mtab-treasury" tabindex="0">
+  <h4 class="mapttl">Treasury Tracker coverage</h4>
+  <p>Shading shows how many governments in each state have a published budget in Treasury Tracker.  <b>Every state has at least one, and in 21 of them only one: the state government.</b>  The depth is wildly uneven by design.  A state whose comptroller publishes every municipality at once arrives in one piece.  That is why <b>Pennsylvania reads 2,620, New York 2,331 and Michigan 1,857</b> while their neighbours read single digits.  <b>This is a map of what has been published to us, not of what exists.</b>  The District of Columbia and Puerto Rico have no budgets yet, so both are outlined.</p>
+  <div class="usmap" data-map="treasury">
+    <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 18 governments with published budgets">AK</div>
+    <div class="st t1" style="grid-row:1;grid-column:11" title="Maine: 1 government with published budgets">ME</div>
+    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 1 government with published budgets">VT</div>
+    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 government with published budgets">NH</div>
+    <div class="st t2" style="grid-row:3;grid-column:1" title="Washington: 13 governments with published budgets">WA</div>
+    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 1 government with published budgets">ID</div>
+    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 1 government with published budgets">MT</div>
+    <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 3 governments with published budgets">ND</div>
+    <div class="st t3" style="grid-row:3;grid-column:5" title="Minnesota: 944 governments with published budgets">MN</div>
+    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 1 government with published budgets">IL</div>
+    <div class="st t1" style="grid-row:3;grid-column:7" title="Wisconsin: 3 governments with published budgets">WI</div>
+    <div class="st t3" style="grid-row:3;grid-column:8" title="Michigan: 1,857 governments with published budgets">MI</div>
+    <div class="st t3" style="grid-row:3;grid-column:9" title="New York: 2,331 governments with published budgets">NY</div>
+    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 1 government with published budgets">RI</div>
+    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 357 governments with published budgets">MA</div>
+    <div class="st t2" style="grid-row:4;grid-column:1" title="Oregon: 11 governments with published budgets">OR</div>
+    <div class="st t1" style="grid-row:4;grid-column:2" title="Nevada: 1 government with published budgets">NV</div>
+    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 1 government with published budgets">WY</div>
+    <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 3 governments with published budgets">SD</div>
+    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 1 government with published budgets">IA</div>
+    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 660 governments with published budgets">IN</div>
+    <div class="st t3" style="grid-row:4;grid-column:7" title="Ohio: 342 governments with published budgets">OH</div>
+    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 2,620 governments with published budgets">PA</div>
+    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 1 government with published budgets">NJ</div>
+    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 1 government with published budgets">CT</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 538 governments with published budgets">CA</div>
+    <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 16 governments with published budgets">UT</div>
+    <div class="st t1" style="grid-row:5;grid-column:3" title="Colorado: 5 governments with published budgets">CO</div>
+    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 1 government with published budgets">NE</div>
+    <div class="st t1" style="grid-row:5;grid-column:5" title="Missouri: 1 government with published budgets">MO</div>
+    <div class="st t1" style="grid-row:5;grid-column:6" title="Kentucky: 2 governments with published budgets">KY</div>
+    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 1 government with published budgets">WV</div>
+    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 162 governments with published budgets">VA</div>
+    <div class="st t1" style="grid-row:5;grid-column:9" title="Maryland: 2 governments with published budgets">MD</div>
+    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 1 government with published budgets">DE</div>
+    <div class="st t1" style="grid-row:6;grid-column:2" title="Arizona: 6 governments with published budgets">AZ</div>
+    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 1 government with published budgets">NM</div>
+    <div class="st t1" style="grid-row:6;grid-column:4" title="Kansas: 3 governments with published budgets">KS</div>
+    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 1 government with published budgets">AR</div>
+    <div class="st t1" style="grid-row:6;grid-column:6" title="Tennessee: 2 governments with published budgets">TN</div>
+    <div class="st t1" style="grid-row:6;grid-column:7" title="North Carolina: 7 governments with published budgets">NC</div>
+    <div class="st t2" style="grid-row:6;grid-column:8" title="South Carolina: 60 governments with published budgets">SC</div>
+    <div class="st t0" style="grid-row:6;grid-column:9" title="District of Columbia: no budgets published yet">DC</div>
+    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 1 government with published budgets">OK</div>
+    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 1 government with published budgets">LA</div>
+    <div class="st t1" style="grid-row:7;grid-column:6" title="Mississippi: 3 governments with published budgets">MS</div>
+    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 1 government with published budgets">AL</div>
+    <div class="st t3" style="grid-row:7;grid-column:8" title="Georgia: 696 governments with published budgets">GA</div>
+    <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 5 governments with published budgets">HI</div>
+    <div class="st t2" style="grid-row:8;grid-column:4" title="Texas: 17 governments with published budgets">TX</div>
+    <div class="st t3" style="grid-row:8;grid-column:9" title="Florida: 480 governments with published budgets">FL</div>
+    <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: no budgets published yet">PR</div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ governments (<span data-auto="tre_deep">11</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tre_growing">6</span>)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Thin: 1 to 9 (<span data-auto="tre_seeded">33</span>)</span>
+    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>No budgets published yet (<span data-auto="tre_none">2</span>)</span>
+  </div>
+  <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The 52 tiles hold <b>11,187</b> governments between them; the federal government makes <b>11,188</b>, which is the roster counted in the Treasury section below.</p>
+  </div>
+
+
+  <p style="margin-top:16px;font-size:13px;color:var(--dim);border-top:1px solid var(--line);padding-top:12px"><b>All three maps were queried on the same day as every other figure on this page.</b>  The two added on October 29 carried their own date for one edition, because they were added to a page that had already been published.  That is over: one edition, one as-of, and our refresh script now refuses to run while any such note is on the page.</p>
+</div>
+
+<div class="h2row" id="corrections"><h2>Corrections</h2><p>What this edition fixes in the one before it.  A published edition is never edited; the next one says what it corrects.</p></div>
+<div class="card">
+  <p style="font-size:13px;color:var(--dim)"><b>Four figures from October 27 are corrected here.</b>  Its stance map read <b>16</b> researched officials for the District of Columbia; the right number is <b>14</b>.  It read <b>374</b> for California; the right number is <b>376</b>.  In the coverage table, the national row read <b>556</b> and should read <b>552</b>, and Texas read <b>270</b> and should read <b>272</b>.  Nobody left Congress.  The lead above says why.</p>
   <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>One of the seven is worth naming, because only making two numbers agree would have caught her.</b>  Aisha Wahab left the California state Senate for Congress.  Our records still carry her old seat, and the map read it.  A current term now beats a stale one.  <b>With all of it fixed, every one of the 51 state rows in the coverage table matches the map person for person.</b>  That was not true before, and nothing on the page would have told you.</p>
   <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>We said on October 27 that we would report the provenance debt the week it was paid.</b>  It was paid, and that is the headline above.  <b>Two other claims from that edition were re-derived and both held.</b>  The certified corpus is still a single stratum of 57 state-level record-based stances.  Puerto Rico still has 78 alcaldes, and 70 of them still have no portrait.</p>
   <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>Our numbers were taken against a quiet database.</b>  The last stance answer was written seven hours before we counted, the last budget row six hours before, and the last politician record a day before.  That check exists because the October 20 edition counted during a load and published two partial figures.  This cycle it mattered: the grading run below wrote 198,068 rows in a single hour, and counting inside that hour would have published any number we liked.</p>
@@ -595,221 +810,6 @@
 <div class="card" style="margin-top:18px">
   <h3 class="serif">Follow the money</h3>
   <p style="max-width:92ch">The third leg, alongside votes and stances.  The platform holds <b><span data-auto="fin_contribs_m">29.2 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">8.6 billion</span></b>, covering <b><span data-auto="fin_pols">2,277</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span> election cycles (<span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>)</b>.  Every record traces to its original filing, and superseded lines from amended filings are retired individually rather than counted twice.  <b>Nothing here moved this cycle.</b>  Only confirmed links are counted as money, and the disputed match reported on October 27 is still disputed rather than deleted.</p>
-</div>
-<div class="card" style="margin-top:18px">
-  <h3 class="serif">Coverage across the map</h3>
-  <p style="font-size:13px">Three readings of the same 52 boxes.  <b>The boxes never move; only the fill changes.</b>  Put a tab beside another and the gap between them is the work left to do.</p>
-  <!--
-    The tabs are an ENHANCEMENT.  With JavaScript off every pane renders, stacked, each
-    under its own heading and legend, so the page still carries all three maps.  The
-    script below hides the inactive panes and nothing else.  That is the same bargain the
-    jump strip and the Previous Briefings picker already make on this page.
-  -->
-  <div class="maptabs" role="tablist" aria-label="Which coverage the map shows">
-    <button type="button" class="maptab" role="tab" id="mtab-stances" aria-controls="mpane-stances" aria-selected="true">Stance research</button>
-    <button type="button" class="maptab" role="tab" id="mtab-treasury" aria-controls="mpane-treasury" aria-selected="false">Treasury Tracker</button>
-    <button type="button" class="maptab" role="tab" id="mtab-seeded" aria-controls="mpane-seeded" aria-selected="false">Officials on file</button>
-  </div>
-
-  <div class="mappane" id="mpane-stances" role="tabpanel" aria-labelledby="mtab-stances" tabindex="0">
-  <h4 class="mapttl">Stance research</h4>
-  <p>Every state has at least one researched official.  Shading shows the depth of <b>state and local</b> research, and federal seats are counted in the national row of the table above rather than here.  <b>Two tiles moved this cycle, both upward</b>: Alaska from 2 researched officials to 10, and Pennsylvania from 5 to 19.  <b>One tile moved for a different reason.</b>  The District of Columbia reads 14 where the last edition said 16, because two of the people behind that number sit in Congress.  Puerto Rico is still an outlined tile, with 160 officials on file and no researched positions yet.</p>
-  <div class="usmap" data-map="stances">
-    <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 10 researched officials">AK</div>
-    <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 186 researched officials">ME</div>
-    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 researched officials">VT</div>
-    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 researched official">NH</div>
-    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 168 researched officials">WA</div>
-    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 researched officials">ID</div>
-    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 researched officials">MT</div>
-    <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 5 researched officials">ND</div>
-    <div class="st t2" style="grid-row:3;grid-column:5" title="Minnesota: 27 researched officials">MN</div>
-    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 researched officials">IL</div>
-    <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 208 researched officials">WI</div>
-    <div class="st t1" style="grid-row:3;grid-column:8" title="Michigan: 9 researched officials">MI</div>
-    <div class="st t1" style="grid-row:3;grid-column:9" title="New York: 4 researched officials">NY</div>
-    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 researched officials">RI</div>
-    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 302 researched officials">MA</div>
-    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 154 researched officials">OR</div>
-    <div class="st t2" style="grid-row:4;grid-column:2" title="Nevada: 33 researched officials">NV</div>
-    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 researched officials">WY</div>
-    <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 4 researched officials">SD</div>
-    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 4 researched officials">IA</div>
-    <div class="st t2" style="grid-row:4;grid-column:6" title="Indiana: 23 researched officials">IN</div>
-    <div class="st t1" style="grid-row:4;grid-column:7" title="Ohio: 3 researched officials">OH</div>
-    <div class="st t2" style="grid-row:4;grid-column:8" title="Pennsylvania: 19 researched officials">PA</div>
-    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 researched officials">NJ</div>
-    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 researched officials">CT</div>
-    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 376 researched officials">CA</div>
-    <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 63 researched officials">UT</div>
-    <div class="st t2" style="grid-row:5;grid-column:3" title="Colorado: 34 researched officials">CO</div>
-    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 4 researched officials">NE</div>
-    <div class="st t2" style="grid-row:5;grid-column:5" title="Missouri: 20 researched officials">MO</div>
-    <div class="st t2" style="grid-row:5;grid-column:6" title="Kentucky: 10 researched officials">KY</div>
-    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 researched officials">WV</div>
-    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 166 researched officials">VA</div>
-    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 188 researched officials">MD</div>
-    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 4 researched officials">DE</div>
-    <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 129 researched officials">AZ</div>
-    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 5 researched officials">NM</div>
-    <div class="st t1" style="grid-row:6;grid-column:4" title="Kansas: 6 researched officials">KS</div>
-    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 researched officials">AR</div>
-    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 119 researched officials">TN</div>
-    <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 132 researched officials">NC</div>
-    <div class="st t1" style="grid-row:6;grid-column:8" title="South Carolina: 9 researched officials">SC</div>
-    <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 14 researched officials">DC</div>
-    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 3 researched officials">OK</div>
-    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 5 researched officials">LA</div>
-    <div class="st t1" style="grid-row:7;grid-column:6" title="Mississippi: 5 researched officials">MS</div>
-    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 4 researched officials">AL</div>
-    <div class="st t2" style="grid-row:7;grid-column:8" title="Georgia: 32 researched officials">GA</div>
-    <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 4 researched officials">HI</div>
-    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 272 researched officials">TX</div>
-    <div class="st t2" style="grid-row:8;grid-column:9" title="Florida: 23 researched officials">FL</div>
-    <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: 160 officials seeded, stance research not started">PR</div>
-  </div>
-  <div class="legend">
-    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">12</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">12</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">27</span>)</span>
-    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>Seats seeded, research not started (<span data-auto="tier_none">1</span>)</span>
-  </div>
-  <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The seeded tier is mostly governors and statewide officers; deeper tiers add legislatures, counties and cities.</p>
-  </div>
-
-  <div class="mappane" id="mpane-treasury" role="tabpanel" aria-labelledby="mtab-treasury" tabindex="0">
-  <h4 class="mapttl">Treasury Tracker coverage</h4>
-  <p>Shading shows how many governments in each state have a published budget in Treasury Tracker.  <b>Every state has at least one, and in 21 of them only one: the state government.</b>  The depth is wildly uneven by design.  A state whose comptroller publishes every municipality at once arrives in one piece.  That is why <b>Pennsylvania reads 2,620, New York 2,331 and Michigan 1,857</b> while their neighbours read single digits.  <b>This is a map of what has been published to us, not of what exists.</b>  The District of Columbia and Puerto Rico have no budgets yet, so both are outlined.</p>
-  <div class="usmap" data-map="treasury">
-    <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 18 governments with published budgets">AK</div>
-    <div class="st t1" style="grid-row:1;grid-column:11" title="Maine: 1 government with published budgets">ME</div>
-    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 1 government with published budgets">VT</div>
-    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 government with published budgets">NH</div>
-    <div class="st t2" style="grid-row:3;grid-column:1" title="Washington: 13 governments with published budgets">WA</div>
-    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 1 government with published budgets">ID</div>
-    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 1 government with published budgets">MT</div>
-    <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 3 governments with published budgets">ND</div>
-    <div class="st t3" style="grid-row:3;grid-column:5" title="Minnesota: 944 governments with published budgets">MN</div>
-    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 1 government with published budgets">IL</div>
-    <div class="st t1" style="grid-row:3;grid-column:7" title="Wisconsin: 3 governments with published budgets">WI</div>
-    <div class="st t3" style="grid-row:3;grid-column:8" title="Michigan: 1,857 governments with published budgets">MI</div>
-    <div class="st t3" style="grid-row:3;grid-column:9" title="New York: 2,331 governments with published budgets">NY</div>
-    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 1 government with published budgets">RI</div>
-    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 357 governments with published budgets">MA</div>
-    <div class="st t2" style="grid-row:4;grid-column:1" title="Oregon: 11 governments with published budgets">OR</div>
-    <div class="st t1" style="grid-row:4;grid-column:2" title="Nevada: 1 government with published budgets">NV</div>
-    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 1 government with published budgets">WY</div>
-    <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 3 governments with published budgets">SD</div>
-    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 1 government with published budgets">IA</div>
-    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 660 governments with published budgets">IN</div>
-    <div class="st t3" style="grid-row:4;grid-column:7" title="Ohio: 342 governments with published budgets">OH</div>
-    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 2,620 governments with published budgets">PA</div>
-    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 1 government with published budgets">NJ</div>
-    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 1 government with published budgets">CT</div>
-    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 538 governments with published budgets">CA</div>
-    <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 16 governments with published budgets">UT</div>
-    <div class="st t1" style="grid-row:5;grid-column:3" title="Colorado: 5 governments with published budgets">CO</div>
-    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 1 government with published budgets">NE</div>
-    <div class="st t1" style="grid-row:5;grid-column:5" title="Missouri: 1 government with published budgets">MO</div>
-    <div class="st t1" style="grid-row:5;grid-column:6" title="Kentucky: 2 governments with published budgets">KY</div>
-    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 1 government with published budgets">WV</div>
-    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 162 governments with published budgets">VA</div>
-    <div class="st t1" style="grid-row:5;grid-column:9" title="Maryland: 2 governments with published budgets">MD</div>
-    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 1 government with published budgets">DE</div>
-    <div class="st t1" style="grid-row:6;grid-column:2" title="Arizona: 6 governments with published budgets">AZ</div>
-    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 1 government with published budgets">NM</div>
-    <div class="st t1" style="grid-row:6;grid-column:4" title="Kansas: 3 governments with published budgets">KS</div>
-    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 1 government with published budgets">AR</div>
-    <div class="st t1" style="grid-row:6;grid-column:6" title="Tennessee: 2 governments with published budgets">TN</div>
-    <div class="st t1" style="grid-row:6;grid-column:7" title="North Carolina: 7 governments with published budgets">NC</div>
-    <div class="st t2" style="grid-row:6;grid-column:8" title="South Carolina: 60 governments with published budgets">SC</div>
-    <div class="st t0" style="grid-row:6;grid-column:9" title="District of Columbia: no budgets published yet">DC</div>
-    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 1 government with published budgets">OK</div>
-    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 1 government with published budgets">LA</div>
-    <div class="st t1" style="grid-row:7;grid-column:6" title="Mississippi: 3 governments with published budgets">MS</div>
-    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 1 government with published budgets">AL</div>
-    <div class="st t3" style="grid-row:7;grid-column:8" title="Georgia: 696 governments with published budgets">GA</div>
-    <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 5 governments with published budgets">HI</div>
-    <div class="st t2" style="grid-row:8;grid-column:4" title="Texas: 17 governments with published budgets">TX</div>
-    <div class="st t3" style="grid-row:8;grid-column:9" title="Florida: 480 governments with published budgets">FL</div>
-    <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: no budgets published yet">PR</div>
-  </div>
-  <div class="legend">
-    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ governments (<span data-auto="tre_deep">11</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tre_growing">6</span>)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Thin: 1 to 9 (<span data-auto="tre_seeded">33</span>)</span>
-    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>No budgets published yet (<span data-auto="tre_none">2</span>)</span>
-  </div>
-  <p style="margin-top:12px;font-size:13px">Hover any state for its exact count.  The 52 tiles hold <b>11,187</b> governments between them; the federal government makes <b>11,188</b>, which is the roster counted in the Treasury section above.</p>
-  </div>
-
-  <div class="mappane" id="mpane-seeded" role="tabpanel" aria-labelledby="mtab-seeded" tabindex="0">
-  <h4 class="mapttl">Officials on file</h4>
-  <p>Shading shows how many officials each jurisdiction has on file, <b>researched or not</b>.  This is the denominator the first tab is a fraction of, and <b>every one of the 52 tiles is shaded</b>.  Seating a jurisdiction is the cheap half; researching it is the expensive half.  <b>Puerto Rico is the clearest case</b>: 160 officials here, an empty outline on the stance map.  <b>California holds 2,030 and has researched 376.</b>  Fifteen jurisdictions have researched every official they hold, and all fifteen hold nine or fewer.</p>
-  <div class="usmap" data-map="seeded">
-    <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 22 officials on file, 10 researched">AK</div>
-    <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 425 officials on file, 186 researched">ME</div>
-    <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 officials on file, 5 researched">VT</div>
-    <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 official on file, 1 researched">NH</div>
-    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 213 officials on file, 168 researched">WA</div>
-    <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 officials on file, 5 researched">ID</div>
-    <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 officials on file, 4 researched">MT</div>
-    <div class="st t3" style="grid-row:3;grid-column:4" title="North Dakota: 162 officials on file, 5 researched">ND</div>
-    <div class="st t3" style="grid-row:3;grid-column:5" title="Minnesota: 247 officials on file, 27 researched">MN</div>
-    <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 officials on file, 5 researched">IL</div>
-    <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 374 officials on file, 208 researched">WI</div>
-    <div class="st t3" style="grid-row:3;grid-column:8" title="Michigan: 191 officials on file, 9 researched">MI</div>
-    <div class="st t1" style="grid-row:3;grid-column:9" title="New York: 4 officials on file, 4 researched">NY</div>
-    <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 officials on file, 5 researched">RI</div>
-    <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 425 officials on file, 302 researched">MA</div>
-    <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 292 officials on file, 154 researched">OR</div>
-    <div class="st t3" style="grid-row:4;grid-column:2" title="Nevada: 109 officials on file, 33 researched">NV</div>
-    <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 officials on file, 3 researched">WY</div>
-    <div class="st t3" style="grid-row:4;grid-column:4" title="South Dakota: 129 officials on file, 4 researched">SD</div>
-    <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 5 officials on file, 4 researched">IA</div>
-    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 618 officials on file, 23 researched">IN</div>
-    <div class="st t3" style="grid-row:4;grid-column:7" title="Ohio: 166 officials on file, 3 researched">OH</div>
-    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 303 officials on file, 19 researched">PA</div>
-    <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 officials on file, 2 researched">NJ</div>
-    <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 officials on file, 5 researched">CT</div>
-    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 2,030 officials on file, 376 researched">CA</div>
-    <div class="st t3" style="grid-row:5;grid-column:2" title="Utah: 571 officials on file, 63 researched">UT</div>
-    <div class="st t3" style="grid-row:5;grid-column:3" title="Colorado: 161 officials on file, 34 researched">CO</div>
-    <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 5 officials on file, 4 researched">NE</div>
-    <div class="st t3" style="grid-row:5;grid-column:5" title="Missouri: 254 officials on file, 20 researched">MO</div>
-    <div class="st t3" style="grid-row:5;grid-column:6" title="Kentucky: 177 officials on file, 10 researched">KY</div>
-    <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 officials on file, 4 researched">WV</div>
-    <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 195 officials on file, 166 researched">VA</div>
-    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 209 officials on file, 188 researched">MD</div>
-    <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 4 officials on file, 4 researched">DE</div>
-    <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 141 officials on file, 129 researched">AZ</div>
-    <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 5 officials on file, 5 researched">NM</div>
-    <div class="st t3" style="grid-row:6;grid-column:4" title="Kansas: 187 officials on file, 6 researched">KS</div>
-    <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 officials on file, 5 researched">AR</div>
-    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 174 officials on file, 119 researched">TN</div>
-    <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 235 officials on file, 132 researched">NC</div>
-    <div class="st t3" style="grid-row:6;grid-column:8" title="South Carolina: 229 officials on file, 9 researched">SC</div>
-    <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 24 officials on file, 14 researched">DC</div>
-    <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 4 officials on file, 3 researched">OK</div>
-    <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 5 officials on file, 5 researched">LA</div>
-    <div class="st t3" style="grid-row:7;grid-column:6" title="Mississippi: 214 officials on file, 5 researched">MS</div>
-    <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 5 officials on file, 4 researched">AL</div>
-    <div class="st t3" style="grid-row:7;grid-column:8" title="Georgia: 328 officials on file, 32 researched">GA</div>
-    <div class="st t2" style="grid-row:8;grid-column:1" title="Hawaii: 89 officials on file, 4 researched">HI</div>
-    <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 517 officials on file, 272 researched">TX</div>
-    <div class="st t3" style="grid-row:8;grid-column:9" title="Florida: 241 officials on file, 23 researched">FL</div>
-    <div class="st t3" style="grid-row:8;grid-column:10" title="Puerto Rico: 160 officials on file, 0 researched">PR</div>
-  </div>
-  <div class="legend">
-    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="seat_deep">30</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="seat_growing">3</span>)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Thin: 1 to 9 (<span data-auto="seat_seeded">19</span>)</span>
-    <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>None on file (<span data-auto="seat_none">0</span>)</span>
-  </div>
-  <p style="margin-top:12px;font-size:13px">Hover any state for its officials on file and how many of them are researched.  The 52 tiles hold <b>9,893</b> officials, <b>2,830</b> of them researched.  <b>Federal seats are on none of these maps.</b>  They are a national row, not a state one, and the coverage table above counts them.  <b>1,481 researched people sit on no tile at all.</b>  548 hold a federal seat and 1,327 are candidates in a race.  Those overlap, because a member running again is both.  Only <b>34</b> are neither.</p>
-  </div>
-
-  <p style="margin-top:16px;font-size:13px;color:var(--dim);border-top:1px solid var(--line);padding-top:12px"><b>All three maps were queried on the same day as every other figure on this page.</b>  The two added on October 29 carried their own date for one edition, because they were added to a page that had already been published.  That is over: one edition, one as-of, and our refresh script now refuses to run while any such note is on the page.</p>
 </div>
 
 <!--
