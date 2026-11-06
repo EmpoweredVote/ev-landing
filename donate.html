@@ -131,15 +131,17 @@
     .goals-rule { margin-top: 6px; font-size: 0.92rem; }
     .bar { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 18%, transparent); overflow: hidden; }
     .bar span { display: block; height: 100%; width: 0; background: var(--teal); border-radius: inherit; }
-    .steps { list-style: none; margin-top: 14px; display: grid; gap: 10px; counter-reset: step; }
-    .step { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 14px 14px 14px 50px; }
+    .steps { list-style: none; margin-top: 14px; display: grid; gap: 10px; }
+    .step { position: relative; min-height: 70px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 14px; }
     .step::before { content: ""; position: absolute; left: 14px; top: 14px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.76rem; font-weight: 800; color: var(--muted); border: 1.5px solid var(--border); }
-    .step-paid { counter-increment: step; }
-    .step-paid::before { content: counter(step); }
-    .step-milestone { background: transparent; padding-top: 9px; padding-bottom: 9px; }
-    .step-milestone::before { width: 10px; height: 10px; left: 21px; top: 16px; background: var(--border); border: 0; }
-    .step.is-funded::before { content: "✓"; color: var(--bg); background: var(--teal); border-color: var(--teal); }
-    .step-milestone.is-funded::before { content: ""; background: var(--teal); }
+    .step-paid, .step-milestone { padding-left: 74px; }
+    .step-icon { position: absolute; left: 14px; top: 12px; width: 44px; height: 44px; background: var(--heading); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+    .step.is-funded .step-icon { background: var(--teal); }
+    .step-paid::before { display: none; }
+    .step-paid.is-funded::before { display: grid; content: "✓"; left: 46px; top: 6px; width: 18px; height: 18px; font-size: 0.62rem; color: var(--bg); background: var(--teal); border-color: var(--card); }
+    .step-milestone { min-height: 0; background: transparent; padding-top: 9px; padding-bottom: 9px; }
+    .step-milestone::before { width: 10px; height: 10px; left: 31px; top: 16px; background: var(--border); border: 0; }
+    .step-milestone.is-funded::before { background: var(--teal); }
     .step.is-next { border-color: color-mix(in srgb, var(--teal) 60%, var(--border)); }
     .step-top { display: flex; justify-content: space-between; align-items: baseline; gap: 2px 12px; flex-wrap: wrap; }
     .step-name { font-weight: 700; color: var(--heading); line-height: 1.35; }
@@ -221,7 +223,8 @@
                  data-monthly-total  monthly gifts today. Update by hand each week.
                  data-donor-count    how many monthly donors. Update with the total. A count only, never names.
                Further down, each goal has data-cost (what it adds per month; goals stack)
-               or, for milestones, data-at (a monthly total to pass). The page works out
+               or, for milestones, data-at (a monthly total to pass; change it there, and a
+               milestone below the goals above it hides itself). The page works out
                "at $X a month" for each goal. Every amount is illustrative until the board
                sets it. Only monthly gifts count here; one-time gifts are not added in. -->
           <section id="campaign" class="campaign" data-monthly-total="110" data-donor-count="3" aria-label="Monthly giving progress">
@@ -239,6 +242,7 @@
               <p class="goals-rule">Each goal is a monthly amount. When monthly giving reaches it, that goal is paid for every month. Paid days come only from monthly gifts.</p>
               <ol class="steps" id="steps">
                 <li class="step step-paid" data-cost="">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun_avoid%20electronics%20equipment_2750421.png')"></span>
                   <div class="step-top"><span class="step-name">Running costs</span><span class="step-amount"></span></div>
                   <p class="step-line">Hosting, data and tools, shown apart from development. Monthly gifts cover this first.</p>
                   <div class="bar" aria-hidden="true"><span></span></div>
@@ -256,11 +260,13 @@
                   <p class="step-line">Progress toward the first paid day.</p>
                 </li>
                 <li class="step step-paid" data-cost="2000">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun_working%20idea_1278276.png')"></span>
                   <div class="step-top"><span class="step-name">Chris Cantrell, 1 day a week</span><span class="step-amount"></span></div>
                   <p class="step-line"><span class="ph">[CONFIRM NAME]</span> <span class="ph">[BIO: who he is and why he founded EV, one or two sentences]</span></p>
                   <div class="bar" aria-hidden="true"><span></span></div>
                 </li>
                 <li class="step step-paid" data-cost="2000">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun_working%20idea_1278276.png')"></span>
                   <div class="step-top"><span class="step-name">Chris Andrews, 1 day a week</span><span class="step-amount"></span></div>
                   <p class="step-line"><span class="ph">[CONFIRM NAME]</span></p>
                   <div class="bar" aria-hidden="true"><span></span></div>
@@ -268,34 +274,40 @@
                 <!-- One <li> per volunteer, in the order the team agrees. Keep [NAME] until
                      that person has said yes to appearing by name. Copy or delete rows to match. -->
                 <li class="step step-paid" data-cost="2000">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun_working%20idea_1278276.png')"></span>
                   <div class="step-top"><span class="step-name"><span class="ph">[NAME]</span>, 1 day a week</span><span class="step-amount"></span></div>
                   <div class="bar" aria-hidden="true"><span></span></div>
                 </li>
                 <li class="step step-paid" data-cost="2000">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun_working%20idea_1278276.png')"></span>
                   <div class="step-top"><span class="step-name"><span class="ph">[NAME]</span>, 1 day a week</span><span class="step-amount"></span></div>
                   <div class="bar" aria-hidden="true"><span></span></div>
                 </li>
                 <li class="step step-paid" data-cost="2000">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun_working%20idea_1278276.png')"></span>
                   <div class="step-top"><span class="step-name"><span class="ph">[NAME]</span>, 1 day a week</span><span class="step-amount"></span></div>
                   <div class="bar" aria-hidden="true"><span></span></div>
                 </li>
                 <li class="step step-paid" data-cost="">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun-win-lose-or-draw-1258165-FFFFFF.png')"></span>
                   <div class="step-top"><span class="step-name">A visual designer, 1 day a week</span><span class="step-amount"></span></div>
                   <p class="step-line">A new job posting.</p>
                   <div class="bar" aria-hidden="true"><span></span></div>
                 </li>
                 <li class="step step-paid" data-cost="">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun_Love_2020943.png')"></span>
                   <div class="step-top"><span class="step-name">Health insurance</span><span class="step-amount"></span></div>
                   <p class="step-line">Once people reach about 3 paid days a week.</p>
                   <div class="bar" aria-hidden="true"><span></span></div>
                 </li>
                 <li class="step step-paid" data-cost="">
+                  <span class="step-icon" aria-hidden="true" style="--icon: url('icons/Sticks/noun-table-690866-FFFFFF.png')"></span>
                   <div class="step-top"><span class="step-name">More roles</span><span class="step-amount"></span></div>
                   <p class="step-line">A security lead, an engineer, and motion graphics for our videos.</p>
                   <div class="bar" aria-hidden="true"><span></span></div>
                 </li>
               </ol>
-              <p class="goals-note">One paid day a week costs about $2,000 a month, at a flat, public pay band. One-time gifts pay for one-off costs instead: first a thank-you stipend for each volunteer on <a href="/briefing">our briefing page</a>, paid together, then <span class="ph">[WHICH FEATURES]</span>.</p>
+              <p class="goals-note">One paid day a week costs about $2,000 a month, at a flat, public pay band. One-time gifts pay for one-off costs instead: first a $500 thank-you stipend for each of the 8 volunteers on <a href="/briefing">our briefing page</a>, $4,000 in all, paid together, then <span class="ph">[WHICH FEATURES]</span>.</p>
               <p class="goals-fees">Card fees are covered; the optional tip at checkout goes to Givebutter, not to Empowered Vote, and you can set it to $0.</p>
             </div>
           </section>
@@ -434,6 +446,10 @@
         var amount = q(step, '.step-amount');
         if (step.classList.contains('step-milestone')) {
           var at = num(step.dataset.at);
+          // Keep the ladder in order: hide a milestone that the goals above it
+          // already pass (for example, running costs above $500).
+          step.hidden = known && at <= below;
+          if (step.hidden) return;
           amount.textContent = 'at ' + money(at) + ' a month';
           if (total >= at) step.classList.add('is-funded');
           else if (!next) next = { step: step, at: at, from: 0 };
