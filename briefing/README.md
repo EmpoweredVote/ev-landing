@@ -400,6 +400,25 @@ Render redeploys automatically on push.  The script needs `DATABASE_URL`
   feature branch locally; counting against `origin/main` returned nothing at all, which reads
   exactly like a quiet week.  Pair this with the working-tree rule below — one gives you the right
   ref, the other stops you reading a stale one.
+- 🔴 **A REPO CAN HAVE TWO REMOTES, AND `git remote | head -1` PICKS THE WRONG ONE.**  Paid for on
+  2026-11-06.  `C:/Project Test` (Civic Trivia) carries `origin` (EmpoweredVote) *and*
+  `github-desktop-krishnapatel0196`, a contributor fork.  `git remote` lists them alphabetically, so
+  the fork comes first, and `symbolic-ref refs/remotes/<that>/HEAD` resolves to a branch three weeks
+  stale.  It read **0 commits** for a cycle that had one, and a zero reads exactly like a quiet week.
+  **Prefer `origin` by name; fall back to the first remote only when there is no `origin`.**  The one
+  repo with no remote at all is Fallacy Finders, and that is the only case the fallback is for.
+- 🔴 **`treasury.budgets.created_at` IS NULL ON HALF THE TABLE, SO A "CREATED THIS CYCLE" COUNT
+  RETURNS ZERO AND LOOKS LIKE AN ANSWER.**  On 2026-11-06, 298,625 of 585,630 rows carried a
+  `created_at` and 344,330 carried an `updated_at`.  `count(*) FILTER (WHERE created_at >= :since)`
+  answered **0** on a cycle in which 29 budget rows were rewritten and 1.5 million transactions
+  landed under them, because a NULL fails every comparison silently.  The note further down says
+  this column is "not maintained"; the sharp form is that it is **absent**, not stale.  Count budget
+  movement on `updated_at`, and say which you used.
+- **The finance join is through `transparent_motivations.politician_sources`, not through
+  `contributions` directly.**  `contributions.politician_source_id` is a `politician_sources.id`; it
+  matches **nothing** in `essentials.politicians` and a join on it returns a clean, confident zero.
+  The person is `politician_sources.essentials_politician_id`.  That one hop is why the 2026-11-03
+  edition could not score the money half of its own test.
 - 🔴 **A research programme can produce thousands of rows and move no published figure, and the
   commit log cannot tell you which.**  On 2026-10-05 three city slices landed 1,645 researched rows
   across ~150 commits while `inform.politician_answers` had not gained a row since 2026-09-27.  The
