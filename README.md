@@ -885,7 +885,7 @@ because there is physically nowhere further to go.
 
 ## Deploy
 
-Configured for Render as a static site via `render.yaml`. Connect the repo on Render and it will publish `./` (root) on every push to `main`.
+Hosted on Render as the static site `ev-landing`. It has no build command, publishes the repo root (`.`), and redeploys on every push to `main`. Its settings live in the Render dashboard, not in this repo.
 
 ## Stack
 

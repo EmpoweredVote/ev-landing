@@ -37,7 +37,7 @@
 // --fit <WxH> re-encodes --from: centre-crop to that aspect, scale to that
 // size, write JPEG. It is not a nicety. A full-size capture off a HiDPI screen
 // is 3428px wide and 7 MB, screen.js is COMMITTED so a fresh checkout builds
-// the same episode, and render.yaml serves the whole repo — so an unscaled
+// the same episode, and the Render site serves the whole repo — so an unscaled
 // still would ship 9 MB of base64 on every deploy to be drawn 1190px wide.
 // The same picture is 346 KB at --fit 1440x1428.
 //

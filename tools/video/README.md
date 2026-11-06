@@ -7,7 +7,7 @@ Design: `docs/superpowers/specs/2026-10-10-bobit-video-series-design.md`
 
 ## Nothing under `build/` is ever committed
 
-`render.yaml` sets `staticPublishPath: ./`, so the whole repo is served
+The Render site publishes the repo root (`.`), so the whole repo is served
 publicly and redeployed on every push. A committed MP4 ships on every deploy.
 `tools/video/build/` is git-ignored; keep it that way.
 

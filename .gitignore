@@ -28,12 +28,12 @@ tools/bubble-rig/rig-*.png
 # ev-accounts and held live credentials.
 .playwright-mcp/
 
-# Video pipeline output — frames, audio, MP4s. Never commit: render.yaml
-# publishes the whole repo, so a committed episode ships on every deploy.
+# Video pipeline output — frames, audio, MP4s. Never commit: the Render
+# site publishes the whole repo, so a committed episode ships on every deploy.
 tools/video/build/
 
 # Raw voice recordings. The takes are the SOURCE the cut reads, not output,
-# but they are a quarter of a gigabyte of WAV and render.yaml publishes the
+# but they are a quarter of a gigabyte of WAV and the Render site publishes the
 # whole repo — committing them would ship the recordings on every deploy and
 # keep them in the history forever. cuts.json names the take each line came
 # from; keep the files themselves beside the repo.
@@ -41,7 +41,7 @@ audio/
 
 # Raw browser captures the video pipeline was traced from. Same reasoning as
 # audio/ above: these are SOURCE, not output, but they are 13 MB of PNG and
-# render.yaml publishes the whole repo. The screen they became is already
+# the Render site publishes the whole repo. The screen they became is already
 # committed, embedded in tools/video/episodes/<ep>/screen*.js, and the comment
 # at the top of each of those names the file it came from -- which is why these
 # keep their names and stay in place rather than being tidied away somewhere

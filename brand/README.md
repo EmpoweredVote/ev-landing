@@ -1,7 +1,7 @@
 # Brand Assets
 
 Source-of-truth logo, symbol, and favicon files for the Empowered Vote product suite.
-Served statically at `/brand/<product>/...` (see `render.yaml`).
+Served statically at `/brand/<product>/...` (the Render site publishes the whole repo).
 
 ## Layout
 
