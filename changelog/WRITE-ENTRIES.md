@@ -51,7 +51,10 @@ grouped by product, and `listed: true/false` for each product.
 - **Read `unreadable`.**  A repo that could not be read is not a quiet week.  Name it in the
   run log.  Never write "nothing changed in X" for a repo you could not read.
 - Commit subjects are written by developers for developers.  Read the body too when the
-  subject is unclear.  When you still cannot tell what a voter would see, leave it out.
+  subject is unclear.  When the subject ends in a pull request number like `(#1318)`, read
+  that pull request's description too (`gh pr view 1318 --repo <repo> --json body`): it
+  often says outright what changes for voters, and sometimes that the answer is
+  "nothing".  When you still cannot tell what a voter would see, leave it out.
 
 ### 3. Decide what a voter can see
 
@@ -169,6 +172,15 @@ The full guide is VOICE.md.  The short version:
 - **Joke about the software, the process, the weather, our size, our hosting bill.**  Never
   about voters, officials, candidates, parties or any group.  Never about elections or
   their results.
+- **Never describe a fix as bigger or worse than it was.**  Say what a voter saw before
+  and what they see now, and no more.  Do not say a person "took a position", that data
+  was "false" or "wrong", or that voters were misled, unless the commit or its pull
+  request shows exactly that.  A guard against something that might happen later is not
+  a fix a voter can notice: it gets no bullet.  When you are unsure how serious it was,
+  describe what the voter now sees, or leave it out.  (Paid for on 2026-11-06: the dry run
+  wrote "some Compass profiles showed a position the person never took" about ev-accounts
+  #1318.  Its description says "What changes for voters today: nothing": the 28 answers
+  it hides were already hidden behind newer ones.)
 - **Own data mistakes plainly, and never joke about them.**  "We found that some of
   McKinney's department names were inaccurate.  They now come straight from the city."
   Never say data was made up, invented, faked or fabricated, even when a commit message
@@ -200,6 +212,8 @@ Bad, and why:
 - "Stage 5 gate now reads Georgia resolutions" — internal, and no voter sees it.
 - "Season 3 gun-policy research doubled" — draft content.
 - "Removed department names Treasury Tracker had made up" — says we invented data.
+- "Some Compass profiles showed a position the person never took" — overstated.  The
+  change was a guard, and its pull request says voters saw no difference.
 - "Cleared the Supabase security advisor ERRORs (CA_0348)" — internal words and codes.
   Write "We fixed a set of security warnings on our backend database." under
   "Security and privacy".
