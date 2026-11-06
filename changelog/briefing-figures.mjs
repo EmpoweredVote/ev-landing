@@ -52,11 +52,14 @@ export function compareFigures(before, after, allow) {
     if (a === null || b === null) { skipped.push({ key, reason: 'not a whole number' }); continue; }
     const delta = b - a;
     if (Math.abs(delta) < spec.min_move) continue;
+    const n = Math.abs(delta);
+    const r = roundDown(n);
     moves.push({
       key, product: spec.product, label: spec.label, before: a, after: b, delta,
       direction: delta > 0 ? 'up' : 'down',
-      say: `${delta > 0 ? 'more than' : 'down by more than'} ${roundDown(Math.abs(delta)).toLocaleString('en-US')}`,
-      total_more_than: roundDown(b).toLocaleString('en-US'),
+      // Exact when the rounding would change nothing ("up 4"), else rounded down.
+      say: r === n ? `${delta > 0 ? 'up' : 'down'} ${n.toLocaleString('en-US')}` : `${delta > 0 ? 'up by more than' : 'down by more than'} ${r.toLocaleString('en-US')}`,
+      total: roundDown(b) === b ? b.toLocaleString('en-US') : `more than ${roundDown(b).toLocaleString('en-US')}`,
     });
   }
   return { moves, skipped };

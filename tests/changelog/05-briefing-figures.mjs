@@ -30,9 +30,11 @@ assert.ok(!res.moves.some((m) => m.key === 'stances_live'));
 
 const synthetic = compareFigures({ stances_live: '30,000', trivia_active: '3,300' }, { stances_live: '31,343', trivia_active: '3,150' }, allow);
 assert.deepEqual(synthetic.moves.map((m) => [m.key, m.direction, m.say]), [
-  ['stances_live', 'up', 'more than 1,300'],
-  ['trivia_active', 'down', 'down by more than 150'],
-], 'big moves reported, drops reported plainly, rounded down');
+  ['stances_live', 'up', 'up by more than 1,300'],
+  ['trivia_active', 'down', 'down 150'],
+], 'moves reported, drops reported plainly, rounded down only when rounding changes the number');
+const small = compareFigures({ pols_curated: '13,615', budget_entities: '11,192' }, { pols_curated: '13,617', budget_entities: '11,192' }, allow);
+assert.deepEqual(small.moves.map((m) => [m.key, m.say, m.total]), [['pols_curated', 'up 2', 'more than 13,000']], 'even two new people count; no change, no move');
 
 assert.equal(editionHtml('2026-10-30'), null, 'an edition left as a forwarder has no figures');
 assert.equal(previousReadable('2026-10-30'), '2026-10-29');

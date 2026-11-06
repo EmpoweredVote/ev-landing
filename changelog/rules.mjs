@@ -10,10 +10,11 @@ export const SPECIAL_PRODUCTS = {
   PLATFORM: 'Platform-wide',
   NUMBERS: 'By the numbers',
   NOT_LAUNCHED: 'Not launched yet',
+  SECURITY: 'Security and privacy',
 };
 
 export const MAX_PER_PRODUCT = 2;   // bullets per product per post
-export const MAX_PER_POST = 6;      // regular bullets per post (numbers + not-launched are extra)
+export const MAX_PER_POST = 6;      // regular bullets per post (numbers, not-launched and security are extra)
 export const MAX_SENTENCES = 2;
 export const MAX_WORDS = 50;
 
@@ -25,7 +26,15 @@ export const MIND_MAP_PATH = '/maps/purpose-map.html';
 // FUNDERS: this repo is public, so the check does NOT carry a list of funder or
 // prospect names — writing them here would publish the very thing it guards.
 // It blocks the words a funder credit cannot be written without instead, plus any
-// names in blocked-names.txt (which must only ever hold names that are already public).
+// names in blocked-names.txt.  The one exception (founder decision, 2026-11-06): an
+// organisation whose grant we have already announced, listed in announced-funders.txt,
+// may be named and thanked.  Never an individual donor.
+//
+// SECURITY (founder decision, 2026-11-06): security work gets an entry, because
+// voters care about it, but only under the "Security and privacy" product and only in
+// general words.  The word "security" is allowed there and nowhere else.  The words
+// that describe a specific hole (vulnerability, exploit, token, password…) are
+// banned everywhere, that product included.
 export const BANNED = {
   party: [
     ['party name', /\bdemocrat\w*|\brepublican\w*|\bGOP\b|\blibertarian\w*|\bgreen party\b|\bworking families\b|\bconstitution party\b|\bDNC\b|\bRNC\b|\bMAGA\b/i],
@@ -40,7 +49,10 @@ export const BANNED = {
     ['foundation', /\bfoundations?\b/i],
   ],
   security: [
-    ['security word', /\bsecur(e|ity|ed|ing)\b|\bvulnerab\w*|\bexploit\w*|\bRLS\b|\bsecrets?\b|\bpasswords?\b|\btokens?\b|\bkeys?\b|\bCVE\b|\bbreach\w*|\bleak\w*|\bXSS\b|\bCSRF\b|\binjection\b/i],
+    ['security word outside "Security and privacy"', /\bsecur(e|ity|ed|ing)\b/i],
+  ],
+  securityDetail: [
+    ['security detail', /\bvulnerab\w*|\bexploit\w*|\bRLS\b|\bsecrets?\b|\bpasswords?\b|\btokens?\b|\bkeys?\b|\bCVE\b|\bbreach\w*|\bleak\w*|\bXSS\b|\bCSRF\b|\binjection\b|\battack\w*|\bhack\w*|\bholes?\b|\bexposed\b|\bunauthori[sz]ed\b/i],
   ],
   invented: [
     ['invented-data word', /\bmade[- ]up\b|\binvent(ed|ing)\b|\bfake[ds]?\b|\bfabricat\w*|\bhallucinat\w*/i],
@@ -114,6 +126,9 @@ function linkProblem(entry, hosts) {
   if (product === SPECIAL_PRODUCTS.NOT_LAUNCHED && !(onSite && url.pathname === MIND_MAP_PATH)) {
     return `"${SPECIAL_PRODUCTS.NOT_LAUNCHED}" may only link the whole Mind Map (${MIND_MAP_PATH})`;
   }
+  if (product === SPECIAL_PRODUCTS.SECURITY && !(onSite && url.pathname === '/privacy')) {
+    return `"${SPECIAL_PRODUCTS.SECURITY}" may only link the privacy policy (/privacy)`;
+  }
   if (product === SPECIAL_PRODUCTS.NUMBERS && !(onSite && url.pathname.startsWith('/briefing'))) {
     return `"${SPECIAL_PRODUCTS.NUMBERS}" must link the briefing edition its figures came from`;
   }
@@ -122,7 +137,7 @@ function linkProblem(entry, hosts) {
 
 // Problems with one entry on its own (shape, product, words, length, link).
 // Returns an array of reasons; empty means the entry passes.
-export function entryProblems(entry, { listed, extraNames = [] }) {
+export function entryProblems(entry, { listed, extraNames = [], announcedFunders = [] }) {
   const reasons = [];
   if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return ['entry is not an object'];
   if (!isValidDate(entry.date)) reasons.push(`date "${entry.date}" is not a real YYYY-MM-DD date`);
@@ -139,7 +154,11 @@ export function entryProblems(entry, { listed, extraNames = [] }) {
   if (typeof entry.text !== 'string') return reasons;
 
   const text = entry.text;
+  const lower = text.toLowerCase();
+  const thanksAnnounced = announcedFunders.some((n) => n && lower.includes(n.toLowerCase()));
   for (const [group, pats] of Object.entries(BANNED)) {
+    if (group === 'security' && entry.product === SPECIAL_PRODUCTS.SECURITY) continue;
+    if (group === 'funder' && thanksAnnounced) continue;
     for (const [label, re] of pats) {
       const m = re.exec(text);
       if (m) reasons.push(`${group}: ${label} "${m[0]}"`);
@@ -166,15 +185,18 @@ export function entryProblems(entry, { listed, extraNames = [] }) {
 export function checkEntries(entries, ctx) {
   const kept = [];
   const dropped = [];
-  const perPost = new Map(); // date -> { regular, numbers, notLaunched, byProduct: Map }
+  const perPost = new Map(); // date -> { regular, numbers, notLaunched, security, byProduct: Map }
   entries.forEach((entry, index) => {
     const reasons = entryProblems(entry, ctx);
     if (!reasons.length) {
-      const p = perPost.get(entry.date) || { regular: 0, numbers: 0, notLaunched: 0, byProduct: new Map() };
+      const p = perPost.get(entry.date) || { regular: 0, numbers: 0, notLaunched: 0, security: 0, byProduct: new Map() };
       perPost.set(entry.date, p);
       if (entry.product === SPECIAL_PRODUCTS.NUMBERS) {
         if (p.numbers >= 1) reasons.push('a post has at most one numbers bullet');
         else p.numbers++;
+      } else if (entry.product === SPECIAL_PRODUCTS.SECURITY) {
+        if (p.security >= 1) reasons.push('a post has at most one security bullet');
+        else p.security++;
       } else if (entry.product === SPECIAL_PRODUCTS.NOT_LAUNCHED) {
         if (p.notLaunched >= 1) reasons.push('a post has at most one "Not launched yet" bullet');
         else p.notLaunched++;

@@ -50,7 +50,7 @@ function productSlug(product) {
 
 function renderEntry(e) {
   const link = e.link
-    ? ` <a class="cl-more" href="${escapeHtml(e.link)}">${e.product === 'By the numbers' ? 'Read the briefing' : e.product === 'Not launched yet' ? 'See the Mind Map' : 'Take a look'}<span aria-hidden="true"> →</span></a>`
+    ? ` <a class="cl-more" href="${escapeHtml(e.link)}">${e.product === 'By the numbers' ? 'Read the briefing' : e.product === 'Not launched yet' ? 'See the Mind Map' : e.product === 'Security and privacy' ? 'Read our privacy policy' : 'Take a look'}<span aria-hidden="true"> →</span></a>`
     : '';
   return `<li class="cl-item"><span class="cl-tag cl-tag--${productSlug(e.product)}">${escapeHtml(e.product)}</span><span class="cl-text">${escapeHtml(e.text)}${link}</span></li>`;
 }

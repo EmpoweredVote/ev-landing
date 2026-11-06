@@ -20,6 +20,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 const ENTRIES = join(here, 'entries.json');
 const HOME = join(here, '..', 'index.html');
 const NAMES = join(here, 'blocked-names.txt');
+const ANNOUNCED = join(here, 'announced-funders.txt');
+
+export function loadAnnouncedFunders(path = ANNOUNCED) {
+  return loadBlockedNames(path);
+}
 
 export function loadBlockedNames(path = NAMES) {
   if (!existsSync(path)) return [];
@@ -46,7 +51,7 @@ function main() {
     console.error('BROKEN: found no products on the home page (index.html a.logo-trigger[data-name])');
     process.exit(2);
   }
-  const { kept, dropped } = checkEntries(entries, { listed, extraNames: loadBlockedNames() });
+  const { kept, dropped } = checkEntries(entries, { listed, extraNames: loadBlockedNames(), announcedFunders: loadAnnouncedFunders() });
   console.log(`Listed products: ${listed.map((p) => p.name).join(', ')}`);
   for (const d of dropped) {
     const e = d.entry || {};

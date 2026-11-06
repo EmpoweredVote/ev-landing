@@ -22,6 +22,7 @@ run `node changelog/build-feed.mjs` yourself.
 | `rules.mjs` | Every rule an entry must pass.  Shared by the check and the tests. |
 | `check-entries.mjs` | The blocking check.  Drops rejected entries and prints why. |
 | `blocked-names.txt` | Extra names the check refuses.  **Public repo: only names already public.** |
+| `announced-funders.txt` | Organisations whose grant is publicly announced, which an entry may thank.  Never individuals. |
 | `REPOS.md` | Which repos the routine reads, and the product a reader knows each by. |
 | `read-commits.mjs` | Lists commits on each repo's default branch in a window, noise removed. |
 | `briefing-figures.mjs` | Compares two briefing editions' published figures. |
@@ -43,25 +44,36 @@ run `node changelog/build-feed.mjs` yourself.
 
 - `date` — the post's date, `YYYY-MM-DD`.  Every bullet in one post shares it.
 - `product` — a product the home page links (read from `index.html` on every check), or
-  one of `Platform-wide`, `By the numbers`, `Not launched yet`.
+  one of `Platform-wide`, `By the numbers`, `Not launched yet`, `Security and privacy`.
 - `text` — one sentence, two at most, 50 words at most.
 - `link` — optional.  empowered.vote or a listed product's own address only.  A
   `Not launched yet` bullet may link only `/maps/purpose-map.html`; a `By the numbers`
-  bullet must link the briefing edition its figure came from.
+  bullet must link the briefing edition its figure came from; a `Security and privacy`
+  bullet may link only `/privacy`.
 - `highlight` — optional, `true` for the bullets the newsletter should pick up.
 
 ## What the check rejects
 
 `check-entries.mjs` drops an entry, and says why, when it has: a party name; red or blue;
-a grant, funder, foundation or sponsor word, or a name in `blocked-names.txt`; a security
-word; a word implying invented data ("made up", "invented", "fake"); the word "draft"; an
+a grant, funder, foundation or sponsor word (unless the entry thanks an organisation in
+`announced-funders.txt`), or a name in `blocked-names.txt`; the word "security" outside a
+`Security and privacy` bullet; a word that describes a specific security weakness
+(vulnerability, exploit, token, password, breach, leak…) anywhere; a word implying invented data ("made up", "invented", "fake"); the word "draft"; an
 internal term (rungs, stages, gates, seeding, commits…); an emoji; more than two
 sentences; a product the home page does not link; a link anywhere else; or one bullet
-too many for its product or its post.  It exits non-zero only if the file is broken.
+too many for its product or its post (two per product, six per post, plus one numbers
+bullet, one "Not launched yet" bullet and one "Security and privacy" bullet).  It exits non-zero only if the file is broken.
 
 **Funder names are not listed in this repo on purpose.**  It is public, so a list of
 funder or prospect names here would publish the very thing the check guards.  The check
-blocks the words a funder credit cannot be written without instead.
+blocks the words a funder credit cannot be written without instead.  Once a grant is
+announced publicly, a founder adds the organisation to `announced-funders.txt` and the
+changelog may thank it (founder decision, 2026-11-06).
+
+**Rules changed by the founders after 0036** (Chris Andrews, 2026-11-06): security work
+gets a general bullet instead of none; every briefing figure move counts, however small;
+an unopened Compass season may be mentioned, without detail, in the "Not launched yet"
+bullet; an announced grant-maker may be thanked.
 
 ## Running the checks
 

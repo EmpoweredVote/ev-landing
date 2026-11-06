@@ -62,15 +62,25 @@ these hold:
   products are whatever `listedProducts()` finds in `index.html` (`node -e "import('./changelog/rules.mjs').then(m=>console.log(m.listedProducts(require('fs').readFileSync('index.html','utf8')).map(p=>p.name)))"`).
   On 2026-11-06 they were Compass, Essentials, Read & Rank, Treasury Tracker and Civic
   Trivia Championships.
-- **It is not draft content.**  A Compass topic or season gets an entry only when voters
-  can answer it.  Check what Compass actually serves:
+- **It is not draft content.**  A Compass topic or season gets its own bullet only when
+  voters can answer it.  (Work on an unopened season may get a mention in the "Not
+  launched yet" bullet, below.)  Check what Compass actually serves:
   `curl -s https://accounts-api.empowered.vote/api/compass/topics` lists the topics a voter
   is served (no sign-in needed).  Research for a topic that is not in that list is draft,
   however many commits it took.  On 2026-11-06 the gun-policy and voting-rights work for
   "Season 3" was all draft: none of it qualified.
-- **It is not a security change.**  Never write about one, from any repo, however it is
-  phrased: access rules, keys, sign-in hardening, "advisor" warnings, permission grants.
-  Not even "we fixed a bug" — leave it out entirely.
+- **Security and privacy work gets its own bullet, in general words.**  Voters tell us
+  they care about this, so we say when we did it (founder decision, 2026-11-06).  Use
+  product `"Security and privacy"`, at most one per post, from a **listed product or the
+  shared backend** only.  Say **where** (our backend server, the database, sign-in,
+  Essentials) and **that** we improved or fixed something.  Never say **what the weakness
+  was**, how it could have been used, or who could have reached what.  Only write about a
+  fix that has already reached the default branch, never about something still open.
+  Good: "We fixed a set of security warnings on our backend database."  "We tightened
+  privacy settings on how sign-in works."  Bad: "Signed-out visitors could read X" (the
+  hole), "We patched an exploit in Y" (detail), "No data was exposed" (a claim we have not
+  checked).  The check rejects the detail words (vulnerability, exploit, token, password,
+  key, breach, leak, attack, hole…) even in this bullet.
 - **It is not internal.**  Research tooling, loaders, verifiers, test guards, scripts,
   scheduled jobs, the admin side, and anything a voter would not notice get no bullet.
   About four in five commits are like this.  That is normal.
@@ -81,12 +91,15 @@ stance explanations → Compass; budgets → Treasury Tracker).  `ev-landing` co
 home page: write about them only when a voter would notice, and never about `briefing/`
 or `changelog/` itself.
 
-**Unlisted products** (`listed: false`: Civic Spaces, Focused Communities and the rest on
-2026-11-06) share **at most one** bullet with product `"Not launched yet"`.  It may name
-them.  It may say, in general words, that work happened.  It gives **no feature detail**
-and links nowhere except the whole Mind Map, `/maps/purpose-map.html`.  Example: "This
-week we also made progress on Civic Spaces and Focused Communities."  Leave it out when
-there is nothing to say.
+**Unlisted products and unopened Compass seasons** share **at most one** bullet with
+product `"Not launched yet"`: the unlisted products (`listed: false`: Civic Spaces,
+Focused Communities and the rest on 2026-11-06), and a Compass season that voters cannot
+answer yet (Season 3 on 2026-11-06).  It may name them.  It may say, in general words,
+that work happened.  It gives **no feature detail** — for a Compass season, **no topics,
+no counts, no people** — and links nowhere except the whole Mind Map,
+`/maps/purpose-map.html`.  Examples: "This week we also made progress on Civic Spaces,
+Focused Communities and the next season of Compass."  Leave it out when there is
+nothing to say.
 
 ### 4. Group, then cut
 
@@ -107,10 +120,13 @@ are figures that count what a voter can read.  It **skips** any figure whose nam
 missing from either edition, because a renamed figure is a changed label, and comparing
 across it prints a jump that never happened.
 
-- If `moves` is empty, there is no numbers bullet.  Do not reach for a smaller number.
-- Use only what it printed.  Round down: use its `say` ("more than 1,300") or
-  `total_more_than`.  Never compute a new number, and never pull one from the briefing's
-  prose.
+- **Every move counts, however small** (founder decision, 2026-11-06: two new people is
+  worth saying).  If `moves` is empty, there is no numbers bullet.
+- One bullet, one or two sentences, so pick the one or two moves a voter would care about
+  most and leave the rest.
+- Use only what it printed: its `say` ("up by more than 210", "up 4") and `total`
+  ("more than 13,000").  Never compute a new number, and never pull one from the
+  briefing's prose.
 - A drop is reported plainly ("Civic Trivia has a few fewer live questions this week, as
   older ones expire").  Do not hide it and do not spin it.
 - Product `"By the numbers"`, and the link is the edition's dated address, `link` in the
@@ -128,7 +144,7 @@ them read (the most interesting first; numbers and not-launched last).  Each ent
 ```
 
 - `product` is a listed product name exactly as the home page writes it, or
-  `"Platform-wide"`, `"By the numbers"`, `"Not launched yet"`.
+  `"Platform-wide"`, `"By the numbers"`, `"Not launched yet"`, `"Security and privacy"`.
 - `link` is optional.  Only empowered.vote or a listed product's own address.  Link only
   when the reader can go and see the thing.
 - `highlight: true` on the one or two bullets the newsletter should pick up.  Most posts
@@ -163,7 +179,9 @@ The full guide is VOICE.md.  The short version:
   post may print are the ones `briefing-figures.mjs` gives you, in the numbers bullet.
 - **No hype, no guilt, no urgency, no emojis, no exclamation marks.**
 - **Never name a funder, grant, foundation or sponsor**, whatever a branch name or commit
-  tag says.  Report the work, not who paid for it.
+  tag says.  Report the work, not who paid for it.  The one exception: an organisation
+  listed in `changelog/announced-funders.txt` (a grant we have already announced
+  publicly) may be thanked when the work it paid for ships.  Never an individual donor.
 - **No party names.  Nothing red or blue.**  Not even as a joke about maps.
 - **No names of private people.**  Elected officials and cities may be named when the
   change is about their public record.  Volunteers and contributors are not named without
@@ -182,7 +200,11 @@ Bad, and why:
 - "Stage 5 gate now reads Georgia resolutions" — internal, and no voter sees it.
 - "Season 3 gun-policy research doubled" — draft content.
 - "Removed department names Treasury Tracker had made up" — says we invented data.
-- "Cleared the security advisor errors" — security change.
+- "Cleared the Supabase security advisor ERRORs (CA_0348)" — internal words and codes.
+  Write "We fixed a set of security warnings on our backend database." under
+  "Security and privacy".
+- "Gun-policy research for Season 3 doubled" in the not-launched bullet — names a topic and
+  a count.  "We also made progress on the next season of Compass" is the most it says.
 - "Civic Spaces now lets signed-out readers open a shared post" — feature detail for an
   unlisted product.
 
