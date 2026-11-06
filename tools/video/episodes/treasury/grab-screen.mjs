@@ -87,7 +87,7 @@ await page.waitForTimeout(3500);
 
 // JPEG, not PNG, and this is a size decision rather than a quality one.
 // screen.js is COMMITTED — a fresh checkout has to build the same episode —
-// and render.yaml serves the whole repo, so this file ships on every deploy.
+// and the Render site serves the whole repo, so this file ships on every deploy.
 const buf = await page.screenshot({ type: 'jpeg', quality: 90, fullPage: true,
   clip: { x: 0, y: 0, width: 1440, height: HEIGHT } });
 await browser.close();

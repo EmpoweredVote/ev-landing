@@ -4,8 +4,9 @@ The four pictures in the "03 / Talks" row on the home page.
 
 They used to be fetched from `img.youtube.com` when the page loaded. That told
 Google the IP address of every visitor, before anyone clicked anything. It did
-not tell Google which page they were on: `render.yaml` sets `Referrer-Policy:
-strict-origin-when-cross-origin`, so only the site's origin was sent. These
+not tell Google which page they were on: the site sets no `Referrer-Policy`
+header, so browsers use their default, `strict-origin-when-cross-origin`, and
+only the site's origin was sent. These
 files are served from our own site instead, so nothing reaches Google until a
 visitor opens a talk.
 

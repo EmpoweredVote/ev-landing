@@ -53,7 +53,7 @@ await page.waitForTimeout(3000);
 // a person scrolling the real page would.
 // JPEG, not PNG, and this is a size decision rather than a quality one.
 // screen.js is COMMITTED — a fresh checkout has to build the same episode —
-// and render.yaml serves the whole repo, so this file ships on every deploy.
+// and the Render site serves the whole repo, so this file ships on every deploy.
 // The same capture is 996 KB as a PNG and 310 KB at this quality, and the
 // content is a photograph of a skyline and twelve portraits, which is what
 // JPEG is for. Text in the frame was compared at 1:1 before the switch.
