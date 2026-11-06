@@ -1,0 +1,10 @@
+{
+  "_about": "Briefing figures the changelog may turn into a 'By the numbers' bullet. Only figures that count what a voter can read today, on a product the home page links. Keys are the briefing's data-auto names. min_move is the smallest change (up or down) worth reporting; 1 means every change counts (founder decision, 2026-11-06: even two new people count). To add a figure, check first that a voter can actually see every unit it counts. Left out on purpose, 2026-11-06: stances (counts draft research), leg_votes, fin_* and transactions_m (not confirmed visible unit by unit), meetings/segments/speakers (On the Record is not linked from the home page), the seat_/tier_/tre_ map buckets (internal coverage tiers).",
+  "figures": {
+    "stances_live": { "product": "Compass", "label": "stance positions a voter can read", "min_move": 1 },
+    "topics_open": { "product": "Compass", "label": "topics in the open Compass season", "min_move": 1 },
+    "pols_curated": { "product": "Essentials", "label": "officials and candidates with a profile", "min_move": 1 },
+    "trivia_active": { "product": "Civic Trivia Championships", "label": "live trivia questions", "min_move": 1 },
+    "budget_entities": { "product": "Treasury Tracker", "label": "governments with budget data", "min_move": 1 }
+  }
+}

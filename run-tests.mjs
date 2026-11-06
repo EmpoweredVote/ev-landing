@@ -12,11 +12,16 @@
 // plain FAIL at 600s.  That reads exactly like a real failure and is not one — it happened
 // on 2026-11-01 to tests/poof/09-raise.cjs, which passes alone in 0.44s.  Re-run any
 // failure on its own before believing it.
+//
+// Pass one or more path prefixes to run only those tests, for example
+// `node run-tests.mjs tests/changelog` — what the changelog routine runs.  Those tests
+// are plain node with no browser, so they take seconds, not 25 minutes.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const LIVE = process.argv.includes('--live');
+const ONLY = process.argv.slice(2).filter((a) => !a.startsWith('--')).map((a) => a.replace(/\\/g, '/').replace(/\/$/, ''));
 const files = [];
 const walk = (d) => {
   for (const e of readdirSync(d)) {
@@ -25,11 +30,14 @@ const walk = (d) => {
     if (!/\.(cjs|mjs)$/.test(e)) continue;
     if (/shots\.cjs$/.test(e)) continue;
     if (!LIVE && f.includes('live')) continue;
-    files.push(f.replace(/\\/g, '/'));
+    const rel = f.replace(/\\/g, '/');
+    if (ONLY.length && !ONLY.some((o) => rel === o || rel.startsWith(o + '/'))) continue;
+    files.push(rel);
   }
 };
 walk('tests');
 files.sort();
+if (!files.length) { console.log('No tests matched ' + ONLY.join(', ')); process.exit(1); }
 
 const fail = [];
 let n = 0;
