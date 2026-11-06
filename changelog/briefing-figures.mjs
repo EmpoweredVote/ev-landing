@@ -77,8 +77,8 @@ export function editionHtml(date, dir = BRIEFING) {
   const current = readFileSync(join(dir, 'index.html'), 'utf8');
   const asof = extractFigures(current).asof;
   const want = new Date(date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
-  // A forwarder for an edition that is no longer current was never frozen (2026-10-30
-  // is one).  Its figures are gone; return null and let the caller step back one edition.
+  // A forwarder for an edition that is no longer current was never frozen.  Its figures
+  // are gone; return null and let the caller step back one edition.
   return asof === want ? current : null;
 }
 

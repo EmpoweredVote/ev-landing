@@ -2,7 +2,9 @@
 // and SKIPS a figure whose key is missing from either edition.  Uses the real
 // 2026-10-29 -> 2026-11-03 editions, where stances_served became stances_live.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { extractFigures, parseCount, roundDown, compareFigures, editionHtml, previousReadable } from '../../changelog/briefing-figures.mjs';
 
 const allow = JSON.parse(readFileSync('changelog/figures.json', 'utf8')).figures;
@@ -36,7 +38,17 @@ assert.deepEqual(synthetic.moves.map((m) => [m.key, m.direction, m.say]), [
 const small = compareFigures({ pols_curated: '13,615', budget_entities: '11,192' }, { pols_curated: '13,617', budget_entities: '11,192' }, allow);
 assert.deepEqual(small.moves.map((m) => [m.key, m.say, m.total]), [['pols_curated', 'up 2', 'more than 13,000']], 'even two new people count; no change, no move');
 
-assert.equal(editionHtml('2026-10-30'), null, 'an edition left as a forwarder has no figures');
-assert.equal(previousReadable('2026-10-30'), '2026-10-29');
+// A dated folder left as a forwarder after its edition stopped being current has no
+// figures; the caller steps back one edition.  Built in a temp folder, because the
+// real archive no longer has one (the stray 2026-10-30 forwarder was removed 2026-11-06).
+const tmp = mkdtempSync(join(tmpdir(), 'briefing-'));
+copyFileSync('briefing/index.html', join(tmp, 'index.html'));
+mkdirSync(join(tmp, '2026-10-29'));
+copyFileSync('briefing/2026-10-29/index.html', join(tmp, '2026-10-29', 'index.html'));
+mkdirSync(join(tmp, '2026-10-30'));
+writeFileSync(join(tmp, '2026-10-30', 'index.html'), '<!doctype html><meta http-equiv="refresh" content="0; url=/briefing">');
+assert.equal(editionHtml('2026-10-30', tmp), null, 'an edition left as a forwarder has no figures');
+assert.equal(previousReadable('2026-10-30', tmp), '2026-10-29');
+rmSync(tmp, { recursive: true, force: true });
 assert.ok(editionHtml(previousReadable('9999-01-01')), 'the current edition is readable through briefing/index.html');
 console.log('ok: briefing figures');
