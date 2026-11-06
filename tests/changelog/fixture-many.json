@@ -1,0 +1,13 @@
+[
+  { "date": "2026-11-13", "product": "Compass", "text": "Some stance explanations on Compass were hard to read. They're fixed.", "highlight": true },
+  { "date": "2026-11-13", "product": "Treasury Tracker", "text": "We found that some of McKinney's department names were inaccurate. They now come straight from the city.", "link": "https://treasurytracker.empowered.vote" },
+  { "date": "2026-11-13", "product": "By the numbers", "text": "Compass now shows more than 32,000 stances you can read. Our spreadsheet needed a bigger chair.", "link": "/briefing/2026-11-13" },
+  { "date": "2026-11-13", "product": "Not launched yet", "text": "This week we also made progress on Civic Spaces and Focused Communities.", "link": "/maps/purpose-map.html" },
+  { "date": "2026-11-10", "product": "Essentials", "text": "Portraits now carry the photo credit their licence asks for. Small print, done properly." },
+  { "date": "2026-11-10", "product": "Read & Rank", "text": "Ranking <b>works</b> on small phones & tablets now." },
+  { "date": "2026-11-06", "product": "Civic Trivia Championships", "text": "The explainer film is up on the home page." },
+  { "date": "2026-11-06", "product": "Platform-wide", "text": "Profile pages load a little faster." },
+  { "date": "2026-11-03", "product": "Compass", "text": "A fix: one answer showed a position the person never took. It's gone." },
+  { "date": "2026-11-03", "product": "Essentials", "text": "Jackson and Boise got their own city banners." },
+  { "date": "2026-10-30", "product": "Treasury Tracker", "text": "Los Angeles now shows 23 unbroken years of city spending." }
+]
