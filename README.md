@@ -885,10 +885,23 @@ because there is physically nowhere further to go.
 
 ## Deploy
 
-Hosted on Render as the static site `ev-landing`. It has no build command, publishes the repo root (`.`), and redeploys on every push to `main`. Its settings live in the Render dashboard, not in this repo.
+Hosted on Render as the static site `ev-landing`. It has no build command, publishes the repo root (`.`), and redeploys on every push to `main`. Its settings live in `EmpoweredVote/ev-infra` (see below).
 
 ## Stack
 
 - Plain HTML + CSS + a tiny script for the footer year.
 - Manrope from Google Fonts.
 - Empowered Vote color palette: coral `#ff5740`, blue `#00657c`, light blue `#59b0c4`, yellow `#fed12e`.
+
+## Render settings live in ev-infra
+
+This repo's Render services (`ev-landing`) are managed by the Render Blueprint in
+[`EmpoweredVote/ev-infra`](https://github.com/EmpoweredVote/ev-infra) (`render.yaml`).
+
+- Build and start commands, rewrites, headers, custom domains, plans, cron
+  schedules and build filters change **only through a PR to ev-infra**. Render
+  syncs its `main` branch automatically.
+- A setting changed in the Render dashboard is **undone on the next sync**.
+- Env var **values** are the exception: set them in the Render dashboard. Add a
+  new variable's name to ev-infra (with `sync: false`) so the record stays complete.
+- Do not add a `render.yaml` to this repo. Render does not read it.
