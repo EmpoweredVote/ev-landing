@@ -10,7 +10,7 @@
 //    test asserts the button ENDS before the tile STARTS rather than trusting a
 //    number, because both move with the breakpoint.
 //
-// 2. All five tiles must keep one left edge. The gutter pads the whole column for
+// 2. Every tile must keep one left edge. The gutter pads the whole column for
 //    that reason; padding only the rows that have a film would stagger the set.
 //
 // 3. Closing must actually release the film. `hidden` alone leaves the <video>
@@ -73,7 +73,7 @@ const FILMS = ['essentials', 'compass', 'treasury', 'ctc'];
         return Math.round(e.getBoundingClientRect().left);
       });
     });
-    want(new Set(lefts).size === 1, theme + ': the five tiles do not share a left edge (' + lefts.join(', ') + ')');
+    want(new Set(lefts).size === 1, theme + ': the tiles do not share a left edge (' + lefts.join(', ') + ')');
 
     // tooltip, which must also stay on screen
     await page.locator('.play-btn[data-film="essentials"]').hover();

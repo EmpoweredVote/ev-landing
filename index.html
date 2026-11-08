@@ -679,8 +679,10 @@
         .logo-trigger .m-desc { display: none; }
 
         /* ---- Explainer play buttons ----
-           Essentials, Compass, Treasury Tracker and Civic Trivia Championships have
-           a film; Read & Rank does not. The button is a SIBLING of the tile's <a>,
+           All four tools on this page have a film, so every tile sits in a .tool-row.
+           Read & Rank was the one that did not, and it has left the showcase (2026-11-08)
+           to be rebuilt as an election hub; when it returns it may well arrive with a film,
+           but do not assume one. The button is a SIBLING of the tile's <a>,
            never a child — a button inside a link is invalid markup, and the inner
            control stops being reachable by keyboard.
            .tool-row wraps the pair so the button can be positioned against the tile
@@ -691,7 +693,7 @@
 
         /* The gutter exists because the lockups do not leave room. Essentials is more
            than four times as wide as it is tall, so a triangle placed inside the tile
-           lands on the wordmark. Padding the whole column instead keeps all five tiles
+           lands on the wordmark. Padding the whole column instead keeps every tile
            sharing one left edge, which is the thing that makes the row read as a set. */
         .play-btn {
             position: absolute; top: 50%; left: -48px; z-index: 3;
@@ -863,9 +865,9 @@
                the Civic Trivia card was completely hidden whenever he spoke.
                190px is derived, not chosen: his feet sit 6px below this row's top edge, his
                bubble's bottom edge sits 106px above his feet, and a one- or two-line bubble
-               is 78px tall, which leaves 12px of daylight under the card. The four longest
-               tips (up to 144px, tip.readrank) still reach into the card's bottom edge; they
-               no longer cover it. Trim this and he climbs back onto the cards. */
+               is 78px tall, which leaves 12px of daylight under the card. The longest few
+               tips (up to ~144px) still reach into the card's bottom edge; they no longer
+               cover it. Trim this and he climbs back onto the cards. */
             .hero .meta-row { margin-top: 190px; }
             .showcase { grid-template-columns: 1fr; gap: 14px; max-width: 560px; }
             .showcase-preview { display: none; }
@@ -1666,12 +1668,6 @@
                             <span class="play-tip" aria-hidden="true">Watch Explainer Video</span>
                         </button>
                     </div>
-                    <a class="logo-trigger" data-tool="readrank" data-name="Read &amp; Rank"
-                       href="https://readrank.empowered.vote" target="_blank" rel="noopener">
-                        <img class="logo-l" src="icons/readrank-logo-lg-light.svg" alt="Read &amp; Rank" />
-                        <img class="logo-d" src="icons/readrank-logo-lg-dark.svg" alt="" aria-hidden="true" />
-                        <span class="m-desc">Read candidates' real positions with the names and parties stripped away. Rank what they actually said — then discover whose ideas you genuinely align with, free of the labels.</span>
-                    </a>
                     <div class="tool-row">
                         <a class="logo-trigger" data-tool="treasury" data-name="Treasury Tracker"
                            href="https://treasurytracker.empowered.vote" target="_blank" rel="noopener">
@@ -2325,7 +2321,10 @@
 
             // 5. Direct app links — clicks that send people into a specific EV tool
             //    (distinct from the tool *cards* tracked above).
-            var APP_HOSTS = ['readrank', 'compass', 'essentials', 'treasurytracker', 'ctc'];
+            // 'readrank' is deliberately absent: Read & Rank left the showcase on
+            // 2026-11-08 and the page carries no link to it, so the entry would bind to
+            // nothing. Put it back the day a Read & Rank link returns to this page.
+            var APP_HOSTS = ['compass', 'essentials', 'treasurytracker', 'ctc'];
             APP_HOSTS.forEach(function (host) {
                 document.querySelectorAll('a[href*="' + host + '.empowered.vote"]').forEach(function (a) {
                     a.addEventListener('click', function () {
@@ -2410,10 +2409,6 @@
         // Tool preview — add screenshots to /screenshots/ and list them here
         (function () {
             var shots = {
-                readrank: {
-                    light: ['screenshots/readrank-1-l.jpg', 'screenshots/readrank-2-l.jpg', 'screenshots/readrank-3-l.jpg', 'screenshots/readrank-4-l.jpg'],
-                    dark:  ['screenshots/readrank-1-d.jpg', 'screenshots/readrank-2-d.jpg', 'screenshots/readrank-3-d.jpg', 'screenshots/readrank-4-d.jpg']
-                },
                 compass: {
                     light: ['screenshots/compass-1-l.jpg', 'screenshots/compass-2-l.jpg', 'screenshots/compass-3-l.jpg', 'screenshots/compass-4-l.jpg'],
                     dark:  ['screenshots/compass-1-d.jpg', 'screenshots/compass-2-d.jpg', 'screenshots/compass-3-d.jpg', 'screenshots/compass-4-d.jpg']
