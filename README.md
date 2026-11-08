@@ -5,7 +5,14 @@ Public alpha landing page for [Empowered Vote](https://empowered.vote).
 A single static HTML page that:
 
 - Briefly explains what Empowered Vote is.
-- Links out to each Inform-pillar tool (Compass, Essentials, Read & Rank, Treasury Tracker, Empowered Badges, Civic Trivia Championships).
+- Links out to four Inform-pillar tools (Essentials, Compass, Treasury Tracker, Civic Trivia
+  Championships), each with its explainer film beside it.
+- **Read & Rank came off this page on 2026-11-08.** It is still live at
+  readrank.empowered.vote and is still in the platform; it is being rebuilt as an
+  election hub before the next cycle, and until then the way in is the Mind Map, where
+  a `Current Flow` node under Read & Rank carries the link. Its tile, its greeter tip
+  (`tip.readrank`), its preview screenshots and its lockups are all parked rather than
+  deleted, so putting it back is a revert rather than a rebuild.
 - Is honest about the alpha state — small part-time team, AI-assisted development with human review, things will break.
 - Points to [financials.empowered.vote](https://financials.empowered.vote) for funding transparency.
 
@@ -59,7 +66,8 @@ those three patterns are gitignored, so the churn no longer reaches `git status`
 the SUITE does not touch them at all — `run-tests.mjs` skips every `shots.cjs`, because
 they illustrate rather than assert — so a helper has to be run by hand to change anything
 here. The tool previews the home page serves (`essentials-*`, `compass-*`, `treasury-*`,
-`ctc-*`, `readrank-*`) are still tracked and are not affected.
+`ctc-*`) are still tracked and are not affected. `readrank-*` is tracked too, and is no
+longer served by anything — see the note about Read & Rank at the top.
 
 **The version is pinned exactly, not caret-ranged, and that is deliberate.**
 Each Playwright release expects its own browser builds, and `npx playwright

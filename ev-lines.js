@@ -396,7 +396,10 @@
               { id: 'tip.compass.calibrate' },
               { id: 'tip.compass.visual' },
               { id: 'tip.compass.what' },
-              { id: 'tip.readrank' },
+              // tip.readrank is parked, not deleted. Read & Rank left the showcase on
+              // 2026-11-08, and a greeter who pitches a tool the page gives you no way
+              // to reach is worse than one who stays quiet about it. Its copy is still
+              // in ev-copy.en.js; restore this line when the tool is back on the page.
 
               { id: 'tip.privacy' },
               { id: 'tip.citizens-first' },

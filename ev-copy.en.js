@@ -129,6 +129,8 @@
     'tip.compass.calibrate': "Once you calibrate your compass, it is much easier to understand the folks in the Essentials at a glance.",
     'tip.compass.visual':    "Calibrate your compass once, and from then on you can see how you relate, visually, with candidates and incumbents.",
     'tip.compass.what':      "The compass allows you to pick the issues you care the most about, and find leaders who agree with you in nuance.",
+    // PARKED 2026-11-08: no longer drawn, because Read & Rank left the showcase.
+    // Kept whole so the tool can be re-pitched the day it comes back. See ev-lines.js.
     'tip.readrank':          "Read & Rank is like a blind taste test, but for politicians. You read their stances, say if you agree or not, rank the ones you like, and then find out who said what.",
 
     'tip.privacy':           "We will never sell your data. We will never sell services or advertisements. We do not support “Pay for Power”.",

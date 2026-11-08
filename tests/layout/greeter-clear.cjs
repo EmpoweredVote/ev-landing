@@ -9,10 +9,11 @@
 // the last card, and a bubble of ordinary height does too. Change the figure's scale or the
 // bubble's offset and this is what should complain.
 //
-// The longest four tips are deliberately out of scope. tip.readrank is 144px tall at 390 and
-// does reach into the card's bottom edge; clearing those too would have cost a 260px band of
+// The longest few tips are deliberately out of scope. The tallest measured 144px at 390 and
+// did reach into the card's bottom edge; clearing those too would have cost a 260px band of
 // mostly-empty hero on a phone, and was weighed and declined. They no longer COVER the card,
-// which was the complaint.
+// which was the complaint. (That 144px tip was tip.readrank, parked 2026-11-08 when Read &
+// Rank left the showcase; the headroom is unchanged, and is now simply more generous.)
 const { chromium } = require('playwright');
 const assert = require('assert');
 
