@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Newsletter — Empowered Vote</title>
-  <meta name="description" content="A short, honest note about once a month: what we shipped, what broke, and where we're expanding next." />
+  <meta name="description" content="About once a month, Empowered Vote tells you what we shipped, what broke, and what's next." />
   <link rel="canonical" href="https://empowered.vote/newsletter" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -115,30 +115,6 @@
       margin-bottom: 24px;
     }
 
-    .expect {
-      list-style: none;
-      margin: 0 0 26px;
-      display: grid;
-      gap: 10px;
-    }
-    .expect li {
-      position: relative;
-      padding-left: 22px;
-      font-size: 0.94rem;
-      color: var(--body);
-    }
-    .expect li::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0.62em;
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      background: var(--yellow);
-    }
-    .expect b { color: var(--heading); font-weight: 700; }
-
     label.sr-only {
       position: absolute;
       width: 1px; height: 1px;
@@ -196,15 +172,6 @@
     }
     .note.is-error { color: var(--coral); }
 
-    .fineprint {
-      font-size: 0.84rem;
-      color: var(--muted);
-      margin-top: 20px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
-    }
-    .fineprint a { color: var(--teal); font-weight: 600; }
-
     .success-msg {
       display: none;
       text-align: center;
@@ -225,8 +192,10 @@
       --bg: #111113;
       --card: #1C1C1F;
       --heading: #F2F2F2;
-      --body: #A8B0BC;
-      --muted: #8B949E;
+      /* Brighter than the home page's #A8B0BC / #8B949E. Those pass AA, but this page is
+         one card of small body text, and at that size they read as dim gray on gray. */
+      --body: #D0D6DE;
+      --muted: #AEB6C1;
       --border: #2D2D32;
       --teal: #1DA8C6;
       --coral: #FF6B52;
@@ -278,21 +247,17 @@
 
     <h1>Follow the build</h1>
     <p class="subtitle">
-      We're a volunteer team building free tools that help people walk into the
-      voting booth informed. This is the note that tells you how it's going.
+      Our first tools show you what your officials said, did and spent, without the
+      party frame. Next we're building places to talk hard topics through with people
+      who see them differently, and then ways to turn what we agree on into written
+      proposals. About once a month, we'll tell you how it's going.
     </p>
-
-    <ul class="expect">
-      <li><b>About once a month.</b> Short enough to read in a couple of minutes.</li>
-      <li><b>What shipped, and what's still rough.</b> We name the parts that aren't working yet, because a progress report you can't trust isn't worth sending.</li>
-      <li><b>No cost, and no pitch.</b> Everything we build stays free. We won't sell or share your address.</li>
-    </ul>
 
     <!-- Success state (replaces the form after a successful submit) -->
     <div id="success-msg" class="success-msg">
       <div class="check">✓</div>
       <h2>You're on the list.</h2>
-      <p>The next note will land in your inbox. Thanks for following the build.<br><br>
+      <p>Your first issue arrives with the next monthly email. Thanks for following along.<br><br>
         <a href="/">Back to Empowered Vote</a>
       </p>
     </div>
@@ -308,10 +273,6 @@
     </form>
     <p class="note" id="ev-signup-note" role="status" aria-live="polite" hidden></p>
 
-    <p class="fineprint">
-      Want the long version instead? <a href="/briefing">The full briefing</a> has
-      every count, its source, and what's live versus still in alpha.
-    </p>
   </div>
 
   <script>
