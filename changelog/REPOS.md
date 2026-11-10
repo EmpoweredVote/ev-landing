@@ -23,7 +23,7 @@ empowered-api, EV-prototypes, empowered-vote-static, ev-context).
 | EmpoweredVote/ev-accounts | master | Platform-wide | The shared backend. Most commits are Compass research, Essentials data or the election; map each one to the product a voter would see it in. Mostly direct pushes, so read commits, not pull requests. |
 | EmpoweredVote/CompassV2 | main | Compass | |
 | EmpoweredVote/essentials | main | Essentials | |
-| EmpoweredVote/read-rank | main | Read & Rank | Linked from the home page; not in 0036's starting list, added because it is a listed product. |
+| EmpoweredVote/read-rank | main | Read & Rank | Left the home page on 2026-11-08, so its work goes in the "Not launched yet" bullet until a link returns. Its earlier bullets stay. |
 | EmpoweredVote/treasury-tracker | main | Treasury Tracker | |
 | EmpoweredVote/Civic-Trivia-Championships | master | Civic Trivia Championships | Has a contributor fork; read EmpoweredVote's copy only. |
 | EmpoweredVote/civic-spaces | main | Civic Spaces | Not linked from the home page on 2026-11-06. |

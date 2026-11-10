@@ -5,11 +5,14 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, mkdirSync, copyFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parseRepos } from '../../changelog/read-commits.mjs';
 import { extractFigures, parseCount, roundDown, compareFigures, editionHtml, previousReadable } from '../../changelog/briefing-figures.mjs';
 
 const allow = JSON.parse(readFileSync('changelog/figures.json', 'utf8')).figures;
-const listed = ['Essentials', 'Compass', 'Read & Rank', 'Treasury Tracker', 'Civic Trivia Championships'];
-for (const [k, v] of Object.entries(allow)) assert.ok(listed.includes(v.product), `${k} maps to a listed product`);
+// Each figure names a product a reader knows (one in REPOS.md).  Whether that product is
+// on the home page today is checked when an entry is written, not here.
+const known = parseRepos(readFileSync('changelog/REPOS.md', 'utf8')).map((r) => r.product);
+for (const [k, v] of Object.entries(allow)) assert.ok(known.includes(v.product), `${k} maps to a product in REPOS.md`);
 assert.ok(!('stances' in allow), 'the stored-rows total (counts drafts) is never allowed');
 
 assert.equal(parseCount('31,540'), 31540);

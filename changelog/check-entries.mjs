@@ -22,6 +22,11 @@ const HOME = join(here, '..', 'index.html');
 const NAMES = join(here, 'blocked-names.txt');
 const ANNOUNCED = join(here, 'announced-funders.txt');
 
+// The date of the last published post: entries on or before it are already live.
+export function loadPublishedThrough(path = join(here, 'last-run.json')) {
+  try { return JSON.parse(readFileSync(path, 'utf8')).through.slice(0, 10); } catch { return null; }
+}
+
 export function loadAnnouncedFunders(path = ANNOUNCED) {
   return loadBlockedNames(path);
 }
@@ -51,7 +56,7 @@ function main() {
     console.error('BROKEN: found no products on the home page (index.html a.logo-trigger[data-name])');
     process.exit(2);
   }
-  const { kept, dropped } = checkEntries(entries, { listed, extraNames: loadBlockedNames(), announcedFunders: loadAnnouncedFunders() });
+  const { kept, dropped } = checkEntries(entries, { listed, extraNames: loadBlockedNames(), announcedFunders: loadAnnouncedFunders(), publishedThrough: loadPublishedThrough() });
   console.log(`Listed products: ${listed.map((p) => p.name).join(', ')}`);
   for (const d of dropped) {
     const e = d.entry || {};

@@ -7,11 +7,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { checkEntries, entryProblems, listedProducts } from '../../changelog/rules.mjs';
+import { LISTED } from './listed-fixture.js';
 
-const listed = listedProducts(readFileSync('index.html', 'utf8'));
-assert.deepEqual(listed.map((p) => p.name).sort(),
-  ['Civic Trivia Championships', 'Compass', 'Essentials', 'Read & Rank', 'Treasury Tracker'],
-  'the home page lists these five products (update this test when one is linked or unlinked)');
+const listed = LISTED;
+// listedProducts reads the home page's tool list; checked on a fixed snippet.
+assert.deepEqual(listedProducts('<a class="logo-trigger" data-tool="x" data-name="Read &amp; Rank" href="https://readrank.empowered.vote">'
+  + '<a class="logo-trigger" data-name="Compass" href="https://compass.empowered.vote"><a class="other" data-name="Nope">'),
+  [{ name: 'Read & Rank', href: 'https://readrank.empowered.vote' }, { name: 'Compass', href: 'https://compass.empowered.vote' }]);
 
 const ok = (text, extra = {}) => ({ date: '2026-11-06', product: 'Compass', text, ...extra });
 const problems = (e, names, announced) => entryProblems(e, { listed, extraNames: names || [], announcedFunders: announced || [] });
@@ -64,6 +66,13 @@ assert.ok(problems({ ...ok('Not launched yet: progress.'), product: 'Not launche
 assert.ok(problems(ok('See it.', { link: 'https://example.com/x' })).some((x) => /does not link/.test(x)), 'links only to empowered.vote or a listed app');
 assert.deepEqual(problems(ok('See it.', { link: 'https://compass.empowered.vote' })), []);
 assert.ok(problems({ ...ok('More than 32,000 stances.'), product: 'By the numbers', link: '/maps/purpose-map.html' }).length, 'numbers bullet must link the briefing');
+
+// A product unlinked from the home page keeps its already-published bullets, but gets no new ones.
+const without = LISTED.filter((p) => p.name !== 'Read & Rank');
+const rr = (date) => ({ date, product: 'Read & Rank', text: 'Ranking works on small phones now.', link: 'https://readrank.empowered.vote' });
+assert.deepEqual(entryProblems(rr('2026-11-06'), { listed: without, publishedThrough: '2026-11-06' }), [], 'an old bullet survives its product being unlinked');
+assert.ok(entryProblems(rr('2026-11-10'), { listed: without, publishedThrough: '2026-11-06' }).some((x) => /not linked/.test(x)), 'a new bullet for it is rejected');
+assert.ok(entryProblems({ ...ok('A security fix.'), date: '2026-11-01' }, { listed, publishedThrough: '2026-11-06' }).some((x) => x.startsWith('security:')), 'word rules still apply to old bullets');
 
 // Shape
 assert.ok(problems({ ...ok('x.'), date: '2026-02-30' }).some((x) => /date/.test(x)));

@@ -44,10 +44,10 @@ branch, with the noise already removed (dependency bumps, bots, `chore:`, `ci:`,
 `docs:`, merge commits, a change and its revert in the same window).  It prints commits
 grouped by product, and `listed: true/false` for each product.
 
-- **If `gh` cannot reach a repo**, it lands in `unreadable`.  Every repo in `REPOS.md`
-  except the two private ones is public, so you can still read it without a token:
-  `git clone --bare --filter=blob:none --shallow-since=<through> https://github.com/<repo>`,
-  then `git log <default branch> --since=<through>` with the full timestamp.
+- **If the GitHub API refuses a repo**, `read-commits.mjs` clones it instead (every repo
+  in `REPOS.md` except the two private ones is public), and marks it `(clone)` in
+  `repos`.  You do not need to clone anything by hand.  A repo lands in `unreadable` only
+  when both ways fail.  On 2026-11-10 that was the two private repos.
 - **Read `unreadable`.**  A repo that could not be read is not a quiet week.  Name it in the
   run log.  Never write "nothing changed in X" for a repo you could not read.
 - Commit subjects are written by developers for developers.  Read the body too when the
@@ -239,7 +239,9 @@ node run-tests.mjs tests/changelog   # must print "N/N passed"
 - **If a test fails, do not push.**  Restore the files, print the failure, and stop.  The
   next run, or a human, will pick it up.
 
-Then update `changelog/last-run.json`:
+Then, and only after `check-entries.mjs` has run (it treats entries dated on or before
+the `through` date as already published), update `changelog/last-run.json`.  Write the
+timestamp in whole seconds, with no milliseconds:
 
 ```json
 { "through": "<the until timestamp read-commits.mjs printed>", "edition": "<the 'to' edition briefing-figures.mjs printed>" }
