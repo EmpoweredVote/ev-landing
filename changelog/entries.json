@@ -1,1 +1,9 @@
-[]
+[
+  { "date": "2026-11-10", "product": "Treasury Tracker", "text": "Treasury Tracker has a new Payments view, where you can read the individual payments a city made to vendors, straight from its check register. Los Angeles, Plano and West Hollywood also gained earlier years.", "link": "https://treasurytracker.empowered.vote", "highlight": true },
+  { "date": "2026-11-10", "product": "Essentials", "text": "Essentials now covers Reno and Washoe County, our first local governments in northern Nevada.", "link": "https://essentials.empowered.vote", "highlight": true },
+  { "date": "2026-11-10", "product": "Compass", "text": "For several days, Compass couldn't load your saved answers if you were signed in. That's fixed.", "link": "https://compass.empowered.vote" },
+  { "date": "2026-11-10", "product": "Platform-wide", "text": "You can now add your address with a basic account. We keep only your voting districts, never the street address itself." },
+  { "date": "2026-11-10", "product": "Security and privacy", "text": "We fixed a security warning on our backend database." },
+  { "date": "2026-11-10", "product": "By the numbers", "text": "Essentials now has profiles for more than 14,000 officials and candidates, up by more than 320 since Friday. Civic Trivia's live questions are up 10.", "link": "/briefing/2026-11-10" },
+  { "date": "2026-11-10", "product": "Not launched yet", "text": "We also made progress on Civic Spaces, Empowered Listening, Read & Rank and the next season of Compass.", "link": "/maps/purpose-map.html" }
+]

@@ -6,5 +6,64 @@
     <atom:link href="https://empowered.vote/changelog/feed.xml" rel="self" type="application/rss+xml" />
     <description>What changed on Empowered Vote, every Tuesday and Friday.</description>
     <language>en-us</language>
+    <lastBuildDate>Tue, 10 Nov 2026 12:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Treasury Tracker: Treasury Tracker has a new Payments view, where you can read the individual payments a city made to vendors, straight from its check register. Los Angeles, Plano and West Hollywood also gained earlier years.</title>
+      <link>https://empowered.vote/changelog#2026-11-10</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-10-81d0d5ff1bd9</guid>
+      <pubDate>Tue, 10 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Treasury Tracker</category>
+      <category>highlight</category>
+      <description>Treasury Tracker has a new Payments view, where you can read the individual payments a city made to vendors, straight from its check register. Los Angeles, Plano and West Hollywood also gained earlier years. https://treasurytracker.empowered.vote</description>
+    </item>
+    <item>
+      <title>Essentials: Essentials now covers Reno and Washoe County, our first local governments in northern Nevada.</title>
+      <link>https://empowered.vote/changelog#2026-11-10</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-10-b861b080e199</guid>
+      <pubDate>Tue, 10 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Essentials</category>
+      <category>highlight</category>
+      <description>Essentials now covers Reno and Washoe County, our first local governments in northern Nevada. https://essentials.empowered.vote</description>
+    </item>
+    <item>
+      <title>Compass: For several days, Compass couldn&apos;t load your saved answers if you were signed in. That&apos;s fixed.</title>
+      <link>https://empowered.vote/changelog#2026-11-10</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-10-c4ad3d75c78a</guid>
+      <pubDate>Tue, 10 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Compass</category>
+      <description>For several days, Compass couldn&apos;t load your saved answers if you were signed in. That&apos;s fixed. https://compass.empowered.vote</description>
+    </item>
+    <item>
+      <title>Platform-wide: You can now add your address with a basic account. We keep only your voting districts, never the street address itself.</title>
+      <link>https://empowered.vote/changelog#2026-11-10</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-10-5d1a93eea872</guid>
+      <pubDate>Tue, 10 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Platform-wide</category>
+      <description>You can now add your address with a basic account. We keep only your voting districts, never the street address itself.</description>
+    </item>
+    <item>
+      <title>Security and privacy: We fixed a security warning on our backend database.</title>
+      <link>https://empowered.vote/changelog#2026-11-10</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-10-d652aa9fb455</guid>
+      <pubDate>Tue, 10 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Security and privacy</category>
+      <description>We fixed a security warning on our backend database.</description>
+    </item>
+    <item>
+      <title>By the numbers: Essentials now has profiles for more than 14,000 officials and candidates, up by more than 320 since Friday. Civic Trivia&apos;s live questions are up 10.</title>
+      <link>https://empowered.vote/changelog#2026-11-10</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-10-b1fa8d641cd1</guid>
+      <pubDate>Tue, 10 Nov 2026 12:00:00 +0000</pubDate>
+      <category>By the numbers</category>
+      <description>Essentials now has profiles for more than 14,000 officials and candidates, up by more than 320 since Friday. Civic Trivia&apos;s live questions are up 10. https://empowered.vote/briefing/2026-11-10</description>
+    </item>
+    <item>
+      <title>Not launched yet: We also made progress on Civic Spaces, Empowered Listening, Read &amp; Rank and the next season of Compass.</title>
+      <link>https://empowered.vote/changelog#2026-11-10</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-10-684ba9d40ce7</guid>
+      <pubDate>Tue, 10 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Not launched yet</category>
+      <description>We also made progress on Civic Spaces, Empowered Listening, Read &amp; Rank and the next season of Compass. https://empowered.vote/maps/purpose-map.html</description>
+    </item>
   </channel>
 </rss>
