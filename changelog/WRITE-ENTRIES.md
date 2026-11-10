@@ -224,31 +224,43 @@ Bad, and why:
 
 ## Check, then publish
 
-```bash
-node changelog/check-entries.mjs     # drops any entry that breaks a rule, and says why
-node changelog/build-feed.mjs        # rebuilds feed.xml from entries.json
-node run-tests.mjs tests/changelog   # must print "N/N passed"
-```
+Do these four steps **in this order**.  The order matters: the check must run before
+`last-run.json` moves (it treats entries dated on or before the `through` date as
+already published), and the tests must run after it moves (`01-entries-valid` fails
+while any entry is dated after `through`).  The 2026-11-10 run ran the tests first and
+stopped on that failure.
 
-- **Read every DROPPED line.**  Do not rewrite a dropped entry to sneak it past the check.
-  If the reason was a wording slip (a jargon word in an otherwise fine bullet), you may
-  rewrite it once in plain words and check again.  If the reason is the subject itself
-  (security, draft, unlisted product, a funder), leave it dropped.
-- If every entry was dropped, there is no post: restore the files (`git checkout -- changelog`)
-  and stop.
-- **If a test fails, do not push.**  Restore the files, print the failure, and stop.  The
-  next run, or a human, will pick it up.
+1. Run the check:
 
-Then, and only after `check-entries.mjs` has run (it treats entries dated on or before
-the `through` date as already published), update `changelog/last-run.json`.  Write the
-timestamp in whole seconds, with no milliseconds:
+   ```bash
+   node changelog/check-entries.mjs     # drops any entry that breaks a rule, and says why
+   ```
 
-```json
-{ "through": "<the until timestamp read-commits.mjs printed>", "edition": "<the 'to' edition briefing-figures.mjs printed>" }
-```
+   - **Read every DROPPED line.**  Do not rewrite a dropped entry to sneak it past the
+     check.  If the reason was a wording slip (a jargon word in an otherwise fine bullet),
+     you may rewrite it once in plain words and check again.  If the reason is the
+     subject itself (security detail, draft, unlisted product, a funder), leave it dropped.
+   - If every entry was dropped, there is no post: restore the files
+     (`git checkout -- changelog`) and stop.
 
-Run the tests once more (`01-entries-valid` reads `last-run.json`), then commit **only
-the changelog files**:
+2. Update `changelog/last-run.json`.  Write the timestamp in whole seconds, with no
+   milliseconds:
+
+   ```json
+   { "through": "<the until timestamp read-commits.mjs printed>", "edition": "<the 'to' edition briefing-figures.mjs printed>" }
+   ```
+
+3. Rebuild the feed and run the tests:
+
+   ```bash
+   node changelog/build-feed.mjs        # rebuilds feed.xml from entries.json
+   node run-tests.mjs tests/changelog   # must print "N/N passed"
+   ```
+
+   **If a test fails, do not push.**  Restore the files (`git checkout -- changelog`),
+   print the failure, and stop.  The next run, or a human, will pick it up.
+
+4. Commit **only the changelog files**, and push:
 
 ```bash
 git add changelog/entries.json changelog/feed.xml changelog/last-run.json
