@@ -13,7 +13,8 @@
 //
 // Prints JSON: { since, until, listed: [...], products: { <name>: { listed, repos,
 // commits: [{repo, sha, date, subject, body}] } }, skipped_noise, unreadable }.
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -74,13 +75,37 @@ function readRepo(repo, since, until) {
     const [subject, ...rest] = c.message.split('\n');
     return { repo, branch, sha: c.sha, date: c.date, author: c.author, subject: subject.trim(), body: rest.join('\n').trim().slice(0, 600) };
   });
-  return { branch, commits };
+  return { branch, commits, via: 'api' };
+}
+
+// Fallback when the GitHub API refuses a repo.  The cloud routine's API access covers
+// only ev-landing (2026-11-10 run: "GitHub access to this repository is not enabled for
+// this session"), but every repo in REPOS.md except two is public, so a plain clone
+// needs no token.  Blobs are skipped, so even ev-accounts clones in seconds.
+function readRepoByClone(repo, since, until) {
+  const dir = mkdtempSync(join(tmpdir(), 'cl-repo-'));
+  try {
+    execFileSync('git', ['clone', '--bare', '--quiet', '--filter=blob:none', `https://github.com/${repo}.git`, dir],
+      { stdio: ['ignore', 'pipe', 'pipe'], timeout: 180000, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
+    const branch = execFileSync('git', ['-C', dir, 'symbolic-ref', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
+    const raw = execFileSync('git', ['-C', dir, 'log', branch, `--since=${since}`, `--until=${until}`,
+      '--format=%h%x1f%cI%x1f%an%x1f%B%x1e'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    const commits = raw.split('\x1e').map((r) => r.replace(/^\n/, '')).filter(Boolean).map((r) => {
+      const [sha, date, author, message = ''] = r.split('\x1f');
+      const [subject, ...rest] = message.split('\n');
+      return { repo, branch, sha, date, author, subject: subject.trim(), body: rest.join('\n').trim().slice(0, 600) };
+    });
+    return { branch, commits, via: 'clone' };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 function main() {
   let [since, until] = process.argv.slice(2);
   if (!since) since = JSON.parse(readFileSync(join(here, 'last-run.json'), 'utf8')).through;
-  if (!until) until = new Date().toISOString();
+  // Whole seconds: last-run.json takes this value as is, and its test wants no milliseconds.
+  if (!until) until = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   for (const t of [since, until]) {
     if (!/T\d{2}:\d{2}/.test(t)) throw new Error(`"${t}" has no time of day; pass a full timestamp`);
   }
@@ -91,9 +116,11 @@ function main() {
   const skipped = {};
   for (const r of repos) {
     let got;
-    try { got = readRepo(r.repo, since, until); } catch (e) {
-      unreadable.push({ repo: r.repo, error: String(e.stderr || e.message).trim().split('\n')[0] });
-      continue;
+    try { got = readRepo(r.repo, since, until); } catch (apiErr) {
+      try { got = readRepoByClone(r.repo, since, until); } catch (e) {
+        unreadable.push({ repo: r.repo, error: String(apiErr.stderr || apiErr.message).trim().split('\n')[0] });
+        continue;
+      }
     }
     let commits = got.commits.filter((c) => {
       const why = noiseReason(c);
@@ -104,7 +131,7 @@ function main() {
     const p = products[r.product] || (products[r.product] = {
       listed: listed.includes(r.product) || r.product === SPECIAL_PRODUCTS.PLATFORM, repos: [], commits: [],
     });
-    p.repos.push(`${r.repo}@${got.branch}`);
+    p.repos.push(`${r.repo}@${got.branch} (${got.via})`);
     p.commits.push(...commits);
   }
   console.log(JSON.stringify({ since, until, listed, products, skipped_noise: skipped, unreadable }, null, 2));

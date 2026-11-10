@@ -114,14 +114,14 @@ function allowedHosts(listed) {
   return hosts;
 }
 
-function linkProblem(entry, hosts) {
+function linkProblem(entry, hosts) {  // hosts === null: any https host (an already-published entry)
   const { link, product } = entry;
   if (link === undefined || link === null) return null;
   if (typeof link !== 'string' || !link) return 'link is not a string';
   let url;
   try { url = new URL(link, 'https://empowered.vote'); } catch { return `link "${link}" is not a URL`; }
   if (url.protocol !== 'https:') return `link "${link}" is not https`;
-  if (!hosts.has(url.host)) return `link "${link}" goes to ${url.host}, which the home page does not link`;
+  if (hosts && !hosts.has(url.host)) return `link "${link}" goes to ${url.host}, which the home page does not link`;
   const onSite = url.host === 'empowered.vote' || url.host === 'www.empowered.vote';
   if (product === SPECIAL_PRODUCTS.NOT_LAUNCHED && !(onSite && url.pathname === MIND_MAP_PATH)) {
     return `"${SPECIAL_PRODUCTS.NOT_LAUNCHED}" may only link the whole Mind Map (${MIND_MAP_PATH})`;
@@ -137,7 +137,11 @@ function linkProblem(entry, hosts) {
 
 // Problems with one entry on its own (shape, product, words, length, link).
 // Returns an array of reasons; empty means the entry passes.
-export function entryProblems(entry, { listed, extraNames = [], announcedFunders = [] }) {
+// `publishedThrough` (YYYY-MM-DD, from last-run.json) marks entries that are already
+// live.  Those were checked against the home page on the day they were written, so a
+// product later unlinked from the home page does not delete its old bullets (Read & Rank
+// left the home page on 2026-11-08).  Every word and length rule still applies to them.
+export function entryProblems(entry, { listed, extraNames = [], announcedFunders = [], publishedThrough = null }) {
   const reasons = [];
   if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return ['entry is not an object'];
   if (!isValidDate(entry.date)) reasons.push(`date "${entry.date}" is not a real YYYY-MM-DD date`);
@@ -146,9 +150,12 @@ export function entryProblems(entry, { listed, extraNames = [], announcedFunders
   const known = new Set(['date', 'product', 'text', 'link', 'highlight']);
   for (const k of Object.keys(entry)) if (!known.has(k)) reasons.push(`unknown field "${k}"`);
 
+  const published = publishedThrough !== null && typeof entry.date === 'string' && entry.date <= publishedThrough;
   const names = listed.map((p) => p.name);
   const allowed = new Set([...names, ...Object.values(SPECIAL_PRODUCTS)]);
-  if (typeof entry.product !== 'string' || !allowed.has(entry.product)) {
+  if (typeof entry.product !== 'string' || !entry.product.trim()) {
+    reasons.push('product is missing');
+  } else if (!published && !allowed.has(entry.product)) {
     reasons.push(`product "${entry.product}" is not linked from the home page (listed: ${names.join(', ')})`);
   }
   if (typeof entry.text !== 'string') return reasons;
@@ -174,7 +181,7 @@ export function entryProblems(entry, { listed, extraNames = [], announcedFunders
   if (w > MAX_WORDS) reasons.push(`${w} words (max ${MAX_WORDS})`);
   // A product-specific bullet must not name an unlisted product either; the
   // not-launched bullet is the only place those names may appear.
-  const lp = linkProblem(entry, allowedHosts(listed));
+  const lp = linkProblem(entry, published ? null : allowedHosts(listed));
   if (lp) reasons.push(lp);
   return reasons;
 }
