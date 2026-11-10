@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Newsletter — Empowered Vote</title>
-  <meta name="description" content="At most one short email a month from Empowered Vote: what we shipped, what broke, what's next, and now and then a donation ask, clearly labeled." />
+  <meta name="description" content="About once a month, Empowered Vote tells you what we shipped, what broke, and what's next." />
   <link rel="canonical" href="https://empowered.vote/newsletter" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -115,30 +115,6 @@
       margin-bottom: 24px;
     }
 
-    .expect {
-      list-style: none;
-      margin: 0 0 26px;
-      display: grid;
-      gap: 10px;
-    }
-    .expect li {
-      position: relative;
-      padding-left: 22px;
-      font-size: 0.94rem;
-      color: var(--body);
-    }
-    .expect li::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0.62em;
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      background: var(--yellow);
-    }
-    .expect b { color: var(--heading); font-weight: 700; }
-
     label.sr-only {
       position: absolute;
       width: 1px; height: 1px;
@@ -195,15 +171,6 @@
       color: var(--teal);
     }
     .note.is-error { color: var(--coral); }
-
-    .fineprint {
-      font-size: 0.84rem;
-      color: var(--muted);
-      margin-top: 20px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
-    }
-    .fineprint a { color: var(--teal); font-weight: 600; }
 
     .success-msg {
       display: none;
@@ -280,17 +247,11 @@
 
     <h1>Follow the build</h1>
     <p class="subtitle">
-      We build free tools that help you walk into the voting booth informed. This
-      email tells you how that's going, broken parts included.
-      We're a small team, so it's a short email.
+      Our first tools show you what your officials said, did and spent, without the
+      party frame. Next we're building places to talk hard topics through with people
+      who see them differently, and then ways to turn what we agree on into written
+      proposals. About once a month, we'll tell you how it's going.
     </p>
-
-    <ul class="expect">
-      <li>At most one email a month, and you can read it in a couple of minutes.</li>
-      <li>What we shipped, what's coming next, and what broke. We tell you about the broken parts because you'd find them anyway.</li>
-      <li>Some issues ask for a donation, mostly around Giving Tuesday. When one does, it says so up front, and the tools stay free whether you give or not.</li>
-      <li>Reply to any issue and a person on our team reads it. We won't sell or share your email address.</li>
-    </ul>
 
     <!-- Success state (replaces the form after a successful submit) -->
     <div id="success-msg" class="success-msg">
@@ -312,10 +273,6 @@
     </form>
     <p class="note" id="ev-signup-note" role="status" aria-live="polite" hidden></p>
 
-    <p class="fineprint">
-      Can't wait a month? <a href="/briefing">The full briefing</a> lists every
-      count, where it came from, and which tools are live and which are still in alpha.
-    </p>
   </div>
 
   <script>
