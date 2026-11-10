@@ -29,8 +29,8 @@ const q = async (x) => (await c.query(x)).rows;
 const one = async (x) => (await q(x))[0];
 const D = `'7b3a066c-815d-43b2-a6a0-6a3029778075'`;
 // The window starts at the hour the previous edition's figures were taken, which is the
-// hour its stored-row count (39,042) was still true.
-const SINCE = `timestamptz '2026-10-29 21:00:00+00'`;
+// hour its stored-row count (41,021) was still true.
+const SINCE = `timestamptz '2026-11-06 11:39:05+00'`;
 
 // The map's jurisdiction rule, inlined. It used to be sliced out of a scratch
 // file called tiles4.mjs that lived beside this one and is gone now. Three ways

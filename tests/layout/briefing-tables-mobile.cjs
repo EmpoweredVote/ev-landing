@@ -44,6 +44,7 @@ const loc = (r) => pathToFileURL(path.resolve(__dirname, '../..', r)).href;
 // had been missed. Add the outgoing edition here whenever a new one is published.
 const PAGES = [
   ['current', loc('briefing/index.html')],
+  ['archived 2026-11-06', loc('briefing/2026-11-06/index.html')],
   ['archived 2026-11-03', loc('briefing/2026-11-03/index.html')],
   ['archived 2026-10-29', loc('briefing/2026-10-29/index.html')],
   ['archived 2026-10-27', loc('briefing/2026-10-27/index.html')],
