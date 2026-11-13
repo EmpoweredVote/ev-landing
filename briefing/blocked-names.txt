@@ -1,5 +1,5 @@
 # Names the briefing must never print, one per line.  Case does not matter.  Moved here
-# from changelog/ on 2026-11-13; the scheduled job checks its copy against this list.
+# from changelog/ on 2026-11-13; the scheduled job checks each new edition against it.
 #
 # THIS REPO IS PUBLIC.  Never add a funder, prospect or grant programme name here
 # unless that name is ALREADY public.  Writing a private name in this file publishes it.
