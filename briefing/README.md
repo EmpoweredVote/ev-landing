@@ -271,6 +271,15 @@ Write what a voter now sees or can do, with "you" and "we".
   `briefing/announced-funders.txt` and the work it paid for has shipped.  Never an
   individual donor.  Never use a name in `briefing/blocked-names.txt`.
 
+`briefing/summary-check.mjs` enforces these words, links and limits, the way the
+changelog's `check-entries.mjs` did.  Unlike `voice-check.mjs`, it blocks: an edition
+whose list fails it does not go out until the line is fixed or removed.
+
+```bash
+node briefing/summary-check.mjs                    # the current edition
+node tests/briefing/summary-check.mjs              # its tests
+```
+
 **Avoid these habits.**  They make a page read as machine-written even when every
 count passes.  They come from `ev-marketer/knowledge/VOICE.md`, section 9, which
 the scheduled job can't read, so they are copied here.
