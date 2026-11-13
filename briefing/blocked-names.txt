@@ -1,6 +1,7 @@
-# Extra names check-entries.mjs refuses to publish, one per line.  Case does not matter.
+# Names the briefing must never print, one per line.  Case does not matter.  Moved here
+# from changelog/ on 2026-11-13; the scheduled job checks its copy against this list.
 #
 # THIS REPO IS PUBLIC.  Never add a funder, prospect or grant programme name here
 # unless that name is ALREADY public.  Writing a private name in this file publishes it.
-# The words a funder credit needs ("grant", "foundation", "funded by", "sponsor") are
-# blocked in rules.mjs already, which catches almost every credit without naming anyone.
+# The briefing never credits a funder at all unless it is in announced-funders.txt, which
+# covers almost every case without naming anyone here.

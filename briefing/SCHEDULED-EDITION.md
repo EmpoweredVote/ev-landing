@@ -40,6 +40,8 @@ Follow "Publishing a new edition" in the README exactly. In outline:
 7. Add the newly frozen edition to `PAGES` in `tests/layout/briefing-tables-mobile.cjs`.
 8. Run the tests. At minimum `node tests/layout/briefing-tables-mobile.cjs`; run the rest of
    `tests/` too, and do not publish on a failure you have not understood.
+   Search the new edition for every name in `briefing/blocked-names.txt` (lines not starting
+   with `#`, any case). Remove any match before you commit.
    Run `node briefing/voice-check.mjs` as well — see "How it should read" below for what
    to do when it fails, which is not the same as what to do when a test fails.
 9. Commit and push to `main`. Render deploys on the push.

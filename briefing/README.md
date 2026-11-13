@@ -246,6 +246,9 @@ A row takes the place of its most important update.  Inside a row, use the same
 order.  Between two rows at the same level, the product more people use goes first
 (see Reach).
 
+The newsletter takes its highlights from the top two or three rows, so each of those
+lines has to make sense on its own, quoted without the rest of the page.
+
 **How the lines sound.**  Each line is one sentence, two at most, under 35 words.
 Write what a voter now sees or can do, with "you" and "we".
 
