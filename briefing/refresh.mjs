@@ -34,7 +34,7 @@ if (!process.env.DATABASE_URL) {
 // fresh, and every figure it carries shares one as-of date again.
 //
 // This runs BEFORE the connection on purpose.  Refusing after the queries means waiting out
-// the campaign-finance aggregate — about twenty minutes — to be told no.
+// the slow counts below to be told no.
 if (/Added after publication, and dated separately/.test(readFileSync(PAGE, 'utf8'))) {
   console.error('This edition carries an "Added after publication" note, which names figures that');
   console.error('  were queried on a date of their own.  Refreshing rewrites them and leaves the');
@@ -49,9 +49,9 @@ if (/Added after publication, and dated separately/.test(readFileSync(PAGE, 'utf
 
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();
-// The server default is 30s, which the campaign-finance aggregate (tens of millions of
-// rows) blows through.  Without this the finance query fails, gets swallowed by its
-// try/catch, and the page keeps publishing whatever numbers were last written by hand.
+// The server default is 30s, which the treasury counts (~50s, measured 2026-11-13) blow
+// through.  Without this a query fails, and the page keeps publishing whatever numbers were
+// last written by hand.  (The campaign-finance figures no longer aggregate here: see below.)
 await client.query(`SET statement_timeout = '15min'`);
 const one = async (sql) => (await client.query(sql)).rows[0];
 const all = async (sql) => (await client.query(sql)).rows;
@@ -435,17 +435,35 @@ const treasuryByState = await all(`
   }
 }
 
-// Campaign finance (FEC).  Wrapped: if the schema is absent, leave the spans as-is.
+// Campaign finance (FEC).  Wrapped: if the table is absent, leave the spans as-is.
+//
+// 🔴 READ THE TOTALS ROW, NEVER AGGREGATE `contributions` FROM HERE.  This used to run count(*),
+// two count(DISTINCT) and a sum() over the whole 33 GB table: 19.2 GB read from disk and 3.5 GB of
+// temp PER RUN, measured 2026-11-13 — the second-largest Disk IO consumer on the database, which
+// is what tripped Supabase's Disk IO budget warnings (ev-cto decision 0038).  The same six figures,
+// computed the same way, are now kept in transparent_motivations.contribution_totals (ev-accounts
+// CA_0379), refreshed once a day at the end of ev-jobs-fec-burst.  So they are as of that refresh,
+// not as of this run: the date is printed, and a stale row is called out.
 let finance = null;
 try {
   finance = await one(`SELECT
-    count(*) AS fin_contribs,
-    count(DISTINCT politician_source_id) AS fin_pols,
-    round(sum(amount)) AS fin_dollars,
-    count(DISTINCT election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_cycles,
-    min(election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_min_cycle,
-    max(election_cycle) FILTER (WHERE election_cycle ~ '^(19|20)[0-9]{2}$') AS fin_max_cycle
-    FROM transparent_motivations.contributions`);
+    contributions AS fin_contribs,
+    politicians   AS fin_pols,
+    dollars       AS fin_dollars,
+    cycles        AS fin_cycles,
+    min_cycle     AS fin_min_cycle,
+    max_cycle     AS fin_max_cycle,
+    refreshed_at
+    FROM transparent_motivations.contribution_totals`);
+  if (!finance) {
+    console.warn('WARNING: contribution_totals is empty (no fec-burst refresh yet), leaving those figures untouched.');
+  } else {
+    const ageH = (Date.now() - new Date(finance.refreshed_at).getTime()) / 36e5;
+    console.log(`campaign-finance totals as of ${new Date(finance.refreshed_at).toISOString()} (${ageH.toFixed(1)} h old)`);
+    if (ageH > 48) {
+      console.warn(`WARNING: campaign-finance totals are ${Math.round(ageH)} h old — ev-jobs-fec-burst may not be refreshing them.`);
+    }
+  }
 } catch (e) {
   // Leave the existing values rather than publishing a wrong number — but say so loudly,
   // because a silent skip here is indistinguishable from "already up to date".
