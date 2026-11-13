@@ -29,9 +29,9 @@ Follow "Publishing a new edition" in the README exactly. In outline:
 2. Give tonight's edition its dated folder with a forwarder to `/briefing`.
 3. Write the new `briefing/index.html`. Fresh prose. Keep the stylesheet, the `data-auto` spans,
    the map block, the jump strip and the page chrome. The eyebrow reads "Progress Briefing".
-   Under the stat tiles, write the "What changed since <day>" list (`ul.since`, one product tag
-   per entry). Write the method note as a list inside `<details class="method">`. "Who reads
-   it" in the README has the markup.
+   Under the stat tiles, write the "What changed since <day>" list: one row per product,
+   most important first. Write the method note as a list inside `<details class="method">`.
+   "Who reads it" and "What changed since <day>" in the README have the rules and markup.
 4. Update **both** copies of the archive list — the `<details class="prevdrop">` picker in the
    header and the `Past Briefings` section — moving the `current` tag onto tonight's edition.
 5. Update the dated permalink in the footer.
@@ -103,8 +103,10 @@ corporate and generated. The headlines:
 Then read "Who reads it" right under it (added 2026-11-13). The headlines:
 
 - **Write for the public and funders first**, a smart outsider who has never seen our database.
-- **Open with "What changed since <day>"**, in the changelog's style: what a voter now sees or
-  can do, one product tag per entry, "Not launched yet" for work a voter can't see.
+- **Open with "What changed since <day>"**, one row per product, ordered by how much each
+  changes what a voter can do, with "Not launched yet" last. It replaced the changelog, so its
+  rules apply: only what a voter can see today, no draft content, never a security weakness,
+  never a funder, never a private person.
 - **Plain words.** Use the table in the README, or define the term once. "Draft season",
   "readable", "stratum", "denominator" and the like stay out of the main text.
 - **At most two numbers in a sentence**, and compare with last time only when the change

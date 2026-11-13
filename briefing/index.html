@@ -362,11 +362,22 @@
      Presentation only, added for the readability rules in README "Who reads
      it".  The edition that carries this stylesheet doesn't use either class;
      the next one does, and it copies this stylesheet forward. */
-  ul.since{list-style:none;padding:0;margin:10px 0 0;line-height:1.6}
-  ul.since li{margin:0 0 8px;color:var(--dim);font-size:14.5px;max-width:78ch}
-  .tag{display:inline-block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
-    border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-right:8px;color:var(--dim);
-    vertical-align:1px}
+  /* "What changed since <day>": one row per product, most important first */
+  ul.since{list-style:none;padding:0;margin:12px 0 0;border-top:1px solid var(--line)}
+  ul.since>li{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline;
+    padding:10px 0;border-bottom:1px solid var(--line);color:var(--paper);font-size:14.5px;line-height:1.55}
+  ul.since ul{margin:0;padding-left:16px}
+  ul.since ul li{margin:0 0 3px}
+  ul.since ul li::marker{color:var(--dim)}
+  .tag{justify-self:start;font-size:11.5px;font-weight:700;letter-spacing:.04em;padding:2px 9px;
+    border-radius:999px;white-space:nowrap;color:var(--text);
+    background:color-mix(in srgb,var(--teal) 16%,transparent);
+    border:1px solid color-mix(in srgb,var(--teal) 40%,transparent)}
+  .tag--not-launched-yet{background:transparent;border-style:dashed;border-color:var(--line);color:var(--dim)}
+  .since-more{color:var(--teal);font-weight:600;text-decoration:none;white-space:nowrap}
+  .since-more:hover{text-decoration:underline}
+  .since-more:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:3px}
+  @media (max-width:560px){ul.since>li{grid-template-columns:1fr;gap:6px}}
   details.method>summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
   details.method>summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   details.method ul{margin:8px 0 0;padding-left:20px;line-height:1.55}
