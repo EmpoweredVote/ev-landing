@@ -6,7 +6,65 @@
     <atom:link href="https://empowered.vote/changelog/feed.xml" rel="self" type="application/rss+xml" />
     <description>What changed on Empowered Vote, every Tuesday and Friday.</description>
     <language>en-us</language>
-    <lastBuildDate>Tue, 10 Nov 2026 12:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 13 Nov 2026 12:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Essentials: You can now look up Santa Cruz and Santa Cruz County, plus Corte Madera and Marin County, in California. In Santa Cruz you can also see where most of the city council stands on Compass topics.</title>
+      <link>https://empowered.vote/changelog#2026-11-13</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-13-69896a282ecb</guid>
+      <pubDate>Fri, 13 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Essentials</category>
+      <category>highlight</category>
+      <description>You can now look up Santa Cruz and Santa Cruz County, plus Corte Madera and Marin County, in California. In Santa Cruz you can also see where most of the city council stands on Compass topics. https://essentials.empowered.vote</description>
+    </item>
+    <item>
+      <title>Treasury Tracker: Reno and Washoe County are now on Treasury Tracker, our first local governments in Nevada, read from their own annual financial reports.</title>
+      <link>https://empowered.vote/changelog#2026-11-13</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-13-7de45497e589</guid>
+      <pubDate>Fri, 13 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Treasury Tracker</category>
+      <category>highlight</category>
+      <description>Reno and Washoe County are now on Treasury Tracker, our first local governments in Nevada, read from their own annual financial reports. https://treasurytracker.empowered.vote</description>
+    </item>
+    <item>
+      <title>Treasury Tracker: For many cities and counties in California, South Carolina and Maryland, the source link under a chart opened a statewide table or a landing page. It now opens the document the figures came from.</title>
+      <link>https://empowered.vote/changelog#2026-11-13</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-13-c8bf45574289</guid>
+      <pubDate>Fri, 13 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Treasury Tracker</category>
+      <description>For many cities and counties in California, South Carolina and Maryland, the source link under a chart opened a statewide table or a landing page. It now opens the document the figures came from. https://treasurytracker.empowered.vote</description>
+    </item>
+    <item>
+      <title>Essentials: When a new officeholder&apos;s term begins, your address lookup now shows them that day, instead of the person they replaced.</title>
+      <link>https://empowered.vote/changelog#2026-11-13</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-13-9ed21953a761</guid>
+      <pubDate>Fri, 13 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Essentials</category>
+      <description>When a new officeholder&apos;s term begins, your address lookup now shows them that day, instead of the person they replaced. https://essentials.empowered.vote</description>
+    </item>
+    <item>
+      <title>Platform-wide: The home page has new words: shorter, a little warmer, and now calling us antipartisan. The newsletter page is easier to read in dark mode, too.</title>
+      <link>https://empowered.vote/changelog#2026-11-13</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-13-00364f2703d9</guid>
+      <pubDate>Fri, 13 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Platform-wide</category>
+      <description>The home page has new words: shorter, a little warmer, and now calling us antipartisan. The newsletter page is easier to read in dark mode, too. https://empowered.vote</description>
+    </item>
+    <item>
+      <title>By the numbers: Essentials now has profiles for more than 14,000 officials and candidates, up 27 since Tuesday. Governments with budget data on Treasury Tracker are up 2, to more than 11,000.</title>
+      <link>https://empowered.vote/changelog#2026-11-13</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-13-6037e88c71be</guid>
+      <pubDate>Fri, 13 Nov 2026 12:00:00 +0000</pubDate>
+      <category>By the numbers</category>
+      <description>Essentials now has profiles for more than 14,000 officials and candidates, up 27 since Tuesday. Governments with budget data on Treasury Tracker are up 2, to more than 11,000. https://empowered.vote/briefing/2026-11-13</description>
+    </item>
+    <item>
+      <title>Not launched yet: We also made progress on Read &amp; Rank and Empowered Listening.</title>
+      <link>https://empowered.vote/changelog#2026-11-13</link>
+      <guid isPermaLink="false">empowered-vote-changelog-2026-11-13-38972d0cbdd0</guid>
+      <pubDate>Fri, 13 Nov 2026 12:00:00 +0000</pubDate>
+      <category>Not launched yet</category>
+      <description>We also made progress on Read &amp; Rank and Empowered Listening. https://empowered.vote/maps/purpose-map.html</description>
+    </item>
     <item>
       <title>Treasury Tracker: Treasury Tracker has a new Payments view, where you can read the individual payments a city made to vendors, straight from its check register. Los Angeles, Plano and West Hollywood also gained earlier years.</title>
       <link>https://empowered.vote/changelog#2026-11-10</link>
