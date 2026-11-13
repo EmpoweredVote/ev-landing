@@ -358,6 +358,19 @@
      tells the reader nothing -- and on Chromium it had not finished 900ms after
      the tap.  An instant jump is the right behaviour over this distance, and it
      sidesteps the reduced-motion question rather than answering it. */
+  /* ---- "What changed since <day>" and the method note (2026-11-13) -----
+     Presentation only, added for the readability rules in README "Who reads
+     it".  The edition that carries this stylesheet doesn't use either class;
+     the next one does, and it copies this stylesheet forward. */
+  ul.since{list-style:none;padding:0;margin:10px 0 0;line-height:1.6}
+  ul.since li{margin:0 0 8px;color:var(--dim);font-size:14.5px;max-width:78ch}
+  .tag{display:inline-block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+    border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-right:8px;color:var(--dim);
+    vertical-align:1px}
+  details.method>summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+  details.method>summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  details.method ul{margin:8px 0 0;padding-left:20px;line-height:1.55}
+  details.method li{margin:0 0 6px}
 </style>
 <div class="wrap">
 <header>
