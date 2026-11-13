@@ -1,5 +1,5 @@
 # robots.txt for empowered.vote
-# Empowered Vote is a nonprofit, nonpartisan civic-information project.
+# Empowered Vote is a nonprofit, antipartisan civic-information project.
 
 # Our own citation-verification fetcher is explicitly welcome here.
 # About the bot: https://empowered.vote/crawler

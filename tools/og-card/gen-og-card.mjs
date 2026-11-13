@@ -60,7 +60,7 @@ const CARDS = {
   'ev-landing': {
     out: join(EV_LANDING, 'og-image.png'),
     wordmark: { type: 'image', src: join(EV_LANDING, 'icons/logo-dark.png'), w: 360 },
-    headline: ['Your non-partisan', 'civic engagement platform.'],
+    headline: ['Your antipartisan', 'civic engagement platform.'],
     url: 'empowered.vote',
   },
 
