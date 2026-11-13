@@ -136,6 +136,78 @@ human or scheduled — how the page should sound.
 - **About 4,000 words of narrative.**  That edition ran 4,979.  Length is not
   thoroughness.  What is cut but worth keeping goes in this README.
 
+### Who reads it (added 2026-11-13)
+
+The 2026-11-13 edition passed every rule above and was still hard going.  It held
+248 numbers in 219 sentences, 61 insider words, and the same figure four times.
+These rules come from that edition.
+
+**Write for the public and for funders first.**  Picture a smart outsider who has
+never seen our database.  The team still reads it, but the team can open the
+method note.  The eyebrow in the header reads "Progress Briefing", not "Volunteer
+Briefing".
+
+- **Open with "What changed since <day>".**  Right after the stat tiles, a short
+  list of four to eight entries, written the way the changelog
+  (`changelog/`) writes them: what a voter now sees or can do, in one or two
+  sentences.  Start each entry with a product tag, `<span class="tag">Essentials</span>`.
+  Use the product's public name (Compass, Essentials, Treasury Tracker, Civic
+  Trivia, Read & Rank, Election results).  Work a voter can't see yet gets the tag
+  "Not launched yet".  Markup: `<ul class="since"><li><span class="tag">…</span>…</li></ul>`.
+  A reader who stops there should still know what happened.
+- **Use plain words.**  Write the right-hand column, or define the term in one
+  sentence the first time it appears:
+
+  | Instead of | Write |
+  |---|---|
+  | readable position | a position voters can see on the site |
+  | draft season | the next season of research, not public yet (define "season" once) |
+  | stance row | position |
+  | withdrawal | a position we took back |
+  | called vs. certified | called by the AP vs. made official by the state |
+  | provenance, derivation | where the number came from |
+  | loader, pipeline, backfill, seeding | import, or say what the script did |
+  | stratum, codebook, partition, denominator, bucket, corpus, cohort | leave it out of the main text |
+
+- **At most two numbers in a sentence.**  Three or more is a list or a table.
+  Dates and years don't count.
+- **Compare with last time only when the change matters.**  Editions are three or
+  four days apart, so most numbers barely move.  A change under about 1% is
+  "about the same", or just the total.
+- **Say each fact once.**  The stat tiles and the summary may repeat a headline
+  number.  Nothing else does.
+- **Checks on our own numbers go in the method note.**  How a count reconciles,
+  how we checked it, why one total differs from another.  The main text says what
+  happened.
+- **The method note is a list inside a click-to-open box**, so it stays
+  checkable without making casual readers wade through it:
+  `<details class="method"><summary>How we counted (sources and method)</summary><ul><li>…</li></ul></details>`.
+  One fact or check per item.  The archive line goes after the box, not in it.
+- **One list of requests to the team.**  "Decisions waiting" sits in The Road
+  Ahead, each item with how long it has been open.  Don't repeat requests in other
+  sections, and don't scold ("we have now asked three editions running").
+- **A headline is one plain claim of about 12 words.**  No setup and twist.
+- **Don't call ourselves honest.**  No "honestly", no "to be honest".  The Road
+  Ahead subtitle is "How much further we have to go."
+- **Read & Rank keeps its row.**  It is not retired.  It moves to another section
+  of the site when the next election cycle starts.
+
+**Avoid these habits.**  They make a page read as machine-written even when every
+count passes.  They come from `ev-marketer/knowledge/VOICE.md`, section 9, which
+the scheduled job can't read, so they are copied here.
+
+- No setup and reveal: a short claim, then a short twist.  *"We researched 343
+  more officials.  Almost none of it is public yet."*  Say it as one sentence.
+- No "X isn't Y" contrasts in any form: *"researched isn't the same as public"*,
+  *"measured, not guessed"*.  State what is true.
+- No colon reveals: *"We found a new kind of problem: links that work but go to
+  the wrong place."*  Write *"We found links that open but go to the wrong page."*
+- No surprise words: "after all", "it turns out", "here's the thing", "the catch".
+- No bold label to open a paragraph or list item (*"**Quality checks.**  One
+  set…"*).  Use a heading or a product tag.
+- Em dashes now and then, at most one in a paragraph.  A comma or a period
+  usually reads better.
+
 None of this loosens the rules above it.  Plain is not vague: every number still
 has to be checkable, every figure still has to be reproducible, and **"we do not
 know yet" is a sentence this page is allowed to print.**
@@ -147,8 +219,12 @@ node briefing/voice-check.mjs                            # the current edition
 node briefing/voice-check.mjs briefing/2026-10-23/index.html
 ```
 
-Every threshold in it is set from the 2026-10-23 edition and all seven fire on
-it.  It is a **prose** check and it fails differently from a fact check: a wrong
+The first seven thresholds are set from the 2026-10-23 edition and all seven
+fire on it.  Four more were added on 2026-11-13: sentences with three or more
+numbers (5 or fewer), insider words (3 or fewer), figures of 1,000 or more
+printed three times or more (none), and the AI habits above (1 or fewer).  The
+2026-11-13 edition fails three of the four.  The method note inside
+`<details>` is skipped, because it is meant to be dense.  It is a **prose** check and it fails differently from a fact check: a wrong
 number must never be published, but a clumsy sentence must never stop an edition
 going out.  A stale current edition is worse than an awkward new one.  When it
 exits 1, rewrite and run it again — never publish nothing over it.
