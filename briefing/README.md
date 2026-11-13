@@ -147,14 +147,9 @@ never seen our database.  The team still reads it, but the team can open the
 method note.  The eyebrow in the header reads "Progress Briefing", not "Volunteer
 Briefing".
 
-- **Open with "What changed since <day>".**  Right after the stat tiles, a short
-  list of four to eight entries, written the way the changelog
-  (`changelog/`) writes them: what a voter now sees or can do, in one or two
-  sentences.  Start each entry with a product tag, `<span class="tag">Essentials</span>`.
-  Use the product's public name (Compass, Essentials, Treasury Tracker, Civic
-  Trivia, Read & Rank, Election results).  Work a voter can't see yet gets the tag
-  "Not launched yet".  Markup: `<ul class="since"><li><span class="tag">…</span>…</li></ul>`.
-  A reader who stops there should still know what happened.
+- **Open with "What changed since <day>".**  Right after the stat tiles.  It
+  replaces the changelog, so it follows the changelog's rules.  See "What changed
+  since <day>" below.  A reader who stops there should still know what happened.
 - **Use plain words.**  Write the right-hand column, or define the term in one
   sentence the first time it appears:
 
@@ -191,6 +186,87 @@ Briefing".
   Ahead subtitle is "How much further we have to go."
 - **Read & Rank keeps its row.**  It is not retired.  It moves to another section
   of the site when the next election cycle starts.
+
+### What changed since <day>
+
+This list took over from the changelog (`changelog/`, ev-cto decision 0036) on
+2026-11-13.  The rules below came with it.
+
+**Which changes go in.**  A change gets a line only if all of these hold:
+
+- A voter can see it or use it today, on a product the home page links.
+- It isn't draft content.  A Compass topic or season gets a line only once voters
+  can answer it.  `curl -s https://accounts-api.empowered.vote/api/compass/topics`
+  lists what Compass serves.  Anything else is draft.
+- It changes what a voter sees.  A guard against something that might happen later
+  gets no line.  When a commit ends in a pull request number, read that pull
+  request's description; it often says what changes for voters, and sometimes that
+  the answer is "nothing".  If you still can't tell, leave it out.
+
+Work a voter can't see yet goes in one "Not launched yet" line, without topic names
+or counts: "We also made progress on Read & Rank, Empowered Listening and the next
+season of Compass."  Leave it out when there is nothing to say.
+
+**How it's laid out.**  One row per product, with every update for that product in
+it.  At most three updates in a row and six rows in the list.  A busy few days gets
+grouped harder, not longer.  One link per row, at the end of its last update.
+
+```html
+<ul class="since">
+  <li><span class="tag tag--essentials">Essentials</span><ul>
+    <li>You can now look up Santa Cruz and Santa Cruz County…</li>
+    <li>When a new officeholder's term begins, your address lookup now shows them
+      that day… <a class="since-more" href="https://essentials.empowered.vote">Take a look<span aria-hidden="true"> &rarr;</span></a></li>
+  </ul></li>
+  <li><span class="tag tag--not-launched-yet">Not launched yet</span><ul>…</ul></li>
+</ul>
+```
+
+- Tags are the product's name as the home page writes it, or "Platform-wide",
+  "Security and privacy" or "Not launched yet".  Election results go under
+  Essentials, where a voter finds them.  The class is the name in lower case with
+  dashes: `tag--treasury-tracker`.
+- Links go only to empowered.vote or a listed product's own address.  Link text is
+  "Take a look", "Play a round" for Civic Trivia, and "See the Mind Map" for Not
+  launched yet (to `/maps/purpose-map.html`).  A Security and privacy row links only
+  to `/privacy`, or not at all.
+- No "By the numbers" row.  The stat tiles and the rest of the page are the numbers.
+- No line pointing to the changelog.
+
+**What goes first.**  Order rows by how much they change what a voter can do:
+
+1. New things you can use: a new place, a new tool, new data you can look up.
+2. Fixes to something a voter saw.
+3. New content in an existing tool, such as new trivia questions.
+4. Site-wide changes, such as the home page or sign-in.
+5. Security and privacy.
+6. Not launched yet, always last.
+
+A row takes the place of its most important update.  Inside a row, use the same
+order.  Between two rows at the same level, the product more people use goes first
+(see Reach).
+
+**How the lines sound.**  Each line is one sentence, two at most, under 35 words.
+Write what a voter now sees or can do, with "you" and "we".
+
+- Say what a voter saw before and what they see now, and no more.  Never make a fix
+  sound bigger or worse than it was.  Don't say a person "took a position", or that
+  voters were misled, unless the commit or its pull request shows exactly that.
+- Own data mistakes plainly, and never joke about them.  Say the data was
+  "inaccurate" or "didn't match the source", and what it matches now.  Never say it
+  was made up, invented, faked or fabricated, even when a commit message does.
+- Security and privacy work gets at most one line, in general words.  Say where
+  (our backend server, the database, sign-in) and that we fixed or improved
+  something.  Never say what the weakness was, how it could have been used, or who
+  could reach what.  Only fixes already on the default branch.
+- A line may joke about the software, the process, our size or our hosting bill,
+  if the joke can be cut.  Never about voters, officials, parties, elections or
+  their results.
+- Never name a private person.  Elected officials and cities may be named when the
+  change is about their public record.  Volunteers are named only with consent.
+- Never name a funder, grant or foundation, unless the organisation is in
+  `changelog/announced-funders.txt` and the work it paid for has shipped.  Never an
+  individual donor.  Never use a name in `changelog/blocked-names.txt`.
 
 **Avoid these habits.**  They make a page read as machine-written even when every
 count passes.  They come from `ev-marketer/knowledge/VOICE.md`, section 9, which
