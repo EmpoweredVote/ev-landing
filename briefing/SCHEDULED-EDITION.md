@@ -40,6 +40,12 @@ Follow "Publishing a new edition" in the README exactly. In outline:
 7. Add the newly frozen edition to `PAGES` in `tests/layout/briefing-tables-mobile.cjs`.
 8. Run the tests. At minimum `node tests/layout/briefing-tables-mobile.cjs`; run the rest of
    `tests/` too, and do not publish on a failure you have not understood.
+   Run `node briefing/summary-check.mjs`. It checks the "What changed since <day>" list for
+   party names, red or blue, funder words, security detail, "made up" data, internal words,
+   draft content, blocked names, links, row order and length. **A failure here blocks
+   publishing**, unlike the voice check: fix or remove each line it names and run it again.
+   If the subject itself is the problem (a security detail, draft work, an unannounced
+   funder), remove the line rather than rewording it.
    Run `node briefing/voice-check.mjs` as well — see "How it should read" below for what
    to do when it fails, which is not the same as what to do when a test fails.
 9. Commit and push to `main`. Render deploys on the push.

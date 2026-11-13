@@ -1,0 +1,8 @@
+# Names the briefing must never print, one per line.  Case does not matter.  Moved here
+# from changelog/ on 2026-11-13; briefing/summary-check.mjs
+# refuses any line that contains one.
+#
+# THIS REPO IS PUBLIC.  Never add a funder, prospect or grant programme name here
+# unless that name is ALREADY public.  Writing a private name in this file publishes it.
+# The briefing never credits a funder at all unless it is in announced-funders.txt, which
+# covers almost every case without naming anyone here.

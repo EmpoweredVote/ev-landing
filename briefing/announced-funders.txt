@@ -1,6 +1,7 @@
 # Organisations whose grant to Empowered Vote has been PUBLICLY announced, one per line.
-# An entry that names one of these may thank it ("grant", "foundation" are allowed in
-# that entry).  Founder decision, 2026-11-06.
+# A line in the briefing's "What changed since <day>" list may thank one of these when the
+# work it paid for has shipped.  Founder decision, 2026-11-06; moved here from changelog/
+# on 2026-11-13.
 #
 # Add a name only after the grant is announced publicly.  Organisations only: never an
 # individual donor.  This repo is public, so a name here is published.

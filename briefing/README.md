@@ -189,7 +189,7 @@ Briefing".
 
 ### What changed since <day>
 
-This list took over from the changelog (`changelog/`, ev-cto decision 0036) on
+This list took over from the changelog (ev-cto decision 0036, retired by 0039) on
 2026-11-13.  The rules below came with it.
 
 **Which changes go in.**  A change gets a line only if all of these hold:
@@ -246,6 +246,9 @@ A row takes the place of its most important update.  Inside a row, use the same
 order.  Between two rows at the same level, the product more people use goes first
 (see Reach).
 
+The newsletter takes its highlights from the top two or three rows, so each of those
+lines has to make sense on its own, quoted without the rest of the page.
+
 **How the lines sound.**  Each line is one sentence, two at most, under 35 words.
 Write what a voter now sees or can do, with "you" and "we".
 
@@ -265,8 +268,17 @@ Write what a voter now sees or can do, with "you" and "we".
 - Never name a private person.  Elected officials and cities may be named when the
   change is about their public record.  Volunteers are named only with consent.
 - Never name a funder, grant or foundation, unless the organisation is in
-  `changelog/announced-funders.txt` and the work it paid for has shipped.  Never an
-  individual donor.  Never use a name in `changelog/blocked-names.txt`.
+  `briefing/announced-funders.txt` and the work it paid for has shipped.  Never an
+  individual donor.  Never use a name in `briefing/blocked-names.txt`.
+
+`briefing/summary-check.mjs` enforces these words, links and limits, the way the
+changelog's `check-entries.mjs` did.  Unlike `voice-check.mjs`, it blocks: an edition
+whose list fails it does not go out until the line is fixed or removed.
+
+```bash
+node briefing/summary-check.mjs                    # the current edition
+node tests/briefing/summary-check.mjs              # its tests
+```
 
 **Avoid these habits.**  They make a page read as machine-written even when every
 count passes.  They come from `ev-marketer/knowledge/VOICE.md`, section 9, which
