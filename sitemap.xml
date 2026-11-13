@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Apex pages, then the root of each app that is ready for search. Apps still being built
+     (ontherecord, readrank, civicspaces, listening, badges, fallacyfinders) are left out on purpose.
+     Never list login, accounts, profile or app hosts. Cross-host entries are accepted because the
+     Search Console property is the whole domain (sc-domain:empowered.vote). -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://empowered.vote/</loc>
@@ -17,5 +21,23 @@
   </url>
   <url>
     <loc>https://empowered.vote/crawler</loc>
+  </url>
+  <url>
+    <loc>https://empowered.vote/privacy</loc>
+  </url>
+  <url>
+    <loc>https://empowered.vote/donate</loc>
+  </url>
+  <url>
+    <loc>https://essentials.empowered.vote/</loc>
+  </url>
+  <url>
+    <loc>https://compass.empowered.vote/</loc>
+  </url>
+  <url>
+    <loc>https://treasurytracker.empowered.vote/</loc>
+  </url>
+  <url>
+    <loc>https://ctc.empowered.vote/</loc>
   </url>
 </urlset>
