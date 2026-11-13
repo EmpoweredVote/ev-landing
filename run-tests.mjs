@@ -14,8 +14,7 @@
 // failure on its own before believing it.
 //
 // Pass one or more path prefixes to run only those tests, for example
-// `node run-tests.mjs tests/changelog` — what the changelog routine runs.  Those tests
-// are plain node with no browser, so they take seconds, not 25 minutes.
+// `node run-tests.mjs tests/layout`.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';

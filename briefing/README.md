@@ -189,7 +189,7 @@ Briefing".
 
 ### What changed since <day>
 
-This list took over from the changelog (`changelog/`, ev-cto decision 0036) on
+This list took over from the changelog (ev-cto decision 0036, retired by 0039) on
 2026-11-13.  The rules below came with it.
 
 **Which changes go in.**  A change gets a line only if all of these hold:
@@ -265,8 +265,8 @@ Write what a voter now sees or can do, with "you" and "we".
 - Never name a private person.  Elected officials and cities may be named when the
   change is about their public record.  Volunteers are named only with consent.
 - Never name a funder, grant or foundation, unless the organisation is in
-  `changelog/announced-funders.txt` and the work it paid for has shipped.  Never an
-  individual donor.  Never use a name in `changelog/blocked-names.txt`.
+  `briefing/announced-funders.txt` and the work it paid for has shipped.  Never an
+  individual donor.  Never use a name in `briefing/blocked-names.txt`.
 
 **Avoid these habits.**  They make a page read as machine-written even when every
 count passes.  They come from `ev-marketer/knowledge/VOICE.md`, section 9, which
