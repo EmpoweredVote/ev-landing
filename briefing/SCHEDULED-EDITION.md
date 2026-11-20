@@ -9,6 +9,31 @@ Work in `C:\ev-landing\ev-landing-main`.
 
 ## Before anything else
 
+**Update this checkout before you read anything else.** Nobody develops in it, so nothing
+else ever pulls it.
+
+```bash
+git fetch origin
+git status --porcelain -uno     # tracked files: must be empty
+git merge --ff-only origin/main
+```
+
+- **A modified tracked file is a previous run that died**, not work in progress. Stash it,
+  and say in the log what you found. Never build an edition on top of it.
+- **If the fast-forward fails, stop.** A divergence means a human is mid-change in this
+  checkout. Publish nothing and print what diverged.
+- Untracked scratch files from a dead run are harmless. Delete the ones you recognise as
+  yours when you finish, so the next run reads a clean tree.
+- **Re-read `briefing/README.md` and this file after the merge.** The merge may have
+  changed both, and the version you want is the one you just pulled.
+
+On 2026-11-17 this checkout was 24 commits behind. It therefore ran the old `refresh.mjs`,
+the one that aggregated the whole 33 GB `contributions` table. That run was killed partway
+through the refresh, committed nothing, and left a half-built edition behind. The repair had
+been sitting on `origin/main` for four days, and so had the rules in "How it should read".
+A stale checkout never announces itself: the page simply stops moving, and the first anyone
+knows is that no edition arrived.
+
 **Read `briefing/README.md` from top to bottom.** All of it. It is long because every paragraph in
 it is a figure this page published wrongly once. It carries the publishing checklist, the exact
 queries, the PostHog recipe, the host map, and about twenty traps with the dates they were paid
