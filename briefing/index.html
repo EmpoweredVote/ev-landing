@@ -376,7 +376,7 @@
      the next one does, and it copies this stylesheet forward. */
   /* "What changed since <day>": one row per product, most important first */
   ul.since{list-style:none;padding:0;margin:12px 0 0;border-top:1px solid var(--line)}
-  ul.since>li{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline;
+  ul.since>li{display:grid;grid-template-columns:186px 1fr;gap:14px;align-items:baseline;
     padding:10px 0;border-bottom:1px solid var(--line);color:var(--paper);font-size:14.5px;line-height:1.55}
   ul.since ul{margin:0;padding-left:16px}
   ul.since ul li{margin:0 0 3px}
@@ -398,11 +398,12 @@
 <div class="wrap">
 <header>
   <div class="hrow">
-    <p class="eyebrow">Empowered Vote &middot; Volunteer Briefing &middot; <span data-auto="asof">November 13, 2026</span></p>
+    <p class="eyebrow">Empowered Vote &middot; Progress Briefing &middot; <span data-auto="asof">November 20, 2026</span></p>
     <details class="prevdrop">
       <summary>Previous Briefings <span class="caret">&#9660;</span></summary>
       <div class="prevmenu">
-        <a href="/briefing/2026-11-13">November 13, 2026<span class="cur">current</span><small>The map gained 343 officials and a voter can read a position for eight of them.</small></a>
+        <a href="/briefing/2026-11-20">November 20, 2026<span class="cur">current</span><small>We can now name the winner in 1,074 of 1,102 state legislative races.</small></a>
+        <a href="/briefing/2026-11-13">November 13, 2026<small>The map gained 343 officials and a voter can read a position for eight of them.</small></a>
         <a href="/briefing/2026-11-10">November 10, 2026<small>The state legislature results were in an Associated Press file we had never opened.</small></a>
         <a href="/briefing/2026-11-06">November 6, 2026<small>We can show the position, the money and the face for four in five of the called winners, and for one in four of everyone who ran.</small></a>
         <a href="/briefing/2026-11-03">November 3, 2026<small>It is election day, and a voter can read a position for 1,663 of the 3,900 candidates on the ballots we hold.</small></a>
@@ -419,24 +420,50 @@
       </div>
     </details>
   </div>
-  <h1 class="serif">The map gained 343 officials, and a voter can read a position for eight of them.</h1>
-  <p class="sub">Where the Empowered Vote platform stands, in numbers anyone can check.  <b>This is a three-day cycle.  We wrote 682 stance positions.  Twelve of them went where a reader could reach them.</b></p>
+  <h1 class="serif">We can now name the winner in 1,074 of 1,102 state legislative races.</h1>
+  <p class="sub">Where the Empowered Vote platform stands, in numbers anyone can check.  This edition covers seven days.  Tuesday&rsquo;s edition was written and never published, so the site has carried the November 13 one all week.</p>
 
   <div class="statband">
-    <div class="stat"><div class="n" data-auto="stances_live">31,552</div><div class="l">stance positions a voter can read, <b>up 12 since Tuesday</b></div></div>
-    <div class="stat"><div class="n">343</div><div class="l">officials newly shaded on the stance map; <b>8 are readable</b></div></div>
-    <div class="stat"><div class="n">2,994</div><div class="l">rows waiting in the draft season, up from 2,324</div></div>
-    <div class="stat"><div class="n">1,235</div><div class="l">November winners recorded, up from 1,134</div></div>
-    <div class="stat"><div class="n">2</div><div class="l">of those results are certified, the first we have held</div></div>
-    <div class="stat"><div class="n" data-auto="commits30">~900</div><div class="l">commits landed in the last 30 days</div></div>
+    <div class="stat"><div class="n">1,074</div><div class="l">of 1,102 state legislative races have a winner, <b>up from 457</b></div></div>
+    <div class="stat"><div class="n">1,945</div><div class="l">winners recorded from the November ballot, up from 1,235</div></div>
+    <div class="stat"><div class="n" data-auto="stances_live">31,572</div><div class="l">positions a voter can see on the site, <b>up 20 since Friday</b></div></div>
+    <div class="stat"><div class="n">298</div><div class="l">budget figures with no link to a source, <b>down from 24,806</b></div></div>
+    <div class="stat"><div class="n">4,629</div><div class="l">finished positions waiting for the next season to open</div></div>
+    <div class="stat"><div class="n" data-auto="commits30">~800</div><div class="l">code changes landed in the last 30 days</div></div>
   </div>
 
+  <h3 class="serif" style="margin-top:26px">What changed since Friday</h3>
+  <ul class="since">
+    <li><span class="tag tag--essentials">Essentials</span><ul>
+      <li>You can now see who won in 1,074 of the 1,102 state legislative races on our November ballots, with Massachusetts, Maine, Maryland, Oregon and Nevada filled in this week.</li>
+      <li>You can look up officials in Broward County and the City of Fort Lauderdale, Florida, and Los Angeles County and Racine County now have their own photograph at the top of the page.</li>
+      <li>A politician&rsquo;s page now loads their positions straight away instead of waiting for you to sign in. <a class="since-more" href="https://essentials.empowered.vote">Take a look<span aria-hidden="true"> &rarr;</span></a></li>
+    </ul></li>
+    <li><span class="tag tag--treasury-tracker">Treasury Tracker</span><ul>
+      <li>Almost every budget figure now shows a link to the document it came from. Figures with no link fell from 24,806 to 298.</li>
+      <li>Massachusetts town and city figures link to that town&rsquo;s own filing for that year, rather than to a statewide index.</li>
+      <li>When a publisher&rsquo;s website is down, the page says so instead of sending you to an error you cannot read. <a class="since-more" href="https://treasurytracker.empowered.vote">Take a look<span aria-hidden="true"> &rarr;</span></a></li>
+    </ul></li>
+    <li><span class="tag tag--compass">Compass</span><ul>
+      <li>Fourteen more local officials have positions you can read, in Reno, Broward County and Philadelphia. <a class="since-more" href="https://compass.empowered.vote">Take a look<span aria-hidden="true"> &rarr;</span></a></li>
+    </ul></li>
+    <li><span class="tag tag--civic-trivia-championships">Civic Trivia Championships</span><ul>
+      <li>We wrote 71 new questions and retired 62 that had gone out of date, most of them about world news and climate change. <a class="since-more" href="https://ctc.empowered.vote">Play a round<span aria-hidden="true"> &rarr;</span></a></li>
+    </ul></li>
+    <li><span class="tag tag--platform-wide">Platform-wide</span><ul>
+      <li>We retired the changelog page. This list replaces it, and the home page points here instead.</li>
+      <li>Our pages now show a picture and a summary when somebody shares a link to them.</li>
+    </ul></li>
+    <li><span class="tag tag--not-launched-yet">Not launched yet</span><ul>
+      <li>We also made progress on Read &amp; Rank, Empowered Listening and the next season of Compass. <a class="since-more" href="/maps/purpose-map.html">See the Mind Map<span aria-hidden="true"> &rarr;</span></a></li>
+    </ul></li>
+  </ul>
+
   <div class="push">
-    <h3 class="serif">A loud cycle for the map and a quiet one for the reader</h3>
-    <p style="margin-top:10px"><b>We wrote 682 stance positions in three days and 670 of them went into a season no voter can open.</b>  The other twelve went into the open season.  The research map now shades <b>343</b> officials it did not shade on Tuesday.  <b>Eight of those 343 have a position a reader can see.</b>  Georgia gained 116 officials, South Carolina 64, Kentucky 56, Missouri 44 and Wisconsin 42.  All of that work is real.  None of it has been published.</p>
-    <p style="margin-top:10px"><b>The readable total moved for the first time since October 29.</b>  It reads <b>31,552</b>, up twelve.  The twelve belong to six Santa Cruz city councilmembers and two Corte Madera town councilmembers, across three topics.  We checked two of them from outside the database, and the live interface returned both of their answers.  Twelve rows in fifteen days is the whole of what a reader has gained.</p>
-    <p style="margin-top:10px"><b>Draft Season 3 now holds 2,994 rows.</b>  It held 2,324 on Tuesday and 2,086 on the Friday before that.  Gun policy accounts for 1,496 of them and voting rights for 1,448.  We asked two editions ago whether to open the season or stop filling it.  We asked again on Tuesday, and have since added 670 more rows to it.</p>
-    <p style="margin-top:10px"><b>The election half moved properly.</b>  <b>1,189</b> of the 2,343 races on our November ballots have a winner, against 1,093 on Tuesday, and they returned <b>1,235</b> winners.  Two of those results are certified, which is the first time we have been able to write that sentence.  Both are South Carolina congressional seats.</p>
+    <h3 class="serif">Seven days, and most of them went to election results</h3>
+    <p style="margin-top:10px">We recorded 710 more winners from the November ballot.  Five state legislatures account for nearly all of them, and a voter in any of those states can now look up the person who won their seat.  The county tier opened too, which it had never done before.</p>
+    <p style="margin-top:10px">The Compass moved much less.  We wrote 1,655 positions and 1,635 of them went into the next season of research, which no voter can open yet.  Twenty reached the site, for fourteen local officials.  That is the whole of what a reader gained from a week of research.</p>
+    <p style="margin-top:10px">Treasury Tracker closed its largest gap.  Budget figures with no link to the document behind them fell to 298.  Massachusetts is two thirds of the repair and California most of the rest, and the two were done to different standards.</p>
   </div>
 </header>
 
@@ -470,17 +497,17 @@
 
   <div class="mappane" id="mpane-seeded" role="tabpanel" aria-labelledby="mtab-seeded" tabindex="0">
   <h4 class="mapttl">Officials on file</h4>
-  <p>Shading shows how many officials each jurisdiction has on file, <b>researched or not</b>.  This is the denominator the next tab is a fraction of.  <b>Two tiles moved and no tile changed shade.</b>  California went from 2,030 to <b>2,052</b>, which is the Santa Cruz, Marin and Reno seeding arriving.  Indiana went from 618 to <b>624</b>.  Every other jurisdiction holds exactly what it held on Tuesday.</p>
+  <p>Shading shows how many officials each jurisdiction has on file, <b>researched or not</b>.  This is the figure the next tab is a fraction of.  Three tiles gained officials and none changed shade.  California went from 2,052 to <b>2,094</b>, which is the November intake arriving.  Florida went from 242 to <b>261</b>, with Broward County and Fort Lauderdale.  Arizona gained one.</p>
 <div class="usmap" data-map="seeded">
     <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 82 officials on file, 10 researched">AK</div>
     <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 425 officials on file, 186 researched">ME</div>
     <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 officials on file, 5 researched">VT</div>
     <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 6 officials on file, 1 researched">NH</div>
-    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 213 officials on file, 168 researched">WA</div>
+    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 213 officials on file, 179 researched">WA</div>
     <div class="st t3" style="grid-row:3;grid-column:2" title="Idaho: 128 officials on file, 5 researched">ID</div>
     <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 officials on file, 4 researched">MT</div>
-    <div class="st t3" style="grid-row:3;grid-column:4" title="North Dakota: 167 officials on file, 5 researched">ND</div>
-    <div class="st t3" style="grid-row:3;grid-column:5" title="Minnesota: 248 officials on file, 27 researched">MN</div>
+    <div class="st t3" style="grid-row:3;grid-column:4" title="North Dakota: 167 officials on file, 113 researched">ND</div>
+    <div class="st t3" style="grid-row:3;grid-column:5" title="Minnesota: 248 officials on file, 187 researched">MN</div>
     <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 6 officials on file, 5 researched">IL</div>
     <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 374 officials on file, 254 researched">WI</div>
     <div class="st t3" style="grid-row:3;grid-column:8" title="Michigan: 207 officials on file, 127 researched">MI</div>
@@ -488,41 +515,41 @@
     <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 officials on file, 5 researched">RI</div>
     <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 425 officials on file, 302 researched">MA</div>
     <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 292 officials on file, 154 researched">OR</div>
-    <div class="st t3" style="grid-row:4;grid-column:2" title="Nevada: 125 officials on file, 33 researched">NV</div>
+    <div class="st t3" style="grid-row:4;grid-column:2" title="Nevada: 125 officials on file, 36 researched">NV</div>
     <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 4 officials on file, 3 researched">WY</div>
-    <div class="st t3" style="grid-row:4;grid-column:4" title="South Dakota: 133 officials on file, 4 researched">SD</div>
+    <div class="st t3" style="grid-row:4;grid-column:4" title="South Dakota: 133 officials on file, 83 researched">SD</div>
     <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 6 officials on file, 4 researched">IA</div>
-    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 624 officials on file, 135 researched">IN</div>
-    <div class="st t3" style="grid-row:4;grid-column:7" title="Ohio: 166 officials on file, 75 researched">OH</div>
-    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 303 officials on file, 253 researched">PA</div>
+    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 624 officials on file, 109 researched">IN</div>
+    <div class="st t3" style="grid-row:4;grid-column:7" title="Ohio: 166 officials on file, 130 researched">OH</div>
+    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 303 officials on file, 254 researched">PA</div>
     <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 officials on file, 2 researched">NJ</div>
     <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 6 officials on file, 5 researched">CT</div>
-    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 2,052 officials on file, 385 researched">CA</div>
-    <div class="st t3" style="grid-row:5;grid-column:2" title="Utah: 572 officials on file, 64 researched">UT</div>
-    <div class="st t3" style="grid-row:5;grid-column:3" title="Colorado: 179 officials on file, 34 researched">CO</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 2,094 officials on file, 386 researched">CA</div>
+    <div class="st t3" style="grid-row:5;grid-column:2" title="Utah: 572 officials on file, 118 researched">UT</div>
+    <div class="st t3" style="grid-row:5;grid-column:3" title="Colorado: 179 officials on file, 113 researched">CO</div>
     <div class="st t2" style="grid-row:5;grid-column:4" title="Nebraska: 27 officials on file, 4 researched">NE</div>
     <div class="st t3" style="grid-row:5;grid-column:5" title="Missouri: 255 officials on file, 129 researched">MO</div>
-    <div class="st t3" style="grid-row:5;grid-column:6" title="Kentucky: 177 officials on file, 66 researched">KY</div>
+    <div class="st t3" style="grid-row:5;grid-column:6" title="Kentucky: 177 officials on file, 98 researched">KY</div>
     <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 officials on file, 4 researched">WV</div>
     <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 195 officials on file, 166 researched">VA</div>
-    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 209 officials on file, 188 researched">MD</div>
+    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 209 officials on file, 192 researched">MD</div>
     <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 5 officials on file, 4 researched">DE</div>
-    <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 141 officials on file, 132 researched">AZ</div>
+    <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 142 officials on file, 132 researched">AZ</div>
     <div class="st t2" style="grid-row:6;grid-column:3" title="New Mexico: 17 officials on file, 5 researched">NM</div>
-    <div class="st t3" style="grid-row:6;grid-column:4" title="Kansas: 187 officials on file, 22 researched">KS</div>
+    <div class="st t3" style="grid-row:6;grid-column:4" title="Kansas: 187 officials on file, 145 researched">KS</div>
     <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 7 officials on file, 5 researched">AR</div>
-    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 174 officials on file, 128 researched">TN</div>
+    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 174 officials on file, 165 researched">TN</div>
     <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 235 officials on file, 194 researched">NC</div>
-    <div class="st t3" style="grid-row:6;grid-column:8" title="South Carolina: 230 officials on file, 73 researched">SC</div>
+    <div class="st t3" style="grid-row:6;grid-column:8" title="South Carolina: 230 officials on file, 141 researched">SC</div>
     <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 24 officials on file, 14 researched">DC</div>
     <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 7 officials on file, 3 researched">OK</div>
     <div class="st t2" style="grid-row:7;grid-column:5" title="Louisiana: 10 officials on file, 5 researched">LA</div>
-    <div class="st t3" style="grid-row:7;grid-column:6" title="Mississippi: 250 officials on file, 72 researched">MS</div>
+    <div class="st t3" style="grid-row:7;grid-column:6" title="Mississippi: 250 officials on file, 128 researched">MS</div>
     <div class="st t2" style="grid-row:7;grid-column:7" title="Alabama: 18 officials on file, 4 researched">AL</div>
     <div class="st t3" style="grid-row:7;grid-column:8" title="Georgia: 337 officials on file, 188 researched">GA</div>
     <div class="st t2" style="grid-row:8;grid-column:1" title="Hawaii: 98 officials on file, 4 researched">HI</div>
     <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 535 officials on file, 273 researched">TX</div>
-    <div class="st t3" style="grid-row:8;grid-column:9" title="Florida: 242 officials on file, 23 researched">FL</div>
+    <div class="st t3" style="grid-row:8;grid-column:9" title="Florida: 261 officials on file, 171 researched">FL</div>
     <div class="st t3" style="grid-row:8;grid-column:10" title="Puerto Rico: 160 officials on file, 0 researched">PR</div>
   </div>
   <div class="legend">
@@ -531,22 +558,22 @@
     <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Thin: 1 to 9 (<span data-auto="seat_seeded">14</span>)</span>
     <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>None on file (<span data-auto="seat_none">0</span>)</span>
   </div>
-  <p style="margin-top:12px;font-size:13px">Hover any state for its officials on file and how many are researched.  The 52 tiles hold <b>10,307</b> officials, up from 10,279, and <b>3,965</b> are researched, up from 3,622.  <b>Federal seats are on none of these maps</b>; the coverage table below counts them.  <b>1,495 researched people sit on no tile</b>, seven more than last time: 549 hold a federal seat, 1,346 are candidates, and only <b>33</b> are neither.</p>
+  <p style="margin-top:12px;font-size:13px">Hover any state for its officials on file and how many we have researched.  The 52 tiles hold <b>10,369</b> officials.  We have researched <b>4,958</b> of them.  Federal seats are on none of these maps, and the table further down counts them.  Another 1,525 researched people sit on no tile at all.  Most of those hold a federal seat or are standing for one, and 61 are neither.</p>
   </div>
 
   <div class="mappane" id="mpane-stances" role="tabpanel" aria-labelledby="mtab-stances" tabindex="0">
   <h4 class="mapttl">Stance research</h4>
-  <p>Hover any state for its exact count.  <b>This map counts people we have researched, whatever season their answers sit in, so it is not the headline figure.</b>  Georgia moved furthest, from 72 to 188 researched officials, of whom <b>32</b> are readable.  South Carolina went 9 to 73 with 5 readable, Kentucky 10 to 66 with 4, and Missouri 85 to 129 with 19.  Wisconsin went 212 to 254 and kept most of it readable, at 207.</p>
+  <p>Hover any state for its exact count.  <b>This map counts people we have researched, whatever season their answers sit in, so it is not the headline figure.</b>  Nine jurisdictions crossed 100 researched officials this week.  Minnesota went from 27 researched officials to <b>187</b>.  Florida went from 23 to <b>171</b>.  Kansas reached 145, and North Dakota and Colorado both reached 113.</p>
 <div class="usmap" data-map="stances">
     <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 10 researched officials">AK</div>
     <div class="st t3" style="grid-row:1;grid-column:11" title="Maine: 186 researched officials">ME</div>
     <div class="st t1" style="grid-row:2;grid-column:10" title="Vermont: 5 researched officials">VT</div>
     <div class="st t1" style="grid-row:2;grid-column:11" title="New Hampshire: 1 researched official">NH</div>
-    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 168 researched officials">WA</div>
+    <div class="st t3" style="grid-row:3;grid-column:1" title="Washington: 179 researched officials">WA</div>
     <div class="st t1" style="grid-row:3;grid-column:2" title="Idaho: 5 researched officials">ID</div>
     <div class="st t1" style="grid-row:3;grid-column:3" title="Montana: 4 researched officials">MT</div>
-    <div class="st t1" style="grid-row:3;grid-column:4" title="North Dakota: 5 researched officials">ND</div>
-    <div class="st t2" style="grid-row:3;grid-column:5" title="Minnesota: 27 researched officials">MN</div>
+    <div class="st t3" style="grid-row:3;grid-column:4" title="North Dakota: 113 researched officials">ND</div>
+    <div class="st t3" style="grid-row:3;grid-column:5" title="Minnesota: 187 researched officials">MN</div>
     <div class="st t1" style="grid-row:3;grid-column:6" title="Illinois: 5 researched officials">IL</div>
     <div class="st t3" style="grid-row:3;grid-column:7" title="Wisconsin: 254 researched officials">WI</div>
     <div class="st t3" style="grid-row:3;grid-column:8" title="Michigan: 127 researched officials">MI</div>
@@ -554,55 +581,55 @@
     <div class="st t1" style="grid-row:3;grid-column:10" title="Rhode Island: 5 researched officials">RI</div>
     <div class="st t3" style="grid-row:3;grid-column:11" title="Massachusetts: 302 researched officials">MA</div>
     <div class="st t3" style="grid-row:4;grid-column:1" title="Oregon: 154 researched officials">OR</div>
-    <div class="st t2" style="grid-row:4;grid-column:2" title="Nevada: 33 researched officials">NV</div>
+    <div class="st t2" style="grid-row:4;grid-column:2" title="Nevada: 36 researched officials">NV</div>
     <div class="st t1" style="grid-row:4;grid-column:3" title="Wyoming: 3 researched officials">WY</div>
-    <div class="st t1" style="grid-row:4;grid-column:4" title="South Dakota: 4 researched officials">SD</div>
+    <div class="st t2" style="grid-row:4;grid-column:4" title="South Dakota: 83 researched officials">SD</div>
     <div class="st t1" style="grid-row:4;grid-column:5" title="Iowa: 4 researched officials">IA</div>
-    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 135 researched officials">IN</div>
-    <div class="st t2" style="grid-row:4;grid-column:7" title="Ohio: 75 researched officials">OH</div>
-    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 253 researched officials">PA</div>
+    <div class="st t3" style="grid-row:4;grid-column:6" title="Indiana: 109 researched officials">IN</div>
+    <div class="st t3" style="grid-row:4;grid-column:7" title="Ohio: 130 researched officials">OH</div>
+    <div class="st t3" style="grid-row:4;grid-column:8" title="Pennsylvania: 254 researched officials">PA</div>
     <div class="st t1" style="grid-row:4;grid-column:9" title="New Jersey: 2 researched officials">NJ</div>
     <div class="st t1" style="grid-row:4;grid-column:10" title="Connecticut: 5 researched officials">CT</div>
-    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 385 researched officials">CA</div>
-    <div class="st t2" style="grid-row:5;grid-column:2" title="Utah: 64 researched officials">UT</div>
-    <div class="st t2" style="grid-row:5;grid-column:3" title="Colorado: 34 researched officials">CO</div>
+    <div class="st t3" style="grid-row:5;grid-column:1" title="California: 386 researched officials">CA</div>
+    <div class="st t3" style="grid-row:5;grid-column:2" title="Utah: 118 researched officials">UT</div>
+    <div class="st t3" style="grid-row:5;grid-column:3" title="Colorado: 113 researched officials">CO</div>
     <div class="st t1" style="grid-row:5;grid-column:4" title="Nebraska: 4 researched officials">NE</div>
     <div class="st t3" style="grid-row:5;grid-column:5" title="Missouri: 129 researched officials">MO</div>
-    <div class="st t2" style="grid-row:5;grid-column:6" title="Kentucky: 66 researched officials">KY</div>
+    <div class="st t2" style="grid-row:5;grid-column:6" title="Kentucky: 98 researched officials">KY</div>
     <div class="st t1" style="grid-row:5;grid-column:7" title="West Virginia: 4 researched officials">WV</div>
     <div class="st t3" style="grid-row:5;grid-column:8" title="Virginia: 166 researched officials">VA</div>
-    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 188 researched officials">MD</div>
+    <div class="st t3" style="grid-row:5;grid-column:9" title="Maryland: 192 researched officials">MD</div>
     <div class="st t1" style="grid-row:5;grid-column:10" title="Delaware: 4 researched officials">DE</div>
     <div class="st t3" style="grid-row:6;grid-column:2" title="Arizona: 132 researched officials">AZ</div>
     <div class="st t1" style="grid-row:6;grid-column:3" title="New Mexico: 5 researched officials">NM</div>
-    <div class="st t2" style="grid-row:6;grid-column:4" title="Kansas: 22 researched officials">KS</div>
+    <div class="st t3" style="grid-row:6;grid-column:4" title="Kansas: 145 researched officials">KS</div>
     <div class="st t1" style="grid-row:6;grid-column:5" title="Arkansas: 5 researched officials">AR</div>
-    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 128 researched officials">TN</div>
+    <div class="st t3" style="grid-row:6;grid-column:6" title="Tennessee: 165 researched officials">TN</div>
     <div class="st t3" style="grid-row:6;grid-column:7" title="North Carolina: 194 researched officials">NC</div>
-    <div class="st t2" style="grid-row:6;grid-column:8" title="South Carolina: 73 researched officials">SC</div>
+    <div class="st t3" style="grid-row:6;grid-column:8" title="South Carolina: 141 researched officials">SC</div>
     <div class="st t2" style="grid-row:6;grid-column:9" title="District of Columbia: 14 researched officials">DC</div>
     <div class="st t1" style="grid-row:7;grid-column:4" title="Oklahoma: 3 researched officials">OK</div>
     <div class="st t1" style="grid-row:7;grid-column:5" title="Louisiana: 5 researched officials">LA</div>
-    <div class="st t2" style="grid-row:7;grid-column:6" title="Mississippi: 72 researched officials">MS</div>
+    <div class="st t3" style="grid-row:7;grid-column:6" title="Mississippi: 128 researched officials">MS</div>
     <div class="st t1" style="grid-row:7;grid-column:7" title="Alabama: 4 researched officials">AL</div>
     <div class="st t3" style="grid-row:7;grid-column:8" title="Georgia: 188 researched officials">GA</div>
     <div class="st t1" style="grid-row:8;grid-column:1" title="Hawaii: 4 researched officials">HI</div>
     <div class="st t3" style="grid-row:8;grid-column:4" title="Texas: 273 researched officials">TX</div>
-    <div class="st t2" style="grid-row:8;grid-column:9" title="Florida: 23 researched officials">FL</div>
+    <div class="st t3" style="grid-row:8;grid-column:9" title="Florida: 171 researched officials">FL</div>
     <div class="st t0" style="grid-row:8;grid-column:10" title="Puerto Rico: 160 officials seeded, stance research not started">PR</div>
   </div>
   <div class="legend">
-    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">17</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">12</span> jurisdictions)</span>
-    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">22</span>)</span>
+    <span><span class="sw" style="background:var(--gold)"></span>Deep: 100+ officials (<span data-auto="tier_deep">26</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.48)"></span>Growing: 10 to 99 (<span data-auto="tier_growing">5</span> jurisdictions)</span>
+    <span><span class="sw" style="background:rgba(227,181,74,.13);border:1px solid rgba(227,181,74,.22)"></span>Seeded: statewide officials researched (<span data-auto="tier_seeded">20</span>)</span>
     <span><span class="sw" style="background:transparent;border:1px dashed rgba(155,164,174,.45)"></span>Seats seeded, research not started (<span data-auto="tier_none">1</span>)</span>
   </div>
-  <p style="margin-top:12px;font-size:13px">Two tiles changed shade, both upward.  Georgia and Missouri crossed 100 researched officials and joined the top tier.  Pennsylvania is still the sharpest gap at 253 researched and 19 readable, with Michigan at 127 and 9.  Maryland, Maine and Washington are the opposite, with every researched official readable.  <b>A map that says researched and a headline that says readable are counting different people, and the distance between them is the work left to do.</b></p>
+  <p style="margin-top:12px;font-size:13px"><b>Indiana is the one tile that fell</b>, from 135 researched officials to 109.  Thirty people we had researched left office on November 3, and this map places a person by the seat they hold today.  We still hold their answers.  Of the 4,958 people on these tiles, 2,793 have a position a voter can see.  Pennsylvania is the widest gap, with 254 researched and 20 of them public.</p>
   </div>
 
   <div class="mappane" id="mpane-treasury" role="tabpanel" aria-labelledby="mtab-treasury" tabindex="0">
   <h4 class="mapttl">Treasury Tracker coverage</h4>
-  <p>Hover any state for its exact count.  <b>Nevada went from one government to three.</b>  Reno and Washoe County are the state&rsquo;s first local entities, read from their own annual financial reports.  They are the only budgets added anywhere this cycle, and no other tile moved.</p>
+  <p>Hover any state for its exact count.  <b>No tile moved.</b>  Three budget filings arrived and all three are Massachusetts towns we already held, so this map is exactly what it was on Friday.</p>
 <div class="usmap" data-map="treasury">
     <div class="st t2" style="grid-row:1;grid-column:1" title="Alaska: 18 governments with published budgets">AK</div>
     <div class="st t1" style="grid-row:1;grid-column:11" title="Maine: 1 government with published budgets">ME</div>
@@ -666,16 +693,16 @@
   <p style="margin-top:12px;font-size:13px">The 52 tiles hold <b>11,193</b> governments between them.  The federal government makes <b><span data-auto="budget_entities">11,194</span></b>, which is the roster counted in the Treasury section below.</p>
   </div>
 
-  <p style="margin-top:16px;font-size:13px;color:var(--dim);border-top:1px solid var(--line);padding-top:12px"><b>All three maps were queried on the same day as every other figure on this page.</b>  Our refresh script runs the coverage table below against the map on every pass and checks them bucket by bucket.  It agreed on all 51 state buckets again.</p>
+  <p style="margin-top:16px;font-size:13px;color:var(--dim);border-top:1px solid var(--line);padding-top:12px">All three maps were queried in the same run as every other figure here.  Our refresh script checks the coverage table below against the map, jurisdiction by jurisdiction, and the two agreed on all 51 state rows again.</p>
 </div>
 
 <div class="h2row" id="corrections"><h2>Corrections</h2><p>What this edition fixes in the one before it.  A published edition is never edited; the next one says what it corrects.</p></div>
 <div class="card">
-  <p style="font-size:13px;color:var(--dim)"><b>We said every result we hold is a call and none is certified.  Two are now certified.</b>  South Carolina&rsquo;s first and second congressional districts were recorded on November 12, with the Associated Press reporting a certified canvass.  Our record says both were confirmed against the South Carolina Election Commission&rsquo;s own results service.  The other 1,233 winners are still calls, and our records carry the distinction on each row.</p>
-  <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>We described a campaign-finance pass as rewriting existing rows.  The table has also grown.</b>  It held 29,319,606 contributions on Tuesday and holds <b>29,380,776</b> today, which is 61,170 more.  We cannot date those rows, because <code>created_at</code> is null on all 29.4 million of them.  The pass was still running as we counted, and it touched 2,186 rows in the preceding ten minutes.</p>
-  <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>The ballot basis changed for a third cycle running.</b>  The last edition counted 2,340 races and 4,355 people in the 53 elections dated November 3.  The same elections now hold <b>2,343 races and 4,365 people</b>, after three Indiana legislative races were seeded.  Figures on either side of that change do not compare row for row.</p>
-  <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>Our distinct-citation count is on a new basis, and the jump is not new documents.</b>  The last edition reported 1,857 distinct citations covering 560,684 budgets.  The same count today is <b>26,386 over 560,860 budgets</b>.  Almost all of the difference is one repair: 24,354 California budgets that used to share four statewide links now cite their own entity and year.</p>
-  <p style="margin-top:10px;font-size:13px;color:var(--dim)"><b>Treasury&rsquo;s quiet spell ended.</b>  We reported that no Treasury tool event had fired since November 4, and called it six days of silence.  The app was used on November 11 and again on November 12, most recently at 10:58 Pacific.  The 90-day action count is <b>32</b>, up from 30.</p>
+  <p style="font-size:13px;color:var(--dim)">We are withdrawing three Associated Press figures we printed on Friday.  That edition said AP&rsquo;s own state files hold 5,759 state legislative races and that AP had called 5,619 of them.  It also said AP reported 319 as certified.  We read all 51 of those files again for this edition, and every one answered.  Between them they hold 644 races, and not one of them is a state legislative contest.  What AP can settle is the US House.  It has called 429 of its 435 House races.  Fifty-six of those are certified.</p>
+  <p style="margin-top:10px;font-size:13px;color:var(--dim)">We also said that two certified results were the first we had been able to write about.  That is true of the November ballot and wrong about our records.  Our records hold 491 certified results from this year, the earliest of them from an election in May.  The two South Carolina congressional seats are still the only certified November results we hold.</p>
+  <p style="margin-top:10px;font-size:13px;color:var(--dim)">The ballot basis changed again.  Friday&rsquo;s edition counted 2,343 races in the 53 elections dated November 3.  The same elections now hold 2,303.  Two records name 29 Oregon races that came off.  Fifteen are state senate seats Oregon did not elect this year, and fourteen are duplicate rows for contests that elect several members on one line.  We cannot account for the other eleven.  Figures on either side of that change do not compare row for row.</p>
+  <p style="margin-top:10px;font-size:13px;color:var(--dim)">The portrait licence gap widened.  We reported 694 portraits with no usable rights statement, and it is 743 today.  Portraits whose licence we record as unknown rose from 174 to 224, which is the whole of the change.</p>
+  <p style="margin-top:10px;font-size:13px;color:var(--dim)">No edition went out on Tuesday.  The job that writes this page wrote one and never published it, so empowered.vote/briefing has carried the November 13 edition all week.  This edition covers the whole seven days, and every figure in it was measured again tonight.</p>
 </div>
 
 <div class="h2row" id="inform"><h2>Inform Pillar: Shared Facts</h2><p>Open to everyone, no login.  Evidence-based, engaging, anti-partisan.</p></div>
@@ -685,77 +712,77 @@
     <td class="fname">Empowered Compass</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span><b>The draft season grew by 670 rows and is still a draft.</b>  It now holds <b>2,994</b> rows across 2,196 people, 346 of them withdrawals.  It pins 60 topics and answers exist for four: gun policy 1,496, voting rights 1,448, school library books 33 and surveillance technology 17.  <b>On the older basis, which counts the draft, the total reads 33,735.</b>  That 2,183 gap is not the draft&rsquo;s row count.  It is 2,474 draft answers nobody can read, less the 291 draft withdrawals sitting over answers a voter still reads.  Season 2 is open and Season 1 closed on September 4.  The library carries <span data-auto="topics">64</span> topics and the open season serves <span data-auto="topics_open">60</span>, which the live interface confirms.  <b>The Compass repository logged no commits at all.</b></td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>Open the season.</b>  We have now asked three editions running.  <b>27,821 of the 31,552 readable positions still come from the season that closed in September</b>, which is 88.2% and has not moved.  One smaller thing is worth knowing: we withdrew 37 positions this cycle and every one was an edit to a row that already existed, not a new row.  All 37 sit in the draft, so no reader saw a position disappear.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>A season is one round of research that voters can answer.  The next one is still not public.  It now holds <b>4,629</b> answers for 3,525 people.  It held 2,994 of them on Friday.  Gun policy is 3,131 of them and voting rights 1,448.  The library carries <span data-auto="topics">64</span> topics and the open season asks <span data-auto="topics_open">60</span>, which the live site confirms.  One commit landed, a shared-component upgrade.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Open the season.  27,821 of the positions a voter can see still come from the season that closed in September, which is 88 per cent of them and has barely moved.  We took no position back this cycle.  No answer was written as a withdrawal, and none was rewritten into one.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Essentials</td>
     <td><span class="chip c-live">Live Alpha</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>ZIP-to-representatives with funding, votes and stances.  <b>The curated roster grew by 27 people to <span data-auto="pols_curated">14,120</span></b>, which is Santa Cruz, Marin and Reno arriving.  The discovery pool in triage reads <span data-auto="pool">77,738</span>.  We hold <b>9,583</b> default portraits, fourteen more than Tuesday.  The repository logged four commits and all four were coverage pages for the new cities.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>Still owed, and unchanged for an eleventh cycle: portraits for the 70 Puerto Rico alcaldes without one.</b>  Re-derived and exact: 78 municipios carry a mayor, 8 have a default image, 70 do not.  Then the licences, which got worse again.  <b>694 portraits have no usable rights statement</b>, against 681 on Tuesday: 367 carry no licence text, 174 say we do not know, and 153 say they were scraped without one.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Type a ZIP code, get your representatives, with their funding, votes and positions.  The roster of named officials grew by 49 people to <span data-auto="pols_curated">14,169</span>, which is Broward County, Fort Lauderdale and a block of Indiana legislators.  The pool of discovered names waiting for review reads <span data-auto="pool">77,730</span>.  We hold <b>9,648</b> portraits, 65 more than Friday.  Fifty-five of the new ones went to people who won this month.  Ten commits landed, including county photographs for Los Angeles and Racine and catalog pages for four more places.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Portraits for the 70 Puerto Rico mayors without one, owed and unchanged for a twelfth cycle.  We re-derive it every time: 78 municipios carry a mayor, eight have a portrait and 70 do not.  The island&rsquo;s other 83 seats all have one.  Then the licences, which got worse again.  <b>743 portraits have no usable rights statement</b>, 49 more than Friday.</td>
   </tr>
   <tr>
     <td class="fname">Treasury Tracker</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span><b>Fifteen commits, and every one of them was about where a number came from rather than what it says.</b>  No payment record has been created since the last edition, and the table holds <b>7,819,398</b>.  Twenty-two budget rows arrived and all 22 are Reno and Washoe County, Nevada&rsquo;s first local entities.  <b>24,354 California budgets stopped citing a statewide grid and now cite their own entity and year.</b>  The rows with no source address a reader could open fell by 132, to <b>24,806</b>.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>Berkeley, now the oldest unfixed thing on this page.</b>  A scheduled loader has refused to write a $0 budget <b>112 times since August 30</b>, six more than Tuesday, most recently at 19:07 Pacific last night.  The refusal is the loader working and the column mapping is still wrong.  Dallas has not moved: its two loaders have returned empty seven and six times, the last on November 8.  <b>And the California repair is not finished.</b>  8,622 budgets from 2017 to 2025 still carry one of the four statewide links, in the same years where other rows now carry their own.  We do not yet know why those were left.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Eighteen commits, and the pile they were aimed at nearly cleared.  Budget figures carrying no address a reader could open fell to <b>298</b>.  Of those, 153 are federal rows and 65 Californian.  Three filings arrived, all Massachusetts towns.  No payment record has been created since November 8, and the table holds <b>7,819,398</b>.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Berkeley is the oldest unfixed thing on this page.  A scheduled import has refused to write a zero-dollar budget <b>128 times since August 30</b>, sixteen more than Friday.  It refused again last night.  The refusal is the import working and the column mapping is still wrong.  Dallas moved by one run each, to eight and seven empty returns, the last on November 15.</td>
   </tr>
   <tr>
     <td class="fname">Civic Trivia Championships</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span><b>The bank reconciles to the question for a second cycle.</b>  It reads <span data-auto="trivia_active">3,305</span>, up from 3,295: we wrote 35 questions and 25 expired.  43 of 46 collections are active, and 494 live questions carry a seven-mark scale.  Across the 2,811 questions with no scale the right answer sits at A 25.1%, B 26.8%, C 24.7% and D 23.4%.  The repository logged no commits, so the bank moved without the code moving.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span><b>World news is being written and expired at almost the same rate.</b>  18 of the 35 new questions went to World News, 11 to Climate Change and 6 to the War in Iran.  Those same three collections lost 15, 3 and 7 to expiry, so World News is up three questions on the week rather than eighteen.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>The bank reconciles to the question for a third cycle.  It reads <span data-auto="trivia_active">3,314</span>, up from 3,305.  We wrote 71 questions and retired 62.  43 of 46 collections are active, and 494 live questions carry a seven-mark scale.  Across the questions with no scale, the right answer is spread almost evenly across the four slots, which the method note sets out.  Four commits landed, every one a dependency upgrade.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Two collections are nearly the whole of this cycle&rsquo;s movement.  World News took 34 new questions and lost 32 to expiry.  Climate Change gained 30 and lost 20.  The War in Iran collection gained seven and lost ten, so it is shrinking.</td>
   </tr>
   <tr>
     <td class="fname">Read &amp; Rank</td>
     <td><span class="chip c-dev">In Development</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>A blind taste test for candidates: the question, not the race, is the unit of comparison.  One commit, and it is a redesign of the ranking screen with smaller figures, a new alignment table and a compass panel for calibrated users.  <b>It landed in the design folder as a prototype, not in the shipped app.</b>  No product change for an eighth cycle.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Twenty people revealed a ballot in the quarter, against 18 on Tuesday, on 21 race starts.  At this volume that is noise rather than a trend.  It is still gated on a stance pool that gained twelve positions in fifteen days.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>A blind taste test for candidates, where the question rather than the race is the unit of comparison.  <b>The ranking-screen redesign moved out of the design folder and into the app on November 18.</b>  It brings smaller figures, an alignment table and a Compass panel for people who have calibrated.  That ends a run of eight editions with no product change.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Twenty-one people revealed a ballot in the quarter, one more than Friday, on 21 race starts.  Fifteen of them did so in the last 30 days.  At this volume that is noise rather than a trend.  It is still gated on a pool of positions that gained twenty in a week.</td>
   </tr>
   <tr>
     <td class="fname">Fallacy Finders</td>
     <td><span class="chip c-dev">In Development</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>v1.1 is 4 of 6 phases done and built the Fallacy Sleuth: curation-time AI proposing timecoded fallacy tags, blind to the speaker.  Quiet for a fourteenth cycle, with no commit since August 12.  It is still the one repository with no remote, so its state can only be read from the machine this report is written on.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Its dependency stopped again.  On the Record took no commits and ingested no meetings this cycle; its last arrived on November 7.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>v1.1 is 4 of 6 phases done and built the Fallacy Sleuth, which proposes timecoded fallacy tags at curation time, blind to the speaker.  Quiet for a fifteenth cycle, with no commit since August 12.  It is still the one repository with no remote, so its state can only be read from the machine this report is written on.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>The thing it depends on is quiet again.  On the Record took in four US House floor sessions on November 14 and nothing since.</td>
   </tr>
 </table></div>
 
 <div class="h2row" id="connect"><h2>Connect Pillar: Shared Values</h2><p>Connected accounts, one human one voice.  No longer parked.</p></div>
-<p class="pillar-note">The pillar took one commit this cycle, against 81 in the Inform table, and that one commit was a dependency upgrade.  Civic Spaces, Empowered Listening and Focused Communities recorded nothing at all.  We report it plainly rather than describing three days of silence as consolidation.</p>
+<p class="pillar-note">The pillar took 40 commits this cycle, against 172 in the Inform table.  Thirty-one of the 40 are Empowered Listening, which finished a phase and then spent the week on what a rehearsal found.  Civic Spaces took five.  The remaining four were dependency upgrades.</p>
 <div class="tablebox features"><table>
   <tr><th>Feature</th><th>Status</th><th>Journey</th><th>Where it stands</th><th>What's next</th></tr>
   <tr>
     <td class="fname">Civic Spaces</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>Geo-scoped communities, neighborhood to federal.  No commits.  The product still stands where Tuesday left it: a member with an address sees their own place, read-only, and lands on their city.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 19 is still the named next step and still has no commit against it.  It splits a slice that has grown too big, moving the most recently joined half into a new one.  Three cycles have now passed with it named and untouched.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Geo-scoped communities, from neighborhood to federal.  Five commits, and the one a member would notice is about counties.  Somebody whose coordinates gave us no county now gets it from their address instead, so a county space loads for them.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 19 is still the named next step and still has no commit against it.  It splits a slice that has grown too big, moving the most recently joined half into a new one.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Quests</td>
     <td><span class="chip c-live">Live</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">alpha</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>Fact-verification quests with consensus scoring; verified facts feed Essentials.  Red gem quests unlock at VR 90+.  One commit, a database driver upgrade.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Fact-verification quests with consensus scoring; verified facts feed Essentials.  Two commits, both dependency upgrades.</td>
     <td class="fnote"><span class="clabel">What&rsquo;s next</span>v1.6 planning.</td>
   </tr>
   <tr>
     <td class="fname">Focused Communities</td>
     <td><span class="chip c-paused">Paused</span></td>
     <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>v1.0 shipped April 17: per-topic forums wired to the Compass.  No commits.</td>
+    <td class="fnote"><span class="clabel">Where it stands</span>v1.0 shipped April 17, with per-topic forums wired to the Compass.  Two commits, both dependency upgrades.</td>
     <td class="fnote"><span class="clabel">What&rsquo;s next</span>v1.1 proper: badge ratification.</td>
   </tr>
   <tr>
     <td class="fname">Empowered Listening</td>
-    <td><span class="chip c-paused">Paused</span></td>
-    <td><div class="meter"><span class="f"></span><span class="f"></span><span></span><span></span></div><div class="mlabel">build</div></td>
-    <td class="fnote"><span class="clabel">Where it stands</span>Structured debate infrastructure; 5 of 6 phases done, with timers, transcription and audience notes.  No commits.  A completed debate plays back its recording, which landed last cycle.</td>
-    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 6: voting and badges.  Then Common Grounds can build on it.</td>
+    <td><span class="chip c-dev">In Development</span></td>
+    <td><div class="meter"><span class="f"></span><span class="f"></span><span class="fl"></span><span></span></div><div class="mlabel">build</div></td>
+    <td class="fnote"><span class="clabel">Where it stands</span>Structured debate infrastructure.  Phase 5 finished on November 15 with the speaker rebuttal checklist.  The team then ran a three-person rehearsal and spent the rest of the week on what it turned up.  The timer counts down on the server&rsquo;s clock rather than the browser&rsquo;s.  The transcript writes one row per utterance instead of one per word.  A debate with no video now runs instead of showing a dead player.</td>
+    <td class="fnote"><span class="clabel">What&rsquo;s next</span>Phase 6 is deferred rather than planned, and the team wrote that down.  It was voting and badges.  Common Grounds waits on it, so that chain has no dated next step.</td>
   </tr>
   <tr>
     <td class="fname">Emparks</td>
@@ -777,72 +804,83 @@
 <div class="cols">
   <div class="card">
     <h3 class="serif">ev-accounts</h3>
-    <p>Auth, tiers, XP and gems, politician database, geofencing, elections.  <b>61 commits, more than every other repository on the platform put together.</b>  We recorded <b>101 more winners</b>: 51 state house seats, 41 US House seats, 8 state senate seats and one US Senate seat.  State legislative races with a winner went from 403 to <b>457</b>.  <b>The county tier is still empty.</b>  We hold 103 county races, 99 of them with candidates, and not one has a winner.</p>
-    <p style="margin-top:10px"><b>Two South Carolina results are certified rather than called.</b>  The Associated Press reported both as a certified canvass at 100% of the expected vote, and our record says each was confirmed against the state election commission&rsquo;s own results service.  Everything else we hold is a call.  <b>The gap to the full picture is still large.</b>  We re-read AP&rsquo;s 51 per-state files for this edition.  They hold 5,759 state legislative races and have now called <b>5,619</b>, against 5,439 on Tuesday.  We hold 1,117 of those races and have a winner for 457.  <b>AP also reports 319 of them as certified, and we hold none of those.</b></p>
-    <p style="margin-top:10px">Most of the rest of the cycle went to a question we have not reported before: <b>when did each officeholder actually take their seat?</b>  Term dates now come from the dated tenure record rather than a per-person snapshot.  The incumbency flag that used to be written by hand is gone, and a gate checks every write.  <b>None of that is visible to a reader, and all of it decides who is shown as holding a seat.</b></p>
-    <p style="margin-top:10px">The stored roll-call record did not move: <span data-auto="leg_votes">11,557,651</span> legislative votes, the same figure as Tuesday.  <b>Recording a winner and recording how someone voted are different jobs</b>, and only the first one happened this cycle.</p>
-    <p style="margin-top:10px">The contradiction check was re-run for this edition.  It reports <b>337 groups covering 2,356 rows</b>, against 337 and 2,358 on Tuesday, and nothing adjudicated any of them.  It reads 33,674 rows and can key only 9,177, which is 27%.  The check reports disagreement, not error, and its own documentation says a mapping that is wrong for everyone who cites it produces no disagreement at all.</p>
+    <p>Auth, tiers, XP and gems, the politician database, geofencing and elections.  <b>137 commits, more than every other repository put together</b>, and most of them were election results.  Massachusetts, Maine and Maryland gave us 556 winners between them, with Oregon and Nevada behind.  The total from the November ballot is now <b>1,945</b>.</p>
+    <p style="margin-top:10px"><b>The county tier is no longer empty.</b>  It held no winner on Friday and holds four today.  Two are Multnomah County in Oregon, read from a ranked-choice results report.  Two are Racine County in Wisconsin, read from the county clerk&rsquo;s own summary.  We hold 103 county races, so four is the honest shape of it.</p>
+    <p style="margin-top:10px">The winners come from three kinds of source.  1,725 of them are Associated Press calls.  Ballotpedia gives us 114 and election officials 106.  Twenty-one carry no recorded timestamp at all, which is a gap in our bookkeeping rather than in the result.</p>
+    <p style="margin-top:10px">Most of the rest of the week went to gun-policy research that reads a legislature&rsquo;s own roll-call record.  Fourteen states ran this cycle, among them Minnesota, Florida, Kansas and Ohio.  None of it is public, because all of it lands in the next season.</p>
+    <p style="margin-top:10px">The stored roll-call record did not move.  It reads <span data-auto="leg_votes">11,557,651</span> legislative votes, the same figure as Friday and as the Tuesday before that.  Recording a winner and recording how someone voted are different jobs, and only the first one happened again.</p>
+    <p style="margin-top:10px">We re-ran the contradiction check for this edition.  It reports <b>340 groups covering 2,347 rows</b>.  Friday&rsquo;s run found 337 groups, and nothing has adjudicated any of them.  It reads 35,320 rows a voter could meet and can key only 9,328.  The check reports disagreement rather than error, and its own documentation says a mapping that is wrong for everyone who cites it produces no disagreement at all.</p>
     <p style="margin-top:10px">No version number is printed on this card, because nothing in the repository produces one.</p>
   </div>
   <div class="card">
     <h3 class="serif">On the Record</h3>
-    <p>Speaker-attributed, searchable transcripts of public meetings.  <b>The trickle stopped again.</b>  The totals read <span data-auto="meetings">199</span> meetings, <span data-auto="segments">22,371</span> transcript segments and <span data-auto="speakers">1,506</span> identified speakers, including LA City Council with <span data-auto="council_votes">7,200</span> recorded votes.  Every one of those four numbers is exactly what it was on Tuesday.  No meeting has arrived since November 7, and the repository took no commits.  19 meetings landed in the last 30 days.  Segments carry no creation timestamp, so dated meetings are the evidence.  The two drops earlier this year are still unexplained.  Built by volunteer Chris Andrews.</p>
+    <p>Speaker-attributed, searchable transcripts of public meetings.  Four US House floor sessions arrived on November 14, and nothing has arrived since.  The totals read <span data-auto="meetings">203</span> meetings and <span data-auto="segments">23,696</span> transcript segments.  We have identified <span data-auto="speakers">1,666</span> speakers, and Los Angeles City Council carries <span data-auto="council_votes">7,200</span> recorded votes.  21 meetings landed in the last 30 days.  The repository took one dependency upgrade, so the intake moved without the code moving.  Segments carry no creation date, so dated meetings are the evidence.  The two drops earlier this year are still unexplained.  Built by volunteer Chris Andrews.</p>
   </div>
 </div>
 
 <div class="h2row" id="data"><h2>Data Coverage Deep Dive</h2><p>The invisible work.  This is what &ldquo;evidence-based&rdquo; costs, and we paid it.</p></div>
 <div class="cols">
   <div class="card">
-    <h3 class="serif">Sourced stances, by where they serve</h3>
-    <p>Eleven of the sixteen named rows are unchanged, and that is the check this table exists for.  When they hold, the order that assigns a politician to a place has not shifted under us.  <b>Wisconsin took the largest named movement</b>, gaining 42 people and 101 stored rows, and it passed Utah on the way.  California gained 9 people and 100 rows.  <b>The remainder row took 281 people and 379 rows</b>, which is Georgia, South Carolina, Kentucky and Missouri arriving.  The table partitions stored rows, not readable positions: <span data-auto="stances">41,941</span> rows across <span data-auto="pols_with_stances">5,460</span> politicians and 64 topics.  Only 31,552 are readable, with <span data-auto="stances_blanked">2,534</span> standing withdrawn.  <span data-auto="verified_sources">2,722</span> sources were re-checked in a sweep that finished in April 2026, and that figure has not moved since, because every row in it was written then.</p>
+    <h3 class="serif">Sourced positions, by where they serve</h3>
+    <p>Eight of the sixteen named rows are unchanged, and that is the check this table exists for.  When they hold, the order that assigns a person to a place has not shifted under us.  The national row took the largest movement, gaining 73 people.  Utah gained 54 and Tennessee 37.  The remainder row took 885 people, which is Minnesota, Florida, Kansas and the Dakotas arriving.  The row for candidates with no seat fell by 43, the first fall we have printed there; some of that is winners taking office and moving to their own state.  The table counts answers we have stored rather than positions a voter can see.</p>
     <div class="tablebox" style="margin-top:14px"><table>
       <tr><th>Coverage area</th><th>Politicians</th><th>Stances</th></tr>
-      <tr><td>US Congress + national</td><td class="num">553</td><td class="num">9,873</td></tr>
-      <tr><td>2026 candidates &amp; discovered names (no seat)</td><td class="num">942</td><td class="num">6,237</td></tr>
-      <tr><td>California (state + local)</td><td class="num">385</td><td class="num">5,311</td></tr>
+      <tr><td>US Congress + national</td><td class="num">626</td><td class="num">10,507</td></tr>
+      <tr><td>2026 candidates &amp; discovered names (no seat)</td><td class="num">899</td><td class="num">5,622</td></tr>
+      <tr><td>California (state + local)</td><td class="num">386</td><td class="num">5,337</td></tr>
       <tr><td>Massachusetts (state + local)</td><td class="num">302</td><td class="num">4,285</td></tr>
       <tr><td>Texas (state + local)</td><td class="num">273</td><td class="num">2,768</td></tr>
-      <tr><td>Maryland (state + local)</td><td class="num">188</td><td class="num">2,412</td></tr>
+      <tr><td>Maryland (state + local)</td><td class="num">192</td><td class="num">2,564</td></tr>
       <tr><td>Maine (state + local)</td><td class="num">186</td><td class="num">1,796</td></tr>
       <tr><td>Virginia (state + local)</td><td class="num">166</td><td class="num">1,178</td></tr>
       <tr><td>Oregon (state + local + county)</td><td class="num">154</td><td class="num">826</td></tr>
       <tr><td>Wisconsin (state + county + local)</td><td class="num">254</td><td class="num">793</td></tr>
-      <tr><td>Utah (state + city + county)</td><td class="num">64</td><td class="num">712</td></tr>
+      <tr><td>Utah (state + city + county)</td><td class="num">118</td><td class="num">784</td></tr>
+      <tr><td>Washington (state + county + city)</td><td class="num">179</td><td class="num">608</td></tr>
       <tr><td>North Carolina (state + local)</td><td class="num">194</td><td class="num">597</td></tr>
       <tr><td>Arizona (state + local)</td><td class="num">132</td><td class="num">531</td></tr>
-      <tr><td>Washington (state + county + city)</td><td class="num">168</td><td class="num">502</td></tr>
-      <tr><td>Pennsylvania (state + local)</td><td class="num">253</td><td class="num">437</td></tr>
-      <tr><td>Tennessee (state + local)</td><td class="num">128</td><td class="num">274</td></tr>
-      <tr><td>37 more jurisdictions (incl. Georgia, Missouri and Indiana)</td><td class="num">1,118</td><td class="num">3,409</td></tr>
+      <tr><td>Pennsylvania (state + local)</td><td class="num">254</td><td class="num">439</td></tr>
+      <tr><td>Tennessee (state + local)</td><td class="num">165</td><td class="num">396</td></tr>
+      <tr><td>37 more jurisdictions (incl. Minnesota, Florida and Kansas)</td><td class="num">2,003</td><td class="num">4,565</td></tr>
     </table></div>
-    <p style="margin-top:12px;font-size:13px">Both totals reconcile against the headline counts of 5,460 politicians and 41,941 stored rows.  Note what this table cannot show you.  It counts stored rows, so a withdrawal adds a row rather than removing one.  It also counts draft rows, which is why Pennsylvania has 437 and only 19 readable people behind them.  A row here is research we have done.  It is not a position anybody can read.</p>
-    <p style="margin-top:12px;font-size:13px"><b>Nothing was added to the certified corpus, for a ninth cycle running.</b>  One stratum of one evidence class is still the only measured part: 57 state-level, record-based stances, certified October 3 at 0.830 and 0.932 with no severe disagreements.  It was certified against codebook version 0.4, and the codebook has read 0.6 since October 15.  News and statement evidence are not certified, and neither is the local tier.</p>
+    <p style="margin-top:12px;font-size:13px">Both columns reconcile against the headline counts of <span data-auto="pols_with_stances">6,483</span> people and <span data-auto="stances">43,596</span> stored answers.  <span data-auto="stances_blanked">2,534</span> positions stand withdrawn.  Note what this table cannot show you.  A position we take back adds a row here rather than removing one.  It also counts the next season, which is why Pennsylvania has 439 answers behind only 20 people a voter can read.  A row here is research we have done.  It is not yet a position anybody can see.  <span data-auto="verified_sources">2,722</span> sources were re-checked in a sweep that finished in April 2026, and that figure has not moved since, because every row in it was written then.</p>
+    <p style="margin-top:12px;font-size:13px">We certified nothing new, for a tenth cycle running.  One group of 57 state-level positions read from the public record is still the only measured part.  It was measured on October 3 and passed, with no severe disagreements between coders.  The rulebook it was measured against has had two revisions since.  Positions read from news reports and from politicians&rsquo; own statements are not measured at all, and neither is the local tier.</p>
   </div>
   <div class="card">
     <h3 class="serif">Budgets you can follow</h3>
     <p>Treasury Tracker&rsquo;s database holds budget data for <b><span data-auto="budget_entities">11,194</span></b> government entities across all 50 states, spanning fiscal years <span data-auto="min_fy">1976</span> to <span data-auto="max_fy">2028</span>.</p>
     <ul>
       <li><b><span data-auto="t_cities">3,105</span></b> cities, <b><span data-auto="t_townships">2,787</span></b> townships, <b><span data-auto="t_towns">1,828</span></b> towns, <b><span data-auto="t_boroughs">949</span></b> boroughs, <b><span data-auto="t_counties">927</span></b> counties, <b><span data-auto="t_villages">814</span></b> villages, <b><span data-auto="t_states">50</span></b> states, and <b><span data-auto="t_other">734</span></b> others.</li>
-      <li><b><span data-auto="line_items_m">10.4 million</span></b> line items, <b><span data-auto="transactions_m">7.8 million</span></b> payment records and <b><span data-auto="salaries">282,457</span></b> public salary records.  <b>The salary count is unchanged to the row, and no payment record has been created since the last edition.</b></li>
-      <li><b>585,666 budget rows</b>, twenty-two more than last edition, and all twenty-two are Reno and Washoe County.</li>
-      <li>Every row still carries a derivation: <b>244,388 published</b> and <b>341,278 derived</b>.  Published means the figure appears in a document.  Derived means we computed it from figures that do.</li>
-      <li>By grade: 533,391 self-reported unaudited, 23,301 unknown, 19,590 compiled from audited figures, 7,958 not applicable, 1,398 audited to government accounting standards, 28 to another recognised basis.  The six sum to 585,666, which is the check that makes this a partition and not a sample.</li>
-      <li><b>24,806 rows carry no source address a reader could open</b>, 132 fewer than last edition.  That is a different gap from the grade, and a different one again from a link that exists and is wrong.</li>
-      <li>The class list above is a partition, not a sample.  Our refresh script complains if the named classes and the catch-all stop summing to the headline.</li>
+      <li><b><span data-auto="line_items_m">10.4 million</span></b> line items, <b><span data-auto="transactions_m">7.8 million</span></b> payment records and <b><span data-auto="salaries">282,457</span></b> public salary records.  Neither the salary count nor the payment count moved.</li>
+      <li><b>585,669 budget rows</b>, three more than last edition, and all three are Massachusetts filings.</li>
+      <li>Every row says where its figure came from.  <b>244,391</b> are printed in a document and <b>341,278</b> we worked out from figures that are.</li>
+      <li>Every row also carries a grade for how well its figure is checked.  The six grades add up to the row count above.
+        <div class="tablebox" style="margin-top:8px"><table>
+          <tr><th>How well checked</th><th>Rows</th></tr>
+          <tr><td>Self-reported, unaudited</td><td class="num">533,391</td></tr>
+          <tr><td>Unknown</td><td class="num">23,304</td></tr>
+          <tr><td>Compiled from audited figures</td><td class="num">19,590</td></tr>
+          <tr><td>Not applicable</td><td class="num">7,958</td></tr>
+          <tr><td>Audited to government accounting standards</td><td class="num">1,398</td></tr>
+          <tr><td>Audited to another recognised basis</td><td class="num">28</td></tr>
+        </table></div></li>
+      <li><b>298 rows carry no address a reader could open</b>, against 24,806 last edition.</li>
+      <li>The list of kinds above adds up to the total, and our refresh script complains if it stops doing so.</li>
     </ul>
   </div>
 </div>
 <div class="push" style="margin-top:18px">
-  <h3 class="serif">A link that opens is not the same as a link that proves anything</h3>
-  <p style="margin-top:10px">Last edition we described a new gate that asks the live web whether our citations still answer.  <b>This cycle it kept finding a different fault: links that answer perfectly and point at the wrong thing.</b>  Every California State Controller budget we hold carried one of four addresses.  A reader who opened the source on a single city&rsquo;s 2023 budget arrived at a grid of every city in California, for every year.  Nothing was broken.  Nothing was proved either.</p>
-  <p style="margin-top:10px"><b>24,354 of those budgets now cite their own entity and year, one distinct address each.</b>  The publisher runs a per-entity view, and the repair record says every row was checked against it before anything was written, with 24,352 of 24,354 tying to the dollar.  That repair is most of why our distinct-citation count jumped from 1,857 to 26,386, and almost none of it is new documents.</p>
-  <p style="margin-top:10px"><b>The repair is not finished, and we only found that by counting.</b>  8,622 budgets still carry one of the four statewide links, every one of them between 2017 and 2025.  Those are the same years in which other rows now carry their own address.  We do not know yet whether that second set was missed or deliberately left, and we would rather print the number than wait for the explanation.</p>
-  <p style="margin-top:10px"><b>The gate also had to stop believing a silent host.</b>  The Internet Archive rate-limits by host and, once tripped, stops answering rather than refusing out loud.  A backoff written per URL cannot see that, because each citation discovers the limit on its own and deepens it for the next.</p>
+  <h3 class="serif">Where the budget citation work got to</h3>
+  <p style="margin-top:10px">Budget figures carrying no address a reader could open fell to 298 this week, from a pile four publisher families had made.  It is the largest single move we have recorded on this question.  A separate fix mattered as much.  A figure cited without a fetch date used to show no source link at all, and roughly 24,500 of them were in that state.</p>
+  <p style="margin-top:10px">Massachusetts is the half we would show anyone.  The state&rsquo;s own reporting service answers per town, per year and per kind of figure.  So the 16,829 rows we rewrote now carry 16,829 distinct addresses, and opening the source on one town&rsquo;s accounts for one year lands on that town, that year.</p>
+  <p style="margin-top:10px">California is the half that is not finished.  7,684 rows now cite one of seventeen statewide files, one per year, each shared by about 480 cities.  A reader who opens that source downloads every city in the state for that year.  The link answers.  It does not show the row.</p>
+  <p style="margin-top:10px">The four statewide dashboards have not moved either.  8,622 California budgets still cite one of them, every one dated between 2017 and 2025, exactly as on Friday.  We said then that we did not know why those rows were left behind, and we still do not.</p>
+  <p style="margin-top:10px">We found the California problem by counting distinct addresses rather than by checking that links resolve, and the same shape shows up elsewhere.  A single New York address is cited by 274,428 of our rows.</p>
 </div>
 <div class="cols" style="margin-top:18px">
   <div class="card">
     <h3 class="serif">Follow the money</h3>
-    <p>The third leg, alongside votes and stances.  The platform holds <b><span data-auto="fin_contribs_m">29.4 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">8.7 billion</span></b>, covering <b><span data-auto="fin_pols">2,288</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span></b> election cycles (<span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>).  <b>The word federal is still the limit on everything this leg can do.</b>  Of the 486 state legislators who won this month, 26 have any campaign-finance record at all.  Of the 422 US House winners, 419 do.</p>
+    <p>The third leg, alongside votes and positions.  The platform holds <b><span data-auto="fin_contribs_m">29.6 million</span></b> individual campaign-finance contributions totaling <b>$<span data-auto="fin_dollars_b">8.9 billion</span></b>.  They cover <b><span data-auto="fin_pols">2,289</span></b> federal politicians and candidates across <b><span data-auto="fin_cycles">24</span></b> election cycles, <span data-auto="fin_min_cycle">1980</span> to <span data-auto="fin_max_cycle">2026</span>.  Those four figures now come from a totals row refreshed once a day rather than from a count over the whole table, and the row we read was written on November 18.  <b>The word federal is still the limit on everything this leg can do.</b>  Of the 956 state legislators who won this month, 27 have any campaign-finance record at all.  Of the 428 US House winners, 425 do.</p>
   </div>
 </div>
 
@@ -850,96 +888,96 @@
   Reach & Engagement: figures are hand-maintained from PostHog (project 444996),
   a rolling window with internal/test traffic excluded (filterTestAccounts).  refresh.mjs
   does NOT touch these — it only reads the platform Postgres DB.  Last pulled: 30 and 90
-  days ending November 13, 2026, through the project query API.
+  days ending November 20, 2026, through the project query API.
   The $host breakdown is run FIRST every cycle as a discovery step, then each app is
   re-queried as one dau series with an exact host filter so people are deduped rather than
-  summed.  Reconciled 2026-11-13: NO new hostname.  Fourteen hosts served somebody and every
-  one of them is in the map in briefing/README.md.  www.empowered.vote and
+  summed.  Reconciled 2026-11-20: NO new hostname.  The same fourteen hosts served somebody
+  as last cycle, and every one is in the map in briefing/README.md.  www.empowered.vote and
   read-rank-frontend.onrender.com served nobody and stay in the filter anyway.
   The two OR'd rows (Treasury, main-site click-through) cannot come from a multi-series
   TrendsQuery — that returns one count per series, and summing them double-counts anyone who
   fired two events.  They are HogQL unions instead, which means reproducing filterTestAccounts
   by hand: the project's only test filter is "person id NOT IN COHORT 333605".  That
   substitution was CONTROLLED before it was trusted — both methods were run over two
-  single-event rows at both window lengths and agreed exactly (30/30, 52/52, 5/5, 13/13).
+  single-event rows at both window lengths and agreed exactly (17/17, 35/35, 4/4, 12/12).
   Both unions stay pinned to Pacific midnight boundaries, which is the fix an earlier cycle
-  found: `now() - INTERVAL 90 DAY` is a rolling instant while TrendsQuery snaps to midnight
+  found: "now() - INTERVAL 90 DAY" is a rolling instant while TrendsQuery snaps to midnight
   in the project timezone, and the two then disagree by a few people for no real reason.
 -->
-<div class="h2row" id="reach"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build &mdash; measured, not guessed.</p></div>
+<div class="h2row" id="reach"><h2>Reach &amp; Engagement</h2><p>Who actually uses what we build.</p></div>
 <div class="cols">
   <div class="card">
-    <h3 class="serif">Visitors flat, sessions down</h3>
-    <p><b>1,067</b> people used the platform in the last 90 days, over 1,661 sessions and 4,196 page views.  Visitors rose by two.  <b>Sessions fell by 45 and page views by 42.</b>  The average session is five minutes two, down from five minutes nine, and the share who do not bounce is 58.9% against 59.3%.  A rolling window does this: a busy visitor from 91 days ago leaves and takes their sessions with them.</p>
-    <p style="margin-top:10px">Treasury is the only app that clearly gained, from 325 to 357.  The main site fell from 499 to 497, Essentials from 223 to 222 and Civic Trivia from 105 to 100.  The Compass went 194 to 196 and Read &amp; Rank 83 to 84.  Over sixteen pulls the main site reads 316, 312, 297, 300, 314, 337, 340, 344, 369, 378, 398, 428, 474, 486, 499, 497.</p>
-    <p style="margin-top:10px"><b>The method note from last edition holds, and it is now exact.</b>  Our &ldquo;clicked into an app&rdquo; figure unions three events.  Two of them fired for exactly the same <b>128</b> people, so they are one signal rather than two.  The third adds five more.  133 of the 497 who reached the main site clicked through, which is 27%.</p>
+    <h3 class="serif">Visitors up twelve, sessions down</h3>
+    <p><b>1,079</b> people used the platform in the last 90 days.  They ran 1,605 sessions and 4,077 page views.  Visitors rose by twelve, while sessions fell by 56 and page views by 119.  The average session is five minutes eight, up from five minutes two.  The share who do not bounce is 57.1%, against 58.9% on Friday.  A rolling window does this.  A busy visitor from 91 days ago drops out and takes their sessions with them.</p>
+    <p style="margin-top:10px">The main site gained twenty, its highest reading in this series, and Treasury gained six.  Essentials was flat.  The Compass, Civic Trivia and Read &amp; Rank each slipped a little, and the table beside this one carries every count.</p>
+    <p style="margin-top:10px">Our &ldquo;clicked into an app&rdquo; figure counts three events together.  Two of them fired for exactly the same 126 people, which we checked rather than assumed, so they are one signal and not two.  The third adds six more.  <b>132 of the 517 people who reached the main site clicked through.</b>  That is 26%.</p>
     <div class="funnel" style="margin-top:18px">
       <p style="font-size:13px;color:var(--text);font-weight:600;margin:0 0 2px">Does the tool get used as a tool?</p>
       <p class="fcap" style="margin:0 0 8px">Everyone who arrived, against the people who did the one thing that app exists for.  Bars are the 90-day rate; counts are people.</p>
       <div class="fhead"><span class="fcol">30d</span><span class="fcol">90d</span></div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Essentials &mdash; looked up an official (of 222)</span><span class="fcount"><span class="fcol f30">30</span><span class="fcol f90">52</span></span></div>
-        <div class="ftrack"><div class="fbar b2" style="width:23%">23%</div></div>
+        <div class="frow"><span class="flabel">Essentials &mdash; looked up an official (of 221)</span><span class="fcount"><span class="fcol f30">25</span><span class="fcol f90">52</span></span></div>
+        <div class="ftrack"><div class="fbar b2" style="width:24%">24%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Compass &mdash; completed a calibration (of 196)</span><span class="fcount"><span class="fcol f30">20</span><span class="fcol f90">45</span></span></div>
-        <div class="ftrack"><div class="fbar b3" style="width:23%">23%</div></div>
+        <div class="frow"><span class="flabel">Compass &mdash; completed a calibration (of 186)</span><span class="fcount"><span class="fcol f30">17</span><span class="fcol f90">35</span></span></div>
+        <div class="ftrack"><div class="fbar b3" style="width:19%">19%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Read &amp; Rank &mdash; revealed a ballot (of 84)</span><span class="fcount"><span class="fcol f30">17</span><span class="fcol f90">20</span></span></div>
-        <div class="ftrack"><div class="fbar b4" style="width:24%">24%</div></div>
+        <div class="frow"><span class="flabel">Read &amp; Rank &mdash; revealed a ballot (of 81)</span><span class="fcount"><span class="fcol f30">15</span><span class="fcol f90">21</span></span></div>
+        <div class="ftrack"><div class="fbar b4" style="width:26%">26%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Civic Trivia &mdash; finished a game (of 100)</span><span class="fcount"><span class="fcol f30">5</span><span class="fcol f90">13</span></span></div>
+        <div class="frow"><span class="flabel">Civic Trivia &mdash; finished a game (of 94)</span><span class="fcount"><span class="fcol f30">4</span><span class="fcol f90">12</span></span></div>
         <div class="ftrack"><div class="fbar b5" style="width:13%">13%</div></div>
       </div>
       <div class="fstep">
-        <div class="frow"><span class="flabel">Treasury &mdash; anything past the front page (of 357 &mdash; see below)</span><span class="fcount"><span class="fcol f30">14</span><span class="fcol f90">32</span></span></div>
+        <div class="frow"><span class="flabel">Treasury &mdash; anything past the front page (of 363 &mdash; see below)</span><span class="fcount"><span class="fcol f30">9</span><span class="fcol f90">33</span></span></div>
         <div class="ftrack"><div class="fbar b1" style="width:9%">n/a</div></div>
       </div>
     </div>
-    <p class="fcap" style="max-width:none">Essentials leads the Compass for an eighth pull, 52 people to 45.  Read &amp; Rank has the highest rate on the board at 24%, on the smallest base, and seventeen of its twenty finishers did so in the last 30 days.  The Compass is still much the deepest funnel: 153 people opened the quiz against 196 who arrived, and 45 finished it.</p>
+    <p class="fcap" style="max-width:none">Essentials leads the Compass for a ninth pull, 52 people to 35.  Read &amp; Rank has the highest rate on the board, on the smallest base, and fifteen of its 21 finishers did so in the last 30 days.  The Compass is still much the deepest funnel.  137 people opened the quiz and 35 finished it.</p>
   </div>
   <div class="card">
     <h3 class="serif">How many arrive</h3>
     <p style="font-size:13.5px;color:var(--dim)">Unique visitors per app, 30 days and the full quarter.  Each app is counted once across every hostname that serves it &mdash; Treasury drew traffic on four this quarter, the main site on three, and Essentials, Compass and Civic Trivia on two each.</p>
     <div class="ecohead"><span></span><span></span><span class="eh">30d</span><span class="eh">90d</span></div>
     <div class="eco">
-      <div class="ecorow me"><span class="ehost">main site</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">256</span><span class="eval">497</span></div>
-      <div class="ecorow"><span class="ehost">treasury</span><span class="etrack"><span class="ebar" style="width:72%"></span></span><span class="eval e30">194</span><span class="eval">357</span></div>
-      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:45%"></span></span><span class="eval e30">127</span><span class="eval">222</span></div>
-      <div class="ecorow"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:39%"></span></span><span class="eval e30">97</span><span class="eval">196</span></div>
-      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:20%"></span></span><span class="eval e30">33</span><span class="eval">100</span></div>
-      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:17%"></span></span><span class="eval e30">44</span><span class="eval">84</span></div>
+      <div class="ecorow me"><span class="ehost">main site</span><span class="etrack"><span class="ebar" style="width:100%"></span></span><span class="eval e30">262</span><span class="eval">517</span></div>
+      <div class="ecorow"><span class="ehost">treasury</span><span class="etrack"><span class="ebar" style="width:70%"></span></span><span class="eval e30">178</span><span class="eval">363</span></div>
+      <div class="ecorow"><span class="ehost">essentials</span><span class="etrack"><span class="ebar" style="width:43%"></span></span><span class="eval e30">110</span><span class="eval">221</span></div>
+      <div class="ecorow"><span class="ehost">compass</span><span class="etrack"><span class="ebar" style="width:36%"></span></span><span class="eval e30">92</span><span class="eval">186</span></div>
+      <div class="ecorow"><span class="ehost">civic trivia</span><span class="etrack"><span class="ebar" style="width:18%"></span></span><span class="eval e30">27</span><span class="eval">94</span></div>
+      <div class="ecorow"><span class="ehost">readrank</span><span class="etrack"><span class="ebar" style="width:16%"></span></span><span class="eval e30">37</span><span class="eval">81</span></div>
     </div>
-    <p class="fcap" style="max-width:none;margin-top:16px">We re-ran the hostname breakdown first, as we do every cycle, and found no new host.  Fourteen served somebody; two known ones served nobody and stay in the filter anyway.  Civic Spaces is absent from this table, and that is a measurement gap rather than a result.  It serves no traffic our analytics can see.</p>
-    <h3 class="serif" style="margin-top:22px">Treasury: 357 arrived, 32 used it, and the silence ended</h3>
-    <p style="font-size:13.5px;color:var(--dim);margin-top:8px"><b>Treasury tool events fired again on November 11 and November 12</b>, the most recent at 10:58 Pacific yesterday.  Last edition reported six days of nothing.  Over the quarter those few people produced 159 category drills, 92 line-item views, 86 entity selections, 58 year changes, 29 chart switches and 18 searches.</p>
-    <p style="font-size:13.5px;color:var(--dim);margin-top:10px">This is unmeasured rather than low, and the reason has not changed.  Treasury pushes its navigation into the address bar without recording a page view, so every visitor is filed against the bare domain.  A second query splits the 357.  <b>162 touched financials.empowered.vote</b>, which rewrites its own address to our own budget on load; 213 used the explorer hosts.  129 reached a budget address at all: 86 our own budget, 50 some other government&rsquo;s, and 7 did both.  We are still not publishing a rate.</p>
+    <p class="fcap" style="max-width:none;margin-top:16px">We re-ran the hostname breakdown first, as we do every cycle, and found no new host.  The same fourteen served somebody, and two known ones served nobody and stay in the filter anyway.  Civic Spaces is absent from this table, and that is a measurement gap rather than a result.  It serves no traffic our analytics can see.</p>
+    <h3 class="serif" style="margin-top:22px">Treasury: 363 arrived, 33 used it, and somebody used it yesterday</h3>
+    <p style="font-size:13.5px;color:var(--dim);margin-top:8px">Somebody drilled into a budget chart yesterday evening, which is the most recent use we can see.  Over the quarter those few people produced 158 category drills and 85 line-item views, with smaller counts for entity selections, year changes and chart switches.</p>
+    <p style="font-size:13.5px;color:var(--dim);margin-top:10px">This is unmeasured rather than low, and the reason has not changed.  Treasury pushes its navigation into the address bar without recording a page view, so every visitor is filed against the bare domain.  A second query splits the quarter&rsquo;s arrivals.  164 of them touched financials.empowered.vote, which rewrites its own address to our own budget as it loads, and 217 used the explorer hosts.  128 reached a budget address at all.  Of those, 84 reached our own budget and 52 some other government&rsquo;s.  We are still not publishing a rate.</p>
   </div>
 </div>
 
-<div class="h2row" id="ahead"><h2>The Road Ahead</h2><p>How much further we have to go, honestly.</p></div>
+<div class="h2row" id="ahead"><h2>The Road Ahead</h2><p>How much further we have to go.</p></div>
 <div class="card">
   <div class="horizon">
     <div class="when">Now to Dec</div>
     <div>
-      <h4>Open the season</h4>
-      <p><b>2,994 rows of finished research are sitting where no voter can reach them</b>, up from 2,324 on Tuesday and 2,086 the Friday before that.  Publishing Season 3 is still the single largest thing we could do for a reader, and the pile grows faster every cycle we do not.  Then the returns: AP has called 5,619 state legislative races and we have recorded 457.  The county tier needs registrars and has no winner at all.</p>
+      <h4>Open the next season</h4>
+      <p><b>4,629 finished answers are sitting where no voter can reach them</b>, against 2,994 on Friday.  Publishing them is still the single largest thing we could do for a reader.  The research behind them reads a legislature&rsquo;s own roll-call record, which is the one kind of evidence we have ever been able to measure.</p>
     </div>
   </div>
   <div class="horizon">
-    <div class="when">Also owed</div>
+    <div class="when">Decisions waiting</div>
     <div>
-      <h4>Five things named on this page and not done</h4>
-      <p>Certify something: nine cycles have passed with one stratum of 57 stances, against a codebook two versions newer.  Settle the <b>694 portraits</b> with no usable licence statement, a number that has now risen twice running.  Fix the Berkeley loader, at 112 refused runs.  Ship Civic Spaces phase 19, named for three cycles with no commit against it.  And give Fallacy Finders a remote, the smallest open task here for eight editions.</p>
+      <h4>Seven things that need somebody to say yes or no</h4>
+      <p>Open Season 3, asked in four editions since November 6.  Settle the 743 portraits with no usable rights statement, rising for a third edition.  Measure a second group of positions, open since October 3.  Fix the Berkeley import, failing since August 30.  Ship Civic Spaces phase 19, named four cycles ago.  Give Fallacy Finders a remote, open for nine editions.  Decide whether to add state campaign-finance disclosure data, or to say on each page that we do not hold it.</p>
     </div>
   </div>
   <div class="horizon">
     <div class="when">The money half</div>
     <div>
-      <h4>State disclosure data, or an honest no</h4>
-      <p>460 of the 486 state legislators who won this month can show no funding picture, because our contributions come from federal filings.  No amount of stance research changes that.  Either we add state disclosure data, or we say on each of those pages that we do not hold it.  <b>We have not decided, and a reader cannot currently tell which it is.</b></p>
+      <h4>What the funding picture cannot show</h4>
+      <p>929 of the 956 state legislators who won this month can show no funding picture at all, because our contributions come from federal filings.  No amount of position research changes that.  A reader looking at one of those pages today cannot tell whether the money is absent or simply not held by us.</p>
     </div>
   </div>
   <div class="horizon">
@@ -967,8 +1005,31 @@
   <p>An interactive <a href="/maps/purpose-map.html" style="color:var(--gold);text-decoration:underline">Purpose mind map</a> walks the whole vision &mdash; the thesis, and the Why, How, Who and What &mdash; with a short explainer on every concept and pillar feature.</p>
 </div>
 
+<details class="method">
+<summary>How we counted (sources and method)</summary>
+<ul>
+  <li>This cycle covers the seven days since the last edition was committed, from 04:18 Pacific on November 13.  No edition was published on November 17; one was written and never committed, and nothing from it was carried into this page without being measured again.</li>
+  <li>App statuses come from git history, read from each repository&rsquo;s published branch rather than a working copy, with an explicit time of day on the window.  Fallacy Finders has no remote and is the one repository read locally.  Civic Trivia has two remotes, and the counts come from the organisation&rsquo;s own branch, not the contributor fork.</li>
+  <li>Database counts were queried live on <span data-auto="asof">November 20, 2026</span>, in a single run at 07:02 Pacific.  Nothing was loading while we counted: the newest stance answer was 14 hours old, the newest politician record was from the 18th, and the newest budget row from the 14th.</li>
+  <li>The headline stance figure counts positions a voter can read: the newest published season&rsquo;s answer per person and topic, where that answer is not a withdrawal.  The draft season is excluded because the service a voter reads excludes it.</li>
+  <li>We checked that from outside the database, on six people chosen so the two bases would disagree.  Two whose only answers sit in the draft season returned nothing.  Three of the fourteen people behind this cycle&rsquo;s twenty new positions returned exactly what we hold, at one, one and two.  A long-researched US senator returned 41, matching us to the row.  The live topic list returned 60, which is the open season.</li>
+  <li><code>inform.seasons</code> was read again: Season 1 closed, Season 2 open, Season 3 still a draft.  No cutover happened this cycle.</li>
+  <li>The ballot figures come from the 53 elections dated November 3 and the 2,303 races inside them, which now carry 5,608 people.  Two certified results and 1,943 calls make the 1,945 winners.</li>
+  <li>AP&rsquo;s 51 per-state result files were re-read for this edition and all 51 answered.  They hold 644 races between them: 435 US House seats, 36 governorships, 35 US Senate seats, and statewide executive and ballot-measure contests.  No state legislative race appears in any of them, which is why three figures from the last edition are withdrawn above.</li>
+  <li>The coverage table reconciles against the stored answer count printed beside it, and our refresh script runs that table against the map on every pass, comparing them jurisdiction by jurisdiction.  All 51 state rows matched.</li>
+  <li>Budget grades are read from the budget rows themselves and the six sum to 585,669.  The &ldquo;no address&rdquo; count is rows whose <code>source_url</code> is null or blank; it does not test whether the address resolves, which is a separate check.</li>
+  <li>The certified group of positions is 57 state-level, record-based stances, measured on October 3 at 0.830 and 0.932 with a Wilson lower bound of 0.904 and no severe disagreements.  It was certified against codebook version 0.4, and the codebook has read 0.6 since October 15.</li>
+  <li>Campaign-finance totals are read from a one-row summary refreshed once a day, not aggregated over the 29.6 million contributions on each run.  The row we read was written on November 18 at 05:41 Pacific, which is 49 hours before this count; the refresh script warns past 48 hours and it warned.</li>
+  <li>Reach figures are the 30 and 90 days ending <span data-auto="asof">November 20, 2026</span>, test traffic excluded, each app counted once across every hostname serving it.  The hostname breakdown was re-run first and found no new host; <code>www.empowered.vote</code> and <code>read-rank-frontend.onrender.com</code> served nobody and stay in the filter anyway.</li>
+  <li>The internal-traffic filter is reproduced by hand for the two unioned rows, and it was controlled on four rows before it was trusted; both methods agreed exactly.  &ldquo;Visitors&rdquo; and the action counts are both unique people over the same window, so a rate between them is fair but is not a strict funnel.</li>
+  <li>Across the live questions with no seven-mark scale, the right answer sits at A 25.0%, B 26.7%, C 24.8% and D 23.5%, over 2,820 questions.</li>
+  <li>Berkeley&rsquo;s import last refused at 19:07 Pacific on November 19.  The most recent Treasury tool event was a category drill at 18:16 Pacific the same evening.  The 298 budget rows with no address are 153 federal, 65 Californian, 35 Indianan, 26 Texan, 13 from Massachusetts and 6 from Maryland.</li>
+  <li>Indiana&rsquo;s fall on the stance map was checked against office terms: 30 people we have researched hold an Indiana term that ended on November 3 and hold no current term anywhere, so the map no longer places them.</li>
+</ul>
+</details>
+
 <footer>
-  <b>Sources and method.</b>  App statuses come from git history, read from each repository&rsquo;s published branch rather than a working copy, with an explicit time of day on every window.  This cycle covers the three days since the last edition was committed, from 03:30 Pacific on November 10.  <b>Fallacy Finders has no remote</b> and is the one repository read locally.  <b>Civic Trivia has two</b>, and the counts come from the organisation&rsquo;s own branch, not the contributor fork.  Database counts were queried live on <span data-auto="asof">November 13, 2026</span>.  <b>One sweep was running while we counted</b>, rewriting campaign-finance rows; it touched 2,186 of them in the ten minutes before the count, and two counts thirteen minutes apart returned the same 29,380,776 rows.  No other table was moving: the newest stance row was nearly four hours old and the newest budget row half a day.  <b>The headline stance figure counts positions a voter can read</b>: the newest <i>published</i> season&rsquo;s answer per person and topic, where that answer is not a withdrawal.  The draft season is excluded because the service a voter reads excludes it.  <b>We checked that from outside the database</b>, on four people chosen so the two bases would disagree.  Two whose only answers are draft returned 0.  Two of the eight councilmembers behind this cycle&rsquo;s twelve new readable positions returned 2 each.  A long-researched US senator returned 41, matching us to the row.  The live topic list returned 60, which is the open season.  <b>The ballot figures come from the 53 elections dated November 3</b> and the 2,343 races inside them.  A person counts as covered on three separate tests: a published-season answer that is not a withdrawal, a default portrait, and a campaign-finance filing identity that links to them.  <b>Two results are recorded as certified and 1,233 as called.</b>  1,037 of the 1,235 winners come from the Associated Press, 114 from Ballotpedia and 84 from an election official.  <b>AP&rsquo;s 51 per-state result files were re-read for this edition</b>, all 51 answered, and they hold 6,938 races of which 5,759 are state legislative.  The coverage table reconciles against the stored row count printed beside it, and our refresh script checks that table against the map bucket by bucket.  <b>Budget grades are read from the budget rows themselves</b> and the six sum to the total.  Reach figures are the 30 and 90 days ending <span data-auto="asof">November 13, 2026</span>, test traffic excluded, each app counted once across every hostname serving it.  <b>The hostname breakdown was re-run first and found no new host</b>; <code>www.empowered.vote</code> and <code>read-rank-frontend.onrender.com</code> served nobody and stay in the filter anyway.  The internal-traffic filter was controlled on four rows and agreed exactly.  &ldquo;Visitors&rdquo; and the action counts are both unique people over the same window, so a rate between them is fair but is not a strict funnel.  <b>This edition is permanently archived at <a href="/briefing/2026-11-13" style="color:var(--gold)">empowered.vote/briefing/2026-11-13</a> and will not be edited after publication.</b>  In keeping with the platform&rsquo;s anti-partisan commitment, nothing in this report is colored red or blue.
+  <b>This edition is permanently archived at <a href="/briefing/2026-11-20" style="color:var(--gold)">empowered.vote/briefing/2026-11-20</a> and will not be edited after publication.</b>  In keeping with the platform&rsquo;s anti-partisan commitment, nothing in this report is colored red or blue.
 </footer>
 
 </div>
